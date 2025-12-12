@@ -1,0 +1,22 @@
+name: "🔨 Test"
+description: "테스트을 해야할 부분이 있나요?"
+labels: "🔨 Test"
+body:
+  - type: textarea
+    attributes:
+      label: 🔨 Describe
+      description: 어떤 테스트를 해야하는지 설명해주세요!
+      placeholder: 간단한 테스트 종류(Unit, Integration, E2E, Stress 등)
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: ✅ Tasks
+      description: 테스트를 할 부분에 대해서 자세히 작성해 주세요.
+      placeholder: 최대한 세분화 해서 적어주세요!
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 🙋🏻 More
+      description: 더 하고 싶은 말이 있다면 작성해 주세요.

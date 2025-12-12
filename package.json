@@ -1,0 +1,36 @@
+{
+  "name": "web25-boostcamp",
+  "version": "1.0.0",
+  "description": "web25 group project",
+  "scripts": {
+    "prepare": "husky || true",
+    "install:all": "pnpm -r install && pnpm prepare",
+    "dev:fe": "pnpm --filter frontend dev",
+    "build:fe": "pnpm --filter frontend build",
+    "preview:fe": "pnpm --filter frontend preview",
+    "dev:be": "pnpm --filter backend start:dev",
+    "build:be": "pnpm --filter backend build",
+    "start:be": "pnpm --filter backend start:prod",
+    "lint:fix:all": "pnpm -r lint:fix",
+    "test:fe": "pnpm --filter frontend test",
+    "test:fe:e2e": "pnpm --filter frontend test:e2e",
+    "test:be": "pnpm --filter backend test",
+    "test:all": "pnpm run test:fe && pnpm run test:be"
+  },
+  "packageManager": "pnpm@10.25.0",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "eslint": "^9.39.1",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
+    "prettier": "^3.7.4"
+  }
+}
