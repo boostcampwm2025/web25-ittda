@@ -71,8 +71,6 @@ module.exports = {
         react: { version: 'detect' },
       },
       extends: [
-        // 루트 설정 상속
-        './.eslintrc.cjs',
         // 에어비앤비 규칙 추가
         'airbnb',
         'airbnb/hooks',
