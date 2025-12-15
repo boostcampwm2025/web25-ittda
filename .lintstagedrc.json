@@ -1,4 +1,4 @@
 {
-  "backend/**/*.ts": ["pnpm --filter backend lint:fix"],
-  "frontend/**/*.{ts,tsx}": ["pnpm --filter frontend lint:fix"]
+  "backend/**/*.ts": ["pnpm --filter backend lint"],
+  "frontend/**/*.{ts,tsx}": ["pnpm --filter frontend lint"]
 }
