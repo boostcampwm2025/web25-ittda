@@ -3,6 +3,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchPostsByBbox } from "@/_lib/api/posts";
+import { APIProvider, Map } from '@vis.gl/react-google-maps';
 
 export default function MapPage() {
   const { data, isLoading } = useQuery({
@@ -19,8 +20,14 @@ export default function MapPage() {
   if (isLoading) return <div>로딩중...</div>;
 
   return (
-    <pre className="text-xs">
-      {JSON.stringify(data, null, 2)}
-    </pre>
+    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+      <div style={{ width: '100vw', height: '100vh' }}>
+        <Map
+          defaultCenter={{ lat: 37.5665, lng: 126.9780 }}
+          defaultZoom={10}
+        />
+      </div>
+    </APIProvider>
   );
+
 }
