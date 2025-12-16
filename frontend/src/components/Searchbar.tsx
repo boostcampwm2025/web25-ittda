@@ -25,7 +25,7 @@ const Searchbar = forwardRef<HTMLInputElement, SearchbarProps>(
         <input
           ref={ref}
           type="text"
-          className="flex-1 outline-none text-sm placeholder:text-itta-gray2 bg-transparent w-full"
+          className="flex-1 outline-none text-sm placeholder:text-itta-gray3 bg-transparent w-full"
           {...props}
         />
 
