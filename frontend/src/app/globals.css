@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --itta-black: #333333;
+  --itta-point: #10b981;
+  --itta-gray3: #7a7a7a;
+  --itta-gray2: rgba(0, 0, 0, 0.2);
+  --itta-gray: rgba(122, 122, 122, 0.2);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-itta-black: #333333;
+  --color-itta-point: #10b981;
+  --color-itta-gray3: #7a7a7a;
+  --color-itta-gray2: rgba(0, 0, 0, 0.2);
+  --color-itta-gray1: rgba(122, 122, 122, 0.2);
+}
+
+/* @media (prefers-color-scheme: dark) { */
+/* :root { */
+/* --background: #0a0a0a; */
+/* --foreground: #ededed; */
+/* } */
+/* } */
+
+html {
+  height: 100svh;
+  display: flex;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  max-width: 1024px;
+  display: flex;
+  flex: 1;
+  justify-content: start;
+  align-items: start;
+  margin: 0 auto;
+  height: 100%;
+  overflow: hidden;
+}
