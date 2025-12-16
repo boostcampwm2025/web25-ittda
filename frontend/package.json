@@ -10,6 +10,7 @@
     "lint:fix": "eslint"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.12",
     "next": "16.0.10",
     "react": "19.2.1",
     "react-dom": "19.2.1"
@@ -25,5 +26,10 @@
     "msw": "^2.12.4",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
