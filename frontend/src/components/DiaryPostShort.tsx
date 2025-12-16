@@ -1,8 +1,15 @@
 import Image from 'next/image';
 
-export default function DiaryPostShort() {
+interface DiaryPostShortProps {
+  onClick: VoidFunction;
+}
+
+export default function DiaryPostShort({ onClick }: DiaryPostShortProps) {
   return (
-    <article className="relative w-full bg-white p-5 pb-6 cursor-pointer">
+    <article
+      className="relative w-full bg-white p-5 pb-6 cursor-pointer"
+      onClick={onClick}
+    >
       {/* Header Section */}
       <section className="flex justify-start items-center gap-2 mb-1">
         <div className="flex items-center gap-1">

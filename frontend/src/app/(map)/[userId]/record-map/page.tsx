@@ -7,6 +7,7 @@ import ListPanel from '../../_components/ListPanel';
 export default function RecordMapPage() {
   const [leftWidth, setLeftWidth] = useState(400);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,7 +45,11 @@ export default function RecordMapPage() {
     <main ref={containerRef} className="w-full h-full flex relative">
       {/* 지도 - 전체 배경 (고정) */}
       <div className="absolute inset-0">
-        <GoogleMap leftPanelWidth={leftWidth} />
+        <GoogleMap
+          leftPanelWidth={leftWidth}
+          selectedPostId={selectedPostId}
+          onSelectPost={setSelectedPostId}
+        />
       </div>
 
       {/* 리스트 패널 - 지도 위 오버레이 (리사이즈 가능) */}
@@ -52,7 +57,11 @@ export default function RecordMapPage() {
         className="relative h-full bg-white shadow-lg z-10"
         style={{ width: `${leftWidth}px` }}
       >
-        <ListPanel onStartDrag={() => setIsDragging(true)} />
+        <ListPanel
+          selectedPostId={selectedPostId}
+          onSelectPost={setSelectedPostId}
+          onStartDrag={() => setIsDragging(true)}
+        />
       </div>
     </main>
   );
