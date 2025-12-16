@@ -20,14 +20,14 @@ export default function DiaryPostShort() {
 
       {/* Title */}
       <h3
-        className="font-semibold pl-2 text-black mb-1 tracking-[-0.352px]"
+        className="font-semibold pl-3 text-black mb-1 tracking-[-0.352px]"
         style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
       >
         스타벅스 말차
       </h3>
 
       {/* Location */}
-      <section className="flex items-center gap-2 mb-4 pl-2">
+      <section className="flex items-center gap-2 mb-4 pl-3">
         <div className="w-4.5 h-4.5 shrink-0">
           <Image
             alt="아이콘 자리"
@@ -46,7 +46,7 @@ export default function DiaryPostShort() {
       </section>
 
       {/* Content and Image Section */}
-      <section className="flex gap-3 mb-4 pl-2">
+      <section className="flex gap-3 mb-4 pl-3">
         {/* Text Content - matches image height with ellipsis */}
         <div className="flex-1 min-w-0">
           <p
@@ -82,7 +82,7 @@ export default function DiaryPostShort() {
 
       {/* Hashtags */}
       <div
-        className="flex text-xs tracking-[-0.264px] pl-2 font-semibold gap-1"
+        className="flex text-xs tracking-[-0.264px] pl-3 font-semibold gap-1"
         style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
       >
         <span>
