@@ -10,6 +10,7 @@
     "lint:fix": "eslint"
   },
   "dependencies": {
+    "@vis.gl/react-google-maps": "^1.7.1",
     "next": "16.0.10",
     "react": "19.2.1",
     "react-dom": "19.2.1"
