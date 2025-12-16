@@ -20,7 +20,7 @@ export default function ListPanel({ onStartDrag }: ListPanelProps) {
         </div>
       </div>
       <div
-        className="absolute right-0 w-2 h-10 bg-itta-black rounded-tl-md rounded-bl-md top-[50%] -translate-y-1/2 cursor-grab"
+        className="absolute right-0 w-2 h-16 bg-itta-black rounded-tl-md rounded-bl-md top-[50%] -translate-y-1/2 cursor-col-resize"
         onMouseDown={(e) => {
           e.preventDefault();
           onStartDrag();
