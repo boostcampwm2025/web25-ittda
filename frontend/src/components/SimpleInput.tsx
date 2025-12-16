@@ -15,14 +15,14 @@ const SimpleInput = forwardRef<HTMLInputElement, SimpleInputProps>(
     return (
       <div
         className={cn(
-          'flex items-center gap-3 px-4 py-3 border border-itta-gray2 rounded-2xl bg-white transition-all duration-200 focus-within:border-itta-black',
+          'flex items-center gap-3 px-4 py-3 shadow-sm border border-itta-gray1 rounded-[10px] bg-white transition-all duration-200 focus-within:border-itta-black',
           className,
         )}
       >
         <input
           ref={ref}
           type="text"
-          className="flex-1 outline-none text-base placeholder:text-itta-gray2 bg-transparent"
+          className="flex-1 outline-none text-sm placeholder:text-itta-gray3 bg-transparent"
           {...props}
         />
 

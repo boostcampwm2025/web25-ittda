@@ -115,7 +115,7 @@ export default function DiaryPostDetail({
 
       <div className="w-full flex justify-end items-center px-5 pt-5">
         <Popover>
-          <PopoverTrigger>
+          <PopoverTrigger asChild>
             <Button variant="ghost" className="w-10 h-10">
               icon
             </Button>

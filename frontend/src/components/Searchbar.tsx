@@ -15,7 +15,7 @@ const Searchbar = forwardRef<HTMLInputElement, SearchbarProps>(
     return (
       <div
         className={cn(
-          'flex items-center text-sm gap-2 px-3.5 py-2 border border-itta-gray2 rounded-[10px] bg-white',
+          'flex items-center text-sm gap-2 px-3.5 py-2 shadow-sm border border-itta-gray1 rounded-[10px] bg-white',
           className,
         )}
       >
