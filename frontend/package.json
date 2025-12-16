@@ -15,12 +15,14 @@
     "react-dom": "19.2.1"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
+    "msw": "^2.12.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
