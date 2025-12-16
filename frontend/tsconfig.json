@@ -19,7 +19,14 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/_lib/*": ["_lib/*"],
+      "@/api/*": ["api/*"], // api routes
+      "@/app/*": ["app/*"],
+      "@/hooks/*": ["app/_hooks/*"],
+      "@/utils/*": ["app/_utils/*"],
+      "@/store/*": ["app/_store/*"],
+      "@/components/*": ["_components/*"]
     }
   },
   "include": [
