@@ -141,7 +141,7 @@ export default function CreatePostPage() {
       </div>
 
       {/* 저장 버튼 */}
-      <Button className="w-full mt-13" onClick={handleSubmit}>
+      <Button className="w-full my-13" onClick={handleSubmit}>
         저장하기
       </Button>
     </main>
