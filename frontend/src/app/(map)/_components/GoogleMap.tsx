@@ -20,14 +20,20 @@ interface GoogleMapProps {
   onSelectPost: (id: string | null) => void;
 }
 
-function FlyToOnSelect({ lat, lng }: { lat: number; lng: number }) {
+function FlyToOnSelect({ lat, lng, offsetX = 0 }: { lat: number; lng: number; offsetX?: number }) {
   const map = useMap();
   useEffect(() => {
     if (!map) return;
     map.panTo({ lat, lng });
     // 필요하면 줌도 고정
     // map.setZoom(13);
-  }, [map, lat, lng]);
+
+    if (offsetX !== 0) {
+      // 마커를 오른쪽으로 보이게 하려면
+      // 지도 중심을 왼쪽으로 옮겨야 해서 -offsetX
+      map.panBy(-offsetX, 0);
+    }
+  }, [map, lat, lng, offsetX]);
   return null;
 }
 
@@ -69,6 +75,7 @@ export default function GoogleMap({
               <FlyToOnSelect
                 lat={Number(selectedPost.lat)}
                 lng={Number(selectedPost.lng)}
+                offsetX={leftPanelWidth / 2} // 패널 폭의 절반만큼 오른쪽으로 보이게
               />
             )}
         </Map>
