@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -48,17 +48,30 @@ export default function SideNavigation() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
+  // 사이드바 열릴 때 body 스크롤 막기
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   return (
     <>
       {/* Left Edge Trigger Area - Invisible */}
       <div
-        className="hidden md:block absolute left-0 top-0 w-4 h-full z-30"
+        className="hidden md:block fixed left-0 top-0 w-4 h-screen z-30"
         onMouseEnter={() => setIsOpen(true)}
       />
 
       {/* Hint Tab - Always Visible */}
       <div
-        className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 z-40"
+        className="hidden md:block fixed left-0 top-1/2 -translate-y-1/2 z-40"
         onMouseEnter={() => setIsOpen(true)}
       >
         <div className="w-2 h-20 bg-linear-to-b from-itta-black to-itta-black/80 rounded-r-full shadow-sm hover:w-2 transition-all duration-300" />
@@ -67,7 +80,7 @@ export default function SideNavigation() {
       {/* Sidebar Overlay */}
       {isOpen && (
         <div
-          className="hidden md:block absolute inset-0 bg-itta-gray2 z-40 transition-opacity duration-300"
+          className="hidden md:block fixed inset-0 bg-itta-gray2 z-40 transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -75,7 +88,7 @@ export default function SideNavigation() {
       {/* Sidebar Panel */}
       <div
         className={cn(
-          'hidden md:block absolute left-0 top-0 h-full w-[230px] bg-white border-r border-[#f0ebe3] shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] z-50 transition-transform duration-300 ease-out',
+          'hidden md:block fixed left-0 top-0 h-screen w-[230px] bg-white border-r border-[#f0ebe3] shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] z-50 transition-transform duration-300 ease-out',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
         onMouseLeave={() => setIsOpen(false)}
