@@ -7,7 +7,9 @@ export default function MapLayout({
 }>) {
   return (
     <div className="w-full h-screen flex flex-col">
-      <Header title="지도" />
+      <Header>
+        <Header.Title>지도</Header.Title>
+      </Header>
 
       <div className="flex flex-1 min-h-0 w-full justify-center">
         <main className="flex-1 overflow-hidden">{children}</main>
