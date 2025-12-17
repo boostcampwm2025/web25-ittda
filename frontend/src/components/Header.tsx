@@ -21,12 +21,17 @@ export default function Header({
         className,
       )}
     >
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-itta-black">{title}</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-bold text-itta-black shrink-0">{title}</h1>
 
-        <div className="flex items-center space-x-2">{rightContent}</div>
+        {/* 중앙 컨텐츠 (검색바 등) */}
+        <div className="flex-1 flex justify-center">
+          {children}
+        </div>
+
+        {/* 오른쪽 컨텐츠 */}
+        <div className="flex items-center space-x-2 shrink-0">{rightContent}</div>
       </div>
-      {children}
     </header>
   );
 }

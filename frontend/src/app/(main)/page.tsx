@@ -8,7 +8,7 @@ export default function HomePage() {
   const { containerRef, isVisible } = useScrollDirection<HTMLElement>();
 
   return (
-    <main
+    <section
       ref={containerRef}
       className="w-full h-full px-6 py-5 overflow-y-auto"
     >
@@ -21,6 +21,6 @@ export default function HomePage() {
       ></div>
 
       <PostList />
-    </main>
+    </section>
   );
 }

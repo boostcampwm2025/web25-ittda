@@ -105,13 +105,17 @@ html {
 }
 
 body {
-  max-width: 1024px;
   display: flex;
   flex: 1;
   justify-content: start;
   align-items: start;
   margin: 0 auto;
   height: 100%;
+  width: 100%;
+}
+
+main {
+  max-width: 1024px;
   overflow: hidden;
 }
 
