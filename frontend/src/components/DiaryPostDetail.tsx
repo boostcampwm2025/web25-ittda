@@ -73,7 +73,7 @@ export default function DiaryPostDetail({ post, onBack }: DiaryPostDetailProps) 
             className="text-gray-600 text-sm tracking-[-0.308px]"
             style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
           >
-            광주광역시 광산구 월곡동 어딘가
+            {post.address}
           </p>
         </section>
 
