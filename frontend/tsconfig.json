@@ -20,14 +20,14 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/_lib/*": ["_lib/*"],
-      "@/api/*": ["api/*"], // api routes
-      "@/app/*": ["app/*"],
-      "@/hooks/*": ["app/_hooks/*"],
-      "@/utils/*": ["app/_utils/*"],
-      "@/store/*": ["app/_store/*"],
-      "@/components/*": ["_components/*"]
+      "@/*": ["src/*"],
+      "@/_lib/*": ["src/lib/*"],
+      "@/api/*": ["src/api/*"], // api routes
+      "@/app/*": ["src/app/*"],
+      "@/hooks/*": ["src/hooks/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/store/*": ["src/store/*"],
+      "@/components/*": ["src/components/*"]
     }
   },
   "include": [
