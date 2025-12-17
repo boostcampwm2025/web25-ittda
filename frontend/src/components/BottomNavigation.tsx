@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -55,24 +56,25 @@ export default function BottomNavigation() {
               className="flex flex-col items-center gap-1 py-2 min-w-[60px]"
             >
               <div
-                className={`w-6 h-6 flex items-center justify-center ${
-                  item.isProfile ? 'rounded-full overflow-hidden' : ''
-                }`}
+                className={cn(
+                  'w-6 h-6 flex items-center justify-center',
+                  item.isProfile && 'rounded-full overflow-hidden',
+                )}
               >
                 {isActive ? (
                   <Image
                     src={item.icon}
                     alt={item.alt}
-                    width={24}
-                    height={24}
+                    width={30}
+                    height={30}
                     className={`${item.isProfile ? 'w-full h-full object-cover' : 'w-6 h-6'}`}
                   />
                 ) : (
                   <Image
                     src={item.icon}
                     alt={item.alt}
-                    width={24}
-                    height={24}
+                    width={30}
+                    height={30}
                     className={`${item.isProfile ? 'w-full h-full object-cover' : 'w-6 h-6'}`}
                   />
                 )}

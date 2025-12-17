@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 const navigationItems = [
   { href: '/', icon: '/icons/home.svg', alt: '홈', label: '홈' },
@@ -46,9 +47,10 @@ export default function SideNavigation() {
 
       {/* Sidebar Panel */}
       <div
-        className={`hidden md:block absolute left-0 top-0 h-full w-[230px] bg-white border-r border-[#f0ebe3] shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] z-50 transition-transform duration-300 ease-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={cn(
+          'hidden md:block absolute left-0 top-0 h-full w-[230px] bg-white border-r border-[#f0ebe3] shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] z-50 transition-transform duration-300 ease-out',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
         onMouseLeave={() => setIsOpen(false)}
       >
         {/* Header */}
