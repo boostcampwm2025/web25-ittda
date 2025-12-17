@@ -1,12 +1,23 @@
 // app/map/page.tsx
-"use client";
+'use client';
 
-import { useMemo, useRef, useState, useEffect } from "react";
-import { APIProvider, Map, Marker, useMap } from "@vis.gl/react-google-maps";
-import { useQuery } from "@tanstack/react-query";
-import { fetchPostsByBbox } from "@/_lib/api/posts";
+import { useMemo, useRef, useState, useEffect } from 'react';
+import { APIProvider, Map, Marker, useMap } from '@vis.gl/react-google-maps';
+import { useQuery } from '@tanstack/react-query';
+import { fetchPostsByBbox } from '@/_lib/api/posts';
+import type { TemplateType, PostListItem } from '../_lib/types/post';
 
 type Bbox = { minLat: number; minLng: number; maxLat: number; maxLng: number };
+
+const TEMPLATE_LABEL: Record<TemplateType, string> = {
+  diary: '일기',
+  travel: '여행',
+  movie: '영화',
+  musical: '뮤지컬',
+  theater: '연극',
+  memo: '메모',
+  etc: '기타',
+};
 
 // 1) 일단 임시 bbox (서울 근처)
 // 다음 단계에서 "지도 bounds → bbox"로 바꿀 것
@@ -33,7 +44,7 @@ export default function MapPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["posts", "bbox", TEST_BBOX],
+    queryKey: ['posts', 'bbox', TEST_BBOX],
     queryFn: () => fetchPostsByBbox(TEST_BBOX),
     // items만 뽑아 쓰면 페이지가 편해짐
     select: (res) => res.items,
@@ -43,7 +54,7 @@ export default function MapPage() {
 
   const selectedPost = useMemo(
     () => posts.find((p) => p.id === selectedId) ?? null,
-    [posts, selectedId]
+    [posts, selectedId],
   );
 
   // 패널에서 선택된 항목으로 스크롤(선택)
@@ -51,9 +62,9 @@ export default function MapPage() {
   useEffect(() => {
     if (!selectedId) return;
     const el = listRef.current?.querySelector<HTMLDivElement>(
-      `[data-post-id="${selectedId}"]`
+      `[data-post-id="${selectedId}"]`,
     );
-    el?.scrollIntoView({ block: "nearest" });
+    el?.scrollIntoView({ block: 'nearest' });
   }, [selectedId]);
 
   if (!apiKey) return <div>API KEY가 없습니다 (.env.local 확인)</div>;
@@ -65,24 +76,41 @@ export default function MapPage() {
       {/* Left Panel */}
       <aside className="w-80 border-r overflow-y-auto" ref={listRef}>
         <div className="p-3 border-b font-semibold">
-          주변 게시글 <span className="text-sm text-gray-500">({posts.length})</span>
+          주변 게시글{' '}
+          <span className="text-sm text-gray-500">({posts.length})</span>
         </div>
 
         {posts.map((post) => {
           const active = post.id === selectedId;
+
           return (
             <div
               key={post.id}
               data-post-id={post.id}
               onClick={() => setSelectedId(post.id)}
               className={[
-                "cursor-pointer p-3 border-b",
-                active ? "bg-gray-100" : "hover:bg-gray-50",
-              ].join(" ")}
+                'cursor-pointer p-3 border-b',
+                active ? 'bg-gray-100' : 'hover:bg-gray-50',
+              ].join(' ')}
             >
-              <div className="font-medium">{post.title}</div>
-              <div className="text-xs text-gray-500">
-                lat {Number(post.lat).toFixed(4)} · lng {Number(post.lng).toFixed(4)}
+              {/* 상단: 템플릿 + 날짜 */}
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-700">
+                  {TEMPLATE_LABEL[post.templateType]}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {new Date(post.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+
+              {/* 제목 */}
+              <div className="font-medium text-sm mb-1 truncate">
+                {post.title}
+              </div>
+
+              {/* 미리보기 */}
+              <div className="text-xs text-gray-600 line-clamp-2">
+                {post.preview}
               </div>
             </div>
           );
@@ -103,11 +131,11 @@ export default function MapPage() {
                 <Marker
                   key={post.id}
                   position={{ lat: Number(post.lat), lng: Number(post.lng) }}
-                  onClick={() => setSelectedId(post.id)} // ✅ 핀 클릭 → 패널 선택
+                  onClick={() => setSelectedId(post.id)} // 핀 클릭 → 패널 선택
                 />
               ))}
 
-              {/* ✅ 패널 선택 → 지도 이동 */}
+              {/* 패널 선택 → 지도 이동 */}
               {selectedPost && (
                 <FlyToOnSelect
                   lat={Number(selectedPost.lat)}
