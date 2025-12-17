@@ -1,6 +1,14 @@
+import { Pin } from 'lucide-react';
+
 export default function SimpleMemo() {
   return (
-    <div className="border border-itta-gray2 px-5.5 py-4.5 text-sm min-w-0">
+    <div className="bg-[#FFF2B4] relative border-itta-gray2 py-4.5 px-5.5 text-sm min-w-0 shadow-sm">
+      <Pin
+        size={20}
+        color="#f70808"
+        fill="#f70808"
+        className="absolute right-1 -top-1 rotate-30"
+      />
       <p
         className="max-w-full leading-normal line-clamp-4"
         style={{

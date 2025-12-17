@@ -17,7 +17,7 @@ export default function Tag({ children, onClick, className }: TagProps) {
     >
       <div
         className={cn(
-          'px-3.5 py-1 rounded-4xl hover:bg-itta-point/20 ease-in-out transition-all duration-300',
+          'px-3.5 py-1 rounded-4xl hover:bg-itta-point/40 hover:text-itta-black ease-in-out transition-all duration-300',
           className,
         )}
       >

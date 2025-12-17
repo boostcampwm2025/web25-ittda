@@ -26,10 +26,7 @@ export default function DiaryPostDetail({
           </div>
         </Button>
       )}
-      <article
-        data-post={postId}
-        className="relative w-full bg-white p-5 pb-6 cursor-pointer"
-      >
+      <article data-post={postId} className="relative w-full bg-white p-5 pb-6">
         {/* Header Section */}
         <section className="flex justify-start items-center gap-2 mb-2 relative">
           <div className="flex items-center gap-1">

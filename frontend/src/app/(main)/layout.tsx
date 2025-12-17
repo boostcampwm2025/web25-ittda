@@ -1,6 +1,5 @@
 import Header from '@/components/Header';
 import SideFilterbar from './_components/SideFilterbar';
-import SimpleMemo from './_components/SimpleMemo';
 import SimpleInput from '@/components/SimpleInput';
 
 export default function MainLayout({
@@ -9,22 +8,27 @@ export default function MainLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="w-full h-screen flex">
-      <div className="flex flex-3 flex-col">
-        <Header title="홈" className="w-full">
-          <div className="pt-4">
-            <SimpleInput
-              showCheckIcon
-              placeholder="간단히 메모할 사항을 작성해주세요."
-            />
-          </div>
-        </Header>
-        <div className="overflow-hidden mt-1">{children}</div>
-      </div>
+    <div className="w-full h-screen flex flex-col">
+      {/* 헤더 - 고정 */}
+      <Header title="홈" className="w-full shrink-0">
+        <div className="pt-4">
+          <SimpleInput
+            showCheckIcon
+            placeholder="간단히 메모할 사항을 작성해주세요."
+          />
+        </div>
+      </Header>
 
-      <aside className="flex-1 h-full min-w-0 border-l-[0.5] border-itta-gray2 px-4.25 py-6.5">
-        <SideFilterbar />
-      </aside>
+      {/* 콘텐츠 영역 - 나머지 공간 차지 */}
+      <div className="flex flex-1 min-h-0 w-full mt-1">
+        {/* 메인 콘텐츠 - 3:1 비율 중 3 */}
+        <div className="flex-3 overflow-y-auto">{children}</div>
+
+        {/* 사이드 필터바 - 3:1 비율 중 1 */}
+        <aside className="flex-1 h-full overflow-y-auto border-l-[0.5px] border-itta-gray2 px-4.25 py-6.5">
+          <SideFilterbar />
+        </aside>
+      </div>
     </div>
   );
 }

@@ -16,7 +16,6 @@ const CATEGORIES = [
 
 export default function SideFilterbar() {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="min-w-0 w-full h-full flex flex-col">
@@ -29,7 +28,7 @@ export default function SideFilterbar() {
               onClick={() => setSelectedCategory(category.id)}
               className={
                 selectedCategory === category.id
-                  ? 'bg-itta-point/20 shadow-sm border-itta-point'
+                  ? 'bg-itta-point/80 text-white shadow-sm border-itta-point'
                   : 'hover:border-itta-point text-gray-700'
               }
             >

@@ -53,13 +53,16 @@ export default function PerformanceCard({
         {/* Details */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-2 text-gray-600">
-            <MapPin className="w-4 h-4 shrink-0" />
+            <MapPin color="var(--itta-point)" className="w-4 h-4 shrink-0" />
             <span className="text-sm">{venue}</span>
           </div>
           <div className="flex items-center gap-2 text-gray-600">
-            <Calendar className="w-4 h-4 shrink-0" />
+            <Calendar color="var(--itta-point)" className="w-4 h-4 shrink-0" />
             <span className="text-sm">{date}</span>
-            <Clock className="w-4 h-4 shrink-0 ml-2" />
+            <Clock
+              color="var(--itta-point)"
+              className="w-4 h-4 shrink-0 ml-2"
+            />
             <span className="text-sm">{time}</span>
           </div>
         </div>
