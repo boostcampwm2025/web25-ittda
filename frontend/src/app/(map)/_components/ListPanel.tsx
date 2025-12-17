@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import DiaryPostDetail from '@/components/DiaryPostDetail';
 import DiaryPostShort from '@/components/DiaryPostShort';
 import type { PostListItem } from '@/lib/types/post';
@@ -20,11 +20,8 @@ export default function ListPanel({
 }: ListPanelProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
-
-  const selectedPost = useMemo(
-    () => posts.find((post) => post.id === selectedPostId) ?? null,
-    [posts, selectedPostId],
-  );
+  const selectedPost =
+    posts.find((post) => post.id === selectedPostId) ?? null;
 
   // 선택된 게시글이 바뀌면 리스트에서 해당 항목으로 스크롤
   useEffect(() => {
