@@ -10,7 +10,7 @@ export default function PostLayout({
     <div className="w-full flex flex-col">
       <Header className="w-full shrink-0">
         <Header.Left>
-          <ChevronLeft color="var(--itta-black)" size={45} />
+          <ChevronLeft color="var(--itta-black)" size={25} />
         </Header.Left>
         <Header.Title>기록 추가 - 일기/여행</Header.Title>
       </Header>

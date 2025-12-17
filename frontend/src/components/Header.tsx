@@ -34,9 +34,7 @@ function HeaderLeft({ children, className }: HeaderSubComponentProps) {
 
 function HeaderTitle({ children, className }: HeaderSubComponentProps) {
   return (
-    <h1
-      className={cn('text-2xl font-bold text-itta-black shrink-0', className)}
-    >
+    <h1 className={cn('text-xl font-bold text-itta-black shrink-0', className)}>
       {children}
     </h1>
   );
