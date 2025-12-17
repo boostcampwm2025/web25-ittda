@@ -1,17 +1,27 @@
 import Image from 'next/image';
-import { Button } from './ui/button';
 import { ChevronLeft, Ellipsis, Footprints } from 'lucide-react';
+import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import type { PostListItem } from '@/lib/types/post';
 
-interface DiiaryPostDetailProps {
-  postId: string;
+interface DiaryPostDetailProps {
+  post: PostListItem;
   onBack?: VoidFunction;
 }
 
-export default function DiaryPostDetail({
-  postId,
-  onBack,
-}: DiiaryPostDetailProps) {
+export default function DiaryPostDetail({ post, onBack }: DiaryPostDetailProps) {
+  const created = new Date(post.createdAt);
+
+  const day = created.getDate();
+  const time = created.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const weekday = created.toLocaleDateString('ko-KR', {
+    weekday: 'long',
+  });
+
   return (
     <>
       {onBack && (
@@ -26,20 +36,20 @@ export default function DiaryPostDetail({
           </div>
         </Button>
       )}
-      <article data-post={postId} className="relative w-full bg-white p-5 pb-6">
+      <article data-post={post.id} className="relative w-full bg-white p-5 pb-6">
         {/* Header Section */}
         <section className="flex justify-start items-center gap-2 mb-2 relative">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-itta-black rounded-full absolute -left-2" />
-            <p className="text-black pl-2.5">10</p>
+            <p className="text-black pl-2.5">{day}</p>
           </div>
           <p
             className="text-gray-600 text-sm tracking-[-0.308px]"
             style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
           >
-            18:46
+            {time}
           </p>
-          <p className="text-gray-600 text-sm tracking-[-0.308px]">수요일</p>
+          <p className="text-gray-600 text-sm tracking-[-0.308px]">{weekday}</p>
         </section>
 
         {/* Title */}
@@ -47,7 +57,7 @@ export default function DiaryPostDetail({
           className="font-semibold pl-3 text-black mb-1 tracking-[-0.352px]"
           style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
         >
-          스타벅스 말차
+          {post.title}
         </h3>
 
         {/* Location */}
@@ -83,10 +93,7 @@ export default function DiaryPostDetail({
           {/* Text Content - matches image height with ellipsis */}
           <div className="flex-1 min-w-0">
             <p className="text-black text-sm tracking-[-0.308px] leading-normal">
-              Lorem Ipsum is simply dummy text of the printing and typesetting
-              industry. Lorem Ipsum has been the industrys standard dummy text
-              ever since the 1500s, when an unknown printer took a galley of
-              type and scrambled it to make a type specimen book.
+              {post.preview}
             </p>
           </div>
         </section>

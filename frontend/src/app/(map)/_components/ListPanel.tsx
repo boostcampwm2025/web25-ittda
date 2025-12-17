@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import DiaryPostDetail from '@/components/DiaryPostDetail';
 import DiaryPostShort from '@/components/DiaryPostShort';
 import type { PostListItem } from '@/lib/types/post';
@@ -17,6 +18,10 @@ export default function ListPanel({
   onSelectPost,
   onStartDrag,
 }: ListPanelProps) {
+  const selectedPost = useMemo(
+    () => posts.find((post) => post.id === selectedPostId) ?? null,
+    [posts, selectedPostId],
+  );
 
   return (
     <div className="flex-col h-full w-full relative overflow-hidden">
@@ -29,7 +34,11 @@ export default function ListPanel({
         <div className="flex flex-col h-full w-full overflow-y-auto">
           <div className="relative flex-1">
             {posts.map((post) => (
-              <DiaryPostShort key={post.id} post={post} onClick={() => onSelectPost(post.id)} />
+              <DiaryPostShort
+                key={post.id}
+                post={post}
+                onClick={() => onSelectPost(post.id)}
+              />
             ))}
             <div className="absolute left-3.75 top-8 w-[1.5px] bottom-0 bg-itta-gray2 pointer-events-none" />
           </div>
@@ -43,11 +52,8 @@ export default function ListPanel({
         }`}
       >
         <div className="flex flex-col h-full w-full overflow-y-auto bg-white">
-          {selectedPostId !== null && (
-            <DiaryPostDetail
-              postId={selectedPostId}
-              onBack={() => onSelectPost(null)}
-            />
+          {selectedPost && (
+            <DiaryPostDetail post={selectedPost} onBack={() => onSelectPost(null)} />
           )}
         </div>
       </div>
