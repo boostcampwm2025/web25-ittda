@@ -1,13 +1,13 @@
 // app/map/page.tsx
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { fetchPostsByBbox } from "@/_lib/api/posts";
-import { APIProvider, Map } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
+import { useQuery } from '@tanstack/react-query';
+import { fetchPostsByBbox } from '@/_lib/api/posts';
 
 export default function MapPage() {
   const { data, isLoading } = useQuery({
-    queryKey: ["posts", "test"],
+    queryKey: ['posts', 'test'],
     queryFn: () =>
       fetchPostsByBbox({
         minLat: 37.4,
@@ -17,6 +17,9 @@ export default function MapPage() {
       }),
   });
 
+  const posts = data?.items ?? [];
+  console.log('query data:', data);
+
   if (isLoading) return <div>로딩중...</div>;
 
   return (
@@ -24,10 +27,17 @@ export default function MapPage() {
       <div style={{ width: '100vw', height: '100vh' }}>
         <Map
           defaultCenter={{ lat: 37.5665, lng: 126.9780 }}
-          defaultZoom={10}
-        />
+          defaultZoom={12}
+          className="w-full h-full"
+        >
+          {posts?.map((post) => (
+            <Marker
+              key={post.id}
+              position={{ lat: post.lat, lng: post.lng }}
+            />
+          ))}
+        </Map>
       </div>
     </APIProvider>
   );
-
 }
