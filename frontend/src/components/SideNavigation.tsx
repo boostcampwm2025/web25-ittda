@@ -24,13 +24,13 @@ export default function SideNavigation() {
     <>
       {/* Left Edge Trigger Area - Invisible */}
       <div
-        className="absolute left-0 top-0 w-4 h-full z-30"
+        className="hidden md:block absolute left-0 top-0 w-4 h-full z-30"
         onMouseEnter={() => setIsOpen(true)}
       />
 
       {/* Hint Tab - Always Visible */}
       <div
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-40"
+        className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 z-40"
         onMouseEnter={() => setIsOpen(true)}
       >
         <div className="w-2 h-20 bg-linear-to-b from-itta-black to-itta-black/80 rounded-r-full shadow-sm hover:w-2 transition-all duration-300" />
@@ -39,14 +39,14 @@ export default function SideNavigation() {
       {/* Sidebar Overlay */}
       {isOpen && (
         <div
-          className="absolute inset-0 bg-itta-gray2 z-40 transition-opacity duration-300"
+          className="hidden md:block absolute inset-0 bg-itta-gray2 z-40 transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar Panel */}
       <div
-        className={`absolute left-0 top-0 h-full w-[230px] bg-white border-r border-[#f0ebe3] z-50 transition-transform duration-300 ease-out ${
+        className={`hidden md:block absolute left-0 top-0 h-full w-[230px] bg-white border-r border-[#f0ebe3] shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] z-50 transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         onMouseLeave={() => setIsOpen(false)}
