@@ -7,7 +7,11 @@ interface DiaryPostShortProps {
   onClick: VoidFunction;
 }
 
-export default function DiaryPostShort({ post, onClick }: DiaryPostShortProps) {
+export default function DiaryPostShort({
+  post,
+  onClick,
+  active = false,
+}: DiaryPostShortProps & { active?: boolean }) {
   const created = new Date(post.createdAt);
 
   const day = created.getDate(); // 10
@@ -22,7 +26,10 @@ export default function DiaryPostShort({ post, onClick }: DiaryPostShortProps) {
 
   return (
     <article
-      className="relative w-full bg-white p-5 pb-1 cursor-pointer"
+      className={[
+        'relative w-full p-5 pb-1 cursor-pointer',
+        active ? 'bg-gray-100' : 'bg-white hover:bg-gray-50',
+      ].join(' ')}
       onClick={onClick}
     >
       {/* Header Section */}
