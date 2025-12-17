@@ -1,18 +1,19 @@
-import { PostListItem } from '@/lib/types/post';
+import type { PostListItem } from '@/lib/types/post';
 import { Footprints } from 'lucide-react';
 import Image from 'next/image';
 
 interface DiaryPostShortProps {
-  post: PostListItem;
+  post?: PostListItem;
   onClick: VoidFunction;
+  active?: boolean;
 }
 
 export default function DiaryPostShort({
   post,
   onClick,
   active = false,
-}: DiaryPostShortProps & { active?: boolean }) {
-  const created = new Date(post.createdAt);
+}: DiaryPostShortProps) {
+  const created = post ? new Date(post.createdAt) : new Date();
 
   const day = created.getDate(); // 10
   const time = created.toLocaleTimeString('ko-KR', {
@@ -52,7 +53,7 @@ export default function DiaryPostShort({
         className="font-semibold pl-3 text-black mb-2 tracking-[-0.352px]"
         style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
       >
-        {post.title}
+        {post?.title ?? '스타벅스 말차'}
       </h3>
 
       {/* Location */}
@@ -68,7 +69,7 @@ export default function DiaryPostShort({
           className="text-gray-600 text-sm tracking-[-0.308px]"
           style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
         >
-          {post.address}
+          {post?.address ?? '광주광역시 광산구 월곡동 어딘가'}
         </p>
       </section>
 
@@ -86,7 +87,8 @@ export default function DiaryPostShort({
               textOverflow: 'ellipsis',
             }}
           >
-            {post.content}
+            {post?.content ??
+              'Lorem Ipsum is simply dummy text of the printing and typesetting industry.'}
           </p>
 
           {/* Hashtags */}
