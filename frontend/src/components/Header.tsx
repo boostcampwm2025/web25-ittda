@@ -15,7 +15,7 @@ function HeaderRoot({ className, children }: HeaderRootProps) {
   return (
     <header
       className={cn(
-        'relative z-20 w-full px-6 py-8 pb-5.5 bg-white shadow-[0_4px_6px_-4px_rgba(0,0,0,0.15)]',
+        'sticky top-0 z-20 w-full px-6 py-8 pb-5.5 bg-white shadow-[0_4px_6px_-4px_rgba(0,0,0,0.15)]',
         className,
       )}
     >
@@ -34,7 +34,9 @@ function HeaderLeft({ children, className }: HeaderSubComponentProps) {
 
 function HeaderTitle({ children, className }: HeaderSubComponentProps) {
   return (
-    <h1 className={cn('text-2xl font-bold text-itta-black shrink-0', className)}>
+    <h1
+      className={cn('text-2xl font-bold text-itta-black shrink-0', className)}
+    >
       {children}
     </h1>
   );
