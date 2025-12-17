@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import type { TemplateType, PostListItem } from "../types/post";
+import type { TemplateType, PostListItem } from "../../../lib/types/post";
 
 export type PostDetail = PostListItem & {
   content: string;

@@ -18,8 +18,16 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./app/*"]
+      "@/*": ["src/*"],
+      "@/_lib/*": ["src/lib/*"],
+      "@/api/*": ["src/api/*"], // api routes
+      "@/app/*": ["src/app/*"],
+      "@/hooks/*": ["src/hooks/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/store/*": ["src/store/*"],
+      "@/components/*": ["src/components/*"]
     }
   },
   "include": [
