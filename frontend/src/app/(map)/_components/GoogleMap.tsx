@@ -3,6 +3,13 @@
 import Searchbar from '@/components/Searchbar';
 import TagButton from '@/components/TagButton';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
+import {
+  Calendar,
+  Clapperboard,
+  Film,
+  LineSquiggle,
+  Music2,
+} from 'lucide-react';
 
 interface GoogleMapProps {
   leftPanelWidth: number;
@@ -37,11 +44,52 @@ export default function GoogleMap({
       >
         <Searchbar className="w-full" onCalendarClick={() => {}} />
         <div className="flex gap-2.5 mt-2">
-          <TagButton onClick={() => {}}>연극</TagButton>
-          <TagButton onClick={() => {}}>뮤지컬</TagButton>
-          <TagButton onClick={() => {}}>일기/여행</TagButton>
-          <TagButton onClick={() => {}}>영화</TagButton>
-          <TagButton onClick={() => {}}>기타</TagButton>
+          <TagButton
+            onClick={() => {}}
+            className="flex justify-center items-center gap-1"
+          >
+            <Clapperboard
+              size={16}
+              color="var(--itta-point)"
+              className="flex justify-center items-center gap-1"
+            />
+            연극
+          </TagButton>
+          <TagButton
+            onClick={() => {}}
+            className="flex justify-center items-center gap-1"
+          >
+            <Film size={16} color="var(--itta-point)" />
+            연극
+          </TagButton>
+          <TagButton
+            onClick={() => {}}
+            className="flex justify-center items-center gap-1"
+          >
+            <Music2 size={16} color="var(--itta-point)" />
+            뮤지컬
+          </TagButton>
+          <TagButton
+            onClick={() => {}}
+            className="flex justify-center items-center gap-1"
+          >
+            <Calendar size={16} color="var(--itta-point)" />
+            일기/여행
+          </TagButton>
+          <TagButton
+            onClick={() => {}}
+            className="flex justify-center items-center gap-1"
+          >
+            <Clapperboard size={16} color="var(--itta-point)" />
+            영화
+          </TagButton>
+          <TagButton
+            onClick={() => {}}
+            className="flex justify-center items-center gap-1"
+          >
+            <LineSquiggle size={16} color="var(--itta-point)" />
+            기타
+          </TagButton>
         </div>
       </section>
     </div>

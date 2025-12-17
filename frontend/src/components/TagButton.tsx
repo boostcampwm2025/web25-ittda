@@ -13,7 +13,7 @@ export default function Tag({ children, onClick, className }: TagProps) {
   return (
     <button
       onClick={onClick}
-      className="text-sm shadow-sm rounded-4xl bg-white font-semibold cursor-pointer border-[0.5px] border-itta-gray1 hover:border-itta-point transition-all duration-300 ease-in-out"
+      className="text-sm rounded-4xl bg-white font-semibold cursor-pointer border-[0.5px] border-itta-gray2 hover:border-itta-point transition-all duration-300 ease-in-out"
     >
       <div
         className={cn(

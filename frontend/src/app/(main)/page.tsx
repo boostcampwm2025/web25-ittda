@@ -12,7 +12,7 @@ export default function HomePage() {
   return (
     <main
       ref={containerRef}
-      className="w-full h-full px-6 pt-5 overflow-y-auto"
+      className="w-full h-full px-6 py-5 overflow-y-auto"
     >
       <div
         className={cn(

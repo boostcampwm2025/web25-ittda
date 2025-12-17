@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Button } from './ui/button';
+import { ChevronLeft, Ellipsis, Footprints } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface DiiaryPostDetailProps {
@@ -17,9 +18,12 @@ export default function DiaryPostDetail({
         <Button
           variant="ghost"
           onClick={onBack}
-          className="w-fit hover:bg-transparent"
+          className="w-fit hover:bg-transparent relative"
         >
-          icon 돌아가기
+          <div className="flex justify-start items-center absolute left-2">
+            <ChevronLeft className="w-5 h-5 text-itta-black shrink-0 mr-1" />
+            <span>뒤로 돌아가기</span>
+          </div>
         </Button>
       )}
       <article
@@ -27,18 +31,18 @@ export default function DiaryPostDetail({
         className="relative w-full bg-white p-5 pb-6 cursor-pointer"
       >
         {/* Header Section */}
-        <section className="flex justify-start items-center gap-2 mb-1">
+        <section className="flex justify-start items-center gap-2 mb-2 relative">
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-itta-black rounded-full" />
-            <p className="text-black font-semibold">10</p>
+            <div className="w-2 h-2 bg-itta-black rounded-full absolute -left-2" />
+            <p className="text-black pl-2.5">10</p>
           </div>
           <p
-            className="text-itta-gray3 text-sm tracking-[-0.308px]"
+            className="text-gray-600 text-sm tracking-[-0.308px]"
             style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
           >
             18:46
           </p>
-          <p className="text-itta-gray3 text-sm tracking-[-0.308px]">수요일</p>
+          <p className="text-gray-600 text-sm tracking-[-0.308px]">수요일</p>
         </section>
 
         {/* Title */}
@@ -52,16 +56,14 @@ export default function DiaryPostDetail({
         {/* Location */}
         <section className="flex items-center gap-2 mb-4 pl-3">
           <div className="w-4.5 h-4.5 shrink-0">
-            <Image
-              alt="아이콘 자리"
-              className="w-full h-full object-cover object-center overflow-hidden"
-              src={'/profile-ex.jpeg'}
-              width={18}
-              height={18}
+            <Footprints
+              size={16}
+              color="var(--itta-point)"
+              fill="var(--itta-point)"
             />
           </div>
           <p
-            className="text-itta-gray3 text-sm tracking-[-0.308px]"
+            className="text-gray-600 text-sm tracking-[-0.308px]"
             style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
           >
             광주광역시 광산구 월곡동 어딘가
@@ -71,7 +73,7 @@ export default function DiaryPostDetail({
         {/* Content and Image Section */}
         <section className="flex-col gap-3 mb-4 pl-3">
           {/* Image */}
-          <div className="w-full max-w-sm shrink-0 rounded-[10px] overflow-hidden border border-[#f3f4f6]">
+          <div className="w-full mb-2.5 max-w-sm shrink-0 rounded-[10px] overflow-hidden border border-[#f3f4f6]">
             <Image
               alt="게시글 대표"
               className="w-full h-full object-cover object-center"
@@ -110,14 +112,14 @@ export default function DiaryPostDetail({
             <span className="text-itta-black">카페</span>
           </span>
         </div>
-        <div className="absolute left-5.75 top-8 w-[1.5px] bottom-0 bg-itta-gray2 pointer-events-none" />
+        <div className="absolute left-3.75 top-8 w-[1.5px] bottom-0 bg-itta-gray2 pointer-events-none" />
       </article>
 
       <div className="w-full flex justify-end items-center px-5 pt-5">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" className="w-10 h-10">
-              icon
+            <Button variant="ghost">
+              <Ellipsis size={16} className="text-itta-black shrink-0" />
             </Button>
           </PopoverTrigger>
           <PopoverContent

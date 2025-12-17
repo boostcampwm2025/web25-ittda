@@ -29,7 +29,7 @@ export default function ListPanel({
             {dummyPosts.map((_, index) => (
               <DiaryPostShort key={index} onClick={() => onSelectPost(index)} />
             ))}
-            <div className="absolute left-5.75 top-8 w-[1.5px] bottom-0 bg-itta-gray2 pointer-events-none" />
+            <div className="absolute left-3.75 top-8 w-[1.5px] bottom-0 bg-itta-gray2 pointer-events-none" />
           </div>
         </div>
       </div>

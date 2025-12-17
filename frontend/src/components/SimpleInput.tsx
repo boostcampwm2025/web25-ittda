@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 import { forwardRef, InputHTMLAttributes } from 'react';
 
 interface SimpleInputProps extends Omit<
@@ -15,7 +16,7 @@ const SimpleInput = forwardRef<HTMLInputElement, SimpleInputProps>(
     return (
       <div
         className={cn(
-          'flex items-center gap-3 px-4 py-3 shadow-sm border border-itta-gray1 rounded-[10px] bg-white transition-all duration-200 focus-within:border-itta-black',
+          'flex items-center gap-3 px-4 py-3 shadow-sm border border-itta-gray1 rounded-[10px] bg-white',
           className,
         )}
       >
@@ -27,8 +28,7 @@ const SimpleInput = forwardRef<HTMLInputElement, SimpleInputProps>(
         />
 
         {showCheckIcon && (
-          <div>icon</div>
-          // <Check className="w-5 h-5 text-itta-point shrink-0" />
+          <Check className="w-5 h-5 text-itta-point shrink-0" />
         )}
       </div>
     );
