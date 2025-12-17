@@ -93,7 +93,7 @@ export default function DiaryPostDetail({ post, onBack }: DiaryPostDetailProps) 
           {/* Text Content - matches image height with ellipsis */}
           <div className="flex-1 min-w-0">
             <p className="text-black text-sm tracking-[-0.308px] leading-normal">
-              {post.preview}
+              {post.content}
             </p>
           </div>
         </section>

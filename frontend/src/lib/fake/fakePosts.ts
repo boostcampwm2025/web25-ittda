@@ -1,9 +1,5 @@
 import { faker } from "@faker-js/faker";
-import type { TemplateType, PostListItem } from "../../../lib/types/post";
-
-export type PostDetail = PostListItem & {
-  content: string;
-};
+import type { TemplateType, PostListItem } from "@/lib/types/post";
 
 const KOREA = {
   minLat: 33.0,
@@ -21,7 +17,7 @@ function randomTemplate(): TemplateType {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-export function makeFakePosts(count = 2000): PostDetail[] {
+export function makeFakePosts(count = 2000): PostListItem[] {
   return Array.from({ length: count }, () => {
     const id = faker.string.uuid();
     const templateType = randomTemplate();
@@ -33,9 +29,8 @@ export function makeFakePosts(count = 2000): PostDetail[] {
     const createdAt = faker.date.recent({ days: 30 }).toISOString();
 
     const content = faker.lorem.paragraphs({ min: 2, max: 5 }, "\n\n");
-    const preview = content.replace(/\s+/g, " ").slice(0, 60);
 
-    return { id, title, templateType, lat, lng, createdAt, preview, content };
+    return { id, title, templateType, lat, lng, createdAt, content };
   });
 }
 

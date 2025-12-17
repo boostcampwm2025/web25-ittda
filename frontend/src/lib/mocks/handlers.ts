@@ -18,8 +18,7 @@ export const handlers = [
 
     const items = filterByBbox(DB, { minLat, minLng, maxLat, maxLng })
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-      .slice(0, limit)
-      .map(({ content, ...listItem }) => listItem); // 리스트에서는 content 제외
+      .slice(0, limit);
 
     return HttpResponse.json(
       {

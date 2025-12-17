@@ -7,5 +7,5 @@ export type PostListItem = {
   lat: number;
   lng: number;
   createdAt: string;
-  preview: string;
+  content: string;
 };
