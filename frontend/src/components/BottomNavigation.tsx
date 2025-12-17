@@ -6,28 +6,38 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navigationItems = [
-  { href: '/', icon: '/icons/home.svg', alt: '홈', label: '홈' },
+  {
+    href: '/',
+    icon: '/icons/home.svg',
+    iconFill: '/icons/home-fill.svg',
+    alt: '홈',
+    label: '홈',
+  },
   {
     href: '/111/record-map',
     icon: '/icons/location-on.svg',
+    iconFill: '/icons/location-on-fill.svg',
     alt: '지도',
     label: '지도',
   },
   {
     href: '/records',
     icon: '/icons/post.svg',
+    iconFill: '/icons/post-fill.svg',
     alt: '나의기록',
     label: '나의 기록',
   },
   {
     href: '/calendar',
     icon: '/icons/calendar.svg',
+    iconFill: '/icons/calendar-fill.svg',
     alt: '캘린더',
     label: '캘린더',
   },
   {
     href: '/group',
     icon: '/icons/group.svg',
+    iconFill: '/icons/group-fill.svg',
     alt: '함께기록',
     label: '함께 기록',
   },
@@ -61,23 +71,13 @@ export default function BottomNavigation() {
                   item.isProfile && 'rounded-full overflow-hidden',
                 )}
               >
-                {isActive ? (
-                  <Image
-                    src={item.icon}
-                    alt={item.alt}
-                    width={30}
-                    height={30}
-                    className={`${item.isProfile ? 'w-full h-full object-cover' : 'w-6 h-6'}`}
-                  />
-                ) : (
-                  <Image
-                    src={item.icon}
-                    alt={item.alt}
-                    width={30}
-                    height={30}
-                    className={`${item.isProfile ? 'w-full h-full object-cover' : 'w-6 h-6'}`}
-                  />
-                )}
+                <Image
+                  src={isActive && item.iconFill ? item.iconFill : item.icon}
+                  alt={item.alt}
+                  width={30}
+                  height={30}
+                  className={`${item.isProfile ? 'w-full h-full object-cover' : 'w-6 h-6'}`}
+                />
               </div>
               <span className={`text-[10px] font-semibold text-itta-black`}>
                 {item.label}

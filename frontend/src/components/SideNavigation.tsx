@@ -4,22 +4,49 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 
 const navigationItems = [
-  { href: '/', icon: '/icons/home.svg', alt: '홈', label: '홈' },
+  {
+    href: '/',
+    icon: '/icons/home.svg',
+    iconFill: '/icons/home-fill.svg',
+    alt: '홈',
+    label: '홈',
+  },
   {
     href: '/111/record-map',
     icon: '/icons/location-on.svg',
+    iconFill: '/icons/location-on-fill.svg',
     alt: '지도',
     label: '지도',
   },
-  { href: '/', icon: '/icons/post.svg', alt: '나의기록', label: '나의기록' },
-  { href: '/', icon: '/icons/calendar.svg', alt: '캘린더', label: '캘린더' },
-  { href: '/', icon: '/icons/group.svg', alt: '함께기록', label: '함께기록' },
+  {
+    href: '/records',
+    icon: '/icons/post.svg',
+    iconFill: '/icons/post-fill.svg',
+    alt: '나의기록',
+    label: '나의기록',
+  },
+  {
+    href: '/calendar',
+    icon: '/icons/calendar.svg',
+    iconFill: '/icons/calendar-fill.svg',
+    alt: '캘린더',
+    label: '캘린더',
+  },
+  {
+    href: '/group',
+    icon: '/icons/group.svg',
+    iconFill: '/icons/group-fill.svg',
+    alt: '함께기록',
+    label: '함께기록',
+  },
 ];
 
 export default function SideNavigation() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <>
@@ -75,22 +102,26 @@ export default function SideNavigation() {
 
         {/* Navigation Items */}
         <nav className="p-6 pl-6.5 space-y-2 text-sm">
-          {navigationItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="w-full flex items-center gap-3 py-3 text-itta-black hover:bg-itta-gray1/20 rounded-xl transition-colors"
-            >
-              <Image
-                src={item.icon}
-                alt={item.alt}
-                width={120}
-                height={120}
-                className="w-8.5 h-8.5"
-              />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {navigationItems.map((item) => {
+            const isActive = pathname === item.href;
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="w-full flex items-center gap-3 py-3 text-itta-black hover:bg-itta-gray1/20 rounded-xl transition-colors"
+              >
+                <Image
+                  src={isActive && item.iconFill ? item.iconFill : item.icon}
+                  alt={item.alt}
+                  width={120}
+                  height={120}
+                  className="w-8.5 h-8.5"
+                />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </>
