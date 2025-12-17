@@ -11,7 +11,7 @@ import {
   Music2,
 } from 'lucide-react';
 import type { PostListItem } from '@/lib/types/post';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 interface GoogleMapProps {
   posts: PostListItem[];
@@ -38,13 +38,17 @@ export default function GoogleMap({
   onSelectPost,
 }: GoogleMapProps) {
   const filterWidth = leftPanelWidth > 500 ? 500 + 17 : leftPanelWidth + 17;
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!;
+  const selectedPost = useMemo(
+    () => posts.find((p) => p.id === selectedPostId) ?? null,
+    [posts, selectedPostId],
+  );
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) return <div>API KEY가 없습니다 (.env.local 확인)</div>;
 
   return (
     <div className="bg-yellow-50 w-full h-full relative">
-      <APIProvider apiKey={apiKey}>
+      <APIProvider apiKey={apiKey!}>
         <Map
           defaultCenter={{ lat: 37.5665, lng: 126.978 }}
           defaultZoom={12}
@@ -59,6 +63,14 @@ export default function GoogleMap({
                 onClick={() => onSelectPost(post.id)} // 핀 클릭 → 패널 선택
               />
             ))}
+
+            {/* 패널 선택 → 지도 이동 */}
+            {selectedPost && (
+              <FlyToOnSelect
+                lat={Number(selectedPost.lat)}
+                lng={Number(selectedPost.lng)}
+              />
+            )}
         </Map>
       </APIProvider>
 
