@@ -162,3 +162,10 @@ main {
     @apply bg-background text-foreground;
   }
 }
+
+@media (max-width: 768px) {
+  .overflow-y-auto,
+  .overflow-auto {
+    padding-bottom: 4rem !important;
+  }
+}

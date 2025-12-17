@@ -4,6 +4,7 @@ import './globals.css';
 import MswLoader from '@/components/MswLoader';
 import Providers from './providers';
 import SideNavigation from '@/components/SideNavigation';
+import BottomNavigation from '@/components/BottomNavigation';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -27,6 +28,7 @@ export default function RootLayout({
           <MswLoader />
           {children}
           <SideNavigation />
+          <BottomNavigation />
         </Providers>
       </body>
     </html>
