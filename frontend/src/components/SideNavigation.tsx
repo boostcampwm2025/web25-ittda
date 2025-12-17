@@ -17,7 +17,7 @@ const navigationItems = [
   { href: '/', icon: '/icons/group.svg', alt: '함께기록', label: '함께기록' },
 ];
 
-export default function Sidebar() {
+export default function SideNavigation() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -39,7 +39,7 @@ export default function Sidebar() {
       {/* Sidebar Overlay */}
       {isOpen && (
         <div
-          className="absolute inset-0 bg-black/10 z-40 transition-opacity duration-300"
+          className="absolute inset-0 bg-itta-gray2 z-40 transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}

@@ -3,7 +3,7 @@ import { Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
 import MswLoader from '@/components/MswLoader';
 import Providers from './providers';
-import Sidebar from '@/components/Sidebar';
+import SideNavigation from '@/components/SideNavigation';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -26,7 +26,7 @@ export default function RootLayout({
         <Providers>
           <MswLoader />
           {children}
-          <Sidebar />
+          <SideNavigation />
         </Providers>
       </body>
     </html>
