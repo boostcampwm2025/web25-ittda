@@ -7,8 +7,10 @@ import Image from 'next/image';
 import Tag from '@/components/TagButton';
 import { Button } from '@/components/ui/button';
 import { createPost } from '@/lib/api/posts';
+import { useRouter } from 'next/navigation';
 
 export default function CreatePostPage() {
+  const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>(['hello']);
@@ -58,9 +60,8 @@ export default function CreatePostPage() {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSubmit = () => {
-    // TODO: 게시글 저장 로직
-    createPost({
+  const handleSubmit = async () => {
+    await createPost({
       title,
       content,
       templateType: 'diary',
@@ -70,7 +71,9 @@ export default function CreatePostPage() {
       lng: 126.853,
       tags,
     });
-    // console.log({ title, content, tags });
+
+    // 작성이 완료되면 이전 화면으로 돌아가기
+    router.back();
   };
 
 
