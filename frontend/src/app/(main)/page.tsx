@@ -4,6 +4,7 @@ import SimpleInput from '@/components/SimpleInput';
 import PostList from './_components/PostList';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { cn } from '@/lib/utils';
+import SideFilterbar from './_components/SideFilterbar';
 
 export default function HomePage() {
   const { containerRef, isVisible } = useScrollDirection<HTMLElement>();
@@ -19,11 +20,14 @@ export default function HomePage() {
           isVisible ? 'translate-y-0' : '-translate-y-[calc(100%+1.25rem)]',
         )}
       >
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="hidden md:block w-full max-w-2xl mx-auto">
           <SimpleInput
             showCheckIcon
             placeholder="간단히 메모할 사항을 작성해주세요."
           />
+        </div>
+        <div className="block md:hidden">
+          <SideFilterbar />
         </div>
       </div>
 

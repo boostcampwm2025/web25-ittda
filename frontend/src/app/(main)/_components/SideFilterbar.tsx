@@ -27,7 +27,7 @@ export default function SideFilterbar() {
     <div className="min-w-0 w-full h-full flex flex-col">
       <div className="h-full">
         <Searchbar placeholder="로그 검색하기" onCalendarClick={() => {}} />
-        <div className="flex gap-2.5 mt-7 flex-wrap">
+        <div className="whitespace-nowrap flex gap-2 md:gap-2.5 mt-3 md:mt-7 md:flex-wrap overflow-x-auto">
           <TagButton
             onClick={() => {}}
             className="flex justify-center items-center gap-1"
@@ -90,7 +90,7 @@ export default function SideFilterbar() {
         </div>
       </div>
 
-      <div className="pb-3.5 min-w-0">
+      <div className="hidden md:block pb-3.5 min-w-0">
         <SimpleMemo />
       </div>
     </div>
