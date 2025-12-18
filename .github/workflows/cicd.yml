@@ -27,8 +27,11 @@ jobs:
 
       - name: Build & Push Frontend
         run: |
-          docker build -t ${{ secrets.NCP_REGISTRY_URL }}/project/frontend:latest ./frontend
-          docker push ${{ secrets.NCP_REGISTRY_URL }}/project/frontend:latest
+          docker build \
+          -f frontend/Dockerfile \
+          -t ${{ secrets.NCP_REGISTRY_URL }}/frontend:latest \
+          .
+          docker push ${{ secrets.NCP_REGISTRY_URL }}/frontend:latest
 
       - name: Deploy Frontend
         uses: appleboy/ssh-action@v1
@@ -57,8 +60,11 @@ jobs:
 
       - name: Build & Push Backend
         run: |
-          docker build -t ${{ secrets.NCP_REGISTRY_URL }}/project/backend:latest ./backend
-          docker push ${{ secrets.NCP_REGISTRY_URL }}/project/backend:latest
+          docker build \
+          -f backend/Dockerfile \
+          -t ${{ secrets.NCP_REGISTRY_URL }}/backend:latest \
+          .
+          docker push ${{ secrets.NCP_REGISTRY_URL }}/backend:latest
 
       - name: Deploy Backend
         uses: appleboy/ssh-action@v1

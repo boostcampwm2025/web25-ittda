@@ -1,44 +1,50 @@
-# frontend/Dockerfile
-
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# pnpm 사용
-RUN npm install -g pnpm
+# workspace 메타
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY frontend/package.json frontend/package.json
 
-COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
+
+# 소스 복사
+COPY frontend frontend
+
+# workspace install
 RUN pnpm install --frozen-lockfile
 
-COPY . .
-RUN pnpm build
+# next build 직접 실행 또는 package.json의 script 확인
+RUN pnpm run build:fe
 
-# -------------------------
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
-
 ENV NODE_ENV=production
 
-RUN npm install -g pnpm
+RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
 
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile
+# 루트 node_modules 복사
+COPY --from=builder /app/node_modules ./node_modules
+# frontend node_modules 복사
+COPY --from=builder /app/frontend/node_modules ./frontend/node_modules
 
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
+# .next 빌드 결과물 복사
+COPY --from=builder /app/frontend/.next ./frontend/.next
+# public 폴더 복사
+COPY --from=builder /app/frontend/public ./frontend/public
+# package.json 복사
+COPY --from=builder /app/frontend/package.json ./frontend/package.json
+# next.config 파일이 있다면 복사
+COPY --from=builder /app/frontend/next.config.* ./frontend/
+
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+
+WORKDIR /app/frontend
 
 EXPOSE 3000
 
 CMD ["pnpm", "start"]
-
-# 설계 포인트
-# production 빌드
-# dev dependency 제거
-# next start 사용
-# 포트 3000 고정
-# standalone 모드도 가능하지만, 지금 단계에서는 단순성이 우선입니다.
-# Next.js의 standalone 빌드는 애플리케이션을 실행하는 데 필요한 
-# 최소한의 파일과 종속성만 추출하여 배포 준비를 하는 기능
