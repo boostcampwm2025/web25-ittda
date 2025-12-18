@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPostsByBbox } from '@/lib/api/posts';
 import GoogleMap from '../../_components/GoogleMap';
@@ -18,41 +18,63 @@ const TEST_BBOX: Bbox = {
 };
 
 export default function RecordMapPage() {
-  const [leftWidth, setLeftWidth] = useState(400);
+  const [leftWidth, setLeftWidth] = useState(400); // 데스크톱 너비
+  const [bottomHeight, setBottomHeight] = useState(400); // 모바일 높이
   const [isDragging, setIsDragging] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
       if (!isDragging || !containerRef.current) return;
 
-      const container = containerRef.current;
-      const containerRect = container.getBoundingClientRect();
-      const newWidth = e.clientX - containerRect.left;
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      const containerRect = containerRef.current.getBoundingClientRect();
 
-      const maxWidth = containerRect.width - 100;
-      if (newWidth >= 300 && newWidth <= maxWidth) {
-        setLeftWidth(newWidth);
+      if (isMobile) {
+        // 모바일: 하단에서부터의 높이 계산
+        const newHeight = containerRect.bottom - clientY;
+        const maxHeight = window.innerHeight - 100;
+        if (newHeight >= 150 && newHeight <= maxHeight) {
+          setBottomHeight(newHeight);
+        }
+      } else {
+        // 데스크톱: 좌측에서부터의 너비 계산
+        const newWidth = clientX - containerRect.left;
+        const maxWidth = containerRect.width - 100;
+        if (newWidth >= 300 && newWidth <= maxWidth) {
+          setLeftWidth(newWidth);
+        }
       }
     };
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
+    const handleEnd = () => setIsDragging(false);
 
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mousemove', handleMove);
+      document.addEventListener('mouseup', handleEnd);
+      document.addEventListener('touchmove', handleMove);
+      document.addEventListener('touchend', handleEnd);
       document.body.style.userSelect = 'none';
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleEnd);
       document.body.style.userSelect = '';
     };
-  }, [isDragging]);
+  }, [isDragging, isMobile]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['posts', 'bbox', TEST_BBOX],
@@ -63,36 +85,38 @@ export default function RecordMapPage() {
 
   const posts = data ?? [];
 
-  // const selectedPost = useMemo(
-  //   () => posts.find((p) => p.id === selectedPostId) ?? null,
-  //   [posts, selectedPostId],
-  // );
-
-  if (isLoading) return <div>로딩중...</div>;
-  if (isError) return <div>데이터 로드 실패</div>;
-
   return (
-    <main ref={containerRef} className="w-full h-full flex relative">
-      {/* 지도 - 전체 배경 (고정) */}
+    <main
+      ref={containerRef}
+      className="w-full h-full flex relative overflow-hidden"
+    >
       <div className="absolute inset-0">
         <GoogleMap
-          leftPanelWidth={leftWidth}
+          leftPanelWidth={isMobile ? 0 : leftWidth}
           posts={posts}
           selectedPostId={selectedPostId}
           onSelectPost={setSelectedPostId}
+          isMobile={isMobile}
         />
       </div>
 
-      {/* 리스트 패널 - 지도 위 오버레이 (리사이즈 가능) */}
       <div
-        className="relative h-full bg-white shadow-lg z-10"
-        style={{ width: `${leftWidth}px` }}
+        className={`absolute left-0 bg-white shadow-2xl ${
+          isMobile
+            ? 'bottom-0 w-full rounded-t-3xl border-t border-gray-200'
+            : 'top-0 h-full border-r border-gray-100'
+        }`}
+        style={{
+          width: isMobile ? '100%' : `${leftWidth}px`,
+          height: isMobile ? `${bottomHeight}px` : '100%',
+        }}
       >
         <ListPanel
           posts={posts}
           selectedPostId={selectedPostId}
           onSelectPost={setSelectedPostId}
           onStartDrag={() => setIsDragging(true)}
+          isMobile={isMobile}
         />
       </div>
     </main>
