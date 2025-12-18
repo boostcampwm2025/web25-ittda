@@ -1,4 +1,4 @@
-import type { PostListItem, RecordListItem } from '../types/post';
+import type { PostListItem } from '../types/post';
 
 export interface Bbox {
   minLat: number;
@@ -22,24 +22,34 @@ export async function fetchPostsByBbox(
 }
 
 // API 응답 타입 정의
-export interface RecordListResponse {
+export interface PostListResponse {
   meta: {
     totalCount: number;
     currentPage: number;
     totalPages: number;
   };
-  items: RecordListItem[];
+  items: PostListItem[];
 }
 
 // API 호출 함수
-export async function fetchRecordList(
+export async function fetchPostList(
   page = 1,
   limit = 10,
-): Promise<RecordListResponse> {
+): Promise<PostListResponse> {
   const res = await fetch(`/posts/list?page=${page}&limit=${limit}`);
 
   if (!res.ok) {
-    throw new Error(`Failed to fetch record list: ${res.status}`);
+    throw new Error(`Failed to fetch post list: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export async function fetchPostById(postId: string): Promise<PostListItem> {
+  const res = await fetch(`/posts/${postId}`);
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch post: ${res.status}`);
   }
 
   return res.json();
