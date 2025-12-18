@@ -98,7 +98,10 @@ export default function CreatePostPage() {
     // 최초 마운트 시에만 현재 시간으로 초기화 (draft가 비어있을 때만)
     if (!isInitialized) {
       // draft에 값이 없으면 현재 시간으로 초기화
-      if (draft.selectedTime === '오전 12:00' && draft.selectedDate === new Date('2000-01-01').toISOString()) {
+      if (
+        draft.selectedTime === '오전 12:00' &&
+        draft.selectedDate === new Date('2000-01-01').toISOString()
+      ) {
         setSelectedTime(formatTime());
         setSelectedDate(new Date());
       }
@@ -252,7 +255,7 @@ export default function CreatePostPage() {
   return (
     <>
       <main ref={mainContainerRef} className="w-full h-full overflow-y-auto">
-        <div className="w-full px-6 py-8">
+        <div className="w-full px-6 py-8 ">
           {/* 날짜 표시 */}
           <div className="mb-2.75">
             <time className="text-lg font-semibold text-itta-black flex justify-start items-center gap-1.25">
@@ -296,7 +299,7 @@ export default function CreatePostPage() {
             </div>
           </div>
 
-          <div className="border-l border-itta-gray2 w-full px-6 py-3.5 mt-2.5">
+          <div className="h-full border-l border-itta-gray2 w-full px-6 py-3.5 mt-2.5">
             {/* 제목 입력 */}
             <input
               type="text"
@@ -318,7 +321,7 @@ export default function CreatePostPage() {
             {/* 태그 입력 */}
             <div className="flex justify-start items-center w-full gap-1.25 mt-3">
               <Drawer>
-                <DrawerTrigger asChild>
+                <DrawerTrigger>
                   <Tag>
                     <span className="text-itta-point">#</span> 태그 추가/수정
                   </Tag>
@@ -432,7 +435,7 @@ export default function CreatePostPage() {
           </div>
 
           {/* 저장 버튼 */}
-          <Button className="w-full my-13" onClick={handleSubmit}>
+          <Button className="w-full" onClick={handleSubmit}>
             저장하기
           </Button>
         </div>

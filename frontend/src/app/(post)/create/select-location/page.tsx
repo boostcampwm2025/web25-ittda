@@ -262,11 +262,11 @@ export default function SelectLocationPage() {
 
   return (
     <div className="w-full h-full flex flex-col relative">
-      <div className="w-full flex flex-col py-4 lg:px-0 px-2 bg-white z-10">
-        <Popover open={showResults} onOpenChange={setShowResults}>
+      <div className="absolute w-full flex flex-col mt-2 md:px-4 px-2 z-10 md:max-w-96">
+        <Popover open={showResults && searchResults.length > 0} onOpenChange={setShowResults}>
           <PopoverTrigger asChild>
-            <div className="w-full flex justify-start items-center">
-              <Input className="w-full">
+            <div className="w-full flex justify-start items-center pointer-events-none">
+              <Input className="w-full pointer-events-auto">
                 <Input.Field
                   placeholder="장소명으로 검색하기"
                   value={searchQuery}
@@ -319,6 +319,11 @@ export default function SelectLocationPage() {
             defaultZoom={17}
             gestureHandling="greedy"
             disableDefaultUI={false}
+            zoomControl={true}
+            mapTypeControl={false}
+            fullscreenControl={true}
+            streetViewControl={false}
+            controlSize={28}
             onCenterChanged={(e) => {
               if (e.detail.center) {
                 setCenter(e.detail.center);
@@ -362,7 +367,7 @@ export default function SelectLocationPage() {
           <DrawerTrigger asChild>
             <button
               onClick={handleNearbySearch}
-              className="absolute bottom-5 left-5 px-4 py-2 border border-itta-gray2 rounded-md bg-white font-medium cursor-pointer"
+              className="bottom-23 absolute md:bottom-5 left-5 px-4 py-2 border border-itta-gray2 rounded-md bg-white font-medium cursor-pointer"
             >
               주변 장소 목록 보기
             </button>
