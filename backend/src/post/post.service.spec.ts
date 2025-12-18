@@ -8,6 +8,19 @@ describe('PostService', () => {
     service = new PostService();
   });
 
+  it('should paginate posts by page and limit', () => {
+    const firstPage = service.findPaginated(1, 1);
+    const secondPage = service.findPaginated(2, 1);
+
+    expect(firstPage.totalCount).toBeGreaterThan(1);
+    expect(firstPage.items.length).toBeLessThanOrEqual(1);
+    expect(secondPage.items.length).toBeLessThanOrEqual(1);
+    // 첫 페이지와 두 번째 페이지의 게시글이 다를 가능성이 높다
+    if (firstPage.items[0] && secondPage.items[0]) {
+      expect(firstPage.items[0].id).not.toBe(secondPage.items[0].id);
+    }
+  });
+
   it('should return posts within given bbox', () => {
     const bbox = {
       minLat: 37.3,
