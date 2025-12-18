@@ -60,6 +60,16 @@ function randomSeoulAddress() {
   return `${region} ${detail}`;
 }
 
+const TAG_SAMPLES: Record<TemplateType, string[]> = {
+  diary: ['일상', '기록', '생각', '오늘의기분', '일기'],
+  travel: ['여행', '휴가', '힐링', '맛집', '추억', '제주도'],
+  movie: ['영화', '넷플릭스', '팝콘', '시네마', '영화추천'],
+  musical: ['뮤지컬', '공연', '예술', '커튼콜', '문화생활'],
+  theater: ['연극', '대학로', '배우', '공연관람', '데이트'],
+  memo: ['메모', '아이디어', '할일', '공부', '정리'],
+  etc: ['기타', '취미', '스크랩', '관심사', '공유'],
+};
+
 export function makeFakePosts(count = 2000): PostListItem[] {
   return Array.from({ length: count }, () => {
     const id = faker.string.uuid();
@@ -76,6 +86,11 @@ export function makeFakePosts(count = 2000): PostListItem[] {
 
     const imageUrl = faker.image.urlPicsumPhotos({ width: 400, height: 400 });
 
+    const tags = faker.helpers.arrayElements(TAG_SAMPLES[templateType], {
+      min: 1,
+      max: 3,
+    });
+
     return {
       id,
       title,
@@ -86,6 +101,7 @@ export function makeFakePosts(count = 2000): PostListItem[] {
       createdAt,
       content,
       imageUrl,
+      tags,
     };
   });
 }
@@ -101,47 +117,4 @@ export function filterByBbox<T extends { lat: number; lng: number }>(
       p.lng >= bbox.minLng &&
       p.lng <= bbox.maxLng,
   );
-}
-
-// 템플릿 타입에 따른 가짜 태그 생성
-function getTagsByTemplate(type: TemplateType): string[] {
-  const tagMap: Record<TemplateType, string[]> = {
-    diary: ['일상', '기록', '생각'],
-    travel: ['여행', '휴가', '힐링'],
-    movie: ['영화', '문화생활', '팝콘'],
-    musical: ['뮤지컬', '공연', '커튼콜'],
-    theater: ['연극', '대학로', '배우'],
-    memo: ['메모', '아이디어', '중요'],
-    etc: ['기타', '일상'],
-  };
-  return tagMap[type] || ['태그'];
-}
-
-export function makeFakeRecordList(count = 50) {
-  return Array.from({ length: count }, () => {
-    const id = faker.string.uuid();
-    const templateType = randomTemplate();
-    const title = faker.lorem.words({ min: 2, max: 5 });
-
-    // 최근 30일 내 데이터
-    const createdAt = faker.date.recent({ days: 30 }).toISOString();
-
-    const content = faker.lorem.paragraphs({ min: 1, max: 3 }, '\n\n');
-    const address = randomSeoulAddress();
-    const tags = getTagsByTemplate(templateType);
-
-    // 더미 이미지 (public 폴더에 있는 이미지 혹은 외부 URL)
-    const images = Math.random() > 0.3 ? ['/profile-ex.jpeg'] : [];
-
-    return {
-      id,
-      title,
-      templateType,
-      address,
-      createdAt,
-      content,
-      images,
-      tags,
-    };
-  });
 }

@@ -17,16 +17,5 @@ export interface PostListItem {
   createdAt: string;
   content: string;
   imageUrl?: string;
-}
-
-// lat,lng 가 없는 데이터 조회용
-export interface RecordListItem {
-  id: string;
-  title: string;
-  templateType: TemplateType;
-  address: string;
-  createdAt: string;
-  content: string;
-  images: string[];
-  tags: string[];
+  tags?: string[];
 }

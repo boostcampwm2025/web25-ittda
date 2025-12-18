@@ -96,18 +96,12 @@ export default function DiaryPostShort({
             className="flex text-xs tracking-[-0.264px] font-semibold gap-1"
             style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
           >
-            <span>
-              <span className="text-itta-point">#</span>
-              <span className="text-itta-black">커피 </span>
-            </span>
-            <span>
-              <span className="text-itta-point">#</span>
-              <span className="text-itta-black">말차 </span>
-            </span>
-            <span>
-              <span className="text-itta-point">#</span>
-              <span className="text-itta-black">카페</span>
-            </span>
+            {post?.tags?.map((tag, index) => (
+              <span key={`${post.id}-tag-${index}`}>
+                <span className="text-itta-point"># </span>
+                <span className="text-itta-black">{tag}</span>
+              </span>
+            ))}
           </div>
         </div>
 
