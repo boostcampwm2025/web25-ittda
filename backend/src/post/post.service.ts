@@ -37,6 +37,25 @@ export class PostService {
    */
   private readonly posts: Post[] = this.createSeedPosts();
 
+  /**
+   * 단순 리스트 조회용 페이지네이션.
+   * createdAt 내림차순으로 정렬 후 page/limit 기준으로 슬라이스한다.
+   */
+  findPaginated(page = 1, limit = 10): { items: Post[]; totalCount: number } {
+    const safePage = page > 0 ? page : 1;
+    const safeLimit = limit > 0 ? limit : 10;
+
+    const sorted = [...this.posts].sort((a, b) =>
+      a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
+    );
+
+    const totalCount = sorted.length;
+    const start = (safePage - 1) * safeLimit;
+    const items = sorted.slice(start, start + safeLimit);
+
+    return { items, totalCount };
+  }
+
   findByBbox(bbox: Bbox, limit = 50): Post[] {
     const { minLat, minLng, maxLat, maxLng } = bbox;
 
@@ -72,6 +91,13 @@ export class PostService {
     const makePost = (overrides: Partial<Post>): Post => {
       const id = overrides.id ?? crypto.randomUUID();
       const createdAt = overrides.createdAt ?? new Date().toISOString();
+      // faker.image.* 타입이 any 로 정의되어 있어 lint에서 unsafe 경고가 발생하므로, 한 번 지역 변수로 받고 명시적으로 단언한다.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const generatedImageUrl = faker.image.urlPicsumPhotos({
+        width: 400,
+        height: 400,
+      }) as string;
+      const imageUrl = overrides.imageUrl ?? generatedImageUrl;
 
       return {
         id,
@@ -82,10 +108,7 @@ export class PostService {
         lng: baseLng,
         content:
           '이것은 인메모리 더미 게시글입니다. 실제 데이터베이스 연동 전까지는 서버 메모리에서만 관리됩니다.',
-        imageUrl:
-          overrides.imageUrl ??
-          faker.image.urlPicsumPhotos({ width: 400, height: 400 }),
-        ...overrides,
+        imageUrl,
         createdAt,
       };
     };

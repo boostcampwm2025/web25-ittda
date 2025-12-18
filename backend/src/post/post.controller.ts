@@ -5,6 +5,27 @@ import { PostService } from './post.service';
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
+  @Get('list')
+  getPostList(
+    @Query('page') pageStr?: string,
+    @Query('limit') limitStr?: string,
+  ) {
+    const page = pageStr ? Number(pageStr) || 1 : 1;
+    const limit = limitStr ? Number(limitStr) || 10 : 10;
+
+    const { items, totalCount } = this.postService.findPaginated(page, limit);
+    const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+
+    return {
+      meta: {
+        totalCount,
+        currentPage: page,
+        totalPages,
+      },
+      items,
+    };
+  }
+
   @Get()
   getPosts(@Query('bbox') bboxStr?: string, @Query('limit') limitStr?: string) {
     if (!bboxStr) {
