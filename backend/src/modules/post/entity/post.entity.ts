@@ -1,0 +1,61 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  Point,
+  Index,
+  ManyToOne,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
+
+import { User } from '@/modules/user/user.entity';
+import { Folder } from '@/modules/folder/folder.entity';
+import { TemplateType } from '@/enums/template-type.enum';
+import { Group } from '@/modules/group/entity/group.entity';
+
+@Entity('posts')
+@Index(['location'], { spatial: true })
+export class Post {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @ManyToOne(() => User)
+  author: User;
+
+  @ManyToOne(() => Group, { nullable: true })
+  group?: Group;
+
+  @ManyToOne(() => Folder)
+  folder: Folder;
+
+  @Column({ type: 'enum', enum: TemplateType })
+  templateType: TemplateType;
+
+  @Column()
+  title: string;
+
+  @Column({ type: 'text' })
+  content: string;
+
+  @Column({
+    type: 'geometry',
+    spatialFeatureType: 'Point',
+    srid: 4326,
+    nullable: true,
+  })
+  location?: Point;
+
+  @Column({ type: 'timestamp', nullable: true })
+  visitedAt?: Date;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
+}
