@@ -12,6 +12,7 @@ import Header from '@/components/Header';
 import { useParams } from 'next/navigation';
 import { fetchPostById } from '@/lib/api/posts';
 import { useQuery } from '@tanstack/react-query';
+import { formatLogDate } from '@/lib/date';
 
 export default function HomePage() {
   const params = useParams();
@@ -30,10 +31,14 @@ export default function HomePage() {
   //TODO: 로딩 맟 에러 처리
   if (isLoading || !post)
     return <div className="p-10 text-center text-gray-500">로딩중 ...</div>;
-
+  const logDate = post?.createdAt
+    ? formatLogDate(new Date(post.createdAt))
+    : null;
   return (
     <div className="w-full bg-white pb-10 h-full">
-      <Header title="나의 기록 - 일기/여행" />
+      <Header>
+        <Header.Title>나의 기록 - 일기/여행</Header.Title>
+      </Header>
       <article className="relative w-full px-6 py-4">
         <div className="absolute left-[31px] top-6 bottom-0 w-[1.5px] bg-gray-200 pointer-events-none" />
         <div className="relative pl-8">
@@ -49,10 +54,16 @@ export default function HomePage() {
             </h3>
           </div>
 
-          {/* TODO : 날짜 + 요일에 맞게 유틸함수로 포맷팅 후 출력 */}
-          <div className="flex items-center gap-2 mb-1 text-sm text-gray-500 font-medium">
-            <span>{post.createdAt}</span>
-          </div>
+          {/*날짜 + 요일*/}
+          {logDate && (
+            <div className="flex items-center gap-1 mb-1 text-gray-500 font-medium">
+              <span className="flex text-md text-itta-black">
+                {logDate.date}
+              </span>
+              <span className="ml-1 text-sm">{logDate.time}</span>
+              <span className="text-sm">{logDate.weekday}</span>
+            </div>
+          )}
 
           {/* 위치 정보 */}
           <div className="flex items-center gap-1.5 mb-4">
