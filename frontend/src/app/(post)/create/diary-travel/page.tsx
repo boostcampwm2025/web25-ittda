@@ -98,7 +98,9 @@ export default function CreatePostPage() {
   };
 
   const handleRemoveImage = (index: number) => {
-    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    requestAnimationFrame(() => {
+      setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    });
   };
 
   const handleSubmit = async () => {
