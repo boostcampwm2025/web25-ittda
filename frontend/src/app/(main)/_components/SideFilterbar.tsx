@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Searchbar from '@/components/Searchbar';
 import TagButton from '@/components/TagButton';
 import SimpleMemo from './SimpleMemo';
@@ -10,6 +11,7 @@ import {
   LineSquiggle,
   Music2,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // const CATEGORIES = [
 //   { id: 'all', label: '전체' },
@@ -90,9 +92,41 @@ export default function SideFilterbar() {
         </div>
       </div>
 
-      <div className="pb-3.5 min-w-0">
+      {/* 창 너비가 1180px 미만일 때는 플로팅 버튼·바텀 네비게이션 높이를 고려해 여유 패딩을 더 준다 */}
+      <ResponsiveMemoContainer>
         <SimpleMemo />
-      </div>
+      </ResponsiveMemoContainer>
+    </div>
+  );
+}
+
+interface ResponsiveMemoContainerProps {
+  children: React.ReactNode;
+}
+
+function ResponsiveMemoContainer({ children }: ResponsiveMemoContainerProps) {
+  const [isWide, setIsWide] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsWide(window.innerWidth >= 1180);
+    };
+
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        'min-w-0',
+        // 초기 렌더에서는 넉넉하게, 이후 브레이크포인트 기준으로 조정
+        isWide === null ? 'pb-24' : isWide ? 'pb-3.5' : 'pb-24',
+      )}
+    >
+      {children}
     </div>
   );
 }
