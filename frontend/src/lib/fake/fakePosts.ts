@@ -60,6 +60,16 @@ function randomSeoulAddress() {
   return `${region} ${detail}`;
 }
 
+const TAG_SAMPLES: Record<TemplateType, string[]> = {
+  diary: ['일상', '기록', '생각', '오늘의기분', '일기'],
+  travel: ['여행', '휴가', '힐링', '맛집', '추억', '제주도'],
+  movie: ['영화', '넷플릭스', '팝콘', '시네마', '영화추천'],
+  musical: ['뮤지컬', '공연', '예술', '커튼콜', '문화생활'],
+  theater: ['연극', '대학로', '배우', '공연관람', '데이트'],
+  memo: ['메모', '아이디어', '할일', '공부', '정리'],
+  etc: ['기타', '취미', '스크랩', '관심사', '공유'],
+};
+
 export function makeFakePosts(count = 2000): PostListItem[] {
   return Array.from({ length: count }, () => {
     const id = faker.string.uuid();
@@ -76,6 +86,11 @@ export function makeFakePosts(count = 2000): PostListItem[] {
 
     const imageUrl = faker.image.urlPicsumPhotos({ width: 400, height: 400 });
 
+    const tags = faker.helpers.arrayElements(TAG_SAMPLES[templateType], {
+      min: 1,
+      max: 3,
+    });
+
     return {
       id,
       title,
@@ -86,6 +101,7 @@ export function makeFakePosts(count = 2000): PostListItem[] {
       createdAt,
       content,
       imageUrl,
+      tags,
     };
   });
 }

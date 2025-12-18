@@ -12,9 +12,10 @@ export interface PostListItem {
   title: string;
   templateType: TemplateType;
   address: string;
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
   createdAt: string;
   content: string;
   imageUrl?: string;
+  tags?: string[];
 }

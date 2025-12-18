@@ -96,3 +96,28 @@ export function formatDateDot(date: Date = new Date()): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}.${month}.${day}`;
 }
+
+/**
+ * 로그용 날짜 정보를 객체로 반환
+ * @param date - 포맷팅할 날짜
+ * @returns { date: "2025.12.11", time: "18:46", weekday: "수요일" }
+ */
+export function formatLogDate(date: Date = new Date()) {
+  const dateStr = formatDateDot(date);
+
+  // 24시간 형식 시간
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const timeStr = `${hours}:${minutes}`;
+
+  // 요일
+  const weekdayStr = new Intl.DateTimeFormat('ko-KR', {
+    weekday: 'long',
+  }).format(date);
+
+  return {
+    date: dateStr,
+    time: timeStr,
+    weekday: weekdayStr,
+  };
+}

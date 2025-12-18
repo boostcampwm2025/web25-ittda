@@ -20,8 +20,7 @@ export default function ListPanel({
 }: ListPanelProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
-  const selectedPost =
-    posts.find((post) => post.id === selectedPostId) ?? null;
+  const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null;
 
   // 선택된 게시글이 바뀌면 리스트에서 해당 항목으로 스크롤
   useEffect(() => {
@@ -47,10 +46,7 @@ export default function ListPanel({
         >
           <div className="relative flex-1">
             {posts.map((post) => (
-              <div
-                key={post.id}
-                data-post-id={post.id}
-              >
+              <div key={post.id} data-post-id={post.id}>
                 <DiaryPostShort
                   post={post}
                   active={selectedPostId === post.id}
