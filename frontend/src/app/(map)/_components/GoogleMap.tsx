@@ -2,7 +2,7 @@
 
 import Searchbar from '@/components/Searchbar';
 import TagButton from '@/components/TagButton';
-import { APIProvider, Map, Marker, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import {
   Calendar,
   Clapperboard,
@@ -11,7 +11,8 @@ import {
   Music2,
 } from 'lucide-react';
 import type { PostListItem } from '@/lib/types/post';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
+import { ClusteredPostMarkers } from './ClusteredMarkers';
 
 interface GoogleMapProps {
   posts: PostListItem[];
@@ -20,7 +21,15 @@ interface GoogleMapProps {
   onSelectPost: (id: string | null) => void;
 }
 
-function FlyToOnSelect({ lat, lng, offsetX = 0 }: { lat: number; lng: number; offsetX?: number }) {
+function FlyToOnSelect({
+  lat,
+  lng,
+  offsetX = 0,
+}: {
+  lat: number;
+  lng: number;
+  offsetX?: number;
+}) {
   const map = useMap();
   useEffect(() => {
     if (!map) return;
@@ -45,8 +54,7 @@ export default function GoogleMap({
 }: GoogleMapProps) {
   const filterWidth = leftPanelWidth > 500 ? 500 + 17 : leftPanelWidth + 17;
 
-  const selectedPost =
-    posts.find((post) => post.id === selectedPostId) ?? null;
+  const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null;
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -56,28 +64,22 @@ export default function GoogleMap({
     <div className="bg-yellow-50 w-full h-full relative">
       <APIProvider apiKey={apiKey!}>
         <Map
+          mapId="MAP_ID"
           defaultCenter={{ lat: 37.5665, lng: 126.978 }}
           defaultZoom={12}
           gestureHandling="greedy"
           disableDefaultUI={false}
         >
-          {/* 마커 추가, 클릭 시 onSelectPost 호출 */}
-            {posts.map((post) => (
-              <Marker
-                key={post.id}
-                position={{ lat: Number(post.lat), lng: Number(post.lng) }}
-                onClick={() => onSelectPost(post.id)} // 핀 클릭 → 패널 선택
-              />
-            ))}
+          <ClusteredPostMarkers posts={posts} onSelectPost={onSelectPost} />
 
-            {/* 패널 선택 → 지도 이동 */}
-            {selectedPost && (
-              <FlyToOnSelect
-                lat={Number(selectedPost.lat)}
-                lng={Number(selectedPost.lng)}
-                offsetX={leftPanelWidth / 2} // 패널 폭의 절반만큼 오른쪽으로 보이게
-              />
-            )}
+          {/* 패널 선택 → 지도 이동 */}
+          {selectedPost && (
+            <FlyToOnSelect
+              lat={Number(selectedPost.lat)}
+              lng={Number(selectedPost.lng)}
+              offsetX={leftPanelWidth / 2} // 패널 폭의 절반만큼 오른쪽으로 보이게
+            />
+          )}
         </Map>
       </APIProvider>
 
