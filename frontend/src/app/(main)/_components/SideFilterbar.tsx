@@ -48,7 +48,7 @@ export default function SideFilterbar() {
             <button
               type="button"
               onClick={() => {}}
-              className="shrink-0 p-1 hover:bg-itta-gray2/10 rounded transition-colors cursor-pointer"
+              className="shrink-0 hover:bg-itta-gray2/10 rounded transition-colors cursor-pointer"
             >
               <Calendar className="w-5 h-5 text-itta-gray3" />
             </button>
