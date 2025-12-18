@@ -8,6 +8,7 @@ import Tag from '@/components/TagButton';
 import { Button } from '@/components/ui/button';
 import { createPost } from '@/lib/api/posts';
 import { useRouter } from 'next/navigation';
+import { TimePicker } from '@/components/TimePicker';
 
 export default function CreatePostPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function CreatePostPage() {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>(['hello']);
   const [currentTag, setCurrentTag] = useState('');
+  const [selectedTime, setSelectedTime] = useState(formatTime());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousHeightRef = useRef<number>(0);
   const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -38,8 +40,27 @@ export default function CreatePostPage() {
       if (previousHeight > 0 && newHeight > previousHeight) {
         const heightDifference = newHeight - previousHeight;
 
-        // 스크롤 위치를 높이 차이만큼 조정하여 화면 유지
-        container.scrollTop = currentScrollTop + heightDifference;
+        // textarea의 실제 화면상 위치 계산
+        const textareaRect = textarea.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        // 모바일 BottomNavigation 높이 고려
+        const isMobile = window.innerWidth < 768;
+        const bottomNavHeight = isMobile ? 75 : 0;
+
+        // 컨테이너의 실제 보이는 영역의 하단 (네비게이션바 제외)
+        const visibleBottom = containerRect.bottom - bottomNavHeight;
+
+        // textarea의 하단이 보이는 영역의 하단 근처(20px 이내)에 있을 때만 스크롤 조정
+        const textareaBottom = textareaRect.bottom;
+        const distanceFromVisibleBottom = textareaBottom - visibleBottom;
+
+        if (
+          distanceFromVisibleBottom >= -20 &&
+          distanceFromVisibleBottom <= 20
+        ) {
+          container.scrollTop = currentScrollTop + heightDifference;
+        }
       }
 
       previousHeightRef.current = newHeight;
@@ -89,7 +110,7 @@ export default function CreatePostPage() {
             </time>
 
             <div className="flex justify-start items-center gap-6.5 text-md text-itta-black mt-1 font-medium">
-              {formatTime()}
+              <TimePicker value={selectedTime} onChange={setSelectedTime} />
               <div className="flex justify-start items-center gap-1.25">
                 <Image
                   src={'/icons/location-on-fill-point.svg'}
