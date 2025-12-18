@@ -63,7 +63,7 @@ export async function createPost(body: CreatePostRequest) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      templateType: 'diary',
+      templateType: body.templateType?? 'diary',
       ...body,
     }),
   });
