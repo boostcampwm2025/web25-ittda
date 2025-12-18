@@ -10,19 +10,33 @@ import { createPost } from '@/lib/api/posts';
 import { useRouter } from 'next/navigation';
 import { TimePicker } from '@/components/TimePicker';
 import DatePicker from '@/components/DatePicker';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
+import Input from '@/components/Input';
 
 export default function CreatePostPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mainContainerRef = useRef<HTMLDivElement>(null);
+
   const [tags, setTags] = useState<string[]>(['hello']);
+  const [tmpInputTags, setTmpInputTags] = useState<string[]>([...tags]);
   const [currentTag, setCurrentTag] = useState('');
+
   const [selectedTime, setSelectedTime] = useState(formatTime());
   const [selectedDate, setSelectedDate] = useState(new Date());
+
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousHeightRef = useRef<number>(0);
-  const mainContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const defaultAddress = '광주광역시 광산구 어딘가';
 
@@ -72,17 +86,17 @@ export default function CreatePostPage() {
   }, [content]);
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && currentTag.trim()) {
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing && currentTag.trim()) {
       e.preventDefault();
       if (!tags.includes(currentTag.trim())) {
-        setTags([...tags, currentTag.trim()]);
+        setTmpInputTags([...tmpInputTags, currentTag.trim()]);
       }
       setCurrentTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
+    setTmpInputTags(tmpInputTags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleImageClick = () => {
@@ -170,9 +184,56 @@ export default function CreatePostPage() {
 
             {/* 태그 입력 */}
             <div className="flex justify-start items-center w-full gap-1.25 mt-3">
-              <Tag onClick={() => {}}>
-                <span className="text-itta-point">#</span> 태그 추가
-              </Tag>
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Tag>
+                    <span className="text-itta-point">#</span> 태그 추가/수정
+                  </Tag>
+                </DrawerTrigger>
+                <DrawerContent className="max-w-5xl mx-auto">
+                  <DrawerHeader>
+                    <DrawerTitle>태그 추가</DrawerTitle>
+                    <DrawerDescription className="break-keep">
+                      기록을 그룹화하고 나중에 빠르게 검색하기 위해 태그를
+                      추가해 보세요.
+                    </DrawerDescription>
+                  </DrawerHeader>
+
+                  <div className="md:px-18 px-4 flex flex-col w-full pb-8.5">
+                    <div className="flex justify-start items-center gap-1.25 pb-8">
+                      {tmpInputTags.map((tag) => (
+                        <Tag
+                          onClick={() => handleRemoveTag(tag)}
+                          key={tag}
+                          className="hover:bg-transparent flex justify-between items-center gap-1.25"
+                        >
+                          <span className="text-itta-point">#</span> {tag}
+                          <X size={14} color="var(--itta-gray3)" />
+                        </Tag>
+                      ))}
+                    </div>
+                    <div className="flex justify-center items-center w-full gap-3">
+                      <Input className="w-full font-medium">
+                        <Input.Left>
+                          <span className="text-itta-point">#</span>
+                        </Input.Left>
+                        <Input.Field
+                          value={currentTag}
+                          onKeyDown={handleAddTag}
+                          onChange={(e) => setCurrentTag(e.target.value)}
+                          placeholder="태그를 추가하세요"
+                        />
+                      </Input>
+                      <DrawerClose>
+                        <Button onClick={() => setTags([...tmpInputTags])}>
+                          저장
+                        </Button>
+                      </DrawerClose>
+                    </div>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+
               <div className="flex justify-start items-center gap-1.25">
                 {tags.map((tag) => (
                   <Tag
@@ -185,7 +246,7 @@ export default function CreatePostPage() {
               </div>
             </div>
 
-            {/* 이미지 추가 영역 (선택사항) */}
+            {/* 이미지 추가 영역 */}
             <input
               ref={fileInputRef}
               type="file"
