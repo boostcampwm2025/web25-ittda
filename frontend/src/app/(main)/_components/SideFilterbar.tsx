@@ -12,6 +12,7 @@ import {
   Music2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 
 // const CATEGORIES = [
 //   { id: 'all', label: '전체' },
@@ -24,78 +25,89 @@ import { cn } from '@/lib/utils';
 
 export default function SideFilterbar() {
   // const [selectedCategory, setSelectedCategory] = useState('all');
+  const pathname = usePathname();
+
+  const pathSegments = pathname.split('/').filter(Boolean);
+  // TODO: 임시 경로 기반 분기. 나중에는 페이지별 설정/props 기반으로
+  // 사이드 필터바 노출 요소를 결정하도록 개선 필요.
+  const isRecordsPage =
+    pathSegments.length === 2 && pathSegments[1] === 'records';
 
   return (
     <div className="min-w-0 w-full h-full flex flex-col">
       <div className="h-full">
         <Searchbar placeholder="로그 검색하기" onCalendarClick={() => {}} />
-        <div className="flex gap-2.5 mt-7 flex-wrap">
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Clapperboard
-              size={16}
-              color="var(--itta-point)"
-              className="flex justify-center items-center gap-1"
-            />
-            연극
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Film size={16} color="var(--itta-point)" />
-            연극
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Music2 size={16} color="var(--itta-point)" />
-            뮤지컬
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Calendar size={16} color="var(--itta-point)" />
-            일기/여행
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Clapperboard size={16} color="var(--itta-point)" />
-            영화
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <LineSquiggle size={16} color="var(--itta-point)" />
-            기타
-          </TagButton>
-          {/* {CATEGORIES.map((category) => (
+        {!isRecordsPage && (
+          <div className="flex gap-2.5 mt-7 flex-wrap">
             <TagButton
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={
-                selectedCategory === category.id
-                  ? 'bg-itta-point/80 text-white shadow-sm border-itta-point'
-                  : 'hover:border-itta-point text-gray-700'
-              }
+              onClick={() => {}}
+              className="flex justify-center items-center gap-1"
             >
-              {category.label}
+              <Clapperboard
+                size={16}
+                color="var(--itta-point)"
+                className="flex justify-center items-center gap-1"
+              />
+              연극
             </TagButton>
-          ))} */}
-        </div>
+            <TagButton
+              onClick={() => {}}
+              className="flex justify-center items-center gap-1"
+            >
+              <Film size={16} color="var(--itta-point)" />
+              연극
+            </TagButton>
+            <TagButton
+              onClick={() => {}}
+              className="flex justify-center items-center gap-1"
+            >
+              <Music2 size={16} color="var(--itta-point)" />
+              뮤지컬
+            </TagButton>
+            <TagButton
+              onClick={() => {}}
+              className="flex justify-center items-center gap-1"
+            >
+              <Calendar size={16} color="var(--itta-point)" />
+              일기/여행
+            </TagButton>
+            <TagButton
+              onClick={() => {}}
+              className="flex justify-center items-center gap-1"
+            >
+              <Clapperboard size={16} color="var(--itta-point)" />
+              영화
+            </TagButton>
+            <TagButton
+              onClick={() => {}}
+              className="flex justify-center items-center gap-1"
+            >
+              <LineSquiggle size={16} color="var(--itta-point)" />
+              기타
+            </TagButton>
+            {/* {CATEGORIES.map((category) => (
+              <TagButton
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={
+                  selectedCategory === category.id
+                    ? 'bg-itta-point/80 text-white shadow-sm border-itta-point'
+                    : 'hover:border-itta-point text-gray-700'
+                }
+              >
+                {category.label}
+              </TagButton>
+            ))} */}
+          </div>
+        )}
       </div>
 
-      {/* 창 너비가 1180px 미만일 때는 플로팅 버튼·바텀 네비게이션 높이를 고려해 여유 패딩을 더 준다 */}
-      <ResponsiveMemoContainer>
-        <SimpleMemo />
-      </ResponsiveMemoContainer>
+      {/* 기록 리스트 화면에서는 메모 카드도 숨김 */}
+      {!isRecordsPage && (
+        <ResponsiveMemoContainer>
+          <SimpleMemo />
+        </ResponsiveMemoContainer>
+      )}
     </div>
   );
 }
