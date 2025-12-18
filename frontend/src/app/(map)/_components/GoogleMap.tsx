@@ -38,8 +38,6 @@ function FlyToOnSelect({
     // map.setZoom(13);
 
     if (offsetX !== 0) {
-      // 마커를 오른쪽으로 보이게 하려면
-      // 지도 중심을 왼쪽으로 옮겨야 해서 -offsetX
       map.panBy(-offsetX, 0);
     }
   }, [map, lat, lng, offsetX]);
@@ -105,7 +103,7 @@ export default function GoogleMap({
             className="flex justify-center items-center gap-1"
           >
             <Film size={16} color="var(--itta-point)" />
-            연극
+            영화
           </TagButton>
           <TagButton
             onClick={() => {}}
@@ -140,3 +138,40 @@ export default function GoogleMap({
     </div>
   );
 }
+
+/*
+추가로 고려해볼 것: AdvancedMarker (선택)
+
+기존의 google.maps.Marker는 Raster 기반으로 렌더링되어 성능 및 커스터마이징에 한계가 있었습니다. 
+2024년 2월부로 권장되는 Advanced Marker는 다음과 같은 이점이 있습니다.
+
+성능 향상: 벡터 기반 렌더링 및 하드웨어 가속을 활용하여 
+대량의 마커 표시 시 성능이 우수합니다.
+
+유연한 커스터마이징: HTML 요소를 직접 마커로 사용할 수 있어 디자인 자유도가 
+매우 높습니다.
+
+장기적 안정성: 기존 Marker는 향후 유지보수가 중단될 예정(Deprecated)
+
+지도 ID 만들기: https://developers.google.com/maps/documentation/javascript/map-ids/get-map-id?hl=ko#javascript
+(mapId: 'DEMO_MAP_ID'를 테스트 용도로 사용 가능)
+
+예시)
+import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
+<Map
+    defaultCenter={{ lat: 37.5665, lng: 126.978 }}
+    defaultZoom={12}
+    gestureHandling="greedy"
+    disableDefaultUI={false}
+    // 2. mapId 필수 추가 (GCP 콘솔에서 생성 가능, 테스트용은 'DEMO_MAP_ID')
+    mapId={'YOUR_MAP_ID_HERE'} 
+  >
+    {posts.map((post) => (
+      // 3. AdvancedMarker로 교체
+      <AdvancedMarker
+        key={post.id}
+        position={{ lat: Number(post.lat), lng: Number(post.lng) }}
+        onClick={() => onSelectPost(post.id)}
+      />
+    ))}
+*/
