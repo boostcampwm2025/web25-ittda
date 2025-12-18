@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { faker } from '@faker-js/faker';
 
 export interface Bbox {
   minLat: number;
@@ -25,6 +26,7 @@ export interface Post {
   lng: number;
   createdAt: string;
   content: string;
+  imageUrl?: string;
 }
 
 @Injectable()
@@ -80,6 +82,9 @@ export class PostService {
         lng: baseLng,
         content:
           '이것은 인메모리 더미 게시글입니다. 실제 데이터베이스 연동 전까지는 서버 메모리에서만 관리됩니다.',
+        imageUrl:
+          overrides.imageUrl ??
+          faker.image.urlPicsumPhotos({ width: 400, height: 400 }),
         ...overrides,
         createdAt,
       };
