@@ -1,4 +1,11 @@
-export type TemplateType = "diary" | "travel" | "movie" | "musical" | "theater" | "memo" | "etc";
+export type TemplateType =
+  | 'diary'
+  | 'travel'
+  | 'movie'
+  | 'musical'
+  | 'theater'
+  | 'memo'
+  | 'etc';
 
 export interface PostListItem {
   id: string;
@@ -9,4 +16,5 @@ export interface PostListItem {
   lng: number;
   createdAt: string;
   content: string;
-};
+  imageUrl?: string;
+}
