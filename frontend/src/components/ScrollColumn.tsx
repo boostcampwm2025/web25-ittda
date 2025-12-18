@@ -53,7 +53,7 @@ export default function ScrollColumn({
           behavior: 'smooth',
         });
 
-        // 3. 200ms 후에 다시 휠을 입력받음 (연속 스크롤 속도 조절)
+        // 100ms 후에 다시 휠을 입력받음 (연속 스크롤 속도 조절)
         setTimeout(() => {
           isWheeling.current = false;
         }, 100);
@@ -81,8 +81,6 @@ export default function ScrollColumn({
     >
       <div
         ref={scrollRef}
-        // 이제 스크롤은 수동(onWheel) 또는 클릭으로만 제어하므로
-        // handleScroll은 모바일 터치 대응용으로만 남겨두거나 제거 가능합니다.
         className="h-full overflow-y-auto scrollbar-hide"
         style={{
           paddingTop: `${SCROLL_PADDING}px`,
@@ -90,7 +88,7 @@ export default function ScrollColumn({
           transformStyle: 'preserve-3d',
           msOverflowStyle: 'none',
           scrollbarWidth: 'none',
-          scrollSnapType: 'none', // 직접 제어할 때는 snap을 끄는 게 더 정확합니다.
+          scrollSnapType: 'none',
         }}
       >
         {list.map((item, index) => {
