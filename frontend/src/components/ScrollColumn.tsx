@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 interface ScrollColumnProps {
   list: string[];
@@ -10,7 +10,7 @@ interface ScrollColumnProps {
 }
 
 const ITEM_HEIGHT = 36;
-const CONTAINER_HEIGHT = 192;
+const CONTAINER_HEIGHT = 160;
 const SCROLL_PADDING = CONTAINER_HEIGHT / 2 - ITEM_HEIGHT / 2;
 
 export default function ScrollColumn({
@@ -19,32 +19,51 @@ export default function ScrollColumn({
   onValueChange,
 }: ScrollColumnProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const isWheeling = useRef(false); // 휠 이벤트 중복 실행 방지용
 
   const centerIndex = list.findIndex((item) => String(item) === current);
 
   // 초기 위치 설정
   useLayoutEffect(() => {
     const node = scrollRef.current;
-    if (!node) return;
-
-    const timeoutId = setTimeout(() => {
-      node.scrollTop = centerIndex * ITEM_HEIGHT;
-    }, 0);
-
-    return () => clearTimeout(timeoutId);
+    if (!node || centerIndex === -1) return;
+    node.scrollTop = centerIndex * ITEM_HEIGHT;
   }, []);
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const scrollTop = e.currentTarget.scrollTop;
-    let index = Math.round(scrollTop / ITEM_HEIGHT);
-    index = Math.max(0, Math.min(index, list.length - 1));
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
 
-    const newValue = String(list[index]);
-    if (newValue !== current) {
-      onValueChange(newValue);
-    }
-  };
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault(); // 브라우저의 기본 스크롤 차단
+
+      if (isWheeling.current) return; // 이미 이동 중이면 무시
+
+      const direction = e.deltaY > 0 ? 1 : -1; // 휠 방향 확인
+      const nextIndex = centerIndex + direction;
+
+      // 리스트 범위를 벗어나지 않을 때만 이동
+      if (nextIndex >= 0 && nextIndex < list.length) {
+        isWheeling.current = true;
+
+        onValueChange(list[nextIndex]);
+
+        node.scrollTo({
+          top: nextIndex * ITEM_HEIGHT,
+          behavior: 'smooth',
+        });
+
+        // 3. 200ms 후에 다시 휠을 입력받음 (연속 스크롤 속도 조절)
+        setTimeout(() => {
+          isWheeling.current = false;
+        }, 100);
+      }
+    };
+
+    // passive: false를 주어야 e.preventDefault()가 작동함
+    node.addEventListener('wheel', handleWheel, { passive: false });
+    return () => node.removeEventListener('wheel', handleWheel);
+  }, [centerIndex, list, onValueChange]);
 
   const handleItemClick = (index: number) => {
     if (scrollRef.current) {
@@ -57,36 +76,35 @@ export default function ScrollColumn({
 
   return (
     <div
-      className="h-48 w-20 overflow-hidden"
+      className="h-40 w-20 overflow-hidden"
       style={{ perspective: '1000px' }}
     >
       <div
         ref={scrollRef}
-        onScroll={handleScroll}
-        className="h-full overflow-y-auto snap-y snap-mandatory scrollbar-hide"
+        // 이제 스크롤은 수동(onWheel) 또는 클릭으로만 제어하므로
+        // handleScroll은 모바일 터치 대응용으로만 남겨두거나 제거 가능합니다.
+        className="h-full overflow-y-auto scrollbar-hide"
         style={{
           paddingTop: `${SCROLL_PADDING}px`,
           paddingBottom: `${SCROLL_PADDING}px`,
           transformStyle: 'preserve-3d',
           msOverflowStyle: 'none',
           scrollbarWidth: 'none',
+          scrollSnapType: 'none', // 직접 제어할 때는 snap을 끄는 게 더 정확합니다.
         }}
       >
         {list.map((item, index) => {
           const distance = index - centerIndex;
           const absDistance = Math.abs(distance);
-          const rotateX = distance * 20;
-          const translateZ = -absDistance * 15;
-          const opacity = Math.max(0.3, 1 - absDistance * 0.3);
+          const rotateX = distance * 22;
+          const translateZ = -absDistance * 12;
+          const opacity = Math.max(0.3, 1 - absDistance * 0.35);
 
           return (
             <div
               key={`${item}-${index}`}
-              ref={(el) => {
-                itemRefs.current[index] = el;
-              }}
               className={cn(
-                'flex items-center justify-center snap-center cursor-pointer transition-all duration-150',
+                'flex items-center justify-center cursor-pointer transition-all duration-150',
                 index === centerIndex
                   ? 'font-medium text-itta-black scale-105'
                   : 'text-itta-gray3',
