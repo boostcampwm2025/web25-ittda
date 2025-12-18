@@ -81,3 +81,18 @@ export function formatRelativeTime(date: Date): string {
 export function formatDateISO(date: Date = new Date()): string {
   return date.toISOString().split('T')[0];
 }
+
+/**
+ * 날짜를 점(.) 구분 형식으로 포맷팅
+ * @param date - 포맷팅할 날짜 (기본값: 현재 날짜)
+ * @returns "2025.01.14" 형식의 문자열
+ * @example
+ * formatDateDot() // "2025.01.14"
+ * formatDateDot(new Date('2024-12-25')) // "2024.12.25"
+ */
+export function formatDateDot(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day}`;
+}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
-import { formatDate, formatTime } from '@/lib/date';
+import { formatDateDot, formatTime } from '@/lib/date';
 import Image from 'next/image';
 import Tag from '@/components/TagButton';
 import { Button } from '@/components/ui/button';
@@ -68,7 +68,7 @@ export default function CreatePostPage() {
           {/* 날짜 표시 */}
           <div className="mb-2.75">
             <time className="text-lg font-semibold text-itta-black flex justify-start items-center gap-1.25">
-              {formatDate()}
+              {formatDateDot()}
               <ChevronDown color="var(--itta-black)" />
             </time>
 
