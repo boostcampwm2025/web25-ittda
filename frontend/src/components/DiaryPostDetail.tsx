@@ -13,15 +13,15 @@ export default function DiaryPostDetail({
   post,
   onBack,
 }: DiaryPostDetailProps) {
-  const created = new Date(post.createdAt);
+  const eventDate = new Date(post.eventDate);
 
-  const day = created.getDate();
-  const time = created.toLocaleTimeString('ko-KR', {
+  const day = eventDate.getDate();
+  const time = eventDate.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   });
-  const weekday = created.toLocaleDateString('ko-KR', {
+  const weekday = eventDate.toLocaleDateString('ko-KR', {
     weekday: 'long',
   });
 

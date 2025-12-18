@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { faker } from '@faker-js/faker';
-import { Bbox, Post } from './post.types';
-import { CreatePostDto } from './post.types';
+import { Bbox, Post, CreatePostDto } from './post.types';
 
 @Injectable()
 export class PostService {
@@ -44,7 +43,7 @@ export class PostService {
           post.lng <= maxLng,
       )
       .sort((a, b) =>
-        a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
+        a.eventDate < b.eventDate ? 1 : a.eventDate > b.eventDate ? -1 : 0,
       )
       .slice(0, limit);
   }
@@ -60,11 +59,21 @@ export class PostService {
   }
 
   createPost(createPostDto: CreatePostDto): Post {
-    const { title, content, templateType, address, lat, lng, imageUrl, tags } =
-      createPostDto;
+    const {
+      title,
+      content,
+      templateType,
+      eventDate,
+      address,
+      lat,
+      lng,
+      imageUrl,
+      tags,
+    } = createPostDto;
     const newPost: Post = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
+      eventDate,
       templateType,
       title,
       content,
@@ -87,7 +96,7 @@ export class PostService {
     const makePost = (overrides: Partial<Post>): Post => {
       const id = overrides.id ?? crypto.randomUUID();
       const createdAt = overrides.createdAt ?? new Date().toISOString();
-      // faker.image.* 타입이 any 로 정의되어 있어 lint에서 unsafe 경고가 발생하므로, 한 번 지역 변수로 받고 명시적으로 단언한다.
+      const eventDate = overrides.eventDate ?? createdAt;
 
       const generatedImageUrl = faker.image.urlPicsumPhotos({
         width: 400,
@@ -97,22 +106,27 @@ export class PostService {
 
       return {
         id,
-        title: '제목 없는 일기',
-        templateType: 'diary',
-        address: '서울특별시 중구 세종대로 110',
-        lat: baseLat,
-        lng: baseLng,
+        // overrides로 들어오는 제목/템플릿/주소 등은 기본값보다 우선 적용
+        ...overrides,
+        title: overrides.title ?? '제목 없는 일기',
+        templateType: overrides.templateType ?? 'diary',
+        address: overrides.address ?? '서울특별시 중구 세종대로 110',
+        lat: overrides.lat ?? baseLat,
+        lng: overrides.lng ?? baseLng,
         content:
+          overrides.content ??
           '이것은 인메모리 더미 게시글입니다. 실제 데이터베이스 연동 전까지는 서버 메모리에서만 관리됩니다.',
-        imageUrl,
         createdAt,
+        eventDate,
+        imageUrl,
       };
     };
 
     return [
       makePost({
         title: '광화문 근처 카페',
-        address: '서울특별시 종로구 종로 1',
+        address: '서울특별시 종로구 사직로 161 (경복궁 인근)',
+        eventDate: '2025-12-07T09:00:00+09:00',
         lat: baseLat + 0.005,
         lng: baseLng + 0.003,
         content: '광화문 근처 카페에서 커피를 마셨다.',
@@ -120,7 +134,8 @@ export class PostService {
       makePost({
         title: '을지로 맛집 탐방',
         templateType: 'travel',
-        address: '서울특별시 중구 을지로 3가',
+        address: '서울특별시 영등포구 여의대로 24',
+        eventDate: '2025-12-13T18:00:00+09:00',
         lat: baseLat - 0.004,
         lng: baseLng + 0.006,
         content: '을지로 골목골목을 돌아다니며 맛집을 방문했다.',
@@ -129,6 +144,7 @@ export class PostService {
         title: '한강 야경 산책',
         templateType: 'etc',
         address: '서울특별시 영등포구 여의도동',
+        eventDate: '2025-12-10T20:00:00+09:00',
         lat: baseLat - 0.02,
         lng: baseLng - 0.02,
         content: '여의도 한강공원에서 야경을 보며 산책했다.',
