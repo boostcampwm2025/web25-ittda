@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 
 interface TagProps {
   className?: string;
-  onClick: VoidFunction;
+  onClick?: VoidFunction;
   children: ReactNode;
 }
 
