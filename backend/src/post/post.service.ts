@@ -1,33 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { faker } from '@faker-js/faker';
-
-export interface Bbox {
-  minLat: number;
-  minLng: number;
-  maxLat: number;
-  maxLng: number;
-}
-
-type TemplateType =
-  | 'diary'
-  | 'travel'
-  | 'movie'
-  | 'musical'
-  | 'theater'
-  | 'memo'
-  | 'etc';
-
-export interface Post {
-  id: string;
-  title: string;
-  templateType: TemplateType;
-  address: string;
-  lat: number;
-  lng: number;
-  createdAt: string;
-  content: string;
-  imageUrl?: string;
-}
+import { Bbox, Post } from './post.types';
 
 @Injectable()
 export class PostService {
@@ -62,6 +35,8 @@ export class PostService {
     return this.posts
       .filter(
         (post) =>
+          post.lat !== null &&
+          post.lng !== null &&
           post.lat >= minLat &&
           post.lat <= maxLat &&
           post.lng >= minLng &&
@@ -83,6 +58,26 @@ export class PostService {
     return found;
   }
 
+  createPost(createPostDto: CreatePostDto): Post {
+    const { title, content, templateType, address, lat, lng, imageUrl, tags } =
+      createPostDto;
+    const newPost: Post = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      templateType,
+      title,
+      content,
+      address: address ?? null,
+      lat: lat ?? null,
+      lng: lng ?? null,
+      imageUrl,
+      tags,
+    };
+
+    this.posts.push(newPost);
+    return newPost;
+  }
+
   private createSeedPosts(): Post[] {
     // 서울 시청 근처를 중심으로 한 몇 개의 더미 데이터
     const baseLat = 37.5665;
@@ -92,11 +87,11 @@ export class PostService {
       const id = overrides.id ?? crypto.randomUUID();
       const createdAt = overrides.createdAt ?? new Date().toISOString();
       // faker.image.* 타입이 any 로 정의되어 있어 lint에서 unsafe 경고가 발생하므로, 한 번 지역 변수로 받고 명시적으로 단언한다.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+
       const generatedImageUrl = faker.image.urlPicsumPhotos({
         width: 400,
         height: 400,
-      }) as string;
+      });
       const imageUrl = overrides.imageUrl ?? generatedImageUrl;
 
       return {
