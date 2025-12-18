@@ -19,9 +19,11 @@ export default function CreatePostPage() {
   const [currentTag, setCurrentTag] = useState('');
   const [selectedTime, setSelectedTime] = useState(formatTime());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousHeightRef = useRef<number>(0);
   const mainContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const defaultAddress = '광주광역시 광산구 어딘가';
 
   // 자동으로 textarea 높이 조절 및 스크롤
@@ -83,6 +85,22 @@ export default function CreatePostPage() {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newImages = Array.from(files);
+      setSelectedImages((prev) => [...prev, ...newImages]);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     await createPost({
       title,
@@ -98,7 +116,6 @@ export default function CreatePostPage() {
     // 작성이 완료되면 이전 화면으로 돌아가기
     router.back();
   };
-
 
   return (
     <>
@@ -121,9 +138,9 @@ export default function CreatePostPage() {
                   className="w-5 h-5"
                 />
                 <div className="flex justify-start items-center gap-4.5">
-                  <address className="not-italic truncate max-w-44 overflow-hidden">
+                  <button className="not-italic truncate max-w-44 overflow-hidden">
                     {defaultAddress}
-                  </address>
+                  </button>
                   <X className="w-4 h-4" />
                 </div>
               </div>
@@ -146,7 +163,7 @@ export default function CreatePostPage() {
               placeholder="이곳에서 당신이 느낀 모든 것을 남겨보세요."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full text-md text-itta-black placeholder:text-itta-gray3/60 placeholder:font-semibold border-none outline-none resize-none min-h-[200px] leading-relaxed font-medium"
+              className="w-full text-md text-itta-black placeholder:text-itta-gray3/60 placeholder:font-semibold border-none outline-none resize-none min-h-50 leading-relaxed font-medium"
             />
 
             {/* 태그 입력 */}
@@ -167,7 +184,19 @@ export default function CreatePostPage() {
             </div>
 
             {/* 이미지 추가 영역 (선택사항) */}
-            <div className="pb-3.75 pt-6 border-itta-gray2 flex justify-start items-center gap-2.25">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={handleImageClick}
+              className="pb-3.75 pt-6 border-itta-gray2 flex justify-start items-center gap-2.25 cursor-pointer"
+            >
               <Image
                 src={'/icons/camera.svg'}
                 alt={'카메라'}
@@ -176,18 +205,34 @@ export default function CreatePostPage() {
                 className="w-7.5 h-7.5"
               />
               <span className="font-medium">이미지 추가</span>
-            </div>
+            </button>
 
             {/* 추가된 이미지 */}
-            <div className="flex justify-start items-center gap-3.75">
-              <Image
-                src={'/profile-ex.jpeg'}
-                alt="추가한"
-                width={200}
-                height={200}
-                className="object-cover w-[200px] h-[200px]"
-              />
-            </div>
+            {selectedImages.length > 0 && (
+              <div className="flex justify-start items-center gap-3 flex-wrap">
+                {selectedImages.map((image, index) => (
+                  <div
+                    key={index}
+                    className="relative group border-[0.5px] border-itta-gray2"
+                  >
+                    <Image
+                      src={URL.createObjectURL(image)}
+                      alt={`선택한 이미지 ${index + 1}`}
+                      width={200}
+                      height={200}
+                      className="object-cover w-50 h-50 "
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="cursor-pointer absolute top-2 right-2 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
+                    >
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 저장 버튼 */}
