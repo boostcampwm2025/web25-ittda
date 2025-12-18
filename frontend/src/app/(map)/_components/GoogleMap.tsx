@@ -44,10 +44,10 @@ export default function GoogleMap({
   onSelectPost,
 }: GoogleMapProps) {
   const filterWidth = leftPanelWidth > 500 ? 500 + 17 : leftPanelWidth + 17;
-  const selectedPost = useMemo(
-    () => posts.find((p) => p.id === selectedPostId) ?? null,
-    [posts, selectedPostId],
-  );
+
+  const selectedPost =
+    posts.find((post) => post.id === selectedPostId) ?? null;
+
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) return <div>API KEY가 없습니다 (.env.local 확인)</div>;
