@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { faker } from '@faker-js/faker';
 import { Bbox, Post } from './post.types';
+import { CreatePostDto } from './post.types';
 
 @Injectable()
 export class PostService {
