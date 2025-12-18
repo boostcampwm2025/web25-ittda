@@ -22,6 +22,7 @@ import {
 import Input from '@/components/Input';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
+import { useRouter } from 'next/navigation';
 
 interface PostDraft {
   title: string;
@@ -42,6 +43,8 @@ export default function CreatePostPage() {
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const previousHeightRef = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const router = useRouter();
 
   // 현재 위치 가져오기 (역지오코딩 활성화)
   const {
@@ -72,6 +75,7 @@ export default function CreatePostPage() {
   const [currentTag, setCurrentTag] = useState('');
 
   const [mounted, setMounted] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [selectedTime, setSelectedTime] = useState(draft.selectedTime);
   const [selectedDate, setSelectedDate] = useState(
     new Date(draft.selectedDate),
@@ -90,9 +94,17 @@ export default function CreatePostPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-    setSelectedTime(formatTime());
-    setSelectedDate(new Date());
-  }, []);
+
+    // 최초 마운트 시에만 현재 시간으로 초기화 (draft가 비어있을 때만)
+    if (!isInitialized) {
+      // draft에 값이 없으면 현재 시간으로 초기화
+      if (draft.selectedTime === '오전 12:00' && draft.selectedDate === new Date('2000-01-01').toISOString()) {
+        setSelectedTime(formatTime());
+        setSelectedDate(new Date());
+      }
+      setIsInitialized(true);
+    }
+  }, [draft.selectedTime, draft.selectedDate, isInitialized]);
 
   // 위치 정보가 로드되면 자동으로 설정 (draft에 저장된 위치가 없을 때만)
   useEffect(() => {
@@ -258,7 +270,10 @@ export default function CreatePostPage() {
                   className="w-5 h-5"
                 />
                 <div className="flex justify-start items-center gap-4.5">
-                  <button className="not-italic truncate max-w-44 overflow-hidden cursor-pointer">
+                  <button
+                    onClick={() => router.push('/create/select-location')}
+                    className="not-italic truncate max-w-44 overflow-hidden cursor-pointer"
+                  >
                     {selectedLocation
                       ? selectedLocation.address
                       : locationLoading
