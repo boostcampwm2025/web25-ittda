@@ -102,3 +102,46 @@ export function filterByBbox<T extends { lat: number; lng: number }>(
       p.lng <= bbox.maxLng,
   );
 }
+
+// 템플릿 타입에 따른 가짜 태그 생성
+function getTagsByTemplate(type: TemplateType): string[] {
+  const tagMap: Record<TemplateType, string[]> = {
+    diary: ['일상', '기록', '생각'],
+    travel: ['여행', '휴가', '힐링'],
+    movie: ['영화', '문화생활', '팝콘'],
+    musical: ['뮤지컬', '공연', '커튼콜'],
+    theater: ['연극', '대학로', '배우'],
+    memo: ['메모', '아이디어', '중요'],
+    etc: ['기타', '일상'],
+  };
+  return tagMap[type] || ['태그'];
+}
+
+export function makeFakeRecordList(count = 50) {
+  return Array.from({ length: count }, () => {
+    const id = faker.string.uuid();
+    const templateType = randomTemplate();
+    const title = faker.lorem.words({ min: 2, max: 5 });
+
+    // 최근 30일 내 데이터
+    const createdAt = faker.date.recent({ days: 30 }).toISOString();
+
+    const content = faker.lorem.paragraphs({ min: 1, max: 3 }, '\n\n');
+    const address = randomSeoulAddress();
+    const tags = getTagsByTemplate(templateType);
+
+    // 더미 이미지 (public 폴더에 있는 이미지 혹은 외부 URL)
+    const images = Math.random() > 0.3 ? ['/profile-ex.jpeg'] : [];
+
+    return {
+      id,
+      title,
+      templateType,
+      address,
+      createdAt,
+      content,
+      images,
+      tags,
+    };
+  });
+}
