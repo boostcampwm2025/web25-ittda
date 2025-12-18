@@ -116,7 +116,7 @@ export default function DiaryPostShort({
           <Image
             alt="게시글 대표"
             className="w-full h-full object-cover object-center"
-            src={'/profile-ex.jpeg'}
+            src={post?.imageUrl || '/profile-ex.jpeg'}
             width={120}
             height={120}
           />
