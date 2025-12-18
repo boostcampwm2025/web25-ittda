@@ -1,14 +1,14 @@
-import type { PostListItem } from "../types/post"; // 너희 경로에 맞게
+import type { PostListItem } from "../types/post"; 
 
-export type Bbox = {
+export interface Bbox  {
   minLat: number;
   minLng: number;
   maxLat: number;
   maxLng: number;
 };
 
-export type PostsByBboxResponse = {
-  meta: { bbox: Bbox; count: number }; // bbox 타입도 있으면 넣고
+export interface PostsByBboxResponse {
+  meta: { bbox: Bbox; count: number }; 
   items: PostListItem[];
 };
 
