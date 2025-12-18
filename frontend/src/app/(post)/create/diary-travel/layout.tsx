@@ -15,7 +15,9 @@ export default function PostLayout({
         <Header.Title>기록 추가 - 일기/여행</Header.Title>
       </Header>
 
-      {children}
+      <div className="flex flex-1 min-h-0 w-full justify-center mt-1">
+        {children}
+      </div>
     </div>
   );
 }
