@@ -319,7 +319,7 @@ export default function CreatePostPage() {
             />
 
             {/* 태그 입력 */}
-            <div className="flex justify-start items-center w-full gap-1.25 mt-3">
+            <div className="flex flex-wrap justify-start items-center w-full gap-1.25 mt-3">
               <Drawer>
                 <DrawerTrigger>
                   <Tag>
@@ -336,7 +336,7 @@ export default function CreatePostPage() {
                   </DrawerHeader>
 
                   <div className="md:px-18 px-4 flex flex-col w-full pb-8.5">
-                    <div className="flex justify-start items-center gap-1.25 pb-8">
+                    <div className="flex flex-wrap justify-start items-center gap-1.25 pb-8">
                       {tmpInputTags.map((tag) => (
                         <Tag
                           onClick={() => handleRemoveTag(tag)}
@@ -370,7 +370,7 @@ export default function CreatePostPage() {
                 </DrawerContent>
               </Drawer>
 
-              <div className="flex justify-start items-center gap-1.25">
+              <div className="flex justify-start items-center gap-1.25 flex-wrap">
                 {tags.map((tag) => (
                   <Tag
                     key={tag}
