@@ -1,4 +1,5 @@
-import type { PostListItem } from '../types/post';
+import type { PostListItem } from "../types/post"; 
+import type { CreatePostRequest } from "../types/post";
 
 export interface Bbox {
   minLat: number;
@@ -52,5 +53,20 @@ export async function fetchPostById(postId: string): Promise<PostListItem> {
     throw new Error(`Failed to fetch post: ${res.status}`);
   }
 
+  return res.json();
+}
+
+export async function createPost(body: CreatePostRequest) {
+  const res = await fetch('/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      templateType: 'diary',
+      ...body,
+    }),
+  });
+  if (!res.ok) throw new Error(`Failed to create post: ${res.status}`);
   return res.json();
 }
