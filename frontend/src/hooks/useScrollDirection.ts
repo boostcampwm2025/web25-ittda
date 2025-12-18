@@ -39,9 +39,3 @@ export function useScrollDirection<T extends HTMLElement>() {
 
   return { containerRef, isVisible };
 }
-
-/*
-isVisible은 헤더 표시 여부를 제어하는 상태값
-스크롤 위로 → 보임, 아래로 → 숨김
-최상단에서는 항상 보이도록 강제
-*/
