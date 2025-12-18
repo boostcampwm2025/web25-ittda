@@ -359,10 +359,13 @@ export default function SelectLocationPage() {
         </div>
 
         <Drawer open={showNearby} onOpenChange={setShowNearby}>
-          <DrawerTrigger asChild className="absolute bottom-5 left-5">
-            <Button onClick={handleNearbySearch} variant="outline">
+          <DrawerTrigger asChild>
+            <button
+              onClick={handleNearbySearch}
+              className="absolute bottom-5 left-5 px-4 py-2 border border-itta-gray2 rounded-md bg-white hover:bg-itta-gray1/30 font-medium"
+            >
               주변 장소 목록 보기
-            </Button>
+            </button>
           </DrawerTrigger>
           <DrawerContent className="max-w-5xl mx-auto">
             <DrawerHeader>

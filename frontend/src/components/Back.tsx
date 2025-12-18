@@ -17,7 +17,7 @@ export default function Back({ size, className }: BackProps) {
   };
 
   return (
-    <button onClick={handleBack} className={cn('', className)}>
+    <button onClick={handleBack} className={cn('cursor-pointer', className)}>
       <ChevronLeft color="var(--itta-black)" size={size} />
     </button>
   );
