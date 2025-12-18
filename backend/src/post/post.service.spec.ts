@@ -58,8 +58,6 @@ describe('PostService', () => {
   });
 
   it('should throw NotFoundException when post does not exist', () => {
-    expect(service.findOne('non-existent-id')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    expect(() => service.findOne('non-existent-id')).toThrow(NotFoundException);
   });
 });
