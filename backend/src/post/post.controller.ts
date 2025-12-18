@@ -37,11 +37,6 @@ export class PostController {
     };
   }
 
-  @Get(':id')
-  getPost(@Param('id') id: string) {
-    return this.postService.findOne(id);
-  }
-
   @Get('list')
   getPostList(
     @Query('page') pageStr?: string,
@@ -61,6 +56,11 @@ export class PostController {
       },
       items,
     };
+  }
+
+  @Get(':id')
+  getPost(@Param('id') id: string) {
+    return this.postService.findOne(id);
   }
 
   @Post()
