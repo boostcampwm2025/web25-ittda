@@ -2,7 +2,7 @@
 
 import Searchbar from '@/components/Searchbar';
 import TagButton from '@/components/TagButton';
-import { APIProvider, Map } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, Marker, useMap } from '@vis.gl/react-google-maps';
 import {
   Calendar,
   Clapperboard,
@@ -10,31 +10,74 @@ import {
   LineSquiggle,
   Music2,
 } from 'lucide-react';
+import type { PostListItem } from '@/lib/types/post';
+import { useEffect, useMemo } from 'react';
 
 interface GoogleMapProps {
+  posts: PostListItem[];
   leftPanelWidth: number;
-  selectedPostId: number | null;
-  onSelectPost: (id: number | null) => void;
+  selectedPostId: string | null;
+  onSelectPost: (id: string | null) => void;
+}
+
+function FlyToOnSelect({ lat, lng, offsetX = 0 }: { lat: number; lng: number; offsetX?: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map) return;
+    map.panTo({ lat, lng });
+    // 필요하면 줌도 고정
+    // map.setZoom(13);
+
+    if (offsetX !== 0) {
+      // 마커를 오른쪽으로 보이게 하려면
+      // 지도 중심을 왼쪽으로 옮겨야 해서 -offsetX
+      map.panBy(-offsetX, 0);
+    }
+  }, [map, lat, lng, offsetX]);
+  return null;
 }
 
 export default function GoogleMap({
+  posts,
   leftPanelWidth,
   selectedPostId,
   onSelectPost,
 }: GoogleMapProps) {
   const filterWidth = leftPanelWidth > 500 ? 500 + 17 : leftPanelWidth + 17;
-  const API_KEY = '';
+
+  const selectedPost =
+    posts.find((post) => post.id === selectedPostId) ?? null;
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) return <div>API KEY가 없습니다 (.env.local 확인)</div>;
 
   return (
     <div className="bg-yellow-50 w-full h-full relative">
-      <APIProvider apiKey={API_KEY}>
+      <APIProvider apiKey={apiKey!}>
         <Map
-          defaultCenter={{ lat: 22.54992, lng: 0 }}
-          defaultZoom={3}
+          defaultCenter={{ lat: 37.5665, lng: 126.978 }}
+          defaultZoom={12}
           gestureHandling="greedy"
-          disableDefaultUI
+          disableDefaultUI={false}
         >
           {/* 마커 추가, 클릭 시 onSelectPost 호출 */}
+            {posts.map((post) => (
+              <Marker
+                key={post.id}
+                position={{ lat: Number(post.lat), lng: Number(post.lng) }}
+                onClick={() => onSelectPost(post.id)} // 핀 클릭 → 패널 선택
+              />
+            ))}
+
+            {/* 패널 선택 → 지도 이동 */}
+            {selectedPost && (
+              <FlyToOnSelect
+                lat={Number(selectedPost.lat)}
+                lng={Number(selectedPost.lng)}
+                offsetX={leftPanelWidth / 2} // 패널 폭의 절반만큼 오른쪽으로 보이게
+              />
+            )}
         </Map>
       </APIProvider>
 

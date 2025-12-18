@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
+import MswLoader from "@/components/MswLoader";
+import Providers from "./providers";
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans', // CSS 변수 이름을 지정
@@ -20,7 +22,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${notoSans.variable} antialiased`}>{children}</body>
+      <body className={`${notoSans.variable} antialiased`}>
+        <Providers>
+          <MswLoader />{children}</Providers></body>
     </html>
   );
   // notoSans.variable을 통해 CSS 클래스에 폰트를 적용
