@@ -41,6 +41,23 @@ export default function RecordMapPage() {
     };
   }, [isDragging]);
 
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['posts', 'bbox', TEST_BBOX],
+    queryFn: () => fetchPostsByBbox(TEST_BBOX),
+    // items만 뽑아 쓰면 페이지가 편해짐
+    select: (res) => res.items,
+  });
+
+  const posts = data ?? [];
+
+  const selectedPost = useMemo(
+    () => posts.find((p) => p.id === selectedPostId) ?? null,
+    [posts, selectedPostId],
+  );
+
+  if (isLoading) return <div>로딩중...</div>;
+  if (isError) return <div>데이터 로드 실패</div>;
+
   return (
     <main ref={containerRef} className="w-full h-full flex relative">
       {/* 지도 - 전체 배경 (고정) */}
