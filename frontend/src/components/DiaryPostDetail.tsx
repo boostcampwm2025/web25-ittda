@@ -9,7 +9,10 @@ interface DiaryPostDetailProps {
   onBack?: VoidFunction;
 }
 
-export default function DiaryPostDetail({ post, onBack }: DiaryPostDetailProps) {
+export default function DiaryPostDetail({
+  post,
+  onBack,
+}: DiaryPostDetailProps) {
   const created = new Date(post.createdAt);
 
   const day = created.getDate();
@@ -36,7 +39,10 @@ export default function DiaryPostDetail({ post, onBack }: DiaryPostDetailProps) 
           </div>
         </Button>
       )}
-      <article data-post={post.id} className="relative w-full bg-white p-5 pb-6">
+      <article
+        data-post={post.id}
+        className="relative w-full bg-white p-5 pb-6"
+      >
         {/* Header Section */}
         <section className="flex justify-start items-center gap-2 mb-2 relative">
           <div className="flex items-center gap-1">
@@ -84,7 +90,7 @@ export default function DiaryPostDetail({ post, onBack }: DiaryPostDetailProps) 
             <Image
               alt="게시글 대표"
               className="w-full h-full object-cover object-center"
-              src={'/profile-ex.jpeg'}
+              src={post.imageUrl || '/profile-ex.jpeg'}
               width={120}
               height={120}
             />

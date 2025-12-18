@@ -2,7 +2,7 @@
 
 import Searchbar from '@/components/Searchbar';
 import TagButton from '@/components/TagButton';
-import { APIProvider, Map, Marker, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import {
   Calendar,
   Clapperboard,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { PostListItem } from '@/lib/types/post';
 import { useEffect } from 'react';
+import { ClusteredPostMarkers } from './ClusteredMarkers';
 
 interface GoogleMapProps {
   posts: PostListItem[];
@@ -61,24 +62,20 @@ export default function GoogleMap({
     <div className="bg-yellow-50 w-full h-full relative">
       <APIProvider apiKey={apiKey!}>
         <Map
+          mapId="MAP_ID"
           defaultCenter={{ lat: 37.5665, lng: 126.978 }}
           defaultZoom={12}
           gestureHandling="greedy"
           disableDefaultUI={false}
         >
-          {posts.map((post) => (
-            <Marker
-              key={post.id}
-              position={{ lat: Number(post.lat), lng: Number(post.lng) }}
-              onClick={() => onSelectPost(post.id)}
-            />
-          ))}
+          <ClusteredPostMarkers posts={posts} onSelectPost={onSelectPost} />
 
+          {/* 패널 선택 → 지도 이동 */}
           {selectedPost && (
             <FlyToOnSelect
               lat={Number(selectedPost.lat)}
               lng={Number(selectedPost.lng)}
-              offsetX={leftPanelWidth / 2}
+              offsetX={leftPanelWidth / 2} // 패널 폭의 절반만큼 오른쪽으로 보이게
             />
           )}
         </Map>
