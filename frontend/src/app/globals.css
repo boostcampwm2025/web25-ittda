@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import 'tailwindcss'; /* TailwindCSS와 애니메이션 유틸리티 플러그인을 불러옵니다. */
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
@@ -100,7 +100,7 @@
 /* } */
 
 html {
-  height: 100svh;
+  height: 100svh; /* "Small Viewport Height(작은 뷰포트 높이)의 100% */
   display: flex;
 }
 
@@ -150,6 +150,7 @@ body {
 }
 
 @layer base {
+  /* Tailwind의 base 레이어 확장. */
   * {
     @apply border-border outline-ring/50;
   }

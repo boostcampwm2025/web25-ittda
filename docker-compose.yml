@@ -1,0 +1,56 @@
+version: '3.8' # Docker Compose 파일의 버전. 최신 기능을 위해 3.x 버전을 사용합니다.
+
+# 프로젝트에서 실행할 서비스(컨테이너)들을 정의합니다.
+services:
+  # 1. 프론트엔드 서비스 정의
+  frontend:
+    # 사용할 Docker 이미지: 환경 변수(NCP_REGISTRY_URL)에서 레지스트리 경로를 가져오고,
+    # 그 안에 있는 'project/frontend:latest' 태그의 이미지를 사용합니다.
+    image: ${NCP_REGISTRY_URL}/project/frontend:latest
+    # 컨테이너에 할당할 이름입니다.
+    container_name: frontend
+    # 컨테이너가 종료되었을 때 항상 다시 시작하도록 설정합니다. (서비스의 지속성 보장)
+    restart: always
+    # 포트 매핑: 호스트(로컬)의 127.0.0.1:3000 포트를 컨테이너의 3000 포트와 연결합니다.
+    # '127.0.0.1'로 바인딩하여 외부에서 직접 접근하는 것을 **차단**하고,
+    # Nginx 같은 프록시 서버를 통해서만 접근하도록 제한하는 중요한 보안 설정입니다.
+    ports:
+      - '127.0.0.1:3000:3000'
+    # 컨테이너 내부에서 사용할 환경 변수 설정
+    environment:
+      NODE_ENV: production # 운영 환경으로 설정
+
+  # 2. 백엔드 서비스 정의
+  backend:
+    # 사용할 Docker 이미지: 환경 변수(NCP_REGISTRY_URL)에서 레지스트리 경로를 가져오고,
+    # 그 안에 있는 'project/backend:latest' 태그의 이미지를 사용합니다.
+    image: ${NCP_REGISTRY_URL}/project/backend:latest
+    # 컨테이너에 할당할 이름입니다.
+    container_name: backend
+    # 컨테이너가 종료되었을 때 항상 다시 시작하도록 설정합니다.
+    restart: always
+    # 포트 매핑: 호스트(로컬)의 127.0.0.1:4000 포트를 컨테이너의 4000 포트와 연결합니다.
+    # 프론트엔드와 마찬가지로 '127.0.0.1'로 바인딩하여 외부 직접 접근을 차단합니다.
+    ports:
+      - '127.0.0.1:4000:4000'
+    # 컨테이너 내부에서 사용할 환경 변수 설정
+    environment:
+      NODE_ENV: production # 운영 환경으로 설정
+      # 데이터베이스 연결 정보 (모두 .env 파일에서 로드되는 환경 변수 사용)
+      DATABASE_HOST: ${PRIVATE_DB_IP} # 데이터베이스 서버의 Private IP 사용 (보안 강화)
+      DATABASE_PORT: 5432 # PostgreSQL의 기본 포트
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${PRIVATE_DB_PASSWORD}
+      # Redis 연결 정보 (현재 주석 처리되어 있지만, 필요 시 사용 가능)
+      # REDIS_HOST: ${PRIVATE_DB_IP}
+      # REDIS_PORT: 6379
+
+# 중요한 보안 포인트
+# 127.0.0.1 바인딩 → 외부 직접 접근 차단
+# 접근은 Nginx → localhost
+# DB/Redis는 Private IP만 사용
+
+# Docker Compose에서 .env 파일을 읽으려면,
+# .env 파일을 docker-compose.yml 파일과 같은 디렉토리에 두고,
+# docker-compose.yml 파일 내에서 변수를 ${변수명} 형태로 사용하면 됩니다.

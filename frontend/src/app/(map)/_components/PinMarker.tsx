@@ -29,7 +29,7 @@ export const PinMarker = ({ post, onClick, setMarkerRef }: PinMarkerProps) => {
       <div className="relative w-12 h-12 bg-secondary rounded-full rounded-br-none transform rotate-45 border-[3px] border-secondary overflow-hidden">
         {post.imageUrl && (
           <Image
-            src={post.imageUrl || '../../../../public/profile-ex.jpeg'}
+            src={post.imageUrl || '/profile-ex.jpeg'}
             alt="Pin Image"
             fill
             sizes="48px"
