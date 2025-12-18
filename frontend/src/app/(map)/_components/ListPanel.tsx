@@ -1,33 +1,65 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import DiaryPostDetail from '@/components/DiaryPostDetail';
 import DiaryPostShort from '@/components/DiaryPostShort';
+import type { PostListItem } from '@/lib/types/post';
 
 interface ListPanelProps {
+  posts: PostListItem[];
   onStartDrag: () => void;
-  selectedPostId: number | null;
-  onSelectPost: (id: number | null) => void;
+  selectedPostId: string | null;
+  onSelectPost: (id: string | null) => void;
 }
 
 export default function ListPanel({
+  posts,
   selectedPostId,
   onSelectPost,
   onStartDrag,
 }: ListPanelProps) {
-  const dummyPosts = Array.from({ length: 10 }, (_, i) => i);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const selectedPost =
+    posts.find((post) => post.id === selectedPostId) ?? null;
+
+  // 선택된 게시글이 바뀌면 리스트에서 해당 항목으로 스크롤
+  useEffect(() => {
+    if (!selectedPostId || !listRef.current) return;
+
+    const el = listRef.current.querySelector<HTMLDivElement>(
+      `[data-post-id="${selectedPostId}"]`,
+    );
+    el?.scrollIntoView({ block: 'start' });
+  }, [selectedPostId]);
 
   return (
     <div className="flex-col h-full w-full relative overflow-hidden">
       {/* 리스트 뷰 */}
       <div
         className={`absolute inset-0 transition-transform duration-300 ${
-          selectedPostId !== null ? '-translate-x-full' : 'translate-x-0'
+          isDetailOpen ? '-translate-x-full' : 'translate-x-0'
         }`}
       >
-        <div className="flex flex-col h-full w-full overflow-y-auto">
+        <div
+          className="flex flex-col h-full w-full overflow-y-auto"
+          ref={listRef}
+        >
           <div className="relative flex-1">
-            {dummyPosts.map((_, index) => (
-              <DiaryPostShort key={index} onClick={() => onSelectPost(index)} />
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                data-post-id={post.id}
+              >
+                <DiaryPostShort
+                  post={post}
+                  active={selectedPostId === post.id}
+                  onClick={() => {
+                    onSelectPost(post.id);
+                    setIsDetailOpen(true);
+                  }}
+                />
+              </div>
             ))}
             <div className="absolute left-3.75 top-8 w-[1.5px] bottom-0 bg-itta-gray2 pointer-events-none" />
           </div>
@@ -37,14 +69,17 @@ export default function ListPanel({
       {/* 상세 뷰 */}
       <div
         className={`absolute inset-0 transition-transform duration-300 ${
-          selectedPostId !== null ? 'translate-x-0' : 'translate-x-full'
+          isDetailOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full w-full overflow-y-auto bg-white">
-          {selectedPostId !== null && (
+          {selectedPost && (
             <DiaryPostDetail
-              postId={selectedPostId}
-              onBack={() => onSelectPost(null)}
+              post={selectedPost}
+              onBack={() => {
+                onSelectPost(null);
+                setIsDetailOpen(false);
+              }}
             />
           )}
         </div>

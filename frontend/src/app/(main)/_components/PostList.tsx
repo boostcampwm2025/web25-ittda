@@ -1,7 +1,21 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { fetchPostsByBbox } from '@/lib/api/posts';
 import DiaryPostShort from '@/components/DiaryPostShort';
 import PerformanceCard from '@/components/PerformanceCard';
+
+type Bbox = { minLat: number; minLng: number; maxLat: number; maxLng: number };
+
+// 1) 일단 임시 bbox (서울 근처)
+// 다음 단계에서 "지도 bounds → bbox"로 바꿀 것
+const TEST_BBOX: Bbox = {
+  minLat: 37.4,
+  minLng: 126.8,
+  maxLat: 37.7,
+  maxLng: 127.2,
+};
+
 
 const PERFORMANCES = [
   {
@@ -52,7 +66,12 @@ const PERFORMANCES = [
 ];
 
 export default function PostList() {
-  const dummyPosts = Array.from({ length: 10 }, (_, i) => i);
+    const { data } = useQuery({
+      queryKey: ['posts', 'bbox', TEST_BBOX],
+      queryFn: () => fetchPostsByBbox(TEST_BBOX),
+      select: (res) => res.items,
+    });
+  const posts = data ?? [];
 
   return (
     <div className="flex flex-col h-full w-full space-y-6">
@@ -64,12 +83,12 @@ export default function PostList() {
       {/* <TicketCard /> */}
       {/* </div> */}
       <div className="flex-1 space-y-6">
-        {dummyPosts.map((_, index) => (
+        {posts.map((post) => (
           <div
-            key={index}
+            key={post.id}
             className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
           >
-            <DiaryPostShort key={index} onClick={() => {}} />
+            <DiaryPostShort key={post.id} post={post} onClick={() => {}} />
             <div className="absolute left-3.75 top-8 w-[1.5px] bottom-4 bg-itta-gray2 pointer-events-none" />
           </div>
         ))}

@@ -1,29 +1,51 @@
+import type { PostListItem } from '@/lib/types/post';
 import { Footprints } from 'lucide-react';
 import Image from 'next/image';
 
 interface DiaryPostShortProps {
+  post?: PostListItem;
   onClick: VoidFunction;
+  active?: boolean;
 }
 
-export default function DiaryPostShort({ onClick }: DiaryPostShortProps) {
+export default function DiaryPostShort({
+  post,
+  onClick,
+  active = false,
+}: DiaryPostShortProps) {
+  const created = post ? new Date(post.createdAt) : new Date();
+
+  const day = created.getDate(); // 10
+  const time = created.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }); // 18:46
+  const weekday = created.toLocaleDateString('ko-KR', {
+    weekday: 'long',
+  }); // 수요일
+
   return (
     <article
-      className="relative w-full bg-white p-5 pb-1 cursor-pointer"
+      className={[
+        'relative w-full p-5 pb-1 cursor-pointer',
+        active ? 'bg-gray-100' : 'bg-white hover:bg-gray-50',
+      ].join(' ')}
       onClick={onClick}
     >
       {/* Header Section */}
       <section className="flex justify-start items-center gap-2 mb-2 relative">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 bg-itta-black rounded-full absolute -left-2" />
-          <p className="text-black pl-2.5">10</p>
+          <p className="text-black pl-2.5">{day}</p>
         </div>
         <p
           className="text-gray-600 text-sm tracking-[-0.308px]"
           style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
         >
-          18:46
+          {time}
         </p>
-        <p className="text-gray-600 text-sm tracking-[-0.308px]">수요일</p>
+        <p className="text-gray-600 text-sm tracking-[-0.308px]">{weekday}</p>
       </section>
 
       {/* Title */}
@@ -31,7 +53,7 @@ export default function DiaryPostShort({ onClick }: DiaryPostShortProps) {
         className="font-semibold pl-3 text-black mb-2 tracking-[-0.352px]"
         style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
       >
-        스타벅스 말차
+        {post?.title ?? '스타벅스 말차'}
       </h3>
 
       {/* Location */}
@@ -47,7 +69,7 @@ export default function DiaryPostShort({ onClick }: DiaryPostShortProps) {
           className="text-gray-600 text-sm tracking-[-0.308px]"
           style={{ fontVariationSettings: "'CTGR' 0, 'wdth' 100" }}
         >
-          광주광역시 광산구 월곡동 어딘가
+          {post?.address ?? '광주광역시 광산구 월곡동 어딘가'}
         </p>
       </section>
 
@@ -65,10 +87,8 @@ export default function DiaryPostShort({ onClick }: DiaryPostShortProps) {
               textOverflow: 'ellipsis',
             }}
           >
-            Lorem Ipsum is simply dummy text of the printing and typesetting
-            industry. Lorem Ipsum has been the industrys standard dummy text
-            ever since the 1500s, when an unknown printer took a galley of type
-            and scrambled it to make a type specimen book.
+            {post?.content ??
+              'Lorem Ipsum is simply dummy text of the printing and typesetting industry.'}
           </p>
 
           {/* Hashtags */}
