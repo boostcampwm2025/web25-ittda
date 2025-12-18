@@ -20,26 +20,71 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import Input from '@/components/Input';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { useSessionStorage } from '@/hooks/useSessionStorage';
+
+interface PostDraft {
+  title: string;
+  content: string;
+  tags: string[];
+  selectedTime: string;
+  selectedDate: string;
+  selectedLocation: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  } | null;
+}
 
 export default function CreatePostPage() {
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mainContainerRef = useRef<HTMLDivElement>(null);
+  const previousHeightRef = useRef<number>(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [tags, setTags] = useState<string[]>(['hello']);
-  const [tmpInputTags, setTmpInputTags] = useState<string[]>([...tags]);
+  // 현재 위치 가져오기 (역지오코딩 활성화)
+  const {
+    latitude,
+    longitude,
+    address,
+    loading: locationLoading,
+    error: locationError,
+  } = useGeolocation({ reverseGeocode: true });
+
+  // sessionStorage를 사용한 임시 저장
+  const [draft, setDraft, clearDraft] = useSessionStorage<PostDraft>(
+    'diary-travel-draft',
+    {
+      title: '',
+      content: '',
+      tags: [],
+      selectedTime: '오전 12:00',
+      selectedDate: new Date('2000-01-01').toISOString(),
+      selectedLocation: null,
+    },
+  );
+
+  const [title, setTitle] = useState(draft.title);
+  const [content, setContent] = useState(draft.content);
+  const [tags, setTags] = useState<string[]>(draft.tags);
+  const [tmpInputTags, setTmpInputTags] = useState<string[]>([...draft.tags]);
   const [currentTag, setCurrentTag] = useState('');
 
   const [mounted, setMounted] = useState(false);
-  const [selectedTime, setSelectedTime] = useState('오전 12:00');
-  const [selectedDate, setSelectedDate] = useState(new Date('2000-01-01'));
+  const [selectedTime, setSelectedTime] = useState(draft.selectedTime);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date(draft.selectedDate),
+  );
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const previousHeightRef = useRef<number>(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const defaultAddress = '광주광역시 광산구 어딘가';
+
+  // 위치 정보 상태 관리
+  const [selectedLocation, setSelectedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string;
+  } | null>(draft.selectedLocation);
 
   // 클라이언트 마운트 확인 (hydration 에러 방지)
   useEffect(() => {
@@ -48,6 +93,42 @@ export default function CreatePostPage() {
     setSelectedTime(formatTime());
     setSelectedDate(new Date());
   }, []);
+
+  // 위치 정보가 로드되면 자동으로 설정 (draft에 저장된 위치가 없을 때만)
+  useEffect(() => {
+    if (
+      latitude &&
+      longitude &&
+      address &&
+      !draft.selectedLocation &&
+      mounted
+    ) {
+      setSelectedLocation({ latitude, longitude, address });
+    }
+  }, [latitude, longitude, address, mounted]);
+
+  // 상태 변경 시 sessionStorage에 자동 저장
+  useEffect(() => {
+    if (mounted) {
+      setDraft({
+        title,
+        content,
+        tags,
+        selectedTime,
+        selectedDate: selectedDate.toISOString(),
+        selectedLocation,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    title,
+    content,
+    tags,
+    selectedTime,
+    selectedDate,
+    selectedLocation,
+    mounted,
+  ]);
 
   // 자동으로 textarea 높이 조절 및 스크롤
   useEffect(() => {
@@ -126,19 +207,24 @@ export default function CreatePostPage() {
     });
   };
 
+  const handleRemoveLocation = () => {
+    setSelectedLocation(null);
+  };
+
   const handleSubmit = async () => {
     await createPost({
       title,
       content,
       templateType: 'diary',
       eventDate: new Date().toISOString(),
-      address: defaultAddress,
+      address: selectedLocation?.address,
       lat: 35.1395,
       lng: 126.853,
       tags,
     });
 
     // 작성이 완료되면 이전 화면으로 돌아가기
+    clearDraft();
     router.back();
   };
 
@@ -172,10 +258,24 @@ export default function CreatePostPage() {
                   className="w-5 h-5"
                 />
                 <div className="flex justify-start items-center gap-4.5">
-                  <button className="not-italic truncate max-w-44 overflow-hidden">
-                    {defaultAddress}
+                  <button className="not-italic truncate max-w-44 overflow-hidden cursor-pointer">
+                    {selectedLocation
+                      ? selectedLocation.address
+                      : locationLoading
+                        ? '위치 가져오는 중...'
+                        : locationError
+                          ? '위치를 가져올 수 없습니다'
+                          : '위치 추가하기'}
                   </button>
-                  <X className="w-4 h-4" />
+                  {selectedLocation && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveLocation}
+                      className="cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
