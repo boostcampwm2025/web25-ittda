@@ -88,7 +88,7 @@ export default function SideNavigation() {
       {/* Sidebar Panel */}
       <div
         className={cn(
-          'hidden md:block fixed left-0 top-0 h-screen w-[230px] bg-white border-r border-[#f0ebe3] shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] z-50 transition-transform duration-300 ease-out',
+          'hidden md:block fixed left-0 top-0 h-screen w-57.5 bg-white border-r border-[#f0ebe3] shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] z-50 transition-transform duration-300 ease-out',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
         onMouseLeave={() => setIsOpen(false)}
@@ -116,7 +116,23 @@ export default function SideNavigation() {
         {/* Navigation Items */}
         <nav className="p-6 pl-6.5 space-y-2 text-sm">
           {navigationItems.map((item) => {
-            const isActive = pathname === item.href;
+            // 활성 상태 체크 로직
+            const isActive = (() => {
+              // 홈은 정확히 일치해야 함
+              if (item.href === '/') {
+                return pathname === '/';
+              }
+
+              // 지도는 /[id]/record-map 패턴 체크
+              if (item.href.includes('record-map')) {
+                const pathSegments = pathname.split('/').filter(Boolean);
+                // depth가 2이고 마지막 세그먼트가 record-map인 경우
+                return pathSegments.length === 2 && pathSegments[1] === 'record-map';
+              }
+
+              // 나머지는 경로가 해당 href로 시작하는지 체크
+              return pathname.startsWith(item.href);
+            })();
 
             return (
               <Link
