@@ -17,9 +17,11 @@
     "@vis.gl/react-google-maps": "^1.7.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
     "react": "19.2.1",
+    "react-day-picker": "^9.12.0",
     "react-dom": "19.2.1",
     "tailwind-merge": "^3.4.0"
   },

@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, X } from 'lucide-react';
-import { formatDateDot, formatTime } from '@/lib/date';
+import { X } from 'lucide-react';
+import { formatTime } from '@/lib/date';
 import Image from 'next/image';
 import Tag from '@/components/TagButton';
 import { Button } from '@/components/ui/button';
 import { createPost } from '@/lib/api/posts';
 import { useRouter } from 'next/navigation';
 import { TimePicker } from '@/components/TimePicker';
+import DatePicker from '@/components/DatePicker';
 
 export default function CreatePostPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function CreatePostPage() {
   const [tags, setTags] = useState<string[]>(['hello']);
   const [currentTag, setCurrentTag] = useState('');
   const [selectedTime, setSelectedTime] = useState(formatTime());
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousHeightRef = useRef<number>(0);
   const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -105,8 +107,7 @@ export default function CreatePostPage() {
           {/* 날짜 표시 */}
           <div className="mb-2.75">
             <time className="text-lg font-semibold text-itta-black flex justify-start items-center gap-1.25">
-              {formatDateDot()}
-              <ChevronDown color="var(--itta-black)" />
+              <DatePicker value={selectedDate} onChange={setSelectedDate} />
             </time>
 
             <div className="flex justify-start items-center gap-6.5 text-md text-itta-black mt-1 font-medium">
