@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import type { Server } from 'http';
+import type { TemplateType } from '../src/post/post.types';
 import { AppModule } from '../src/app.module';
 
 interface PostsListResponse {
@@ -78,5 +79,45 @@ describe('PostController (e2e)', () => {
     await request(app.getHttpServer() as Server)
       .get('/posts/non-existent-id')
       .expect(404);
+  });
+
+  it('POST /posts should create a new post', async () => {
+    const payload: {
+      title: string;
+      content: string;
+      templateType: TemplateType;
+    } = {
+      title: '새 게시글 제목',
+      content: '새 게시글 내용입니다.',
+      templateType: 'diary',
+    };
+
+    const createRes = await request(app.getHttpServer() as Server)
+      .post('/posts')
+      .send(payload)
+      .expect(201);
+
+    const created = createRes.body as {
+      id: string;
+      title: string;
+      content: string;
+      templateType: TemplateType;
+      createdAt: string;
+    };
+
+    expect(created.id).toBeDefined();
+    expect(created.title).toBe(payload.title);
+    expect(created.content).toBe(payload.content);
+    expect(created.templateType).toBe(payload.templateType);
+    expect(typeof created.createdAt).toBe('string');
+
+    // 실제로 조회가 되는지 한 번 더 확인
+    const getRes = await request(app.getHttpServer() as Server)
+      .get(`/posts/${created.id}`)
+      .expect(200);
+
+    const fetched = getRes.body as { id: string; title: string };
+    expect(fetched.id).toBe(created.id);
+    expect(fetched.title).toBe(payload.title);
   });
 });
