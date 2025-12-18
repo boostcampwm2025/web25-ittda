@@ -32,13 +32,22 @@ export default function CreatePostPage() {
   const [tmpInputTags, setTmpInputTags] = useState<string[]>([...tags]);
   const [currentTag, setCurrentTag] = useState('');
 
-  const [selectedTime, setSelectedTime] = useState(formatTime());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
+  const [selectedTime, setSelectedTime] = useState('오전 12:00');
+  const [selectedDate, setSelectedDate] = useState(new Date('2000-01-01'));
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const previousHeightRef = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const defaultAddress = '광주광역시 광산구 어딘가';
+
+  // 클라이언트 마운트 확인 (hydration 에러 방지)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+    setSelectedTime(formatTime());
+    setSelectedDate(new Date());
+  }, []);
 
   // 자동으로 textarea 높이 조절 및 스크롤
   useEffect(() => {
@@ -133,6 +142,15 @@ export default function CreatePostPage() {
     router.back();
   };
 
+  // 클라이언트 마운트 전에는 로딩 표시
+  if (!mounted) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-itta-gray3">로딩 중...</div>
+      </div>
+    );
+  }
+
   return (
     <>
       <main ref={mainContainerRef} className="w-full h-full overflow-y-auto">
@@ -170,7 +188,7 @@ export default function CreatePostPage() {
               placeholder="제목을 입력하세요"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full text-2xl font-bold text-itta-black placeholder:text-itta-gray3/60 border-none outline-none mb-4"
+              className="w-full text-xl font-bold text-itta-black placeholder:text-itta-gray3/60 border-none outline-none mb-4"
             />
 
             {/* 본문 입력 - 자동 높이 조절 */}
@@ -179,7 +197,7 @@ export default function CreatePostPage() {
               placeholder="이곳에서 당신이 느낀 모든 것을 남겨보세요."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full text-md text-itta-black placeholder:text-itta-gray3/60 placeholder:font-semibold border-none outline-none resize-none min-h-50 leading-relaxed font-medium"
+              className="w-full text-md text-itta-black placeholder:text-itta-gray3/60 border-none outline-none resize-none min-h-50 leading-relaxed font-medium"
             />
 
             {/* 태그 입력 */}
