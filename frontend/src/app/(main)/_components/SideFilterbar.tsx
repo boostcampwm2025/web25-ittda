@@ -30,8 +30,10 @@ export default function SideFilterbar() {
   const pathSegments = pathname.split('/').filter(Boolean);
   // TODO: 임시 경로 기반 분기. 나중에는 페이지별 설정/props 기반으로
   // 사이드 필터바 노출 요소를 결정하도록 개선 필요.
+  // /[userId]/records 및 그 하위 경로(/[userId]/records/[postId] 등)에서는
+  // 필터/메모를 숨기기 위해 두 번째 세그먼트가 records인지 여부만 체크한다.
   const isRecordsPage =
-    pathSegments.length === 2 && pathSegments[1] === 'records';
+    pathSegments.length >= 2 && pathSegments[1] === 'records';
 
   return (
     <div className="min-w-0 w-full h-full flex flex-col">
