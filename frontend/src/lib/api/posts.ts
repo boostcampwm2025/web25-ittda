@@ -1,5 +1,7 @@
-import type { PostListItem } from "../types/post"; 
-import type { CreatePostRequest } from "../types/post";
+import type { PostListItem } from '../types/post';
+import type { CreatePostRequest } from '../types/post';
+
+const API_PREFIX = '/api';
 
 export interface Bbox {
   minLat: number;
@@ -17,7 +19,7 @@ export async function fetchPostsByBbox(
   bbox: Bbox,
 ): Promise<PostsByBboxResponse> {
   const bboxStr = `${bbox.minLat},${bbox.minLng},${bbox.maxLat},${bbox.maxLng}`;
-  const res = await fetch(`/posts?bbox=${bboxStr}&limit=50`);
+  const res = await fetch(`${API_PREFIX}/posts?bbox=${bboxStr}&limit=50`);
   if (!res.ok) throw new Error(`Failed to fetch posts: ${res.status}`);
   return res.json();
 }
@@ -37,7 +39,9 @@ export async function fetchPostList(
   page = 1,
   limit = 10,
 ): Promise<PostListResponse> {
-  const res = await fetch(`/posts/list?page=${page}&limit=${limit}`);
+  const res = await fetch(
+    `${API_PREFIX}/posts/list?page=${page}&limit=${limit}`,
+  );
 
   if (!res.ok) {
     throw new Error(`Failed to fetch post list: ${res.status}`);
@@ -47,7 +51,7 @@ export async function fetchPostList(
 }
 
 export async function fetchPostById(postId: string): Promise<PostListItem> {
-  const res = await fetch(`/posts/${postId}`);
+  const res = await fetch(`${API_PREFIX}/posts/${postId}`);
 
   if (!res.ok) {
     throw new Error(`Failed to fetch post: ${res.status}`);
@@ -57,7 +61,7 @@ export async function fetchPostById(postId: string): Promise<PostListItem> {
 }
 
 export async function createPost(body: CreatePostRequest) {
-  const res = await fetch('/posts', {
+  const res = await fetch(`${API_PREFIX}/posts`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
