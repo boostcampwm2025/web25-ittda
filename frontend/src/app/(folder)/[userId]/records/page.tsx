@@ -43,7 +43,7 @@ export default function HomePage() {
         </div>
 
         {/* 사이드바 */}
-        <aside className="w-[320px] h-full overflow-y-auto border-l border-itta-gray2 px-4.25 py-6.5">
+        <aside className="hidden md:block w-[320px] h-full overflow-y-auto border-l border-itta-gray2 px-4.25 py-6.5">
           <SideFilterbar />
         </aside>
       </main>
