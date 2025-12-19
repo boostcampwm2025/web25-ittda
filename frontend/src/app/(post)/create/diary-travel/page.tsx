@@ -22,7 +22,6 @@ import {
 import Input from '@/components/Input';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
-import { useRouter } from 'next/navigation';
 
 interface PostDraft {
   title: string;
@@ -43,8 +42,6 @@ export default function CreatePostPage() {
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const previousHeightRef = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const router = useRouter();
 
   // 현재 위치 가져오기 (역지오코딩 활성화)
   const {
@@ -92,7 +89,6 @@ export default function CreatePostPage() {
 
   // 클라이언트 마운트 확인 (hydration 에러 방지)
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
 
     // 최초 마운트 시에만 현재 시간으로 초기화 (draft가 비어있을 때만)

@@ -17,7 +17,7 @@ export default function DiaryPostDetail({
   onBack,
 }: DiaryPostDetailProps) {
   const eventDate = new Date(post.eventDate);
-  // const created = new Date(post.createdAt);
+
   const router = useRouter();
 
   const day = eventDate.getDate();

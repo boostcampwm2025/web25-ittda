@@ -91,6 +91,8 @@ export function makeFakePosts(count = 2000): PostListItem[] {
       max: 3,
     });
 
+    const eventDate = String(new Date());
+
     return {
       id,
       title,
@@ -99,6 +101,7 @@ export function makeFakePosts(count = 2000): PostListItem[] {
       lat,
       lng,
       createdAt,
+      eventDate,
       content,
       imageUrl,
       tags,
@@ -109,7 +112,7 @@ export function makeFakePosts(count = 2000): PostListItem[] {
 export function filterByBbox<T extends { lat: number; lng: number }>(
   items: T[],
   bbox: { minLat: number; minLng: number; maxLat: number; maxLng: number },
-) {
+): T[] {
   return items.filter(
     (p) =>
       p.lat >= bbox.minLat &&
