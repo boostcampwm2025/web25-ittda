@@ -1,6 +1,6 @@
 'use client';
 
-import Searchbar from '@/components/Searchbar';
+import Input from '@/components/Input';
 import TagButton from '@/components/TagButton';
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import {
@@ -9,6 +9,7 @@ import {
   Film,
   LineSquiggle,
   Music2,
+  Search,
 } from 'lucide-react';
 import type { PostListItem } from '@/lib/types/post';
 import { useEffect } from 'react';
@@ -87,8 +88,22 @@ export default function GoogleMap({
         className="absolute top-3.5 right-4.25"
         style={{ left: isMobile ? '5px' : `${filterWidth}px` }}
       >
-        <Searchbar className="w-full" onCalendarClick={() => {}} />
-        <div className="flex gap-1.5 sm:gap-2.5 mt-2 overflow-x-auto whitespace-nowrap ">
+        <Input className="w-full">
+          <Input.Left>
+            <Search className="w-5 h-5 text-itta-gray2" />
+          </Input.Left>
+          <Input.Field placeholder="로그 검색하기" />
+          <Input.Right>
+            <button
+              type="button"
+              onClick={() => {}}
+              className="shrink-0 p-1 hover:bg-itta-gray2/10 rounded transition-colors cursor-pointer"
+            >
+              <Calendar className="w-5 h-5 text-itta-gray3" />
+            </button>
+          </Input.Right>
+        </Input>
+        <div className="flex gap-2.5 mt-2">
           <TagButton
             onClick={() => {}}
             className="flex justify-center items-center gap-1"

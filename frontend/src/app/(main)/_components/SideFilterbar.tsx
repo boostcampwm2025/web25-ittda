@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Searchbar from '@/components/Searchbar';
+import Input from '@/components/Input';
 import TagButton from '@/components/TagButton';
 import SimpleMemo from './SimpleMemo';
 import {
@@ -10,6 +10,7 @@ import {
   Film,
   LineSquiggle,
   Music2,
+  Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
@@ -38,12 +39,25 @@ export default function SideFilterbar() {
   return (
     <div className="min-w-0 w-full h-full flex flex-col">
       <div className="h-full">
-        <Searchbar placeholder="로그 검색하기" onCalendarClick={() => {}} />
+        <Input className="w-full">
+          <Input.Left>
+            <Search className="w-5 h-5 text-itta-gray2" />
+          </Input.Left>
+          <Input.Field placeholder="로그 검색하기" />
+          <Input.Right>
+            <button
+              type="button"
+              onClick={() => {}}
+              className="shrink-0 hover:bg-itta-gray2/10 rounded transition-colors cursor-pointer"
+            >
+              <Calendar className="w-5 h-5 text-itta-gray3" />
+            </button>
+          </Input.Right>
+        </Input>
         {!isRecordsPage && (
-        <div className="whitespace-nowrap flex gap-2 md:gap-2.5 mt-3 md:mt-7 md:flex-wrap overflow-x-auto">
-          <TagButton
-            onClick={() => {}}
-    
+          <div className="whitespace-nowrap flex gap-2 md:gap-2.5 mt-3 md:mt-7 md:flex-wrap overflow-x-auto">
+            <TagButton
+              onClick={() => {}}
               className="flex justify-center items-center gap-1"
             >
               <Clapperboard
