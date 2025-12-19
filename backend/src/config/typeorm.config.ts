@@ -10,7 +10,8 @@ export const getTypeOrmConfig = (
   username: configService.get('DB_USERNAME'),
   password: configService.get('DB_PASSWORD'),
   database: configService.get('DB_DATABASE'),
-  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'], // typeorm entity
+  migrations: [__dirname + '/../migrations/*{.ts,.js}'], // TODO: migration production용
   synchronize: configService.get('NODE_ENV') === 'development',
   logging: true,
 });
