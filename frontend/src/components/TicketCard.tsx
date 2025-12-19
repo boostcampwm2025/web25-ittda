@@ -24,7 +24,7 @@ export default function TicketCard({
   accentColor = '#123c86',
 }: TicketProps) {
   return (
-    <div className="relative flex rounded-lg border box-content border-itta-gray2 bg-white overflow-visible">
+    <div className="relative flex rounded-lg border box-content border-itta-gray2 bg-white overflow-visible ">
       <SemiCircle
         direction="right"
         className="absolute -left-px top-1/2 -translate-y-1/2 z-10"
@@ -45,7 +45,7 @@ export default function TicketCard({
       {/* 좌측 포스터 영역 */}
       <div
         className={cn(
-          'w-26.25 flex items-center justify-center rounded-tl-lg rounded-bl-lg',
+          'w-18 sm:w-26.25 shrink-0 flex items-center justify-center rounded-tl-lg rounded-bl-lg',
         )}
         style={{ backgroundColor: accentColor }}
       >
@@ -53,7 +53,7 @@ export default function TicketCard({
       </div>
 
       {/* 중앙 정보 영역 */}
-      <div className="flex-col px-6 py-5">
+      <div className="flex-col flex-1 px-3 md:px-6 py-5 w-3/5">
         <h2 className="text-sm font-bold mb-3 text-itta-black">{title}</h2>
         <div className="flex flex-col justify-center items-start gap-1">
           <p className="text-xs text-itta-black">{venue}</p>
@@ -63,7 +63,7 @@ export default function TicketCard({
       </div>
 
       {/* 우측 날짜 영역 */}
-      <div className="relative text-itta-black text-xs flex flex-col pl-3 pr-6 py-10 items-start justify-center border-l border-itta-gray2 border-dashed">
+      <div className="relative hidden sm:block text-itta-black text-xs flex flex-col pl-1 md:pl-3 pr-4 md:pr-6 py-10 items-start justify-center border-l border-itta-gray2 border-dashed">
         <p>{date}</p>
         <p>{time}</p>
       </div>

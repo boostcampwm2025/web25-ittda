@@ -30,7 +30,7 @@ export default function PerformanceCard({
   return (
     <div className="group relative bg-white cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
       {/* Ticket Preview */}
-      <div className="p-6 border-gray-100 w-fit">
+      <div className="p-2 md:p-6 border-gray-100 w-full">
         <TicketCard
           title={title}
           venue={venue}

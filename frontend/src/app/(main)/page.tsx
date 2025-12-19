@@ -4,6 +4,7 @@ import SimpleInput from '@/components/SimpleInput';
 import PostList from './_components/PostList';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { cn } from '@/lib/utils';
+import SideFilterbar from './_components/SideFilterbar';
 import FloatingCreateButton from '@/components/FloatingCreateButton';
 
 export default function HomePage() {
@@ -17,7 +18,7 @@ export default function HomePage() {
       >
         <div
           className={cn(
-            'sticky top-0 z-20 bg-white py-5 transition-transform duration-300 ease-out',
+            'hidden md:block sticky top-0 z-20 bg-white py-5 transition-transform duration-300 ease-out',
             isVisible ? 'translate-y-0' : '-translate-y-[calc(100%+1.25rem)]',
           )}
         >
@@ -26,6 +27,9 @@ export default function HomePage() {
               showCheckIcon
               placeholder="간단히 메모할 사항을 작성해주세요."
             />
+          </div>
+          <div className="block md:hidden">
+            <SideFilterbar />
           </div>
         </div>
 

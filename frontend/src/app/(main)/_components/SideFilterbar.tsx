@@ -40,9 +40,10 @@ export default function SideFilterbar() {
       <div className="h-full">
         <Searchbar placeholder="로그 검색하기" onCalendarClick={() => {}} />
         {!isRecordsPage && (
-          <div className="flex gap-2.5 mt-7 flex-wrap">
-            <TagButton
-              onClick={() => {}}
+        <div className="whitespace-nowrap flex gap-2 md:gap-2.5 mt-3 md:mt-7 md:flex-wrap overflow-x-auto">
+          <TagButton
+            onClick={() => {}}
+    
               className="flex justify-center items-center gap-1"
             >
               <Clapperboard
@@ -106,9 +107,11 @@ export default function SideFilterbar() {
 
       {/* 기록 리스트 화면에서는 메모 카드도 숨김 */}
       {!isRecordsPage && (
-        <ResponsiveMemoContainer>
-          <SimpleMemo />
-        </ResponsiveMemoContainer>
+        <div className="hidden md:block">
+          <ResponsiveMemoContainer>
+            <SimpleMemo />
+          </ResponsiveMemoContainer>
+        </div>
       )}
     </div>
   );

@@ -36,9 +36,6 @@ export default function HomePage() {
     : null;
   return (
     <div className="w-full bg-white pb-10 h-full">
-      <Header>
-        <Header.Title>나의 기록 - 일기/여행</Header.Title>
-      </Header>
       <article className="relative w-full px-6 py-4">
         <div className="absolute left-[31px] top-6 bottom-0 w-[1.5px] bg-gray-200 pointer-events-none" />
         <div className="relative pl-8">
