@@ -66,6 +66,7 @@ export default function SelectLocationPage() {
   } = useGeolocation({ reverseGeocode: false });
 
   // 지도 중심 좌표 (지도가 움직일 때마다 업데이트)
+  console.log(latitude, longitude);
   const [center, setCenter] = useState<{ lat: number; lng: number }>({
     lat: latitude || 37.5665,
     lng: longitude || 126.978,
@@ -263,7 +264,10 @@ export default function SelectLocationPage() {
   return (
     <div className="w-full h-full flex flex-col relative">
       <div className="absolute w-full flex flex-col mt-2 md:px-4 px-2 z-10 md:max-w-96">
-        <Popover open={showResults && searchResults.length > 0} onOpenChange={setShowResults}>
+        <Popover
+          open={showResults && searchResults.length > 0}
+          onOpenChange={setShowResults}
+        >
           <PopoverTrigger asChild>
             <div className="w-full flex justify-start items-center pointer-events-none">
               <Input className="w-full pointer-events-auto">
