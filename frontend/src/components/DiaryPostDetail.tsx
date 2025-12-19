@@ -20,6 +20,8 @@ export default function DiaryPostDetail({
   // const created = new Date(post.createdAt);
   const router = useRouter();
 
+  const router = useRouter();
+
   const day = eventDate.getDate();
   const time = eventDate.toLocaleTimeString('ko-KR', {
     hour: '2-digit',

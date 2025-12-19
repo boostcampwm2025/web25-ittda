@@ -27,8 +27,11 @@ jobs:
 
       - name: Build & Push Frontend
         run: |
-          docker build -t ${{ secrets.NCP_REGISTRY_URL }}/project/frontend:latest ./frontend
-          docker push ${{ secrets.NCP_REGISTRY_URL }}/project/frontend:latest
+          docker build \
+          -f frontend/Dockerfile \
+          -t ${{ secrets.NCP_REGISTRY_URL }}/frontend:latest \
+          .
+          docker push ${{ secrets.NCP_REGISTRY_URL }}/frontend:latest
 
       - name: Deploy Frontend
         uses: appleboy/ssh-action@v1
@@ -38,8 +41,8 @@ jobs:
           key: ${{ secrets.APP_SERVER_SSH_KEY }}
           script: |
             cd /home/${{ secrets.APP_SERVER_USER }}/app
-            docker-compose pull frontend
-            docker-compose up -d frontend
+            docker compose pull frontend
+            docker compose up -d frontend
 
   backend:
     runs-on: ubuntu-latest
@@ -57,8 +60,11 @@ jobs:
 
       - name: Build & Push Backend
         run: |
-          docker build -t ${{ secrets.NCP_REGISTRY_URL }}/project/backend:latest ./backend
-          docker push ${{ secrets.NCP_REGISTRY_URL }}/project/backend:latest
+          docker build \
+          -f backend/Dockerfile \
+          -t ${{ secrets.NCP_REGISTRY_URL }}/backend:latest \
+          .
+          docker push ${{ secrets.NCP_REGISTRY_URL }}/backend:latest
 
       - name: Deploy Backend
         uses: appleboy/ssh-action@v1
@@ -68,31 +74,42 @@ jobs:
           key: ${{ secrets.APP_SERVER_SSH_KEY }}
           script: |
             cd /home/${{ secrets.APP_SERVER_USER }}/app
-            docker-compose pull backend
-            docker-compose up -d backend
+            docker compose pull backend
+            docker compose up -d backend
 
-# CI/CD 흐름 검증
+# CI/CD 흐름 (Docker Compose v2 기준)
 
 # 1. Frontend 변경 시
-
-# frontend Docker build
-
-# NCR push
-
+#
+# GitHub Actions:
+# - frontend Docker 이미지 빌드
+# - NCP Container Registry에 push
+#
 # 서버:
-# docker-compose pull frontend # 지정한 서비스의 이미지를 레지스트리에서 최신 버전으로 가져옵니다.
-# docker-compose up -d frontend # 해당 서비스만 최신 이미지로 재시작합니다.
+# docker compose pull frontend
+#   → 레지스트리에서 최신 frontend 이미지 pull
+#
+# docker compose up -d frontend
+#   → frontend 서비스 컨테이너만 재생성
+#   → Nginx, backend, DB 등 다른 서비스에는 영향 없음
+#   → 단일 컨테이너 재시작이므로 짧은 연결 단절은 발생 가능
 
 # 2. Backend 변경 시
-
-# backend Docker build
-
-# NCR push
-
+#
+# GitHub Actions:
+# - backend Docker 이미지 빌드
+# - NCP Container Registry에 push
+#
 # 서버:
-# docker-compose pull backend
-# docker-compose up -d backend
+# docker compose pull backend
+#   → 최신 backend 이미지 pull
+#
+# docker compose up -d backend
+#   → backend 컨테이너만 재생성
+#   → 다른 서비스 재기동 없음
+#   → 활성 연결은 컨테이너 교체 시 종료될 수 있음
 
-# → Nginx, 다른 서비스 재기동 없음
-
-# docker-compose down: 모든 컨테이너를 정지하고 삭제합니다. 사용 x
+# 주의:
+# - docker compose down 은 전체 서비스 중단이므로 사용하지 않음
+# - 본 구성은 "서비스 단위 영향 최소화" 수준이며
+#   엄밀한 Zero Downtime(무중단)을 보장하지는 않음
