@@ -222,11 +222,12 @@ export default function CreatePostPage() {
   };
 
   const handleSubmit = async () => {
+    const koreaDate = new Date(selectedDate.getTime() + 9 * 60 * 60 * 1000);
     await createPost({
       title,
       content,
       templateType: 'diary',
-      eventDate: new Date().toISOString(),
+      eventDate: koreaDate.toISOString(),
       address: selectedLocation?.address,
       lat: 37.4395,
       lng: 126.853,
