@@ -22,7 +22,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="w-full bg-white h-full relative pb-8">
+    <div className="w-full bg-white h-full relative">
       <main className="flex w-full h-full">
         {/*리스트 */}
         <div className="relative flex-[3]">
