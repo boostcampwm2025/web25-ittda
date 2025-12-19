@@ -13,15 +13,15 @@ export default function DiaryPostShort({
   onClick,
   active = false,
 }: DiaryPostShortProps) {
-  const created = post ? new Date(post.createdAt) : new Date();
+  const eventDate = post ? new Date(post.eventDate) : new Date();
 
-  const day = created.getDate(); // 10
-  const time = created.toLocaleTimeString('ko-KR', {
+  const day = eventDate.getDate(); // 10
+  const time = eventDate.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   }); // 18:46
-  const weekday = created.toLocaleDateString('ko-KR', {
+  const weekday = eventDate.toLocaleDateString('ko-KR', {
     weekday: 'long',
   }); // 수요일
 

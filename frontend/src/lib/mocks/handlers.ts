@@ -3,9 +3,9 @@ import { makeFakePosts, filterByBbox } from '../fake/fakePosts';
 
 const DB = makeFakePosts(2000);
 
-// GET /posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
+// GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
-  http.get('/posts/list', ({ request }) => {
+  http.get('/api/posts/list', ({ request }) => {
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') ?? '1');
     const limit = Number(url.searchParams.get('limit') ?? '10');
@@ -33,7 +33,7 @@ export const handlers = [
     );
   }),
 
-  http.get('/posts', ({ request }) => {
+  http.get('/api/posts', ({ request }) => {
     const url = new URL(request.url);
     const bboxStr = url.searchParams.get('bbox');
     const limit = Number(url.searchParams.get('limit') ?? '50');
@@ -60,7 +60,7 @@ export const handlers = [
     );
   }),
 
-  http.get('/posts/:id', ({ params }) => {
+  http.get('/api/posts/:id', ({ params }) => {
     const id = String(params.id);
     const found = DB.find((p) => p.id === id);
     if (!found) return new HttpResponse(null, { status: 404 });

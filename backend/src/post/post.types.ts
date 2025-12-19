@@ -1,3 +1,10 @@
+export interface Bbox {
+  minLat: number;
+  minLng: number;
+  maxLat: number;
+  maxLng: number;
+}
+
 export type TemplateType =
   | 'diary'
   | 'travel'
@@ -7,24 +14,24 @@ export type TemplateType =
   | 'memo'
   | 'etc';
 
-export interface PostListItem {
+export interface Post {
   id: string;
   title: string;
   templateType: TemplateType;
-  address: string;
-  lat?: number;
-  lng?: number;
-  createdAt: string;
-  eventDate: string;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  createdAt: string; // 서버 저장 시각
+  eventDate: string; // 사용자가 지정한 날짜
   content: string;
   imageUrl?: string;
   tags?: string[];
 }
 
-export interface CreatePostRequest {
-  templateType?: TemplateType; // 기본값 'diary'
+export interface CreatePostDto {
   title: string;
   content: string;
+  templateType: TemplateType;
   eventDate: string;
   address?: string;
   lat?: number;
