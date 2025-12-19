@@ -7,7 +7,6 @@ import Image from 'next/image';
 import Tag from '@/components/TagButton';
 import { Button } from '@/components/ui/button';
 import { createPost } from '@/lib/api/posts';
-import { useRouter } from 'next/navigation';
 import { TimePicker } from '@/components/TimePicker';
 import DatePicker from '@/components/DatePicker';
 import {
@@ -229,7 +228,7 @@ export default function CreatePostPage() {
       templateType: 'diary',
       eventDate: new Date().toISOString(),
       address: selectedLocation?.address,
-      lat: 35.1395,
+      lat: 37.4395,
       lng: 126.853,
       tags,
     });
