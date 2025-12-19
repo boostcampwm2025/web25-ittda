@@ -1,21 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { fetchPostsByBbox } from '@/lib/api/posts';
+import { fetchPostList } from '@/lib/api/posts';
 import DiaryPostShort from '@/components/DiaryPostShort';
 import PerformanceCard from '@/components/PerformanceCard';
-
-type Bbox = { minLat: number; minLng: number; maxLat: number; maxLng: number };
-
-// 1) 일단 임시 bbox (서울 근처)
-// 다음 단계에서 "지도 bounds → bbox"로 바꿀 것
-const TEST_BBOX: Bbox = {
-  minLat: 37.4,
-  minLng: 126.8,
-  maxLat: 37.7,
-  maxLng: 127.2,
-};
-
 
 const PERFORMANCES = [
   {
@@ -67,8 +55,8 @@ const PERFORMANCES = [
 
 export default function PostList() {
     const { data } = useQuery({
-      queryKey: ['posts', 'bbox', TEST_BBOX],
-      queryFn: () => fetchPostsByBbox(TEST_BBOX),
+      queryKey: ['posts'],
+      queryFn: () => fetchPostList(),
       select: (res) => res.items,
     });
   const posts = data ?? [];

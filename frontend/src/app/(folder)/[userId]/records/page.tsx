@@ -2,9 +2,9 @@
 
 import DiaryPostShort from '@/components/DiaryPostShort';
 import { useRouter, usePathname } from 'next/navigation';
-import Header from '@/components/Header';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPostList } from '@/lib/api/posts';
+import FloatingCreateButton from '@/components/FloatingCreateButton';
 
 export default function HomePage() {
   const router = useRouter();
@@ -38,6 +38,7 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+      <FloatingCreateButton />
     </div>
   );
 }

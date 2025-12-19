@@ -6,8 +6,11 @@ import { formatDateDot, formatTime } from '@/lib/date';
 import Image from 'next/image';
 import Tag from '@/components/TagButton';
 import { Button } from '@/components/ui/button';
+import { createPost } from '@/lib/api/posts';
+import { useRouter } from 'next/navigation';
 
 export default function CreatePostPage() {
+  const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>(['hello']);
@@ -15,6 +18,7 @@ export default function CreatePostPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousHeightRef = useRef<number>(0);
   const mainContainerRef = useRef<HTMLDivElement>(null);
+  const defaultAddress = '광주광역시 광산구 어딘가';
 
   // 자동으로 textarea 높이 조절 및 스크롤
   useEffect(() => {
@@ -56,10 +60,22 @@ export default function CreatePostPage() {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSubmit = () => {
-    // TODO: 게시글 저장 로직
-    // console.log({ title, content, tags });
+  const handleSubmit = async () => {
+    await createPost({
+      title,
+      content,
+      templateType: 'diary',
+      eventDate: new Date().toISOString(),
+      address: defaultAddress,
+      lat: 35.1395,
+      lng: 126.853,
+      tags,
+    });
+
+    // 작성이 완료되면 이전 화면으로 돌아가기
+    router.back();
   };
+
 
   return (
     <>
@@ -84,7 +100,7 @@ export default function CreatePostPage() {
                 />
                 <div className="flex justify-start items-center gap-4.5">
                   <address className="not-italic truncate max-w-44 overflow-hidden">
-                    광주광역시 광산구 어딘가의 위치
+                    {defaultAddress}
                   </address>
                   <X className="w-4 h-4" />
                 </div>
