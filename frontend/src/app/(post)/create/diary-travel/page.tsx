@@ -89,7 +89,6 @@ export default function CreatePostPage() {
 
   // 클라이언트 마운트 확인 (hydration 에러 방지)
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
 
     // 최초 마운트 시에만 현재 시간으로 초기화 (draft가 비어있을 때만)
@@ -224,11 +223,12 @@ export default function CreatePostPage() {
   };
 
   const handleSubmit = async () => {
+    const koreaDate = new Date(selectedDate.getTime() + 9 * 60 * 60 * 1000);
     await createPost({
       title,
       content,
       templateType: 'diary',
-      eventDate: new Date().toISOString(),
+      eventDate: koreaDate.toISOString(),
       address: selectedLocation?.address,
       lat: 37.4395,
       lng: 126.853,
