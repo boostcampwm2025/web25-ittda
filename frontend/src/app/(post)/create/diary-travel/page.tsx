@@ -7,7 +7,6 @@ import Image from 'next/image';
 import Tag from '@/components/TagButton';
 import { Button } from '@/components/ui/button';
 import { createPost } from '@/lib/api/posts';
-import { useRouter } from 'next/navigation';
 import { TimePicker } from '@/components/TimePicker';
 import DatePicker from '@/components/DatePicker';
 import {
@@ -43,8 +42,6 @@ export default function CreatePostPage() {
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const previousHeightRef = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const router = useRouter();
 
   // 현재 위치 가져오기 (역지오코딩 활성화)
   const {
