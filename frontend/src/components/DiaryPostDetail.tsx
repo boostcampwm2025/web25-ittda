@@ -1,8 +1,11 @@
+'use client';
+
 import Image from 'next/image';
 import { ChevronLeft, Ellipsis, Footprints } from 'lucide-react';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import type { PostListItem } from '@/lib/types/post';
+import { useRouter } from 'next/navigation';
 
 interface DiaryPostDetailProps {
   post: PostListItem;
@@ -14,6 +17,8 @@ export default function DiaryPostDetail({
   onBack,
 }: DiaryPostDetailProps) {
   const eventDate = new Date(post.eventDate);
+  // const created = new Date(post.createdAt);
+  const router = useRouter();
 
   const day = eventDate.getDate();
   const time = eventDate.toLocaleTimeString('ko-KR', {
@@ -154,7 +159,10 @@ export default function DiaryPostDetail({
 
       <div className="w-full flex flex-col gap-4.5 px-5 py-4">
         <Button size="lg">로그 공유하기</Button>
-        <button className="w-full text-sm py-6.5 rounded-[10px] border-itta-black border border-dashed bg-white text-itta-black cursor-pointer">
+        <button
+          onClick={() => router.push('/create/diary-travel')}
+          className="w-full text-sm py-6.5 rounded-[10px] border-itta-black border border-dashed bg-white text-itta-black cursor-pointer"
+        >
           로그 추가하기
         </button>
       </div>
