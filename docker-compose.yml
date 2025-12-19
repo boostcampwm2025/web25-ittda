@@ -19,7 +19,7 @@ services:
     # 컨테이너 내부에서 사용할 환경 변수 설정
     environment:
       NODE_ENV: production # 운영 환경으로 설정
-      NEXT_PUBLIC_MOCK: true
+      NEXT_PUBLIC_MOCK: ${NEXT_PUBLIC_MOCK}
       NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
     networks:
       - app-net
