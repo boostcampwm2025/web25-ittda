@@ -230,7 +230,7 @@ export default function CreatePostPage() {
       templateType: 'diary',
       eventDate: new Date().toISOString(),
       address: selectedLocation?.address,
-      lat: 35.1395,
+      lat: 37.4395,
       lng: 126.853,
       tags,
     });

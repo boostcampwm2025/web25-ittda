@@ -66,7 +66,6 @@ export default function SelectLocationPage() {
   } = useGeolocation({ reverseGeocode: false });
 
   // 지도 중심 좌표 (지도가 움직일 때마다 업데이트)
-  console.log(latitude, longitude);
   const [center, setCenter] = useState<{ lat: number; lng: number }>({
     lat: latitude || 37.5665,
     lng: longitude || 126.978,
