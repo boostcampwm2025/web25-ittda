@@ -1,9 +1,10 @@
 'use client';
 
-import SimpleInput from '@/components/SimpleInput';
+import Input from '@/components/Input';
 import PostList from './_components/PostList';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 import SideFilterbar from './_components/SideFilterbar';
 import FloatingCreateButton from '@/components/FloatingCreateButton';
 
@@ -23,10 +24,12 @@ export default function HomePage() {
           )}
         >
           <div className="w-full max-w-2xl mx-auto">
-            <SimpleInput
-              showCheckIcon
-              placeholder="간단히 메모할 사항을 작성해주세요."
-            />
+            <Input>
+              <Input.Field placeholder="간단히 메모할 사항을 작성해주세요." />
+              <Input.Right>
+                <Check className="w-5 h-5 text-itta-point" />
+              </Input.Right>
+            </Input>
           </div>
           <div className="block md:hidden">
             <SideFilterbar />
