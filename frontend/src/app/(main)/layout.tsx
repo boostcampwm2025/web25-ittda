@@ -17,7 +17,7 @@ export default function MainLayout({
         <main className="flex flex-1 min-h-0 w-full">
           <div className="flex-3 overflow-y-auto">{children}</div>
 
-          <aside className="flex-1 h-full overflow-y-auto border-l-[0.5px] border-itta-gray2 px-4.25 py-6.5">
+          <aside className="hidden md:block flex-1 h-full overflow-y-auto border-l-[0.5px] border-itta-gray2 px-4.25 py-6.5">
             <SideFilterbar />
           </aside>
         </main>

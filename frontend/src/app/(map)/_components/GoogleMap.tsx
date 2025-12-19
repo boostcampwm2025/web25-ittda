@@ -19,6 +19,7 @@ interface GoogleMapProps {
   leftPanelWidth: number;
   selectedPostId: string | null;
   onSelectPost: (id: string | null) => void;
+  isMobile: boolean;
 }
 
 function FlyToOnSelect({
@@ -49,6 +50,7 @@ export default function GoogleMap({
   leftPanelWidth,
   selectedPostId,
   onSelectPost,
+  isMobile,
 }: GoogleMapProps) {
   const filterWidth = leftPanelWidth > 500 ? 500 + 17 : leftPanelWidth + 17;
 
@@ -83,10 +85,10 @@ export default function GoogleMap({
 
       <section
         className="absolute top-3.5 right-4.25"
-        style={{ left: `${filterWidth}px` }}
+        style={{ left: isMobile ? '5px' : `${filterWidth}px` }}
       >
         <Searchbar className="w-full" onCalendarClick={() => {}} />
-        <div className="flex gap-2.5 mt-2">
+        <div className="flex gap-1.5 sm:gap-2.5 mt-2 overflow-x-auto whitespace-nowrap ">
           <TagButton
             onClick={() => {}}
             className="flex justify-center items-center gap-1"
@@ -118,13 +120,6 @@ export default function GoogleMap({
           >
             <Calendar size={16} color="var(--itta-point)" />
             일기/여행
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Clapperboard size={16} color="var(--itta-point)" />
-            영화
           </TagButton>
           <TagButton
             onClick={() => {}}

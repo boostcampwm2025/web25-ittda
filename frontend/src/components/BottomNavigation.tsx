@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+const userId = '111'; // 임시 유저 ID, 추후 인증 로직과 연동 필요
+
 const navigationItems = [
   {
     href: '/',
@@ -14,14 +16,14 @@ const navigationItems = [
     label: '홈',
   },
   {
-    href: '/111/record-map',
+    href: `/${userId}/record-map`,
     icon: '/icons/location-on.svg',
     iconFill: '/icons/location-on-fill.svg',
     alt: '지도',
     label: '지도',
   },
   {
-    href: '/records',
+    href: `/${userId}/records`,
     icon: '/icons/post.svg',
     iconFill: '/icons/post-fill.svg',
     alt: '나의기록',
