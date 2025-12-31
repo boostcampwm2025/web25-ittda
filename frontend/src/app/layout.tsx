@@ -3,9 +3,9 @@ import { Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
 import MswLoader from '@/components/MswLoader';
 import Providers from './providers';
-import SideNavigation from '@/components/SideNavigation';
 import BottomNavigation from '@/components/BottomNavigation';
 import Script from 'next/script';
+import ConditionalHeader from '@/components/ConditionalHeader';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -31,9 +31,11 @@ export default function RootLayout({
         />
         <Providers>
           <MswLoader />
-          {children}
-          <SideNavigation />
-          <BottomNavigation />
+          <div className="flex flex-col min-h-screen max-w-4xl mx-auto shadow-2xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+            <ConditionalHeader />
+            {children}
+            <BottomNavigation />
+          </div>
         </Providers>
       </body>
     </html>
