@@ -34,7 +34,7 @@ export default function RootLayout({
         />
         <Providers>
           <MswLoader />
-          <div className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+          <div className="flex flex-col min-h-screen max-w-4xl mx-auto shadow-2xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
             <ConditionalHeader />
             {children}
             <BottomNavigation />
