@@ -19,13 +19,15 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.26",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
     "react": "19.2.1",
     "react-day-picker": "^9.12.0",
     "react-dom": "19.2.1",
     "tailwind-merge": "^3.4.0",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",
