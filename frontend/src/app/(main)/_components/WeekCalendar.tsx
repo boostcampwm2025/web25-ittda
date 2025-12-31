@@ -24,14 +24,8 @@ export default function WeekCalendar() {
   // 연월 표시용 계산 (중앙 주차 기준)
   const calculateYearMonth = useCallback(
     (dateStr?: string) => {
-      console.log('dateStr', dateStr, 'currentWeekStart', currentWeekStart);
       const d = dateStr ? new Date(dateStr) : currentWeekStart;
       setDisplayYearMonth(
-        `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`,
-      );
-      console.log(
-        'd',
-        d,
         `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`,
       );
     },
