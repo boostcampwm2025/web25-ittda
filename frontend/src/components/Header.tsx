@@ -1,66 +1,64 @@
+'use client';
+
 import { cn } from '@/lib/utils';
-import { ReactNode } from 'react';
+import { Search } from 'lucide-react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
-interface HeaderRootProps {
-  className?: string;
-  children: ReactNode;
-}
+export default function Header() {
+  const router = useRouter();
 
-interface HeaderSubComponentProps {
-  children: ReactNode;
-  className?: string;
-}
-
-function HeaderRoot({ className, children }: HeaderRootProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-20 w-full px-6 py-8 pb-5.5 bg-white shadow-[0_4px_6px_-4px_rgba(0,0,0,0.15)]',
-        className,
+        'sticky top-0 z-50 w-full px-5 py-4',
+        'flex items-center justify-between',
+        'backdrop-blur-xl transition-all duration-500 border-b',
+        'bg-white/80 border-gray-100/50',
+        'dark:bg-[#121212]/80 dark:border-white/5',
       )}
     >
-      <div className="flex items-center gap-4">{children}</div>
+      <div
+        onClick={() => router.push('/')}
+        className="flex flex-col cursor-pointer group"
+      >
+        <h1
+          className={cn(
+            'text-xl font-semibold tracking-tight transition-all active:scale-95',
+            'text-[#222222] dark:text-white',
+          )}
+        >
+          잇다-
+        </h1>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => router.push('/search')}
+          className={cn(
+            'p-2.5 rounded-2xl transition-all active:scale-90',
+            'hover:bg-gray-50 text-gray-500',
+            'dark:hover:bg-white/5 dark:text-gray-400',
+          )}
+        >
+          <Search className="w-5 h-5" strokeWidth={2.2} />
+        </button>
+        <button
+          onClick={() => router.push('/profile')}
+          className={cn(
+            'w-10 h-10 rounded-full overflow-hidden border transition-all active:scale-90',
+            'border-gray-100 shadow-sm',
+            'dark:border-white/10 dark:shadow-none',
+          )}
+        >
+          <Image
+            src="/profile-ex.jpeg"
+            alt="프로필"
+            className="w-full h-full object-cover"
+            width={30}
+            height={30}
+          />
+        </button>
+      </div>
     </header>
   );
 }
-
-function HeaderLeft({ children, className }: HeaderSubComponentProps) {
-  return (
-    <div className={cn('flex items-center space-x-2 shrink-0', className)}>
-      {children}
-    </div>
-  );
-}
-
-function HeaderTitle({ children, className }: HeaderSubComponentProps) {
-  return (
-    <h1 className={cn('text-xl font-bold text-itta-black shrink-0', className)}>
-      {children}
-    </h1>
-  );
-}
-
-function HeaderCenter({ children, className }: HeaderSubComponentProps) {
-  return (
-    <div className={cn('flex-1 flex justify-center', className)}>
-      {children}
-    </div>
-  );
-}
-
-function HeaderRight({ children, className }: HeaderSubComponentProps) {
-  return (
-    <div className={cn('flex items-center space-x-2 shrink-0', className)}>
-      {children}
-    </div>
-  );
-}
-
-export const Header = Object.assign(HeaderRoot, {
-  Left: HeaderLeft,
-  Title: HeaderTitle,
-  Center: HeaderCenter,
-  Right: HeaderRight,
-});
-
-export default Header;
