@@ -18,7 +18,7 @@ export default function ConditionalHeader() {
   const isProfile = pathname === '/profile';
   const isMap = pathname.includes('/map');
   const showHeader =
-    !minimalPaths.includes(location.pathname) &&
+    !minimalPaths.includes(pathname) &&
     !isDetail &&
     !isGroupChat &&
     !isProfile &&
