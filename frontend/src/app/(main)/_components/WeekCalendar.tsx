@@ -106,74 +106,90 @@ export default function WeekCalendar() {
         <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform dark:text-white text-itta-black" />
       </div>
       <div className="relative h-24">
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={currentWeekStart.toISOString()}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: 'spring', stiffness: 300, damping: 33 }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            onDragEnd={(e, { offset }) => {
-              const swipe = offset.x;
-              if (swipe < -50)
-                paginate(1); // 왼쪽으로 밀면 다음주
-              else if (swipe > 50) paginate(-1); // 오른쪽으로 밀면 이전주
-            }}
-            className="absolute inset-0 px-4 py-4 flex justify-between touch-none select-none bg-transparent cursor-grab"
-          >
-            {weekDays.map((item) => {
-              const isSelected = selectedDateStr === item.dateStr;
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const isFuture = item.date > today;
-              const dayColor =
-                item.dayName === '일'
-                  ? '#F43F5E'
-                  : item.dayName === '토'
-                    ? '#3B82F6'
-                    : '#9CA3AF';
+        <div className="px-4 py-4 flex justify-between">
+          {weekDays.map((item) => {
+            const dayColor =
+              item.dayName === '일'
+                ? '#F43F5E'
+                : item.dayName === '토'
+                  ? '#3B82F6'
+                  : '#9CA3AF';
 
-              return (
-                <button
-                  key={item.dateStr}
-                  onClick={() => handleTouchDate(item.dateStr)}
-                  disabled={isFuture}
-                  className={cn(
-                    'flex flex-col items-center gap-2 min-w-11 transition-transform',
-                    isFuture
-                      ? 'cursor-not-allowed opacity-40'
-                      : 'active:scale-95 cursor-pointer',
-                  )}
+            return (
+              <div
+                key={`header-${item.dateStr}`}
+                className="flex flex-col items-center gap-2 min-w-11"
+              >
+                <span
+                  className="text-[10px] font-medium"
+                  style={{ color: dayColor }}
                 >
-                  <span
-                    className="text-[10px] font-medium"
-                    style={{ color: dayColor }}
-                  >
-                    {item.dayName}
-                  </span>
-                  <div
+                  {item.dayName}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 스와이프 가능한 영역 */}
+        <div className="absolute top-8.5 left-0 right-0 h-[calc(100%-34px)]">
+          <AnimatePresence initial={false} custom={direction} mode="popLayout">
+            <motion.div
+              key={currentWeekStart.toISOString()}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ type: 'spring', stiffness: 300, damping: 33 }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              onDragEnd={(e, { offset }) => {
+                const swipe = offset.x;
+                if (swipe < -50)
+                  paginate(1); // 왼쪽으로 밀면 다음주
+                else if (swipe > 50) paginate(-1); // 오른쪽으로 밀면 이전주
+              }}
+              className="absolute inset-0 px-4 flex justify-between touch-none select-none bg-transparent cursor-grab"
+            >
+              {weekDays.map((item) => {
+                const isSelected = selectedDateStr === item.dateStr;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isFuture = item.date > today;
+
+                return (
+                  <button
+                    key={item.dateStr}
+                    onClick={() => handleTouchDate(item.dateStr)}
+                    disabled={isFuture}
                     className={cn(
-                      'w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all',
-                      isSelected
-                        ? 'dark:bg-white dark:text-[#121212] bg-itta-black text-white shadow-md'
-                        : item.isToday
-                          ? 'dark:text-[#10B981] dark:bg-[#10B981]/10 text-[#10B981] bg-[#10B981]/5'
-                          : 'text-gray-400',
-                      item.dayName === '일' && 'text-[#F43F5E]',
-                      item.dayName === '토' && 'text-[#3B82F6]',
+                      'flex items-center justify-center min-w-11 transition-transform',
+                      isFuture
+                        ? 'cursor-not-allowed opacity-40'
+                        : 'active:scale-95 cursor-pointer',
                     )}
                   >
-                    {item.date.getDate()}
-                  </div>
-                </button>
-              );
-            })}
-          </motion.div>
-        </AnimatePresence>
+                    <div
+                      className={cn(
+                        'w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all',
+                        isSelected
+                          ? 'dark:bg-white dark:text-[#121212] bg-itta-black text-white shadow-md'
+                          : item.isToday
+                            ? 'dark:text-[#10B981] dark:bg-[#10B981]/10 text-[#10B981] bg-[#10B981]/5'
+                            : 'text-gray-400',
+                        item.dayName === '일' && 'text-[#F43F5E]',
+                        item.dayName === '토' && 'text-[#3B82F6]',
+                      )}
+                    >
+                      {item.date.getDate()}
+                    </div>
+                  </button>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
