@@ -11,7 +11,7 @@ export default function Header() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full px-5 py-4',
+        'sticky top-0 z-50 max-w-4xl w-full px-5 py-4 mx-auto',
         'flex items-center justify-between',
         'backdrop-blur-xl transition-all duration-500 border-b',
         'bg-white/80 border-gray-100/50',
@@ -24,7 +24,7 @@ export default function Header() {
       >
         <h1
           className={cn(
-            'text-xl font-semibold tracking-tight transition-all active:scale-95',
+            'text-xl font-bold tracking-tight transition-all active:scale-95',
             'text-[#222222] dark:text-white',
           )}
         >
