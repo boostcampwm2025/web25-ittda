@@ -56,6 +56,15 @@ export interface MemoryRecord {
   };
 }
 
+export interface MonthRecord {
+  id: string;
+  name: string;
+  count: number;
+  latestTitle: string;
+  latestLocation: string;
+  coverUrl: string | null;
+}
+
 export interface PostListItem {
   id: string;
   title: string;
