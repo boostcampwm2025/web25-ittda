@@ -1,5 +1,4 @@
-import Header from '@/components/Header';
-import SideFilterbar from './_components/SideFilterbar';
+import WeekCalendar from './_components/WeekCalendar';
 
 export default function MainLayout({
   children,
@@ -7,21 +6,11 @@ export default function MainLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="w-full h-screen flex flex-col">
-      {/* 헤더 - 고정 */}
-      <Header className="w-full shrink-0">
-        <Header.Title>홈</Header.Title>
-      </Header>
-
-      <div className="flex flex-1 min-h-0 w-full justify-center mt-1">
-        <main className="flex flex-1 min-h-0 w-full">
-          <div className="flex-3 overflow-y-auto">{children}</div>
-
-          <aside className="hidden md:block flex-1 h-full overflow-y-auto border-l-[0.5px] border-itta-gray2 px-4.25 py-6.5">
-            <SideFilterbar />
-          </aside>
-        </main>
+    <main className="flex flex-col min-h-full w-full transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+      <WeekCalendar />
+      <div className="flex-1 w-full p-5 space-y-6 pb-30 transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9]">
+        {children}
       </div>
-    </div>
+    </main>
   );
 }

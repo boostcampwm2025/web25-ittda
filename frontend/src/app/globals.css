@@ -10,6 +10,7 @@
   --itta-gray2: rgba(0, 0, 0, 0.2);
   --itta-gray: rgba(122, 122, 122, 0.2);
   --radius: 0.625rem;
+  --polar-grid-stroke: #f1f5f9;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -102,6 +103,7 @@
 html {
   height: 100svh; /* "Small Viewport Height(작은 뷰포트 높이)의 100% */
   display: flex;
+  width: 100%;
 }
 
 body {
@@ -111,11 +113,13 @@ body {
   align-items: start;
   margin: 0 auto;
   height: 100%;
-  width: 100%;
+  max-width: 896px;
 }
 
 main {
-  max-width: 1024px;
+  width: 100%;
+
+  margin: 0 auto;
 }
 
 .dark {
@@ -150,6 +154,7 @@ main {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+  --polar-grid-stroke: #333333;
 }
 
 @layer base {
