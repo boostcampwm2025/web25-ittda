@@ -1,86 +1,85 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { fetchPostList } from '@/lib/api/posts';
-import DiaryPostShort from '@/components/DiaryPostShort';
-import PerformanceCard from '@/components/PerformanceCard';
+import { MemoryRecord } from '@/lib/types/post';
+import { useRouter } from 'next/navigation';
+import { useWeekCalendar } from '@/store/useWeekCalendar';
+import { useMemo } from 'react';
+import { formatDateISO } from '@/lib/date';
+import { Clock } from 'lucide-react';
+import CompactFieldRenderer from './CompactFieldRenderer';
 
-const PERFORMANCES = [
-  {
-    id: '1',
-    title: '내가 까마귀였을 때',
-    venue: '어딘가의 공연장',
-    date: '2024.12.11',
-    time: '15:00',
-    seat: '1층 B구역 3열 3번',
-    performers: '도끼든 소두곰, 노트북 병아리...',
-    description:
-      'Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industrys standard dummy text ever since the 1500s.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1761618291331-535983ae4296?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0aGVhdGVyJTIwcGVyZm9ybWFuY2UlMjBzdGFnZXxlbnwxfHx8fDE3NjU4MTkwMTF8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    tags: ['연극', '실험극', '독립'],
-    accentColor: '#123c86',
-  },
-  {
-    id: '2',
-    title: '스타벅스 관차',
-    venue: '공무원 광장 앞 광장 옆 광장',
-    date: '2024.12.11',
-    time: '18:46',
-    seat: '자유석',
-    performers: '모두',
-    description:
-      'Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industrys standard dummy text ever since the 1500s.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1599746791393-f2811f61f896?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpY2FsJTIwYnJvYWR3YXklMjB0aGVhdGVyfGVufDF8fHx8MTc2NTkwNDk2OHww&ixlib=rb-4.1.0&q=80&w=1080',
-    tags: ['뮤지컬', '브로드웨이', '코미디'],
-    accentColor: '#c73866',
-  },
-  {
-    id: '3',
-    title: '음악의 밤',
-    venue: '콘서트 홀',
-    date: '2024.12.15',
-    time: '19:00',
-    seat: '2층 A구역 5열 8번',
-    performers: '심포니 오케스트라',
-    description:
-      'Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industrys standard dummy text ever since the 1500s.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1583778080016-0d8ec4b537c0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25jZXJ0JTIwbXVzaWMlMjBwZXJmb3JtYW5jZXxlbnwxfHx8fDE3NjU4MjY1MTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    tags: ['클래식', '오케스트라', '음악'],
-    accentColor: '#2d5aa6',
-  },
-];
+interface PostListProps {
+  posts: MemoryRecord[];
+}
 
-export default function PostList() {
-    const { data } = useQuery({
-      queryKey: ['posts'],
-      queryFn: () => fetchPostList(),
-      select: (res) => res.items,
-    });
-  const posts = data ?? [];
+export default function PostList({ posts }: PostListProps) {
+  const router = useRouter();
+  const { selectedDateStr } = useWeekCalendar();
+
+  // 선택된 날짜에 맞는 기록 필터링
+  const filteredMemories = useMemo(() => {
+    const targetDate = selectedDateStr.replace(/-/g, '.');
+    return posts.filter((r) => r.data.date === targetDate);
+  }, [selectedDateStr, posts]);
 
   return (
-    <div className="flex flex-col h-full w-full space-y-6">
-      <div className="flex-1 space-y-6">
-        {PERFORMANCES.map((performance) => (
-          <PerformanceCard key={performance.id} {...performance} />
-        ))}
+    <div className="space-y-4 w-full">
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-[14px] font-bold dark:text-white text-itta-black">
+          {selectedDateStr === formatDateISO()
+            ? '오늘의 기록'
+            : `${selectedDateStr.split('-')[2]}일의 기록`}
+        </h3>
+        <span className="text-[11px] text-[#10B981] font-bold">
+          총 {filteredMemories.length}개
+        </span>
       </div>
-      {/* <TicketCard /> */}
-      {/* </div> */}
-      <div className="flex-1 space-y-6">
-        {posts.map((post) => (
+
+      {filteredMemories.length > 0 ? (
+        filteredMemories.map((record) => (
           <div
-            key={post.id}
-            className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
+            key={record.id}
+            onClick={() => router.push(`/record/${record.id}`)}
+            className="rounded-2xl p-6 shadow-sm border active:scale-[0.98] transition-all cursor-pointer overflow-hidden dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100"
           >
-            <DiaryPostShort key={post.id} post={post} onClick={() => {}} />
-            <div className="absolute left-3.75 top-8 w-[1.5px] bottom-4 bg-itta-gray2 pointer-events-none" />
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-[16px] font-bold truncate dark:text-white text-itta-black">
+                {record.title}
+              </h4>
+              <div className="flex items-center gap-1.5 text-gray-400 font-medium text-[10px] uppercase">
+                <Clock className="w-3 h-3" />
+                {record.data.time}
+              </div>
+            </div>
+            <div>
+              {record.fieldOrder.map((fieldType) => (
+                <CompactFieldRenderer
+                  key={fieldType}
+                  type={fieldType}
+                  data={record.data[fieldType] as never}
+                  isDetail={true}
+                />
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+        ))
+      ) : (
+        <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">
+          <p className="text-xs text-gray-400 font-medium">
+            이날의 기록이 없습니다.
+          </p>
+          <button
+            onClick={() =>
+              router.push(
+                `/add?prefilledDate=${selectedDateStr.replace(/-/g, '.')}`,
+              )
+            }
+            className="text-[11px] font-bold text-[#10B981] hover:underline"
+          >
+            기록 추가하기
+          </button>
+        </div>
+      )}
     </div>
   );
 }
