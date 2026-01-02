@@ -54,6 +54,7 @@ export default function Header() {
             src="/profile-ex.jpeg"
             alt="프로필"
             className="w-full h-full object-cover"
+            placeholder="blur"
             width={30}
             height={30}
           />

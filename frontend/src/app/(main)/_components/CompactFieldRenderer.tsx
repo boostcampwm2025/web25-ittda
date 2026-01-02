@@ -35,6 +35,7 @@ export default function CompactFieldRenderer({
               src={data[0]}
               className="w-full h-full object-cover"
               alt=""
+              placeholder="blur"
               width={50}
               height={50}
             />
@@ -114,6 +115,7 @@ export default function CompactFieldRenderer({
             src={data.image}
             className="w-8 h-10 object-cover rounded shadow-sm"
             alt=""
+            placeholder="blur"
             width={50}
             height={50}
           />

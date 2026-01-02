@@ -52,9 +52,10 @@ export default function GalleryDrawer({
                 <Image
                   src={url}
                   className="w-full h-full object-cover"
-                  alt=""
+                  alt="기록함 내부 이미지"
                   fill
                   sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 20vw"
+                  placeholder="blur"
                 />
                 {isCurrent && (
                   <div className="absolute inset-0 bg-[#10B981]/20 flex items-center justify-center">
