@@ -7,27 +7,29 @@ import { PostCard } from './PostCard';
  * MonthRecordCard - 월별 기록 카드
  * 날짜 뱃지, 제목, 위치 정보를 표시하는 카드
  */
-export interface MonthRecordCardProps {
-  id: string; /** 월 이름 (예: "2024년 1월") */
-  name: string; /** 기록 개수 */
-  count: number;
+export interface RecordCardProps {
+  id: string;
+  name: string;
+  count: number | string;
   latestTitle: string;
   latestLocation: string;
   coverUrl?: string | null;
+  hasNotification?: boolean;
   onClick?: () => void;
   onChangeCover?: (id: string) => void;
 }
 
-export function MonthRecordCard({
+export function RecordCard({
   id,
   name,
   count,
   latestTitle,
   latestLocation,
   coverUrl,
+  hasNotification,
   onClick,
   onChangeCover,
-}: MonthRecordCardProps) {
+}: RecordCardProps) {
   return (
     <PostCard imageUrl={coverUrl} imageAlt={name} onClick={onClick}>
       {/* 커버 변경 버튼 */}
@@ -44,7 +46,10 @@ export function MonthRecordCard({
       {/* 카드 콘텐츠 */}
       <PostCard.Overlay>
         <div className="flex items-center justify-between">
-          <PostCard.Title>{name}</PostCard.Title>
+          <PostCard.Title className="flex justify-start items-center gap-2">
+            {name} {hasNotification && <PostCard.Notification />}
+          </PostCard.Title>
+
           <PostCard.Badge>{count}</PostCard.Badge>
         </div>
         <div className="space-y-0.5">
