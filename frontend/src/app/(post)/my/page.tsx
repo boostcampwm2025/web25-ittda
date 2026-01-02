@@ -1,4 +1,4 @@
-import MonthRecords from './_components/MonthRecords';
+import MonthRecords from '@/components/MonthRecords';
 
 const myMonthRecordsMock = [
   {
