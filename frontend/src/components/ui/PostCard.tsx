@@ -74,7 +74,8 @@ export function PostCard({
             alt={imageAlt}
             width={100}
             height={100}
-            placeholder="blur"
+            // placeholder="blur"
+            // blurDataURL=''
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 dark:opacity-60 opacity-90"
           />
         ) : (
