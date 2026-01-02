@@ -3,7 +3,7 @@
 import { MonthRecord } from '@/lib/types/post';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { MonthRecordCard } from '@/components/ui/RecordCard';
+import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/components/GalleryDrawer';
 import {
   Drawer,
@@ -55,7 +55,7 @@ export default function MonthRecords({ monthRecords }: MonthRecordsProps) {
     <>
       <div className="grid grid-cols-2 gap-4">
         {months.map((m) => (
-          <MonthRecordCard
+          <RecordCard
             key={m.id}
             id={m.id}
             name={m.name}
@@ -90,9 +90,9 @@ export default function MonthRecords({ monthRecords }: MonthRecordsProps) {
 
           <GalleryDrawer
             recordPhotos={recordPhotos}
-            months={months}
-            setMonths={setMonths}
-            activeMonthId={activeMonthId}
+            value={months}
+            setValue={setMonths}
+            activeId={activeMonthId}
           />
         </DrawerContent>
       </Drawer>
