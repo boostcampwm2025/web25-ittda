@@ -1,27 +1,26 @@
-import { MonthRecord } from '@/lib/types/post';
+import { MonthRecord, SharedRecord } from '@/lib/types/post';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import Image from 'next/image';
 import { Dispatch, SetStateAction } from 'react';
 import { DrawerClose } from './ui/drawer';
 
-interface GalleryDrawerProps {
+interface GalleryDrawerProps<T extends MonthRecord[] | SharedRecord[]> {
   recordPhotos: string[];
-  months: MonthRecord[];
-  setMonths: Dispatch<SetStateAction<MonthRecord[]>>;
-  activeMonthId: string | null;
+  value: T;
+  setValue: Dispatch<SetStateAction<T>>;
+  activeId: string | null;
 }
 
-export default function GalleryDrawer({
-  recordPhotos,
-  months,
-  setMonths,
-  activeMonthId,
-}: GalleryDrawerProps) {
+export default function GalleryDrawer<
+  T extends MonthRecord[] | SharedRecord[],
+>({ recordPhotos, value, setValue, activeId }: GalleryDrawerProps<T>) {
   const handleSelectCover = (url: string) => {
-    if (!activeMonthId) return;
-    setMonths((prev) =>
-      prev.map((m) => (m.id === activeMonthId ? { ...m, coverUrl: url } : m)),
+    if (!activeId) return;
+
+    setValue(
+      (prev) =>
+        prev.map((m) => (m.id === activeId ? { ...m, coverUrl: url } : m)) as T,
     );
     // TODO: 서버로 커버 변경 요청 보내기
   };
@@ -38,7 +37,7 @@ export default function GalleryDrawer({
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[45vh] overflow-y-auto scrollbar-hide mb-8 min-h-0">
           {recordPhotos.map((url, idx) => {
             const isCurrent =
-              months.find((m) => m.id === activeMonthId)?.coverUrl === url;
+              value.find((m) => m.id === activeId)?.coverUrl === url;
 
             return (
               <div key={idx} className="relative w-full aspect-square">

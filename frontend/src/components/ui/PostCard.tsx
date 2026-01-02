@@ -177,6 +177,21 @@ PostCard.Badge = function CardBadge({
   );
 };
 
+PostCard.Notification = function Notification({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        'w-1.5 h-1.5 bg-orange-500 rounded-full shrink-0',
+        className,
+      )}
+    />
+  );
+};
+
 PostCard.Title = function CardTitle({
   children,
   className = '',
