@@ -65,6 +65,18 @@ export interface MonthRecord {
   coverUrl: string | null;
 }
 
+export interface SharedRecord {
+  id: string;
+  name: string;
+  members: number;
+  count: number;
+  latestTitle: string;
+  latestLocation: string;
+  updatedAt: number;
+  hasNotification: boolean;
+  coverUrl: string | null;
+}
+
 export interface PostListItem {
   id: string;
   title: string;
