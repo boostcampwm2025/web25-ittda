@@ -35,7 +35,8 @@ export default function CompactFieldRenderer({
               src={data[0]}
               className="w-full h-full object-cover"
               alt=""
-              placeholder="blur"
+              // placeholder="blur"
+              // blurDataURL=''
               width={50}
               height={50}
             />
