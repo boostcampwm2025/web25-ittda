@@ -11,7 +11,7 @@ export default function MyRecordsLayout({
         <h2 className="text-2xl font-bold tracking-tight dark:text-white text-[#222222]">
           내 기록함
         </h2>
-        <DateSelectorDrawer />
+        <DateSelectorDrawer dayRoute="/my/detail" monthRoute="/my/month" />
       </div>
 
       {children}

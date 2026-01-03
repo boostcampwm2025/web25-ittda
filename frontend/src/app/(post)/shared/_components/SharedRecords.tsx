@@ -71,7 +71,11 @@ export default function SharedRecords({ sharedRecords }: SharedRecordsProps) {
       </div>
 
       {/* 커버 변경 Drawer */}
-      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+      <Drawer
+        open={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+        shouldScaleBackground={false}
+      >
         <DrawerContent className="w-full px-8 py-4 pb-10">
           <DrawerHeader>
             <div className="pt-4 flex justify-between items-center mb-6">

@@ -33,9 +33,13 @@ const recordPhotosData = [
 
 interface MonthRecordsProps {
   monthRecords: MonthRecord[];
+  cardRoute: string;
 }
 
-export default function MonthRecords({ monthRecords }: MonthRecordsProps) {
+export default function MonthRecords({
+  monthRecords,
+  cardRoute,
+}: MonthRecordsProps) {
   const router = useRouter();
   const [months, setMonths] = useState(monthRecords);
   const [activeMonthId, setActiveMonthId] = useState<string | null>(null);
@@ -63,7 +67,7 @@ export default function MonthRecords({ monthRecords }: MonthRecordsProps) {
             latestTitle={m.latestTitle}
             latestLocation={m.latestLocation}
             coverUrl={m.coverUrl}
-            onClick={() => router.push(`/my/month/${m.id}`)}
+            onClick={() => router.push(`${cardRoute}/${m.id}`)}
             onChangeCover={openGallery}
           />
         ))}

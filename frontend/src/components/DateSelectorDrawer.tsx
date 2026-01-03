@@ -19,7 +19,15 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function DateSelectorDrawer() {
+interface DateSelectorDrawerProps {
+  dayRoute: string;
+  monthRoute: string;
+}
+
+export default function DateSelectorDrawer({
+  dayRoute,
+  monthRoute,
+}: DateSelectorDrawerProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isPickingMonth, setIsPickingMonth] = useState(false);
@@ -67,7 +75,7 @@ export default function DateSelectorDrawer() {
             onClick={() => {
               setIsPickingMonth(false);
             }}
-            className="p-2.5 rounded-2xl transition-all active:scale-90 dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500"
+            className="cursor-pointer p-2.5 rounded-2xl transition-all active:scale-90 dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500"
           >
             <CalendarDays className="w-5 h-5" strokeWidth={2.2} />
           </button>
@@ -205,7 +213,7 @@ export default function DateSelectorDrawer() {
                       <button
                         key={dateStr}
                         onClick={() => {
-                          router.push(`/my/detail/${dateStr}`);
+                          router.push(`${dayRoute}/${dateStr}`);
                         }}
                         className={cn(
                           'relative aspect-square flex flex-col items-center justify-center rounded-xl transition-all',
@@ -231,7 +239,7 @@ export default function DateSelectorDrawer() {
               className="mt-8 flex w-full flex-1 py-4 rounded-2xl text-sm font-bold shadow-xl transition-all active:scale-95 items-center justify-center gap-2 dark:bg-white dark:text-[#121212] bg-itta-black text-white"
               onClick={() => {
                 const monthId = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-                router.push(`/my/month/${monthId}`);
+                router.push(`${monthRoute}/${monthId}`);
               }}
             >
               <Check className="w-5 h-5" />
