@@ -10,6 +10,7 @@ const imageDomains = [
   'velog.velcdn.com',
   'biz.chosun.com',
   'images.unsplash.com',
+  'api.dicebear.com',
 ];
 
 // 환경에 따라 백엔드 주소 분기
