@@ -10,6 +10,7 @@ const imageDomains = [
   'velog.velcdn.com',
   'biz.chosun.com',
   'images.unsplash.com',
+  'api.dicebear.com',
 ];
 
 const nextConfig: NextConfig = {
