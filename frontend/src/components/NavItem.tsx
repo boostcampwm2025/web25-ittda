@@ -19,7 +19,7 @@ export default function NavItem({
     <button
       onClick={onClick}
       className={cn(
-        'p-2 transition-all rounded-xl',
+        'p-2 transition-all rounded-xl cursor-pointer',
         active
           ? 'dark:text-white text-[#222222]'
           : 'dark:text-gray-500 text-gray-300 hover:text-gray-400',

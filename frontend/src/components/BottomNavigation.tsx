@@ -49,7 +49,7 @@ export default function BottomNavigation() {
           />
           <button
             onClick={() => router.push(`/add?groupId=${pathGroupId}`)}
-            className="w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white"
+            className="cursor-pointer w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white"
           >
             <Plus className="w-7 h-7" strokeWidth={3} />
           </button>
