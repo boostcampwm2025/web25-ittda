@@ -11,14 +11,14 @@ export default function Header() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 max-w-4xl w-full px-5 py-4 mx-auto',
+        'sticky top-0 z-50 max-w-4xl w-full px-6 py-4 mx-auto',
         'flex items-center justify-between',
         'backdrop-blur-xl transition-all duration-500 border-b',
         'bg-white/80 border-gray-100/50',
         'dark:bg-[#121212]/80 dark:border-white/5',
       )}
     >
-      <div
+      <button
         onClick={() => router.push('/')}
         className="flex flex-col cursor-pointer group"
       >
@@ -30,12 +30,12 @@ export default function Header() {
         >
           잇다-
         </h1>
-      </div>
+      </button>
       <div className="flex items-center gap-2">
         <button
           onClick={() => router.push('/search')}
           className={cn(
-            'p-2.5 rounded-2xl transition-all active:scale-90',
+            'cursor-pointer p-2.5 rounded-2xl transition-all active:scale-90',
             'hover:bg-gray-50 text-gray-500',
             'dark:hover:bg-white/5 dark:text-gray-400',
           )}
@@ -45,7 +45,7 @@ export default function Header() {
         <button
           onClick={() => router.push('/profile')}
           className={cn(
-            'w-10 h-10 rounded-full overflow-hidden border transition-all active:scale-90',
+            'cursor-pointer w-10 h-10 rounded-full overflow-hidden border transition-all active:scale-90',
             'border-gray-100 shadow-sm',
             'dark:border-white/10 dark:shadow-none',
           )}
