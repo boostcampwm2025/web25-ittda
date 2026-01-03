@@ -40,7 +40,7 @@ export default function MyRecordsPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <MonthRecords monthRecords={myMonthRecordsMock} />
+      <MonthRecords monthRecords={myMonthRecordsMock} cardRoute={'/my/month'} />
     </div>
   );
 }
