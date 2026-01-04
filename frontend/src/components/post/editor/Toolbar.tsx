@@ -5,10 +5,10 @@ import {
   Smile,
   Tag as TagIcon,
   MapPin,
-  LayoutGrid,
   Star,
   Search,
   Layout,
+  Table,
   Save,
   LucideIcon,
 } from 'lucide-react';
@@ -18,7 +18,8 @@ interface ToolbarProps {
   onTagClick: () => void;
   onRatingClick: () => void;
   onPhotoClick: () => void;
-  onEmotionClick?: () => void;
+  onEmotionClick: () => void;
+  onTableClick: () => void;
 }
 
 // 개별 아이콘 버튼 Props
@@ -31,6 +32,8 @@ export default function Toolbar({
   onTagClick,
   onRatingClick,
   onPhotoClick,
+  onEmotionClick,
+  onTableClick,
 }: ToolbarProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 max-w-4xl mx-auto flex flex-col items-center gap-3 w-full">
@@ -47,10 +50,10 @@ export default function Toolbar({
       {/* 하단 아이콘 바 */}
       <div className="w-full bg-white dark:bg-[#2A2A2A] border border-gray-100 dark:border-white/5 p-4 flex justify-around items-center">
         <ToolbarIcon Icon={ImageIcon} onClick={onPhotoClick} />
-        <ToolbarIcon Icon={Smile} onClick={() => {}} />
+        <ToolbarIcon Icon={Smile} onClick={onEmotionClick} />
         <ToolbarIcon Icon={TagIcon} onClick={onTagClick} />
         <ToolbarIcon Icon={MapPin} onClick={() => {}} />
-        <ToolbarIcon Icon={LayoutGrid} onClick={() => {}} />
+        <ToolbarIcon Icon={Table} onClick={onTableClick} />
         <ToolbarIcon Icon={Star} onClick={onRatingClick} />
         <ToolbarIcon Icon={Search} onClick={() => {}} />
       </div>

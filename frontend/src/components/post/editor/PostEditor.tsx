@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { GripVertical } from 'lucide-react';
 import PostEditorHeader from './PostEditorHeader';
 import PostTitleInput from './PostTitleInput';
-import { FieldType, MemoryRecord } from '@/lib/types/post';
+import { Emotion, FieldType, MemoryRecord } from '@/lib/types/post';
 import DatePickerDrawer from './core/DatePickerDrawer';
 import TimePickerDrawer from './core/TimePickerDrawer';
 import Toolbar from './Toolbar';
@@ -16,6 +16,9 @@ import { TagField } from './tag/TagField';
 import { PhotoField } from './photo/PhotoField';
 import { ContentField, DateField, TimeField } from './core/CoreField';
 import { formatDateDot, formatTime } from '@/lib/date';
+import { EmotionField } from './emotion/EmotionField';
+import EmotionDrawer from './emotion/EmotionDrawer';
+import { TableField } from './table/TableField';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -38,15 +41,21 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
   const [photos, setPhotos] = useState<string[]>(
     initialPost?.data?.photos ?? [],
   );
+  const [emotion, setEmotion] = useState<Emotion | null>(
+    initialPost?.data?.emotion ?? null,
+  );
   const [selectedTags, setSelectedTags] = useState<string[]>(
     initialPost?.data?.tags ?? [],
   );
   const [rating, setRating] = useState(
     initialPost?.data?.rating ?? { value: 0, max: 5 },
   );
+  const [table, setTable] = useState<string[][] | null>(
+    initialPost?.data?.table ?? null,
+  );
 
   const [activeDrawer, setActiveDrawer] = useState<
-    'date' | 'time' | 'tag' | 'rating' | 'photo' | null
+    'date' | 'time' | 'tag' | 'rating' | 'photo' | 'emotion' | null
   >(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +91,7 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
     setIsDraggingIndex(null);
   };
 
+  // 사진 업로드 핸들러
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
@@ -98,6 +108,18 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
     }
   };
 
+  // 테이블 추가 핸들러
+  const handleAddTable = () => {
+    if (!table) {
+      // 초기 2x2 테이블 생성
+      setTable([
+        ['', ''],
+        ['', ''],
+      ]);
+    }
+    ensureFieldInOrder('table');
+  };
+
   const handleSave = async () => {
     try {
       const payload = {
@@ -109,6 +131,7 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
         rating,
         fieldOrder,
         content,
+        table,
       };
       // TODO : API 호출
     } finally {
@@ -134,6 +157,17 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
             onClick={() => setActiveDrawer('photo')}
           />
         );
+      case 'emotion':
+        return (
+          <EmotionField
+            emotion={emotion}
+            onClick={() => setActiveDrawer('emotion')}
+            onRemove={() => {
+              setEmotion(null);
+              removeFieldFromLayout('emotion');
+            }}
+          />
+        );
       case 'tags':
         return (
           <TagField
@@ -144,6 +178,16 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
               if (newTags.length === 0) removeFieldFromLayout('tags');
             }}
             onAdd={() => setActiveDrawer('tag')}
+          />
+        );
+      case 'table':
+        return (
+          <TableField
+            data={table}
+            onUpdate={(newData) => {
+              setTable(newData);
+              if (!newData) removeFieldFromLayout('table');
+            }}
           />
         );
       case 'rating':
@@ -235,6 +279,17 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
             onClose={() => setActiveDrawer(null)}
           />
         );
+      case 'emotion':
+        return (
+          <EmotionDrawer
+            selectedEmotion={emotion}
+            onSelect={(emo) => {
+              setEmotion(emo);
+              ensureFieldInOrder('emotion');
+            }}
+            onClose={() => setActiveDrawer(null)}
+          />
+        );
       default:
         return null;
     }
@@ -249,7 +304,7 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
       />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <PostTitleInput value={title} onChange={setTitle} />
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           {fieldOrder.map((type, index) => (
             <div
               key={type}
@@ -272,6 +327,8 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
         onTagClick={() => setActiveDrawer('tag')}
         onRatingClick={() => setActiveDrawer('rating')}
         onPhotoClick={() => setActiveDrawer('photo')}
+        onEmotionClick={() => setActiveDrawer('emotion')}
+        onTableClick={handleAddTable}
       />
       <input
         type="file"
