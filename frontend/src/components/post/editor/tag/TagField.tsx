@@ -12,24 +12,28 @@ export const TagField = ({ tags, onRemove, onAdd }: Props) => (
     {tags.map((tag) => (
       <div
         key={tag}
-        className="flex items-center gap-1 px-3 py-2 rounded-lg bg-[#FBFBFB] dark:bg-white/5 border border-gray-100/30 shadow-xs"
+        className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/5 shadow-sm transition-all w-fit"
       >
-        <span className="text-xs font-bold">
-          <span className="text-itta-point">#</span>
+        <span className="flex items-center text-xs font-bold text-itta-black dark:text-gray-300 select-none leading-none">
+          <span className="text-itta-point mr-0.5">#</span>
           {tag}
         </span>
-        <X
-          className="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-rose-500 transition-colors"
+
+        <button
           onClick={(e) => {
             e.stopPropagation();
             onRemove(tag);
           }}
-        />
+          className="flex items-center text-itta-gray2 hover:text-rose-500 transition-colors active:scale-90"
+          aria-label="태그 삭제"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
       </div>
     ))}
     <button
       onClick={onAdd}
-      className="w-8 h-8 rounded-lg border border-dashed border-gray-200 text-itta-point flex items-center justify-center hover:bg-itta-point/5 transition-colors"
+      className="w-8 h-8 rounded-lg border border-dashed border-gray-200 text-itta-point flex items-center justify-center hover:bg-itta-point/5 transition-colors active:scale-90"
     >
       <Plus size={14} />
     </button>
