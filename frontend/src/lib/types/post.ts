@@ -51,7 +51,7 @@ export interface MemoryRecord {
     tags: string[];
     location: string | null;
     rating: { value: number; max: number };
-    media: { image: string; type: string; title: string } | null;
+    media: { image: string; type: string; title: string; year?: string } | null;
     table: string[][] | null; // 행과 열 데이터
   };
 }
