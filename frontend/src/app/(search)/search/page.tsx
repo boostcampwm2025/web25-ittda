@@ -1,0 +1,250 @@
+'use client';
+
+import { useState, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Search, X } from 'lucide-react';
+import TagSearchDrawer from '../_components/TagSearchDrawer';
+import { FilterChip } from '@/components/FilterChip';
+import { PostListItem } from '@/lib/types/post';
+import SearchItem from '../_components/SearchItem';
+import DateDrawer from '@/components/DateDrawer';
+
+const ALL_TAGS = [
+  '일상',
+  '맛집',
+  '성수동',
+  '여행',
+  '운동',
+  '독서',
+  '가족',
+  '카페',
+];
+
+const dummyRecords: PostListItem[] = [
+  {
+    id: '1',
+    title: '성수동 팝업 스토어 나들이',
+    address: '성수동 카페거리',
+    createdAt: '2025-12-21T14:30:00Z',
+    eventDate: '2025.12.21',
+    content:
+      '드디어 가보고 싶었던 성수동 팝업 스토어 방문! 웨이팅은 길었지만 굿즈들이 너무 귀여웠다.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=400',
+    tags: ['성수동', '일상', '맛집'],
+  },
+  {
+    id: '2',
+    title: '주말 아침 러닝 기록',
+    address: '뚝섬한강공원',
+    createdAt: '2025-12-20T08:00:00Z',
+    eventDate: '2025.12.20',
+    content:
+      '날씨가 꽤 추워졌지만 달리고 나니 상쾌하다. 한강 공원 코스는 언제나 좋다.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=400',
+    tags: ['운동', '일상'],
+  },
+  {
+    id: '3',
+    title: '가족과 함께한 제주도 여행',
+    address: '제주 함덕 해변',
+    createdAt: '2025-11-15T10:00:00Z',
+    eventDate: '2025.11.15',
+    content:
+      '오랜만에 가족들과 제주도 여행. 에메랄드빛 바다와 맛있는 흑돼지 구이.',
+    imageUrl:
+      'https://images.unsplash.com/photo-1506477331477-33d6d8b3dc85?q=80&w=400',
+    tags: ['여행', '가족', '맛집'],
+  },
+];
+
+interface DateRange {
+  start: string | null;
+  end: string | null;
+}
+
+export default function SearchPage() {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [query, setQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedRange, setSelectedRange] = useState<DateRange>({
+    start: null,
+    end: null,
+  });
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [activeDrawer, setActiveDrawer] = useState<
+    'tag' | 'date' | 'location' | null
+  >(null);
+
+  const tagLabel = useMemo(() => {
+    if (selectedTags.length === 0) return '태그';
+    return selectedTags.length === 1
+      ? `#${selectedTags[0]}`
+      : `#${selectedTags[0]} 외 ${selectedTags.length - 1}`;
+  }, [selectedTags]);
+
+  const dateLabel = useMemo(() => {
+    if (!selectedRange.start) return '날짜';
+    if (!selectedRange.end) return selectedRange.start;
+    return `${selectedRange.start.slice(2)} ~ ${selectedRange.end.slice(2)}`;
+  }, [selectedRange]);
+
+  const filteredResults = useMemo(() => {
+    let results = [...dummyRecords];
+
+    if (query.trim()) {
+      const lowerQuery = query.toLowerCase();
+      results = results.filter(
+        (r) =>
+          r.title.toLowerCase().includes(lowerQuery) ||
+          r.content.toLowerCase().includes(lowerQuery),
+      );
+    }
+
+    if (selectedTags.length > 0) {
+      results = results.filter((r) =>
+        selectedTags.some((tag) => r.tags?.includes(tag)),
+      );
+    }
+
+    if (selectedRange.start) {
+      results = results.filter((r) => {
+        if (!selectedRange.end) return r.eventDate === selectedRange.start;
+        return (
+          r.eventDate >= selectedRange.start! &&
+          r.eventDate <= selectedRange.end!
+        );
+      });
+    }
+
+    return results;
+  }, [query, selectedTags, selectedRange]);
+
+  const renderActiveDrawer = () => {
+    switch (activeDrawer) {
+      case 'tag':
+        return (
+          <TagSearchDrawer
+            onClose={() => setActiveDrawer(null)}
+            allTags={ALL_TAGS}
+            selectedTags={selectedTags}
+            onToggleTag={(tag) =>
+              setSelectedTags((prev) =>
+                prev.includes(tag)
+                  ? prev.filter((t) => t !== tag)
+                  : [...prev, tag],
+              )
+            }
+            onReset={() => setSelectedTags([])}
+          />
+        );
+      case 'date':
+        return (
+          <DateDrawer
+            mode="range"
+            currentRange={selectedRange}
+            onSelectRange={setSelectedRange}
+            onClose={() => setActiveDrawer(null)}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-[#121212] transition-colors duration-300">
+      <header className="sticky top-0 z-20 border-b border-gray-50 dark:border-white/5 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-4 space-y-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="p-1 active:scale-90 transition-transform"
+          >
+            <ArrowLeft className="dark:text-white" />
+          </button>
+          <div className="flex-1 relative">
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="제목이나 내용으로 검색"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full rounded-lg px-11 py-3 bg-gray-50 dark:bg-white/5 text-sm outline-none transition-all dark:text-white focus:ring-1 focus:ring-itta-point/30"
+            />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1"
+              >
+                <X size={16} className="text-gray-400" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar px-1">
+          <FilterChip
+            type="tag"
+            label={tagLabel}
+            isActive={selectedTags.length > 0}
+            onClick={() => setActiveDrawer('tag')}
+            onClear={() => setSelectedTags([])}
+          />
+          <FilterChip
+            type="date"
+            label={dateLabel}
+            isActive={!!selectedRange.start}
+            onClick={() => setActiveDrawer('date')}
+            onClear={() => setSelectedRange({ start: null, end: null })}
+          />
+          <FilterChip
+            type="location"
+            label={selectedLocation || '위치'}
+            isActive={!!selectedLocation}
+            onClick={() => setSelectedLocation('서울 성수동')}
+            onClear={() => setSelectedLocation(null)}
+          />
+        </div>
+      </header>
+
+      <main className="p-6">
+        <h3 className="text-md font-bold text-itta-gray3 uppercase tracking-tight mb-4">
+          검색 결과{' '}
+          <span className="text-itta-point">{filteredResults.length}</span>
+        </h3>
+
+        {filteredResults.length > 0 ? (
+          <div className="space-y-3">
+            {filteredResults.map((record) => (
+              <SearchItem
+                key={record.id}
+                record={record}
+                onClick={(id) => router.push(`/post/${id}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="py-32 flex flex-col items-center text-center space-y-4 animate-in fade-in duration-500">
+            <div className="w-16 h-16 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center">
+              <Search className="w-8 h-8 text-gray-200" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-itta-gray3">
+                찾으시는 기록이 없어요
+              </p>
+              <p className="text-xs text-itta-gray2">
+                필터를 변경하거나 다른 단어로 검색해보세요.
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {renderActiveDrawer()}
+    </div>
+  );
+}
