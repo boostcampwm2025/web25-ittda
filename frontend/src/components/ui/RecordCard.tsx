@@ -1,7 +1,8 @@
 'use client';
 
-import { MapPin } from 'lucide-react';
+import { Clock, MapPin } from 'lucide-react';
 import { PostCard } from './PostCard';
+import { useRouter } from 'next/navigation';
 
 /**
  * MonthRecordCard - 월별 기록 카드
@@ -76,35 +77,46 @@ export function RecordCard({
  */
 export interface DateRecordCardProps {
   date: string;
-  day: string;
+  dayName: string;
   title: string;
-  subtitle?: string;
   count?: number;
   coverUrl?: string | null;
   onClick?: () => void;
+  routePath?: string;
   icon?: React.ReactNode;
 }
 
 export function DateRecordCard({
   date,
-  day,
+  dayName,
   title,
-  subtitle,
   count,
   coverUrl,
   onClick,
+  routePath,
   icon,
 }: DateRecordCardProps) {
+  const router = useRouter();
+
   return (
-    <PostCard imageUrl={coverUrl} imageAlt={title} onClick={onClick}>
+    <PostCard
+      imageUrl={coverUrl}
+      imageAlt={title}
+      onClick={() => {
+        if (routePath) {
+          router.push(routePath);
+        }
+        onClick?.();
+      }}
+    >
       {/* 날짜 뱃지 - 왼쪽 상단 */}
-      <div className="absolute top-4 left-4 z-10">
-        <div className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-white/90 dark:bg-black/60 backdrop-blur-md shadow-lg">
-          <span className="text-[20px] font-bold text-itta-black dark:text-white leading-none">
-            {date}
+      <div className="absolute top-3 left-3 z-10">
+        <div className="px-2.5 py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 flex flex-col items-center">
+          <span className="text-[14px] font-semibold text-white leading-none">
+            {date.split('-')[2]}
           </span>
-          <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
-            {day}
+          <span className="text-[8px] font-bold text-white/60 uppercase tracking-tighter mt-0.5">
+            {dayName}
           </span>
         </div>
       </div>
@@ -116,12 +128,14 @@ export function DateRecordCard({
             {icon}
             <PostCard.Title className="text-[15px]">{title}</PostCard.Title>
           </div>
-          {subtitle && <PostCard.Description>{subtitle}</PostCard.Description>}
-          {count !== undefined && (
+          <div className="flex items-center gap-1.5 text-white/80 text-[9px]">
+            <Clock className="w-2.5 h-2.5 text-[#10B981]" strokeWidth={2.5} />
+            <span className="truncate">일별 기록 보기</span>
+            <span className="text-[7px]">•</span>
             <PostCard.Meta>
               <span className="text-[#10B981] font-bold">기록 {count}개</span>
             </PostCard.Meta>
-          )}
+          </div>
         </div>
       </PostCard.Overlay>
     </PostCard>
