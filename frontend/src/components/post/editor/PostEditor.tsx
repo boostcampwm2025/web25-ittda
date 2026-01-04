@@ -5,7 +5,6 @@ import { GripVertical } from 'lucide-react';
 import PostEditorHeader from './PostEditorHeader';
 import PostTitleInput from './PostTitleInput';
 import { Emotion, FieldType, MemoryRecord } from '@/lib/types/post';
-import DatePickerDrawer from './core/DatePickerDrawer';
 import TimePickerDrawer from './core/TimePickerDrawer';
 import Toolbar from './Toolbar';
 import TagDrawer from './tag/TagDrawer';
@@ -19,6 +18,7 @@ import { formatDateDot, formatTime } from '@/lib/date';
 import { EmotionField } from './emotion/EmotionField';
 import EmotionDrawer from './emotion/EmotionDrawer';
 import { TableField } from './table/TableField';
+import DateDrawer from '@/components/DateDrawer';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -211,9 +211,10 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
     switch (activeDrawer) {
       case 'date':
         return (
-          <DatePickerDrawer
+          <DateDrawer
+            mode="single"
             currentDate={date}
-            onSelect={(d) => {
+            onSelectDate={(d) => {
               setDate(d);
               ensureFieldInOrder('date');
             }}
