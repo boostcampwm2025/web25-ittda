@@ -80,7 +80,7 @@ export interface SharedRecord {
 export interface PostListItem {
   id: string;
   title: string;
-  templateType: TemplateType;
+  templateType?: TemplateType;
   address: string;
   lat?: number;
   lng?: number;
