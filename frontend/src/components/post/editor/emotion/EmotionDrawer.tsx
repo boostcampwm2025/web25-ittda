@@ -23,11 +23,6 @@ export default function EmotionDrawer({
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent>
         <div className="max-w-sm mx-auto w-full p-8 pb-12">
-          {/* 핸들 바 */}
-          <div className="flex justify-center mb-6">
-            <div className="w-12 h-1.5 rounded-full bg-gray-200 dark:bg-white/10" />
-          </div>
-
           <DrawerHeader className="px-0 mb-6">
             <div className="flex flex-col text-left">
               <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
