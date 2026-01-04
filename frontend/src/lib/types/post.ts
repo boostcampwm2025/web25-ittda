@@ -47,7 +47,7 @@ export interface MemoryRecord {
     time: string;
     content: string;
     photos: string[];
-    emotion: { emoji: string; label: string } | null;
+    emotion: Emotion | null; // TODO: 이모션으로 변경
     tags: string[];
     location: string | null;
     rating: { value: number; max: number };
@@ -101,4 +101,9 @@ export interface CreatePostRequest {
   lng?: number;
   imageUrl?: string;
   tags?: string[];
+}
+
+export interface Emotion {
+  emoji: string;
+  label: string;
 }
