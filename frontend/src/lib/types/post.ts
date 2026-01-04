@@ -77,6 +77,15 @@ export interface SharedRecord {
   coverUrl: string | null;
 }
 
+export interface DayRecord {
+  date: string;
+  dayName: string;
+  title: string;
+  author: string;
+  count: number;
+  coverUrl: string;
+}
+
 export interface PostListItem {
   id: string;
   title: string;
