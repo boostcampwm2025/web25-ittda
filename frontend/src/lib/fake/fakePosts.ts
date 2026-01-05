@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import type { TemplateType, PostListItem } from '@/lib/types/post';
+import type { TemplateType, PostListItem } from '@/lib/types/record';
 
 const KOREA = {
   minLat: 33.0,

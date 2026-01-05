@@ -1,4 +1,4 @@
-import { MemoryRecord } from '@/lib/types/post';
+import { MemoryRecord } from '@/lib/types/record';
 import DailyDetailRecordItem from './DailyDetailRecordItem';
 
 interface DailyDetailRecordsProps {

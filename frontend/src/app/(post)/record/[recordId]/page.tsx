@@ -1,5 +1,5 @@
 import RecordDetailHeaderActions from '../_components/RecordDetailHeaderActions';
-import { MemoryRecord } from '@/lib/types/post';
+import { MemoryRecord } from '@/lib/types/record';
 
 interface RecordPageProps {
   params: Promise<{ recordId: string }>;

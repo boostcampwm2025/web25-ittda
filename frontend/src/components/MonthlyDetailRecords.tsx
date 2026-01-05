@@ -1,4 +1,4 @@
-import { DayRecord } from '@/lib/types/post';
+import { DayRecord } from '@/lib/types/record';
 import { DateRecordCard } from './ui/RecordCard';
 import ViewOnMapButton from './ViewOnMapButton';
 

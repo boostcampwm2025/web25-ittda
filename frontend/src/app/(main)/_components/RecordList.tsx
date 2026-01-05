@@ -1,6 +1,6 @@
 'use client';
 
-import { MemoryRecord } from '@/lib/types/post';
+import { MemoryRecord } from '@/lib/types/record';
 import { useRouter } from 'next/navigation';
 import { useWeekCalendar } from '@/store/useWeekCalendar';
 import { useMemo } from 'react';
@@ -8,19 +8,19 @@ import { formatDateISO } from '@/lib/date';
 import { Clock } from 'lucide-react';
 import CompactFieldRenderer from './CompactFieldRenderer';
 
-interface PostListProps {
-  posts: MemoryRecord[];
+interface RecordListProps {
+  records: MemoryRecord[];
 }
 
-export default function PostList({ posts }: PostListProps) {
+export default function RecordList({ records }: RecordListProps) {
   const router = useRouter();
   const { selectedDateStr } = useWeekCalendar();
 
   // 선택된 날짜에 맞는 기록 필터링
   const filteredMemories = useMemo(() => {
     const targetDate = selectedDateStr.replace(/-/g, '.');
-    return posts.filter((r) => r.data.date === targetDate);
-  }, [selectedDateStr, posts]);
+    return records.filter((r) => r.data.date === targetDate);
+  }, [selectedDateStr, records]);
 
   return (
     <div className="space-y-4 w-full">

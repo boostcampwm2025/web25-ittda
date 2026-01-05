@@ -1,4 +1,4 @@
-import { MonthRecord, SharedRecord } from '@/lib/types/post';
+import { MonthRecord, SharedRecord } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import Image from 'next/image';

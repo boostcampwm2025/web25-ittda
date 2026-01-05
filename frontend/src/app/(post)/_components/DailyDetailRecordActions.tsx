@@ -1,6 +1,6 @@
 'use client';
 
-import { MemoryRecord } from '@/lib/types/post';
+import { MemoryRecord } from '@/lib/types/record';
 import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

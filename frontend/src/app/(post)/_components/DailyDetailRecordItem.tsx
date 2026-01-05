@@ -8,7 +8,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { MemoryRecord } from '@/lib/types/post';
+import { MemoryRecord } from '@/lib/types/record';
 import { AlertCircle, Clock } from 'lucide-react';
 import { useState } from 'react';
 import DailyDetailRecordActions from './DailyDetailRecordActions';

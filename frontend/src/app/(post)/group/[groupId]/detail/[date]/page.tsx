@@ -1,7 +1,7 @@
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 import DailyDetailRecords from '@/app/(post)/_components/DailyDetailRecords';
 import DateDetailHeaderActions from '@/app/(post)/_components/DateDetailHeaderActions';
-import { MemoryRecord } from '@/lib/types/post';
+import { MemoryRecord } from '@/lib/types/record';
 
 interface GroupDailyDetailPageProps {
   params: Promise<{ date: string; groupId: string }>;

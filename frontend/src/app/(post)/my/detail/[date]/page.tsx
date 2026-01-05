@@ -1,6 +1,6 @@
 import DateDetailHeaderActions from '../../../_components/DateDetailHeaderActions';
 import DailyDetailRecords from '../../../_components/DailyDetailRecords';
-import { MemoryRecord } from '@/lib/types/post';
+import { MemoryRecord } from '@/lib/types/record';
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 
 interface MyMonthlyDetailPageProps {
