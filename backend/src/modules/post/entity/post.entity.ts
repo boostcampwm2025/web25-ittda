@@ -3,12 +3,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  Point,
   Index,
   ManyToOne,
   UpdateDateColumn,
   DeleteDateColumn,
 } from 'typeorm';
+
+import type { Point } from 'typeorm';
 
 import { User } from '@/modules/user/user.entity';
 import { Folder } from '@/modules/folder/folder.entity';

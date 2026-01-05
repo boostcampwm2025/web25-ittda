@@ -4,3 +4,5 @@ dist
 .env.*
 .git
 .gitignore
+logs
+*.log

@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { AllHttpExceptionFilter } from './common/exception_filters/AllHttpExceptionFilter';
-import { AllWsExceptionFilter } from './common/exception_filters/AllWsExceptionFilter';
+import { AllHttpExceptionFilter } from '@/common/exception_filters/AllHttpExceptionFilter';
+import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
+
 import 'reflect-metadata';
 
 async function bootstrap() {
