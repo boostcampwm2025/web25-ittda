@@ -49,7 +49,7 @@ export interface MemoryRecord {
     photos: string[];
     emotion: Emotion | null; // TODO: 이모션으로 변경
     tags: string[];
-    location: string | null;
+    location: LocationData | null;
     rating: { value: number; max: number };
     media: { image: string; type: string; title: string } | null;
     table: string[][] | null; // 행과 열 데이터
@@ -106,4 +106,17 @@ export interface CreatePostRequest {
 export interface Emotion {
   emoji: string;
   label: string;
+}
+
+//위치 정보
+export interface LocationData {
+  lat: number;
+  lng: number;
+  address?: string;
+  bounds?: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  };
 }
