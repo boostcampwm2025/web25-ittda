@@ -4,8 +4,12 @@ import { useState, useRef } from 'react';
 import { GripVertical } from 'lucide-react';
 import PostEditorHeader from './PostEditorHeader';
 import PostTitleInput from './PostTitleInput';
-import { Emotion, FieldType, MemoryRecord } from '@/lib/types/post';
-import DatePickerDrawer from './core/DatePickerDrawer';
+import {
+  Emotion,
+  FieldType,
+  LocationData,
+  MemoryRecord,
+} from '@/lib/types/post';
 import TimePickerDrawer from './core/TimePickerDrawer';
 import Toolbar from './Toolbar';
 import TagDrawer from './tag/TagDrawer';
@@ -19,6 +23,9 @@ import { formatDateDot, formatTime } from '@/lib/date';
 import { EmotionField } from './emotion/EmotionField';
 import EmotionDrawer from './emotion/EmotionDrawer';
 import { TableField } from './table/TableField';
+import LocationDrawer from '@/components/map/LocationDrawer';
+import { LocationField } from '@/components/map/LocationField';
+import DateDrawer from '@/components/DateDrawer';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -54,8 +61,11 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
     initialPost?.data?.table ?? null,
   );
 
+  const [location, setLocation] = useState<LocationData | null>(
+    initialPost?.data?.location ?? null,
+  );
   const [activeDrawer, setActiveDrawer] = useState<
-    'date' | 'time' | 'tag' | 'rating' | 'photo' | 'emotion' | null
+    'date' | 'time' | 'tag' | 'rating' | 'photo' | 'emotion' | 'location' | null
   >(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -202,6 +212,17 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
             }}
           />
         );
+      case 'location':
+        return (
+          <LocationField
+            address={location?.address}
+            onClick={() => setActiveDrawer('location')}
+            onRemove={() => {
+              setLocation(null);
+              removeFieldFromLayout('location');
+            }}
+          />
+        );
       default:
         return null;
     }
@@ -211,9 +232,10 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
     switch (activeDrawer) {
       case 'date':
         return (
-          <DatePickerDrawer
+          <DateDrawer
+            mode="single"
             currentDate={date}
-            onSelect={(d) => {
+            onSelectDate={(d) => {
               setDate(d);
               ensureFieldInOrder('date');
             }}
@@ -290,6 +312,18 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
             onClose={() => setActiveDrawer(null)}
           />
         );
+      case 'location':
+        return (
+          <LocationDrawer
+            mode="post"
+            onSelect={(data) => {
+              setLocation(data);
+              ensureFieldInOrder('location'); // 필드 순서 배열에 추가
+              setActiveDrawer(null); // 드로어 닫기
+            }}
+            onClose={() => setActiveDrawer(null)}
+          />
+        );
       default:
         return null;
     }
@@ -329,6 +363,7 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
         onPhotoClick={() => setActiveDrawer('photo')}
         onEmotionClick={() => setActiveDrawer('emotion')}
         onTableClick={handleAddTable}
+        onLocationClick={() => setActiveDrawer('location')}
       />
       <input
         type="file"
