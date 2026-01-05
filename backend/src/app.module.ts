@@ -5,7 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { LoggingModule } from './modules/logging_winston';
-import { PostModule } from './post/post.module';
+import { PostModule } from './modules/post/post.module';
 
 @Module({
   imports: [

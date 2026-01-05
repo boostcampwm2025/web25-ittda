@@ -2,7 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import type { Server } from 'http';
-import type { TemplateType } from '../src/post/post.types';
+import type { TemplateType } from '../src/modules/post/post.types';
 import { AppModule } from '../src/app.module';
 
 interface PostsListResponse {
