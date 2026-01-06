@@ -47,7 +47,7 @@ export default function GroupInfo({ groupThumnail }: GroupInfoProps) {
               alt=""
             />
           </div>
-          <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#10B981] text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
+          <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
             <Camera className="w-4 h-4" />
           </div>
         </button>

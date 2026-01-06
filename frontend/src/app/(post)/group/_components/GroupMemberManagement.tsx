@@ -183,7 +183,7 @@ export default function GroupMemberManagement({}: GroupMemberManagementProps) {
           <DrawerContent className="w-full px-8 pt-4 pb-10">
             <DrawerHeader>
               <div className="flex justify-between items-center mb-8">
-                <div className="flex flex-col">
+                <div className="flex flex-col justify-center items-start">
                   <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
                     Set Permissions
                   </span>
