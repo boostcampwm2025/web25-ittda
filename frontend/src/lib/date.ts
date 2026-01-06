@@ -79,7 +79,10 @@ export function formatRelativeTime(date: Date): string {
  * formatDateISO() // "2025-01-14"
  */
 export function formatDateISO(date: Date = new Date()): string {
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -121,3 +124,35 @@ export function formatLogDate(date: Date = new Date()) {
     weekday: weekdayStr,
   };
 }
+
+/**
+ * 이번주 시작 날짜를 Date 타입으로 반환
+ * @param date - 주간 시작 날짜를 알고자 하는 그 주의 날짜
+ * @returns Sun Dec 28 2025 00:00:00 GMT+0900 (한국 표준시)
+ */
+export const getStartOfWeek = (date: Date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0); // 시간 정보를 0으로 초기화하여 비교 정확도 향상
+  const day = d.getDay();
+  const diff = d.getDate() - day;
+  const startOfWeek = new Date(d.setDate(diff));
+  startOfWeek.setHours(0, 0, 0, 0);
+  return startOfWeek;
+};
+
+export const getWeekDays = (baseDate: Date = new Date()) => {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const startOfWeek = getStartOfWeek(baseDate);
+    const day = new Date(startOfWeek);
+    day.setDate(startOfWeek.getDate() + i);
+    days.push({
+      date: day,
+      dateStr: formatDateISO(day),
+      dayName: ['일', '월', '화', '수', '목', '금', '토'][i],
+      isToday: formatDateISO(day) === formatDateISO(),
+    });
+  }
+
+  return days;
+};
