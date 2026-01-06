@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { getTypeOrmConfig } from './config/typeorm/typeorm.config';
 import { LoggingModule } from './modules/logging_winston';
 import { PostModule } from './modules/post/post.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { PostModule } from './modules/post/post.module';
         ]),
     LoggingModule,
     PostModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],

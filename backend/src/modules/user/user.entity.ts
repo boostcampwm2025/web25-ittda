@@ -5,6 +5,8 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 
+export type OAuthProvider = 'google' | 'kakao';
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -15,7 +17,7 @@ export class User {
   // CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
   // SQL 명령을 사용하여 활성화할 수 있습니다.
 
-  @Column({ unique: true })
+  @Column({ nullable: true }) // email은 카카오에서 optional
   email: string;
 
   @Column()
@@ -23,6 +25,9 @@ export class User {
 
   @Column()
   provider: string;
+
+  @Column()
+  providerId: string;
 
   @CreateDateColumn()
   createdAt: Date;

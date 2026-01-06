@@ -16,3 +16,7 @@ export default new DataSource({
   synchronize: false, // CLI에서는 항상 false
   logging: true,
 });
+
+// synchronize: true인 상태에서 개발을 하더라도, 운영 환경에 반영하기 위해서는
+// 로컬에서 마이그레이션 파일을 생성하여 Git에 포함시켜야 합니다.
+// pnpm run migration:generate src/migrations/<마이그레이션이름>Migration
