@@ -2,17 +2,17 @@
 
 import { ArrowLeft } from 'lucide-react';
 
-interface PostEditorHeaderProps {
+interface RecordEditorHeaderProps {
   mode: 'add' | 'edit';
   onSave: () => void;
   onBack?: () => void;
 }
 
-export default function PostEditorHeader({
+export default function RecordEditorHeader({
   mode,
   onSave,
   onBack,
-}: PostEditorHeaderProps) {
+}: RecordEditorHeaderProps) {
   return (
     <header className="sticky top-0 z-50 shrink-0 backdrop-blur-md px-5 py-4 flex items-center justify-between border-b transition-colors duration-300 bg-white/95 border-gray-100 dark:bg-[#121212]/95 dark:border-white/5">
       {/* 뒤로가기 버튼 */}

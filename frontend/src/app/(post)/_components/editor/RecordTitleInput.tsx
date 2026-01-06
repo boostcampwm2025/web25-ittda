@@ -1,14 +1,14 @@
 'use client';
 
-interface PostTitleInputProps {
+interface RecordTitleInputProps {
   value?: string;
   onChange: (val: string) => void;
 }
 
-export default function PostTitleInput({
+export default function RecordTitleInput({
   value,
   onChange,
-}: PostTitleInputProps) {
+}: RecordTitleInputProps) {
   return (
     <input
       type="text"

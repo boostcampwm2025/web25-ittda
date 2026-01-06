@@ -16,14 +16,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { LocationData } from '@/lib/types/post';
 import Input from '../Input';
-
+import { LocationValue } from '@/lib/types/recordField';
 export type LocationMode = 'search' | 'post';
 
 export interface LocationPickerProps {
   mode: LocationMode;
-  onSelect: (data: LocationData) => void;
+  onSelect: (data: LocationValue) => void;
   initialCenter?: { lat: number; lng: number };
 }
 
@@ -156,7 +155,7 @@ export function LocationPicker({
       }
 
       // 기본 데이터 생성
-      const data: LocationData = {
+      const data: LocationValue = {
         lat,
         lng,
         address: addr,

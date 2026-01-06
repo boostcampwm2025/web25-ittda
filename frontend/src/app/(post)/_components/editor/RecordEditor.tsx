@@ -2,14 +2,6 @@
 
 import { useState, useRef } from 'react';
 import { GripVertical } from 'lucide-react';
-import PostEditorHeader from './PostEditorHeader';
-import PostTitleInput from './PostTitleInput';
-import {
-  Emotion,
-  FieldType,
-  LocationData,
-  MemoryRecord,
-} from '@/lib/types/post';
 import TimePickerDrawer from './core/TimePickerDrawer';
 import Toolbar from './Toolbar';
 import TagDrawer from './tag/TagDrawer';
@@ -26,6 +18,10 @@ import { TableField } from './table/TableField';
 import LocationDrawer from '@/components/map/LocationDrawer';
 import { LocationField } from '@/components/map/LocationField';
 import DateDrawer from '@/components/DateDrawer';
+import RecordTitleInput from './RecordTitleInput';
+import RecordEditorHeader from './RecordEditorHeader';
+import { FieldType, MemoryRecord } from '@/lib/types/record';
+import { Emotion, LocationValue } from '@/lib/types/recordField';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -60,10 +56,8 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
   const [table, setTable] = useState<string[][] | null>(
     initialPost?.data?.table ?? null,
   );
-
-  const [location, setLocation] = useState<LocationData | null>(
-    initialPost?.data?.location ?? null,
-  );
+  // 초기 위치값 넣기
+  const [location, setLocation] = useState<LocationValue | null>(null);
   const [activeDrawer, setActiveDrawer] = useState<
     'date' | 'time' | 'tag' | 'rating' | 'photo' | 'emotion' | 'location' | null
   >(null);
@@ -331,13 +325,13 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
 
   return (
     <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
-      <PostEditorHeader
+      <RecordEditorHeader
         mode={mode}
         onBack={() => window.history.back()}
         onSave={handleSave}
       />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
-        <PostTitleInput value={title} onChange={setTitle} />
+        <RecordTitleInput value={title} onChange={setTitle} />
         <div className="flex flex-col gap-4">
           {fieldOrder.map((type, index) => (
             <div

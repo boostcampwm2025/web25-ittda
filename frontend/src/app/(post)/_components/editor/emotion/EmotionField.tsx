@@ -1,5 +1,5 @@
 'use client';
-import { Emotion } from '@/lib/types/post';
+import { Emotion } from '@/lib/types/recordField';
 import { X } from 'lucide-react';
 
 interface EmotionFieldProps {

@@ -5,11 +5,11 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { LocationMode, LocationPicker } from './LocationPicker';
-import { LocationData } from '@/lib/types/post';
+import { LocationValue } from '@/lib/types/recordField';
 
 interface Props {
   mode: LocationMode;
-  onSelect: (data: LocationData) => void;
+  onSelect: (data: LocationValue) => void;
   onClose: () => void;
 }
 
