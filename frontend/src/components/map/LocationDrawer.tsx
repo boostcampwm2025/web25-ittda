@@ -16,13 +16,15 @@ interface Props {
 export default function LocationDrawer({ mode, onSelect, onClose }: Props) {
   return (
     <Drawer open onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-w-2xl mx-auto">
-        <DrawerHeader className="border-b">
-          <DrawerTitle className="text-center">
-            {mode === 'search' ? '검색 지역 설정' : '장소 선택'}
-          </DrawerTitle>
-        </DrawerHeader>
-        <LocationPicker mode={mode} onSelect={onSelect} />
+      <DrawerContent>
+        <div className="w-full">
+          <DrawerHeader className="border-b">
+            <DrawerTitle className="text-center">
+              {mode === 'search' ? '검색 지역 설정' : '장소 선택'}
+            </DrawerTitle>
+          </DrawerHeader>
+          <LocationPicker mode={mode} onSelect={onSelect} />
+        </div>
       </DrawerContent>
     </Drawer>
   );
