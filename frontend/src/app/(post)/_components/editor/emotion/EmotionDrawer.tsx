@@ -7,11 +7,12 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { EMOTIONS } from '@/lib/constants/constants';
+import { Emotion } from '@/lib/types/recordField';
 
 interface EmotionDrawerProps {
   onClose: () => void;
-  onSelect: (emotion: { emoji: string; label: string }) => void;
-  selectedEmotion: { emoji: string; label: string } | null;
+  onSelect: (emotion: string) => void;
+  selectedEmotion: string | null;
 }
 
 export default function EmotionDrawer({
@@ -35,13 +36,13 @@ export default function EmotionDrawer({
           </DrawerHeader>
 
           <div className="grid grid-cols-5 gap-4 mb-8">
-            {EMOTIONS.map((emo) => {
-              const isSelected = selectedEmotion?.label === emo.label;
+            {EMOTIONS.map((emo: Emotion) => {
+              const isSelected = selectedEmotion === emo.label;
               return (
                 <button
                   key={emo.label}
                   onClick={() => {
-                    onSelect(emo);
+                    onSelect(emo.label);
                     onClose();
                   }}
                   className={`flex flex-col items-center gap-2 p-2 rounded-2xl transition-all active:scale-90 ${

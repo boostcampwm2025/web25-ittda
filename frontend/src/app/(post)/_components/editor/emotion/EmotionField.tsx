@@ -1,9 +1,9 @@
 'use client';
-import { Emotion } from '@/lib/types/recordField';
+import { EMOTION_MAP } from '@/lib/constants/constants';
 import { X } from 'lucide-react';
 
 interface EmotionFieldProps {
-  emotion: Emotion | null;
+  emotion: string | null;
   onClick: () => void;
   onRemove: () => void;
 }
@@ -22,10 +22,10 @@ export const EmotionField = ({
         className="flex items-center gap-1 active:scale-95 transition-transform"
       >
         <span className="flex items-center text-lg leading-none select-none">
-          {emotion.emoji}
+          {EMOTION_MAP[emotion]}
         </span>
         <span className="flex items-center text-xs font-bold text-itta-black dark:text-gray-300 leading-none">
-          {emotion.label}
+          {emotion}
         </span>
       </button>
 
