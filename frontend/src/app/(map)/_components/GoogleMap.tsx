@@ -11,7 +11,7 @@ import {
   Music2,
   Search,
 } from 'lucide-react';
-import type { PostListItem } from '@/lib/types/post';
+import type { PostListItem } from '@/lib/types/record';
 import { useEffect } from 'react';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
 

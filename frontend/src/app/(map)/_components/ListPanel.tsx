@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import DiaryPostDetail from '@/components/DiaryPostDetail';
 import DiaryPostShort from '@/components/DiaryPostShort';
-import type { PostListItem } from '@/lib/types/post';
+import type { PostListItem } from '@/lib/types/record';
 
 interface ListPanelProps {
   posts: PostListItem[];

@@ -70,8 +70,8 @@ export default async function GroupPage({ params }: GroupPageProps) {
   // const posts = data ?? [];
 
   return (
-    <div className="w-full flex flex-col gap-6">
-      <header className="sticky top-0 z-50 w-full inset-x-0 pb-6 pt-4 border-b transition-all duration-300 dark:bg-[#121212]/95 dark:border-white/5 bg-white/95 border-gray-50">
+    <main className="w-full flex flex-col gap-6">
+      <header className="sticky top-0 z-50 w-full inset-x-0 pb-6 pt-4 border-b transition-all duration-300 dark:bg-[#121212] dark:border-white/5 bg-white border-gray-50">
         <GroupHeaderActions groupInfo={groupInfo} />
 
         <div className="flex items-end justify-between px-1">
@@ -112,6 +112,6 @@ export default async function GroupPage({ params }: GroupPageProps) {
           />
         )}
       </>
-    </div>
+    </main>
   );
 }

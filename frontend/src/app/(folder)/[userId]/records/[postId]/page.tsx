@@ -28,7 +28,7 @@ export default function HomePage() {
     enabled: !!postId,
   });
 
-  //TODO: 로딩 맟 에러 처리
+  //TODO: 로딩 및 에러 처리
   if (isLoading || !post)
     return <div className="p-10 text-center text-gray-500">로딩중 ...</div>;
   const logDate = post?.createdAt

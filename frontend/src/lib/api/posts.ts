@@ -1,5 +1,5 @@
-import type { PostListItem } from '../types/post';
-import type { CreatePostRequest } from '../types/post';
+import type { PostListItem } from '../types/record';
+import type { CreatePostRequest } from '../types/record';
 
 const API_PREFIX = '/api';
 
@@ -67,7 +67,7 @@ export async function createPost(body: CreatePostRequest) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      templateType: body.templateType?? 'diary',
+      templateType: body.templateType ?? 'diary',
       ...body,
     }),
   });

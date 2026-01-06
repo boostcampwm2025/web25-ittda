@@ -9,7 +9,6 @@ import {
   useMap,
   useMapsLibrary,
 } from '@vis.gl/react-google-maps';
-import Input from '@/components/Input';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/popover';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationData } from '@/lib/types/post';
+import Input from '../Input';
 
 export type LocationMode = 'search' | 'post';
 

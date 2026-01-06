@@ -1,4 +1,4 @@
-import { FieldType, MemoryRecord } from '@/lib/types/post';
+import { FieldType, MemoryRecord } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { Calendar, Clock, MapPin, Star } from 'lucide-react';
 import Image from 'next/image';

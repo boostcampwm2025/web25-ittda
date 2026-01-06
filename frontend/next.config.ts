@@ -13,13 +13,18 @@ const imageDomains = [
   'api.dicebear.com',
 ];
 
+// 환경에 따라 백엔드 주소 분기
+const backendHost =
+  process.env.NODE_ENV === 'production'
+    ? 'http://backend:4000'
+    : 'http://localhost:4000';
+
 const nextConfig: NextConfig = {
-  /* config options here */
   async rewrites() {
     return [
       {
         source: '/api/posts/:path*',
-        destination: 'http://localhost:4000/posts/:path*',
+        destination: `${backendHost}/posts/:path*`,
       },
     ];
   },
