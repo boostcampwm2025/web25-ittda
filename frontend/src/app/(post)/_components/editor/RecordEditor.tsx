@@ -1,220 +1,317 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { GripVertical } from 'lucide-react';
-import TimePickerDrawer from './core/TimePickerDrawer';
+import { v4 as uuidv4 } from 'uuid';
+
+// 컴포넌트 및 필드 임포트
+import RecordEditorHeader from './RecordEditorHeader';
+import RecordTitleInput from './RecordTitleInput';
 import Toolbar from './Toolbar';
+import { DateField, TimeField, ContentField } from './core/CoreField';
+import { PhotoField } from './photo/PhotoField';
+import { EmotionField } from './emotion/EmotionField';
+import { TagField } from './tag/TagField';
+import { TableField } from './table/TableField';
+import { RatingField } from './rating/RatingField';
+import { LocationField } from '@/components/map/LocationField';
+import MediaField from './media/MediaField';
+
+// 드로어
+import DateDrawer from '@/components/DateDrawer';
+import TimePickerDrawer from './core/TimePickerDrawer';
 import TagDrawer from './tag/TagDrawer';
 import RatingDrawer from './rating/RatingPickerDrawer';
 import PhotoDrawer from './photo/PhotoDrawer';
-import { RatingField } from './rating/RatingField';
-import { TagField } from './tag/TagField';
-import { PhotoField } from './photo/PhotoField';
-import { ContentField, DateField, TimeField } from './core/CoreField';
-import { formatDateDot, formatTime } from '@/lib/date';
-import { EmotionField } from './emotion/EmotionField';
 import EmotionDrawer from './emotion/EmotionDrawer';
-import { TableField } from './table/TableField';
 import LocationDrawer from '@/components/map/LocationDrawer';
-import { LocationField } from '@/components/map/LocationField';
-import DateDrawer from '@/components/DateDrawer';
-import RecordTitleInput from './RecordTitleInput';
-import RecordEditorHeader from './RecordEditorHeader';
-import { FieldType, MemoryRecord } from '@/lib/types/record';
-import { Emotion, LocationValue } from '@/lib/types/recordField';
+import MediaDrawer from './media/MediaDrawer';
 
-interface PostEditorProps {
+// 타입
+import { FieldType } from '@/lib/types/record';
+import { PostBlock, MediaValue } from '@/lib/types/recordField';
+import { formatDateDot, formatTime } from '@/lib/date';
+
+export default function PostEditor({
+  mode,
+  initialPost,
+}: {
   mode: 'add' | 'edit';
-  initialPost?: MemoryRecord;
-}
-
-export default function PostEditor({ mode, initialPost }: PostEditorProps) {
+  initialPost?: { title: string; blocks: PostBlock[] };
+}) {
   const [title, setTitle] = useState(initialPost?.title ?? '');
-  const [fieldOrder, setFieldOrder] = useState<FieldType[]>(
-    initialPost?.fieldOrder ?? ['date', 'time', 'content'],
-  );
 
-  const [date, setDate] = useState(
-    initialPost?.data?.date ?? formatDateDot(new Date()),
-  );
-  const [time, setTime] = useState(
-    initialPost?.data?.time ?? formatTime(new Date()),
-  );
-  const [content, setContent] = useState(initialPost?.data?.content ?? '');
-  const [photos, setPhotos] = useState<string[]>(
-    initialPost?.data?.photos ?? [],
-  );
-  const [emotion, setEmotion] = useState<Emotion | null>(
-    initialPost?.data?.emotion ?? null,
-  );
-  const [selectedTags, setSelectedTags] = useState<string[]>(
-    initialPost?.data?.tags ?? [],
-  );
-  const [rating, setRating] = useState(
-    initialPost?.data?.rating ?? { value: 0, max: 5 },
-  );
-  const [table, setTable] = useState<string[][] | null>(
-    initialPost?.data?.table ?? null,
-  );
-  // 초기 위치값 넣기
-  const [location, setLocation] = useState<LocationValue | null>(null);
-  const [activeDrawer, setActiveDrawer] = useState<
-    'date' | 'time' | 'tag' | 'rating' | 'photo' | 'emotion' | 'location' | null
-  >(null);
+  // 전체 블록 상태
+  const [blocks, setBlocks] = useState<PostBlock[]>([]);
 
+  const [activeDrawer, setActiveDrawer] = useState<{
+    type: FieldType;
+    id: string;
+  } | null>(null);
+
+  const [isDraggingId, setIsDraggingId] = useState<string | null>(null);
+  const lastUpdateRef = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dragItem = useRef<number | null>(null);
-  const [isDraggingIndex, setIsDraggingIndex] = useState<number | null>(null);
 
-  const ensureFieldInOrder = (type: FieldType) => {
-    if (!fieldOrder.includes(type)) {
-      setFieldOrder((prev) => [...prev, type]);
+  useEffect(() => {
+    if (initialPost?.blocks) {
+      setBlocks(normalizeLayout(initialPost.blocks));
+    } else {
+      const initialTypes: FieldType[] = ['date', 'time', 'content'];
+      const initialBlocks = initialTypes.map((type) => ({
+        id: uuidv4(),
+        type,
+        value: getDefaultValue(type),
+        layout: { row: 0, col: 0, span: 2 },
+      })) as PostBlock[];
+      setBlocks(normalizeLayout(initialBlocks));
     }
-  };
+  }, [initialPost]);
 
-  const removeFieldFromLayout = (type: FieldType) => {
-    setFieldOrder((prev) => prev.filter((item) => item !== type));
-  };
-
-  const handleDragStart = (index: number) => {
-    dragItem.current = index;
-    setIsDraggingIndex(index);
-  };
-
-  const handleDragEnter = (index: number) => {
-    if (dragItem.current === null || dragItem.current === index) return;
-    const newOrder = [...fieldOrder];
-    const draggedItemContent = newOrder.splice(dragItem.current, 1)[0];
-    newOrder.splice(index, 0, draggedItemContent);
-    dragItem.current = index;
-    setFieldOrder(newOrder);
-  };
-
-  const handleDragEnd = () => {
-    dragItem.current = null;
-    setIsDraggingIndex(null);
-  };
-
-  // 사진 업로드 핸들러
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            setPhotos((prev) => [...prev, event.target!.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-      ensureFieldInOrder('photos');
-    }
-  };
-
-  // 테이블 추가 핸들러
-  const handleAddTable = () => {
-    if (!table) {
-      // 초기 2x2 테이블 생성
-      setTable([
-        ['', ''],
-        ['', ''],
-      ]);
-    }
-    ensureFieldInOrder('table');
-  };
-
-  const handleSave = async () => {
-    try {
-      const payload = {
-        title,
-        date,
-        time,
-        photos,
-        selectedTags,
-        rating,
-        fieldOrder,
-        content,
-        table,
-      };
-      // TODO : API 호출
-    } finally {
-    }
-  };
-
-  const renderField = (type: FieldType) => {
+  // 기본값 생성
+  function getDefaultValue(type: FieldType): PostBlock['value'] {
     switch (type) {
       case 'date':
+        return formatDateDot(new Date());
+      case 'time':
+        return formatTime(new Date());
+      case 'rating':
+        return 0;
+      case 'tags':
+        return [];
+      case 'photos':
+        return [];
+      case 'table':
+        return [
+          ['', ''],
+          ['', ''],
+        ];
+      case 'content':
+        return '';
+      case 'emotion':
+        return '';
+      case 'location':
+        return { address: '' };
+      case 'media':
+        return { image: '', type: '', title: '', year: '' };
+      default:
+        return '';
+    }
+  }
+
+  function normalizeLayout(targetBlocks: PostBlock[]): PostBlock[] {
+    let currentRow = 1;
+    let currentCol = 1;
+    return targetBlocks.map((block) => {
+      const span = block.layout.span;
+      if (span === 2 && currentCol === 2) {
+        currentRow++;
+        currentCol = 1;
+      }
+      const updated = {
+        ...block,
+        layout: { row: currentRow, col: currentCol, span },
+      };
+      currentCol += span;
+      if (currentCol > 2) {
+        currentRow++;
+        currentCol = 1;
+      }
+      return updated as PostBlock;
+    });
+  }
+
+  const canBeHalfWidth = (type: FieldType) =>
+    ['date', 'emotion', 'location', 'rating', 'time', 'media'].includes(type);
+
+  // 필드 값 업데이트 함수
+  const updateFieldValue = <T extends PostBlock>(
+    id: string,
+    value: T['value'],
+  ) => {
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, value } : b) as PostBlock),
+    );
+  };
+
+  const addOrShowBlock = (type: FieldType) => {
+    const singleInstanceTypes: FieldType[] = [
+      'date',
+      'time',
+      'rating',
+      'location',
+      'tags',
+      'photos',
+      'media',
+    ];
+    const multiInstanceLimits: Partial<Record<FieldType, number>> = {
+      emotion: 4,
+      table: 4,
+      content: 4,
+    };
+
+    const existingBlocks = blocks.filter((b) => b.type === type);
+
+    if (singleInstanceTypes.includes(type) && existingBlocks.length > 0) {
+      setActiveDrawer({ type, id: existingBlocks[0].id });
+      return;
+    }
+
+    const limit = multiInstanceLimits[type];
+    if (limit && existingBlocks.length >= limit) {
+      //TODO : 임시작업. 이후 토스트/모달 등
+      //       또는 아래 툴바 막기
+      alert(`${type} 필드는 최대 ${limit}개까지만 추가 가능합니다.`);
+      return;
+    }
+
+    const newId = uuidv4();
+    const newBlock = {
+      id: newId,
+      type,
+      value: getDefaultValue(type),
+      layout: { row: 0, col: 0, span: 2 },
+    } as PostBlock;
+
+    setBlocks((prev) => normalizeLayout([...prev, newBlock]));
+
+    const drawerTypes: FieldType[] = [
+      'date',
+      'time',
+      'tags',
+      'rating',
+      'photos',
+      'emotion',
+      'location',
+      'media',
+    ];
+    if (drawerTypes.includes(type)) {
+      setActiveDrawer({ type, id: newId });
+    }
+  };
+
+  const removeBlock = (id: string) => {
+    setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
+  };
+
+  const handleDragStart = (id: string) => setIsDraggingId(id);
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (isDraggingId === targetId) return;
+    const now = Date.now();
+    if (now - lastUpdateRef.current < 50) return;
+    lastUpdateRef.current = now;
+
+    const dragIdx = blocks.findIndex((b) => b.id === isDraggingId);
+    const hoverIdx = blocks.findIndex((b) => b.id === targetId);
+    if (dragIdx === -1 || hoverIdx === -1) return;
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const draggingBlock = blocks[dragIdx];
+
+    let newSpan = draggingBlock.layout.span;
+    if (canBeHalfWidth(draggingBlock.type)) {
+      newSpan = x < rect.width * 0.25 || x > rect.width * 0.75 ? 1 : 2;
+    }
+
+    if (dragIdx !== hoverIdx || draggingBlock.layout.span !== newSpan) {
+      const newBlocks = [...blocks];
+      newBlocks[dragIdx].layout.span = newSpan;
+      const [draggedItem] = newBlocks.splice(dragIdx, 1);
+      newBlocks.splice(hoverIdx, 0, draggedItem);
+      setBlocks(normalizeLayout(newBlocks));
+    }
+  };
+
+  const handleSave = () => {
+    const payload = { title, blocks };
+    console.log('Save:', payload);
+  };
+
+  const renderField = (block: PostBlock) => {
+    switch (block.type) {
+      case 'date':
         return (
-          <DateField date={date} onClick={() => setActiveDrawer('date')} />
+          <DateField
+            date={block.value}
+            onClick={() => setActiveDrawer({ type: 'date', id: block.id })}
+          />
         );
       case 'time':
         return (
-          <TimeField time={time} onClick={() => setActiveDrawer('time')} />
+          <TimeField
+            time={block.value}
+            onClick={() => setActiveDrawer({ type: 'time', id: block.id })}
+          />
         );
       case 'content':
-        return <ContentField value={content} onChange={setContent} />;
+        return (
+          <ContentField
+            value={block.value}
+            onChange={(v) => updateFieldValue(block.id, v)}
+          />
+        );
       case 'photos':
         return (
           <PhotoField
-            photos={photos}
-            onClick={() => setActiveDrawer('photo')}
+            photos={block.value as unknown as string[]}
+            onClick={() => setActiveDrawer({ type: 'photos', id: block.id })}
           />
         );
       case 'emotion':
         return (
           <EmotionField
-            emotion={emotion}
-            onClick={() => setActiveDrawer('emotion')}
-            onRemove={() => {
-              setEmotion(null);
-              removeFieldFromLayout('emotion');
-            }}
+            emotion={block.value}
+            onClick={() => setActiveDrawer({ type: 'emotion', id: block.id })}
+            onRemove={() => removeBlock(block.id)}
           />
         );
       case 'tags':
         return (
           <TagField
-            tags={selectedTags}
-            onRemove={(tag) => {
-              const newTags = selectedTags.filter((t) => t !== tag);
-              setSelectedTags(newTags);
-              if (newTags.length === 0) removeFieldFromLayout('tags');
-            }}
-            onAdd={() => setActiveDrawer('tag')}
+            tags={block.value}
+            onRemove={(tag) =>
+              updateFieldValue(
+                block.id,
+                block.value.filter((t) => t !== tag),
+              )
+            }
+            onAdd={() => setActiveDrawer({ type: 'tags', id: block.id })}
           />
         );
       case 'table':
         return (
           <TableField
-            data={table}
-            onUpdate={(newData) => {
-              setTable(newData);
-              if (!newData) removeFieldFromLayout('table');
-            }}
+            data={block.value}
+            onUpdate={(d) =>
+              d ? updateFieldValue(block.id, d) : removeBlock(block.id)
+            }
           />
         );
       case 'rating':
         return (
           <RatingField
-            value={rating.value}
-            max={rating.max}
-            onClick={() => setActiveDrawer('rating')}
-            onRemove={() => {
-              setRating({ ...rating, value: 0 });
-              removeFieldFromLayout('rating');
-            }}
+            value={block.value}
+            max={5}
+            onClick={() => setActiveDrawer({ type: 'rating', id: block.id })}
+            onRemove={() => removeBlock(block.id)}
           />
         );
       case 'location':
         return (
           <LocationField
-            address={location?.address}
-            onClick={() => setActiveDrawer('location')}
-            onRemove={() => {
-              setLocation(null);
-              removeFieldFromLayout('location');
-            }}
+            address={block.value.address}
+            onClick={() => setActiveDrawer({ type: 'location', id: block.id })}
+            onRemove={() => removeBlock(block.id)}
+          />
+        );
+      case 'media':
+        return (
+          <MediaField
+            data={block.value as MediaValue}
+            onClick={() => setActiveDrawer({ type: 'media', id: block.id })}
+            onRemove={() => removeBlock(block.id)}
           />
         );
       default:
@@ -223,15 +320,20 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
   };
 
   const renderActiveDrawer = () => {
-    switch (activeDrawer) {
+    if (!activeDrawer) return null;
+    const { id } = activeDrawer;
+    const block = blocks.find((b) => b.id === id);
+    if (!block) return null;
+
+    switch (block.type) {
       case 'date':
         return (
           <DateDrawer
             mode="single"
-            currentDate={date}
+            currentDate={block.value}
             onSelectDate={(d) => {
-              setDate(d);
-              ensureFieldInOrder('date');
+              updateFieldValue(id, d);
+              setActiveDrawer(null);
             }}
             onClose={() => setActiveDrawer(null)}
           />
@@ -239,69 +341,58 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
       case 'time':
         return (
           <TimePickerDrawer
-            currentTime={time}
+            currentTime={block.value}
             onSave={(t) => {
-              setTime(t);
-              ensureFieldInOrder('time');
+              updateFieldValue(id, t);
+              setActiveDrawer(null);
             }}
             onClose={() => setActiveDrawer(null)}
           />
         );
-      case 'tag':
+      case 'tags':
         return (
           <TagDrawer
-            tags={selectedTags}
+            tags={block.value}
             previousTags={['식단', '운동']}
-            onUpdateTags={(newTags) => {
-              setSelectedTags(newTags);
-              if (newTags.length > 0) {
-                ensureFieldInOrder('tags');
-              } else {
-                removeFieldFromLayout('tags');
-              }
-            }}
+            onUpdateTags={(nt) => updateFieldValue(id, nt)}
             onClose={() => setActiveDrawer(null)}
           />
         );
       case 'rating':
         return (
           <RatingDrawer
-            rating={rating}
-            onUpdateRating={(newRating) => {
-              setRating(newRating);
-              if (newRating.value > 0) {
-                ensureFieldInOrder('rating');
-              } else {
-                removeFieldFromLayout('rating');
-              }
+            rating={{ value: block.value, max: 5 }}
+            onUpdateRating={(nr) => {
+              updateFieldValue(id, nr.value);
+              setActiveDrawer(null);
             }}
             onClose={() => setActiveDrawer(null)}
           />
         );
-      case 'photo':
+      case 'photos':
         return (
           <PhotoDrawer
-            photos={photos}
+            photos={block.value as unknown as string[]}
             onUploadClick={() => fileInputRef.current?.click()}
-            onRemovePhoto={(idx) => {
-              const newPhotos = photos.filter((_, i) => i !== idx);
-              setPhotos(newPhotos);
-              if (newPhotos.length === 0) removeFieldFromLayout('photos');
-            }}
-            onRemoveAll={() => {
-              setPhotos([]);
-              removeFieldFromLayout('photos');
-            }}
+            onRemovePhoto={(idx) =>
+              updateFieldValue(
+                id,
+                (block.value as unknown as string[]).filter(
+                  (_, i) => i !== idx,
+                ),
+              )
+            }
+            onRemoveAll={() => updateFieldValue(id, [])}
             onClose={() => setActiveDrawer(null)}
           />
         );
       case 'emotion':
         return (
           <EmotionDrawer
-            selectedEmotion={emotion}
+            selectedEmotion={block.value}
             onSelect={(emo) => {
-              setEmotion(emo);
-              ensureFieldInOrder('emotion');
+              updateFieldValue(id, emo);
+              setActiveDrawer(null);
             }}
             onClose={() => setActiveDrawer(null)}
           />
@@ -311,9 +402,18 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
           <LocationDrawer
             mode="post"
             onSelect={(data) => {
-              setLocation(data);
-              ensureFieldInOrder('location'); // 필드 순서 배열에 추가
-              setActiveDrawer(null); // 드로어 닫기
+              updateFieldValue(id, data);
+              setActiveDrawer(null);
+            }}
+            onClose={() => setActiveDrawer(null)}
+          />
+        );
+      case 'media':
+        return (
+          <MediaDrawer
+            onSelect={(data) => {
+              updateFieldValue(id, data);
+              setActiveDrawer(null);
             }}
             onClose={() => setActiveDrawer(null)}
           />
@@ -332,40 +432,71 @@ export default function PostEditor({ mode, initialPost }: PostEditorProps) {
       />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput value={title} onChange={setTitle} />
-        <div className="flex flex-col gap-4">
-          {fieldOrder.map((type, index) => (
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300">
+          {blocks.map((block) => (
             <div
-              key={type}
+              key={block.id}
               draggable
-              onDragStart={() => handleDragStart(index)}
-              onDragEnter={() => handleDragEnter(index)}
-              onDragEnd={handleDragEnd}
-              onDragOver={(e) => e.preventDefault()}
-              className={`relative pl-10 transition-all group/field ${isDraggingIndex === index ? 'opacity-40 scale-105 z-10' : 'opacity-100'}`}
+              onDragStart={() => handleDragStart(block.id)}
+              onDragOver={(e) => handleDragOver(e, block.id)}
+              onDragEnd={() => setIsDraggingId(null)}
+              className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
             >
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-full opacity-30 group-hover/field:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-                <GripVertical className="w-4 h-4 text-gray-400" />
+              <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-0 group-hover/field:opacity-40 transition-opacity cursor-grab active:cursor-grabbing">
+                <GripVertical className="w-4 h-4 text-gray-500" />
               </div>
-              {renderField(type)}
+              <div className="w-full">{renderField(block)}</div>
             </div>
           ))}
         </div>
       </main>
       <Toolbar
-        onTagClick={() => setActiveDrawer('tag')}
-        onRatingClick={() => setActiveDrawer('rating')}
-        onPhotoClick={() => setActiveDrawer('photo')}
-        onEmotionClick={() => setActiveDrawer('emotion')}
-        onTableClick={handleAddTable}
-        onLocationClick={() => setActiveDrawer('location')}
+        onTagClick={() => addOrShowBlock('tags')}
+        onRatingClick={() => addOrShowBlock('rating')}
+        onPhotoClick={() => addOrShowBlock('photos')}
+        onEmotionClick={() => addOrShowBlock('emotion')}
+        onTableClick={() => addOrShowBlock('table')}
+        onLocationClick={() => addOrShowBlock('location')}
+        onMediaClick={() => addOrShowBlock('media')}
+        //onContentClick={() => addOrShowBlock('content')}
       />
+
+      {/* 복구된 파일 입력 로직 */}
       <input
         type="file"
         ref={fileInputRef}
         className="hidden"
         multiple
         accept="image/*"
-        onChange={handlePhotoUpload}
+        onChange={async (e) => {
+          const files = e.target.files;
+          if (files && activeDrawer?.id) {
+            const blockId = activeDrawer.id;
+            const targetBlock = blocks.find((b) => b.id === blockId);
+
+            if (targetBlock?.type === 'photos') {
+              // 모든 파일을 읽는 배열 생성
+              const readFilesPromises = Array.from(files).map((file) => {
+                return new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = (ev) => resolve(ev.target?.result as string);
+                  reader.onerror = reject;
+                  reader.readAsDataURL(file);
+                });
+              });
+
+              try {
+                // 모든 사진 읽기 완료될 때까지 대기
+                const newImages = await Promise.all(readFilesPromises);
+                //기존 사진들과 합쳐서 한 번에 업데이트
+                const currentPhotos = targetBlock.value as unknown as string[];
+                updateFieldValue(blockId, [...currentPhotos, ...newImages]);
+              } catch (error) {
+                console.error('사진을 읽는 중 오류 발생:', error);
+              }
+            }
+          }
+        }}
       />
       {renderActiveDrawer()}
     </div>
