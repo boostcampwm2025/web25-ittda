@@ -29,6 +29,9 @@ jobs:
         run: |
           docker build \
           -f frontend/Dockerfile \
+          --build-arg NEXT_PUBLIC_MOCK=false \
+          --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }} \
+          --build-arg NODE_ENV=production \
           -t ${{ secrets.NCP_REGISTRY_URL }}/frontend:latest \
           .
           docker push ${{ secrets.NCP_REGISTRY_URL }}/frontend:latest
