@@ -21,6 +21,7 @@ interface ToolbarProps {
   onEmotionClick: () => void;
   onTableClick: () => void;
   onLocationClick: () => void;
+  onMediaClick: () => void;
 }
 
 // 개별 아이콘 버튼 Props
@@ -36,6 +37,7 @@ export default function Toolbar({
   onEmotionClick,
   onTableClick,
   onLocationClick,
+  onMediaClick,
 }: ToolbarProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 max-w-4xl mx-auto flex flex-col items-center gap-3 w-full">
@@ -57,7 +59,7 @@ export default function Toolbar({
         <ToolbarIcon Icon={MapPin} onClick={onLocationClick} />
         <ToolbarIcon Icon={Table} onClick={onTableClick} />
         <ToolbarIcon Icon={Star} onClick={onRatingClick} />
-        <ToolbarIcon Icon={Search} onClick={() => {}} />
+        <ToolbarIcon Icon={Search} onClick={onMediaClick} />
       </div>
     </div>
   );

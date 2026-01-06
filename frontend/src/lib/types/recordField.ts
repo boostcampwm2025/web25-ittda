@@ -13,7 +13,7 @@ export interface LocationValue {
 }
 
 export interface MediaValue {
-  image: string;
+  image?: string;
   type: string;
   title: string;
   year?: string;
@@ -27,7 +27,7 @@ export interface BlockLayout {
 
 // 각 블록 단위
 export interface BaseBlock<T = unknown> {
-  id?: string;
+  id: string;
   type: FieldType;
   value: T;
   layout: BlockLayout;
@@ -44,3 +44,5 @@ export type PostBlock =
   | (BaseBlock<string> & { type: 'date' })
   | (BaseBlock<string> & { type: 'time' })
   | (BaseBlock<File> & { type: 'photos' });
+
+export type BaseBlockForLayout<T = unknown> = Omit<BaseBlock<T>, 'value'>;
