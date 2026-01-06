@@ -17,6 +17,13 @@ async function bootstrap() {
   // WS 전역 예외 필터 설정
   app.useGlobalFilters(new AllWsExceptionFilter());
 
+  // CORS 설정 (환경 변수 사용)
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  app.enableCors({
+    origin: frontendUrl, // FE 주소
+    credentials: true, // 쿠키/세션 허용
+  });
+
   await app.listen(process.env.PORT ?? 4000); // next랑 3000겹쳐서 4000함
 }
 void bootstrap();

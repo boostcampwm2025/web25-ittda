@@ -17,7 +17,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migration:generate": "pnpm typeorm-ts-node-commonjs migration:generate -d src/config/typeorm/typeorm-cli.config.ts",
+    "migration:create": "pnpm typeorm-ts-node-commonjs migration:create",
+    "migration:run": "pnpm typeorm-ts-node-commonjs migration:run -d src/config/typeorm/typeorm-cli.config.ts",
+    "migration:revert": "pnpm typeorm-ts-node-commonjs migration:revert -d src/config/typeorm/typeorm-cli.config.ts",
+    "migration:show": "pnpm typeorm-ts-node-commonjs migration:show -d src/config/typeorm/typeorm-cli.config.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^9.3.0",
@@ -27,6 +32,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.11",
+    "dotenv": "^17.2.3",
     "logform": "^2.7.0",
     "nest-winston": "^1.10.2",
     "pg": "^8.16.3",

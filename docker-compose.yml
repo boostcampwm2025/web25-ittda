@@ -16,17 +16,6 @@ services:
     # Nginx 같은 프록시 서버를 통해서만 접근하도록 제한하는 중요한 보안 설정입니다.
     ports:
       - '127.0.0.1:3000:3000'
-    build:
-      context: .
-      args:
-        NEXT_PUBLIC_MOCK: ${NEXT_PUBLIC_MOCK}
-        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-        NODE_ENV: production
-    # 컨테이너 내부에서 사용할 환경 변수 설정
-    environment:
-      NODE_ENV: production # 운영 환경으로 설정
-      NEXT_PUBLIC_MOCK: ${NEXT_PUBLIC_MOCK}
-      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
     networks:
       - app-net
 

@@ -6,9 +6,9 @@ import {
   ManyToOne,
 } from 'typeorm';
 
-import { TemplateType } from '@/enums/template-type.enum';
-import { User } from '@/modules/user/user.entity';
-import { Group } from '@/modules/group/entity/group.entity';
+import { TemplateType } from '../../enums/template-type.enum';
+import { User } from '../../modules/user/user.entity';
+import { Group } from '../../modules/group/entity/group.entity';
 
 @Entity('folders')
 export class Folder {

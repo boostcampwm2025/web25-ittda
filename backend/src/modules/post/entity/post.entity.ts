@@ -11,10 +11,10 @@ import {
 
 import type { Point } from 'typeorm';
 
-import { User } from '@/modules/user/user.entity';
-import { Folder } from '@/modules/folder/folder.entity';
-import { TemplateType } from '@/enums/template-type.enum';
-import { Group } from '@/modules/group/entity/group.entity';
+import { User } from '../../../modules/user/user.entity';
+import { Folder } from '../../../modules/folder/folder.entity';
+import { TemplateType } from '../../../enums/template-type.enum';
+import { Group } from '../../../modules/group/entity/group.entity';
 
 @Entity('posts')
 @Index(['location'], { spatial: true })
