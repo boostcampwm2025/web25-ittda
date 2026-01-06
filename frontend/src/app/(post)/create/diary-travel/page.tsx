@@ -22,6 +22,7 @@ import {
 import Input from '@/components/Input';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
+import { useRouter } from 'next/navigation';
 
 interface PostDraft {
   title: string;

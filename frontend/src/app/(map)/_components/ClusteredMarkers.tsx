@@ -1,7 +1,7 @@
 import { useMap } from '@vis.gl/react-google-maps';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type Marker, MarkerClusterer } from '@googlemaps/markerclusterer';
-import type { PostListItem } from '@/lib/types/post';
+import type { PostListItem } from '@/lib/types/record';
 import { PinMarker } from './PinMarker';
 
 export const ClusteredPostMarkers = ({

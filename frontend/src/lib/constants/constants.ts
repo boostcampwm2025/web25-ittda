@@ -1,4 +1,4 @@
-import type { TemplateType } from '@/lib/types/post';
+import type { TemplateType } from '@/lib/types/record';
 
 export const TEMPLATE_LABEL: Record<TemplateType, string> = {
   diary: '일기',
