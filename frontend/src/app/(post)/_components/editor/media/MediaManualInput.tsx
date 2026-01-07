@@ -83,10 +83,11 @@ export const MediaManualInput = ({
         </div>
         <div className="relative border-b border-gray-100 dark:border-white/10 py-3">
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             value={manualYear}
             onChange={(e) => setManualYear(e.target.value)}
-            className="w-full bg-transparent text-xl font-bold text-[#333] dark:text-white outline-none"
+            className="w-full bg-transparent text-xl font-bold text-[#333] dark:text-white outline-none scrollbar-hide"
           />
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col text-itta-gray3 gap-1">
             <button
