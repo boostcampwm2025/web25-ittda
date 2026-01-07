@@ -1,9 +1,9 @@
 'use client';
 
-import { Profile } from '@/lib/types/profile';
 import { createContext, ReactNode, useContext, useState } from 'react';
 
-type ProfileEditData = Pick<Profile, 'nickname'> & {
+type ProfileEditData = {
+  nickname: string;
   image: File | null;
 };
 
@@ -11,6 +11,8 @@ type ProfileEditContextType = ProfileEditData & {
   setNickname: (nickname: string) => void;
   setImage: (file: File | null) => void;
   getEditData: () => ProfileEditData;
+  initialImage?: string;
+  email?: string;
 };
 
 const ProfileEditContext = createContext<ProfileEditContextType | null>(null);
@@ -25,13 +27,16 @@ export function useProfileEdit() {
 
 interface ProfileEditProviderProps {
   children: ReactNode;
-  initialNickname: Profile['nickname'];
-  initialImage: Profile['image'];
+  initialNickname: string;
+  initialImage?: string;
+  email?: string;
 }
 
 export default function ProfileEditProvider({
   children,
   initialNickname,
+  initialImage,
+  email,
 }: ProfileEditProviderProps) {
   const [nickname, setNickname] = useState(initialNickname);
   const [image, setImage] = useState<File | null>(null);
@@ -43,7 +48,15 @@ export default function ProfileEditProvider({
 
   return (
     <ProfileEditContext.Provider
-      value={{ nickname, setNickname, image, setImage, getEditData }}
+      value={{
+        nickname,
+        setNickname,
+        image,
+        setImage,
+        getEditData,
+        initialImage,
+        email,
+      }}
     >
       {children}
     </ProfileEditContext.Provider>

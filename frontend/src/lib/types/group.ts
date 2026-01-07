@@ -13,6 +13,7 @@ export interface Member {
 
 export interface Group {
   groupName: string;
+  nicknameInGroup: string;
   groupThumnail: string;
   members: Member[];
 }

@@ -8,6 +8,7 @@ interface GroupEditPageProps {
 const groupInfo: Group = {
   groupName: '우리 가족 추억함',
   groupThumnail: '/profile-ex.jpeg',
+  nicknameInGroup: '도비',
   members: [
     {
       id: 1,

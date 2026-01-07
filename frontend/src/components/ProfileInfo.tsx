@@ -1,17 +1,20 @@
 'use client';
 
-import { Profile } from '@/lib/types/profile';
 import { Camera, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRef } from 'react';
-import { useProfileEdit } from './ProfileEditContext';
+import { useProfileEdit } from '../app/(main)/profile/edit/_components/ProfileEditContext';
 
 interface ProfileInfoProps {
-  profile: Profile;
+  profileImage: string;
+  showEmail?: boolean;
 }
 
-export default function ProfileInfo({ profile }: ProfileInfoProps) {
-  const { image, setImage, nickname, setNickname } = useProfileEdit();
+export default function ProfileInfo({
+  profileImage,
+  showEmail = false,
+}: ProfileInfoProps) {
+  const { image, setImage, nickname, setNickname, email } = useProfileEdit();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageClick = () => {
@@ -37,7 +40,7 @@ export default function ProfileInfo({ profile }: ProfileInfoProps) {
               <Image
                 width={100}
                 height={100}
-                src={(image && URL.createObjectURL(image)) || profile.image}
+                src={(image && URL.createObjectURL(image)) || profileImage}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
@@ -82,17 +85,19 @@ export default function ProfileInfo({ profile }: ProfileInfoProps) {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
-              이메일 계정
-            </label>
-            <input
-              type="text"
-              value={profile.email}
-              disabled
-              className="w-full border rounded-2xl px-5 py-4 text-sm font-semibold cursor-not-allowed transition-colors dark:bg-white/5 dark:border-white/5 dark:text-gray-600 bg-gray-50 border-gray-100 text-gray-300"
-            />
-          </div>
+          {showEmail && email && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
+                이메일 계정
+              </label>
+              <input
+                type="text"
+                value={email}
+                disabled
+                className="w-full border rounded-2xl px-5 py-4 text-sm font-semibold cursor-not-allowed transition-colors dark:bg-white/5 dark:border-white/5 dark:text-gray-600 bg-gray-50 border-gray-100 text-gray-300"
+              />
+            </div>
+          )}
         </div>
       </div>
     </>
