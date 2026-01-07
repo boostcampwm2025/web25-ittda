@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
+import Back from '@/components/Back';
 
 interface RecordEditorHeaderProps {
   mode: 'add' | 'edit';
@@ -11,18 +11,10 @@ interface RecordEditorHeaderProps {
 export default function RecordEditorHeader({
   mode,
   onSave,
-  onBack,
 }: RecordEditorHeaderProps) {
   return (
     <header className="sticky top-0 z-50 shrink-0 backdrop-blur-md px-5 py-4 flex items-center justify-between border-b transition-colors duration-300 bg-white/95 border-gray-100 dark:bg-[#121212]/95 dark:border-white/5">
-      {/* 뒤로가기 버튼 */}
-      <button
-        onClick={onBack}
-        className="p-1 -ml-1 active:scale-90 transition-transform focus:outline-none"
-        aria-label="뒤로 가기"
-      >
-        <ArrowLeft className="w-6 h-6 text-itta-gray3 dark:text-white" />
-      </button>
+      <Back />
 
       {/* 페이지 제목 */}
       <h2 className="text-sm font-bold text-itta-black dark:text-gray-400">

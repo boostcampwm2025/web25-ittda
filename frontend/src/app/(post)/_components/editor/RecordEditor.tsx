@@ -352,10 +352,10 @@ export default function PostEditor({
       case 'tags':
         return (
           <TagDrawer
+            onClose={() => setActiveDrawer(null)}
             tags={block.value}
             previousTags={['식단', '운동']}
             onUpdateTags={(nt) => updateFieldValue(id, nt)}
-            onClose={() => setActiveDrawer(null)}
           />
         );
       case 'rating':
@@ -389,6 +389,7 @@ export default function PostEditor({
       case 'emotion':
         return (
           <EmotionDrawer
+            isOpen={activeDrawer.type === 'emotion'}
             selectedEmotion={block.value}
             onSelect={(emo) => {
               updateFieldValue(id, emo);
@@ -425,11 +426,7 @@ export default function PostEditor({
 
   return (
     <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
-      <RecordEditorHeader
-        mode={mode}
-        onBack={() => window.history.back()}
-        onSave={handleSave}
-      />
+      <RecordEditorHeader mode={mode} onSave={handleSave} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput value={title} onChange={setTitle} />
         <div className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300">
@@ -450,16 +447,7 @@ export default function PostEditor({
           ))}
         </div>
       </main>
-      <Toolbar
-        onTagClick={() => addOrShowBlock('tags')}
-        onRatingClick={() => addOrShowBlock('rating')}
-        onPhotoClick={() => addOrShowBlock('photos')}
-        onEmotionClick={() => addOrShowBlock('emotion')}
-        onTableClick={() => addOrShowBlock('table')}
-        onLocationClick={() => addOrShowBlock('location')}
-        onMediaClick={() => addOrShowBlock('media')}
-        //onContentClick={() => addOrShowBlock('content')}
-      />
+      <Toolbar onAddBlock={addOrShowBlock} />
 
       {/* 복구된 파일 입력 로직 */}
       <input

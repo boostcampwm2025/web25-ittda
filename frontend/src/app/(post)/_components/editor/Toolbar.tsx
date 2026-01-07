@@ -10,68 +10,48 @@ import {
   Layout,
   Table,
   Save,
-  LucideIcon,
 } from 'lucide-react';
+import { FieldType } from '@/lib/types/record';
 
-// 툴바 전체 Props
+// 아이콘 설정
+const TOOL_ITEMS = [
+  { id: 'photos', Icon: ImageIcon },
+  { id: 'emotion', Icon: Smile },
+  { id: 'tags', Icon: TagIcon },
+  { id: 'location', Icon: MapPin },
+  { id: 'table', Icon: Table },
+  { id: 'rating', Icon: Star },
+  { id: 'media', Icon: Search },
+] as const;
+
 interface ToolbarProps {
-  onTagClick: () => void;
-  onRatingClick: () => void;
-  onPhotoClick: () => void;
-  onEmotionClick: () => void;
-  onTableClick: () => void;
-  onLocationClick: () => void;
-  onMediaClick: () => void;
+  onAddBlock: (type: FieldType) => void;
 }
 
-// 개별 아이콘 버튼 Props
-interface ToolbarIconProps {
-  Icon: LucideIcon;
-  onClick: () => void;
-}
-
-export default function Toolbar({
-  onTagClick,
-  onRatingClick,
-  onPhotoClick,
-  onEmotionClick,
-  onTableClick,
-  onLocationClick,
-  onMediaClick,
-}: ToolbarProps) {
+export default function Toolbar({ onAddBlock }: ToolbarProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 max-w-4xl mx-auto flex flex-col items-center gap-3 w-full">
+    <div className="fixed bottom-0 left-0 right-0 z-40 max-w-4xl mx-auto flex flex-col gap-3 w-full">
       {/* 상단 플로팅 버튼 */}
-      <div className="flex gap-3">
-        <button className="flex items-center gap-2 px-3 md:px-6 py-3 rounded-full bg-[#333333] text-white text-sm font-bold shadow-xl active:scale-95 transition-all">
+      <div className="w-full flex gap-3 justify-start px-6">
+        <button className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#333333] text-white text-sm font-bold shadow-xl active:scale-95 transition-all">
           <Layout size={18} /> 레이아웃 템플릿
         </button>
-        <button className="flex items-center gap-2 px-3 md:px-6 py-3 rounded-full bg-[#10B981] text-white text-sm font-bold shadow-xl active:scale-95 transition-all">
+        <button className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#10B981] text-white text-sm font-bold shadow-xl active:scale-95 transition-all">
           <Save size={18} /> 내 템플릿 저장
         </button>
       </div>
 
-      {/* 하단 아이콘 바 */}
-      <div className="w-full bg-white dark:bg-[#2A2A2A] border border-gray-100 dark:border-white/5 p-4 flex justify-around items-center">
-        <ToolbarIcon Icon={ImageIcon} onClick={onPhotoClick} />
-        <ToolbarIcon Icon={Smile} onClick={onEmotionClick} />
-        <ToolbarIcon Icon={TagIcon} onClick={onTagClick} />
-        <ToolbarIcon Icon={MapPin} onClick={onLocationClick} />
-        <ToolbarIcon Icon={Table} onClick={onTableClick} />
-        <ToolbarIcon Icon={Star} onClick={onRatingClick} />
-        <ToolbarIcon Icon={Search} onClick={onMediaClick} />
+      <div className="w-full bg-white dark:bg-[#2A2A2A] border-t border-gray-100 dark:border-white/5 p-4 flex justify-around items-center">
+        {TOOL_ITEMS.map(({ id, Icon }) => (
+          <button
+            key={id}
+            onClick={() => onAddBlock(id as FieldType)}
+            className="p-2 text-itta-gray3 hover:text-[#10B981] dark:text-gray-500 dark:hover:text-[#10B981] transition-colors active:scale-110"
+          >
+            <Icon size={24} strokeWidth={1.5} />
+          </button>
+        ))}
       </div>
     </div>
-  );
-}
-
-function ToolbarIcon({ Icon, onClick }: ToolbarIconProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="p-2 text-itta-gray3 hover:text-[#10B981] dark:text-gray-500 dark:hover:text-[#10B981] transition-colors active:scale-110"
-    >
-      <Icon size={24} strokeWidth={1.5} />
-    </button>
   );
 }
