@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MousePointer2, Keyboard } from 'lucide-react';
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
@@ -177,12 +178,9 @@ export default function TimePickerDrawer({
           </div>
 
           <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 py-4 rounded-2xl font-bold bg-gray-50 dark:bg-white/5 text-gray-400 active:scale-95 transition-transform"
-            >
+            <DrawerClose className="flex-1 py-4 rounded-2xl font-bold bg-gray-50 dark:bg-white/5 text-gray-400 active:scale-95 transition-transform">
               취소
-            </button>
+            </DrawerClose>
             <button
               onClick={handleApply}
               className="flex-[2] py-4 rounded-2xl font-bold bg-itta-point text-white shadow-lg shadow-itta-point/20 active:scale-95 transition-transform"

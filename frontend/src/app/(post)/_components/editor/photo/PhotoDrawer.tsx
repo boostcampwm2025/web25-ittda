@@ -1,8 +1,9 @@
 'use client';
 
-import { Image as ImageIcon, Trash2, X, Plus } from 'lucide-react';
+import { Trash2, X, Plus } from 'lucide-react';
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
@@ -26,15 +27,15 @@ export default function PhotoDrawer({
 }: PhotoDrawerProps) {
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-h-[85vh] flex flex-col outline-none">
-        <div className="mx-auto w-full max-w-md px-6 pt-4 pb-10 flex flex-col h-full overflow-hidden">
+      <DrawerContent className="h-[80vh] flex flex-col outline-none">
+        <div className="w-full px-6 pt-4 pb-10 flex flex-col h-full overflow-hidden">
           <DrawerHeader className="px-0 items-start text-left">
             <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
               사진 관리 ({photos.length})
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto pr-1 hide-scrollbar">
-            <div className="grid grid-cols-3 gap-3 py-2">
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-3 py-2">
               <button
                 onClick={onUploadClick}
                 className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 flex flex-col items-center justify-center gap-1 text-[#10B981] bg-[#10B981]/5 active:scale-95 transition-all"
@@ -78,12 +79,9 @@ export default function PhotoDrawer({
                 전체 삭제하기
               </button>
             )}
-            <button
-              onClick={onClose}
-              className="w-full py-4 rounded-xl font-bold text-sm bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 transition-all"
-            >
+            <DrawerClose className="w-full py-4 rounded-xl font-bold text-sm bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 transition-all">
               완료
-            </button>
+            </DrawerClose>
           </div>
         </div>
       </DrawerContent>

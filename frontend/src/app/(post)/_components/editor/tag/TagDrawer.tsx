@@ -132,10 +132,8 @@ export default function TagDrawer({
             </div>
           )}
 
-          <DrawerClose className="w-full">
-            <div className="w-full py-4 rounded-2xl font-bold bg-[#333333] text-white active:scale-95 transition-all shadow-lg shadow-black/10">
-              확인
-            </div>
+          <DrawerClose className="w-full py-4 rounded-2xl font-bold bg-[#333333] text-white active:scale-95 transition-all shadow-lg shadow-black/10">
+            확인
           </DrawerClose>
         </div>
       </DrawerContent>

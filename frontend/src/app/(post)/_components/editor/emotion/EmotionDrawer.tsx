@@ -61,10 +61,8 @@ export default function EmotionDrawer({
               );
             })}
           </div>
-          <DrawerClose className="w-full">
-            <div className="w-full py-4 rounded-2xl font-bold text-sm bg-[#333333] text-white dark:bg-white dark:text-[#121212] active:scale-95 transition-transform">
-              닫기
-            </div>
+          <DrawerClose className="w-full py-4 rounded-2xl font-bold text-sm bg-[#333333] text-white dark:bg-white dark:text-[#121212] active:scale-95 transition-transform">
+            닫기
           </DrawerClose>
         </div>
       </DrawerContent>
