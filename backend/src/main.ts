@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllHttpExceptionFilter } from '@/common/exception_filters/AllHttpExceptionFilter';
 import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
@@ -8,7 +9,9 @@ import 'reflect-metadata';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api'); // 기본: /api/~
+  app.enableVersioning({
+    type: VersioningType.URI,
+  });
 
   // 전역 예외 필터를 HTTP, WS에 대해 분리
   // HTTP 전역 예외 필터 설정
@@ -17,10 +20,9 @@ async function bootstrap() {
   // WS 전역 예외 필터 설정
   app.useGlobalFilters(new AllWsExceptionFilter());
 
-  // CORS 설정 (환경 변수 사용)
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  // CORS 설정
   app.enableCors({
-    origin: frontendUrl, // FE 주소
+    origin: ['http://localhost:3000', 'http://211.188.48.38'], // FE 주소(TODO: 도메인으로 변경)
     credentials: true, // 쿠키/세션 허용
   });
 

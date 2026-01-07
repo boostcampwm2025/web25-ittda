@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 
-export type OAuthProvider = 'google' | 'kakao';
+import type { OAuthProvider } from '../auth/auth.type';
 
 @Entity('users')
 export class User {
@@ -24,7 +24,7 @@ export class User {
   nickname: string;
 
   @Column()
-  provider: string;
+  provider: OAuthProvider;
 
   @Column()
   providerId: string;
