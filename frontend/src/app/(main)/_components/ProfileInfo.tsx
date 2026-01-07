@@ -3,15 +3,15 @@
 import { Profile } from '@/lib/types/profile';
 import { Camera, X } from 'lucide-react';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
+import { useProfileEdit } from '../profile/edit/_components/ProfileEditContext';
 
 interface ProfileInfoProps {
   profile: Profile;
 }
 
 export default function ProfileInfo({ profile }: ProfileInfoProps) {
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [nickname, setNickname] = useState(profile.nickname);
+  const { image, setImage, nickname, setNickname } = useProfileEdit();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageClick = () => {
@@ -21,7 +21,7 @@ export default function ProfileInfo({ profile }: ProfileInfoProps) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
-      setProfileImage(files[0]);
+      setImage(files[0]);
     }
   };
 
@@ -29,15 +29,15 @@ export default function ProfileInfo({ profile }: ProfileInfoProps) {
     <>
       <div className="py-8 flex flex-col gap-10">
         <div className="flex flex-col items-center">
-          <button onClick={handleImageClick} className="relative group">
+          <button
+            onClick={handleImageClick}
+            className="relative group cursor-pointer"
+          >
             <div className="w-32 h-32 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
               <Image
                 width={100}
                 height={100}
-                src={
-                  (profileImage && URL.createObjectURL(profileImage)) ||
-                  profile.image
-                }
+                src={(image && URL.createObjectURL(image)) || profile.image}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
