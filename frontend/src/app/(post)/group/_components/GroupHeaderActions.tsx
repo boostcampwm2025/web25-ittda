@@ -13,7 +13,11 @@ import { Popover } from '@/components/ui/popover';
 import { GroupInfo } from '@/lib/types/group';
 import { cn } from '@/lib/utils';
 import { useGroupVoice } from '@/store/useGroupVoice';
-import { PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
+import {
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from '@radix-ui/react-popover';
 import {
   ArrowLeft,
   LogOut,
@@ -24,6 +28,7 @@ import {
   X,
   Check,
   Copy,
+  AlertCircle,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -40,11 +45,17 @@ export default function GroupHeaderActions({
   const groupId = pathname.split('/').at(-1);
   const { isVoiceActive, setIsVoiceActive } = useGroupVoice();
   const [copied, setCopied] = useState(false);
+  const [showLeaveGroup, setShowLeaveGroup] = useState(false);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(groupInfo.inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleLeaveGroup = () => {
+    // TODO: 서버에게 그룹 나가기 요청
+    router.push('/shared');
   };
 
   return (
@@ -152,18 +163,49 @@ export default function GroupHeaderActions({
               <Settings className="w-4 h-4" />
               그룹 정보 수정
             </button>
-            <button
+            <PopoverClose
               onClick={() => {
-                // TODO: confirm을 다른 toast나 모달 사용하는걸로 수정
-                if (confirm('정말 나가시겠습니까?')) router.push('/shared');
+                setShowLeaveGroup(true);
               }}
               className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold text-red-500 transition-colors dark:hover:bg-red-500/10 hover:bg-red-50"
             >
               <LogOut className="w-4 h-4" />
               그룹 나가기
-            </button>
+            </PopoverClose>
           </PopoverContent>
         </Popover>
+
+        <Drawer open={showLeaveGroup} onOpenChange={setShowLeaveGroup}>
+          <DrawerContent className="px-8 pt-4 pb-12">
+            <DrawerHeader>
+              <div className="flex flex-col items-center text-center space-y-4 mb-10">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
+                    {`정말 '${groupInfo.name}' 그룹에서 나가시겠습니까?`}
+                  </DrawerTitle>
+                  <p className="text-sm text-gray-400 font-medium">
+                    그룹의 기록을 확인할 수 없게 됩니다.
+                  </p>
+                </div>
+              </div>
+            </DrawerHeader>
+
+            <div className="flex gap-4">
+              <DrawerClose className="flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
+                취소
+              </DrawerClose>
+              <DrawerClose
+                onClick={handleLeaveGroup}
+                className="cursor-pointer flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
+              >
+                그룹 나가기
+              </DrawerClose>
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
     </div>
   );
