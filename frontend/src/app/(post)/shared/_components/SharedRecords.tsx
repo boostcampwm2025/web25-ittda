@@ -12,7 +12,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { X } from 'lucide-react';
-import { SharedRecord } from '@/lib/types/post';
+import { SharedRecord } from '@/lib/types/record';
 
 // 사진 데이터
 const recordPhotosData = [

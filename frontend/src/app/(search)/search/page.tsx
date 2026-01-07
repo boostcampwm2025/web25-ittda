@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Search, X } from 'lucide-react';
 import TagSearchDrawer from '../_components/TagSearchDrawer';
 import { FilterChip } from '@/components/FilterChip';
-import { PostListItem } from '@/lib/types/post';
 import SearchItem from '../_components/SearchItem';
 import DateDrawer from '@/components/DateDrawer';
+import { RecordSearchItem } from '@/lib/types/record';
 
 const ALL_TAGS = [
   '일상',
@@ -20,13 +20,12 @@ const ALL_TAGS = [
   '카페',
 ];
 
-const dummyRecords: PostListItem[] = [
+const dummyRecords: RecordSearchItem[] = [
   {
     id: '1',
     title: '성수동 팝업 스토어 나들이',
     address: '성수동 카페거리',
-    createdAt: '2025-12-21T14:30:00Z',
-    eventDate: '2025.12.21',
+    date: '2025.12.21',
     content:
       '드디어 가보고 싶었던 성수동 팝업 스토어 방문! 웨이팅은 길었지만 굿즈들이 너무 귀여웠다.',
     imageUrl:
@@ -37,8 +36,7 @@ const dummyRecords: PostListItem[] = [
     id: '2',
     title: '주말 아침 러닝 기록',
     address: '뚝섬한강공원',
-    createdAt: '2025-12-20T08:00:00Z',
-    eventDate: '2025.12.20',
+    date: '2025.12.20',
     content:
       '날씨가 꽤 추워졌지만 달리고 나니 상쾌하다. 한강 공원 코스는 언제나 좋다.',
     imageUrl:
@@ -49,8 +47,7 @@ const dummyRecords: PostListItem[] = [
     id: '3',
     title: '가족과 함께한 제주도 여행',
     address: '제주 함덕 해변',
-    createdAt: '2025-11-15T10:00:00Z',
-    eventDate: '2025.11.15',
+    date: '2025.11.15',
     content:
       '오랜만에 가족들과 제주도 여행. 에메랄드빛 바다와 맛있는 흑돼지 구이.',
     imageUrl:
@@ -112,11 +109,8 @@ export default function SearchPage() {
 
     if (selectedRange.start) {
       results = results.filter((r) => {
-        if (!selectedRange.end) return r.eventDate === selectedRange.start;
-        return (
-          r.eventDate >= selectedRange.start! &&
-          r.eventDate <= selectedRange.end!
-        );
+        if (!selectedRange.end) return r.date === selectedRange.start;
+        return r.date >= selectedRange.start! && r.date <= selectedRange.end!;
       });
     }
 

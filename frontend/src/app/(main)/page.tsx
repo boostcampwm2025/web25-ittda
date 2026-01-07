@@ -1,6 +1,6 @@
-import { MemoryRecord } from '@/lib/types/post';
+import { MemoryRecord } from '@/lib/types/record';
 import MonthlyPatternChart from './_components/MonthlyPatternChart';
-import PostList from './_components/PostList';
+import RecordList from './_components/RecordList';
 import { formatDateISO } from '@/lib/date';
 
 const allMockRecords: MemoryRecord[] = [
@@ -60,7 +60,7 @@ export default function HomePage() {
   return (
     <div className="w-full flex flex-col gap-6">
       <MonthlyPatternChart />
-      <PostList posts={allMockRecords} />
+      <RecordList records={allMockRecords} />
     </div>
   );
 }

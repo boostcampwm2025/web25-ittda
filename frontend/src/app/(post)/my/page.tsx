@@ -1,3 +1,4 @@
+import DateSelectorDrawer from '@/components/DateSelectorDrawer';
 import MonthRecords from '@/components/MonthRecords';
 
 const myMonthRecordsMock = [
@@ -39,8 +40,14 @@ export default function MyRecordsPage() {
   // const posts = data ?? [];
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <main className="w-full flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold tracking-tight dark:text-white text-[#222222]">
+          내 기록함
+        </h2>
+        <DateSelectorDrawer dayRoute="/my/detail" monthRoute="/my/month" />
+      </div>
       <MonthRecords monthRecords={myMonthRecordsMock} cardRoute={'/my/month'} />
-    </div>
+    </main>
   );
 }

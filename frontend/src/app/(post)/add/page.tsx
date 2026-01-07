@@ -1,5 +1,5 @@
-import PostEditor from '@/components/post/editor/PostEditor';
+import RecordEditor from '../_components/editor/RecordEditor';
 
 export default function AddPostPage() {
-  return <PostEditor mode="add" />;
+  return <RecordEditor mode="add" />;
 }

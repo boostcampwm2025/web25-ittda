@@ -1,4 +1,4 @@
-import type { TemplateType } from '@/lib/types/post';
+import type { TemplateType } from '@/lib/types/record';
 
 export const TEMPLATE_LABEL: Record<TemplateType, string> = {
   diary: '일기',
@@ -10,14 +10,19 @@ export const TEMPLATE_LABEL: Record<TemplateType, string> = {
   etc: '기타',
 };
 
-export const EMOTIONS = [
-  { emoji: '😊', label: '행복' },
-  { emoji: '😢', label: '슬픔' },
-  { emoji: '🤩', label: '설렘' },
-  { emoji: '🥰', label: '좋음' },
-  { emoji: '😮', label: '놀람' },
-  { emoji: '😡', label: '화남' },
-  { emoji: '😴', label: '피곤' },
-  { emoji: '🥣', label: '따뜻함' },
-  { emoji: '📖', label: '차분함' },
-];
+export const EMOTION_MAP: Record<string, string> = {
+  행복: '😊',
+  슬픔: '😢',
+  설렘: '🤩',
+  좋음: '🥰',
+  놀람: '😮',
+  화남: '😡',
+  피곤: '😴',
+  따뜻함: '🥣',
+  차분함: '📖',
+} as const;
+
+export const EMOTIONS = Object.entries(EMOTION_MAP).map(([label, emoji]) => ({
+  emoji,
+  label,
+}));

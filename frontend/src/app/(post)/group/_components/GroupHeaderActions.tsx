@@ -1,5 +1,4 @@
 'use client';
-'use client';
 
 import DateSelectorDrawer from '@/components/DateSelectorDrawer';
 import {
@@ -17,7 +16,6 @@ import { useGroupVoice } from '@/store/useGroupVoice';
 import { PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
 import {
   ArrowLeft,
-  CalendarDays,
   LogOut,
   Mic,
   MoreVertical,

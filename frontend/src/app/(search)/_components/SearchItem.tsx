@@ -3,10 +3,9 @@
 import React from 'react';
 import Image from 'next/image';
 import { MapPin } from 'lucide-react';
-import { PostListItem } from '@/lib/types/post';
-
+import { RecordSearchItem } from '@/lib/types/record';
 interface SearchItemProps {
-  record: PostListItem;
+  record: RecordSearchItem;
   onClick: (id: string) => void;
 }
 
@@ -36,7 +35,7 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
         </h4>
 
         <div className="flex items-center gap-2 text-xs text-itta-gray3">
-          <span>{record.eventDate}</span>
+          <span>{record.date}</span>
 
           {record.address && (
             <div className="flex items-center gap-0.5 truncate">

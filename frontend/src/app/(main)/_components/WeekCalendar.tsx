@@ -7,6 +7,7 @@ import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { flushSync } from 'react-dom';
 
 export default function WeekCalendar() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function WeekCalendar() {
   );
   const [direction, setDirection] = useState(0); // -1: 이전, 1: 다음
   const [displayYearMonth, setDisplayYearMonth] = useState(() => {
-    const d = currentWeekStart;
+    const d = new Date();
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
   const { selectedDateStr, setSelectedDateStr } = useWeekCalendar(); // 스토어 훅 사용 방식 확인 필요
@@ -23,8 +24,14 @@ export default function WeekCalendar() {
   // 연월 표시용 계산 (중앙 주차 기준)
   const calculateYearMonth = useCallback(
     (dateStr?: string) => {
+      console.log('dateStr', dateStr, 'currentWeekStart', currentWeekStart);
       const d = dateStr ? new Date(dateStr) : currentWeekStart;
       setDisplayYearMonth(
+        `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`,
+      );
+      console.log(
+        'd',
+        d,
         `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`,
       );
     },
@@ -46,12 +53,16 @@ export default function WeekCalendar() {
     }
 
     setDirection(newDirection);
-    setCurrentWeekStart((prev) => {
-      const next = new Date(prev);
-      next.setDate(next.getDate() + newDirection * 7);
-      return next;
-    });
-    calculateYearMonth();
+
+    const next = new Date(currentWeekStart);
+    next.setDate(next.getDate() + newDirection * 7);
+
+    setCurrentWeekStart(next);
+
+    // 새로운 주의 시작일을 직접 전달하여 연월 계산
+    setDisplayYearMonth(
+      `${next.getFullYear()}.${String(next.getMonth() + 1).padStart(2, '0')}`,
+    );
   };
 
   // 애니메이션 변수 설정
@@ -80,8 +91,6 @@ export default function WeekCalendar() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     selectedDate.setHours(0, 0, 0, 0);
-
-    console.log('selectedDate', selectedDate, 'today', today);
 
     // 미래 날짜는 선택 불가
     if (selectedDate > today) {

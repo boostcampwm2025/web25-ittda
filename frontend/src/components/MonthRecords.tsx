@@ -1,6 +1,6 @@
 'use client';
 
-import { MonthRecord } from '@/lib/types/post';
+import { MonthRecord } from '@/lib/types/record';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
