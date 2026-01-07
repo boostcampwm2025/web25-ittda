@@ -15,7 +15,11 @@ export default function MediaField({
   onRemove,
   mode = 'editor',
 }: Props) {
-  if (!data) return null;
+  const isEmpty = data && Object.values(data).every((value) => value === '');
+
+  if (isEmpty || !data) {
+    return null;
+  }
 
   const isSearchMode = mode === 'search';
 

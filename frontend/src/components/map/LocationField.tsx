@@ -11,6 +11,7 @@ export function LocationField({
   onClick,
   onRemove,
 }: LocationFieldProps) {
+  if (!address) return null;
   return (
     <div className="flex items-center justify-between w-full py-2 group">
       <div
