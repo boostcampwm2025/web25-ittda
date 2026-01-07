@@ -53,7 +53,6 @@ export function LocationPicker({
   const [showResults, setShowResults] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // --- 추가된 상태 ---
   const [centerAddress, setCenterAddress] = useState<string>(''); // 현재 중심 주소
   const [isAddressLoading, setIsAddressLoading] = useState(false); // 주소 로딩 상태
 
@@ -62,7 +61,7 @@ export function LocationPicker({
     if (!placesServiceRef.current) {
       placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
     }
-  }, [placesLib, mapRef.current]);
+  }, [placesLib]);
 
   useEffect(() => {
     if (geoLat && geoLng && mapRef.current) {
@@ -72,6 +71,12 @@ export function LocationPicker({
 
   const handleSearch = () => {
     if (!searchQuery.trim() || !mapRef.current) return;
+
+    if (!placesServiceRef.current) {
+      placesServiceRef.current = new google.maps.places.PlacesService(
+        mapRef.current,
+      );
+    }
     const currentCenter = mapRef.current.getCenter();
     const request: google.maps.places.TextSearchRequest = {
       query: searchQuery,
@@ -80,7 +85,7 @@ export function LocationPicker({
 
     placesServiceRef.current?.textSearch(request, (results, status) => {
       if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-        setSearchResults(results.slice(0, 5));
+        setSearchResults(results.slice(0, 10));
         setShowResults(true);
       }
     });
@@ -114,6 +119,7 @@ export function LocationPicker({
     try {
       const addr = await reverseGeocode(center.lat(), center.lng());
       setCenterAddress(addr);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       setCenterAddress('주소를 불러올 수 없습니다.');
     } finally {
