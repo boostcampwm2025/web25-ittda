@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Trash2, MinusCircle } from 'lucide-react';
+import { Plus, MinusCircle, X } from 'lucide-react';
 
 interface TableFieldProps {
   data: string[][] | null;
@@ -129,10 +129,10 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
         </button>
         <button
           onClick={removeTable}
-          className="p-1.5 text-gray-400 hover:text-rose-500 opacity-0 group-hover/table:opacity-100 transition-all active:scale-90"
+          className="p-1.5 text-gray-400 hover:text-rose-500 transition-all active:scale-90"
           title="테이블 전체 삭제"
         >
-          <Trash2 size={16} />
+          <X size={16} />
         </button>
       </div>
     </div>
