@@ -30,7 +30,7 @@ export default function GroupRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="w-full flex flex-col gap-6">
+    <main className="w-full flex flex-col gap-6 p-6">
       <header className="sticky top-0 z-50 w-full inset-x-0 pb-6 pt-4 border-b transition-all duration-300 dark:bg-[#121212] dark:border-white/5 bg-white border-gray-50">
         <GroupHeaderActions groupInfo={groupInfo} />
 

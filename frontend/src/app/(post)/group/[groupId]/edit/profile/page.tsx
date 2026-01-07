@@ -16,11 +16,9 @@ export default async function GroupProfileEditPage({
   const groupProfile = await getGroupProfile(params.groupId);
 
   return (
-    <div className="w-full flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
-      <GroupProfileEditClient
-        groupId={params.groupId}
-        groupProfile={groupProfile}
-      />
-    </div>
+    <GroupProfileEditClient
+      groupId={params.groupId}
+      groupProfile={groupProfile}
+    />
   );
 }

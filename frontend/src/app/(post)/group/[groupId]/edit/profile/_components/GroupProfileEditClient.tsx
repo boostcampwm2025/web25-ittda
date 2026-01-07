@@ -36,9 +36,14 @@ export default function GroupProfileEditClient({
       initialNickname={groupProfile.nickname}
       initialImage={groupProfile.image}
     >
-      <ProfileEditHeaderActions title="그룹 프로필 수정" onSave={handleSave} />
-      <div className="p-8 flex flex-col gap-10 pb-32">
-        <ProfileInfo profileImage={groupProfile.image} showEmail={false} />
+      <div className="w-full flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+        <ProfileEditHeaderActions
+          title="그룹 프로필 수정"
+          onSave={handleSave}
+        />
+        <div className="flex p-6 flex-col gap-10">
+          <ProfileInfo profileImage={groupProfile.image} showEmail={false} />
+        </div>
       </div>
     </ProfileEditProvider>
   );

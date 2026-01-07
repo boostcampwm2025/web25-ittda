@@ -39,7 +39,7 @@ export default function ProfileEditHeaderActions({
   };
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md py-6 flex items-center justify-between border-b transition-colors duration-300 dark:bg-[#121212]/95 dark:border-white/5 bg-white/95 border-gray-100">
+    <header className="sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors duration-300 dark:bg-[#121212]/95 dark:border-white/5 bg-white/95 border-gray-100">
       <Back />
       <h2 className="text-sm font-bold dark:text-white text-itta-black">
         {title}
