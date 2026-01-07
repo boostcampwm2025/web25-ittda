@@ -2,6 +2,7 @@
 
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
@@ -11,19 +12,21 @@ import { Emotion } from '@/lib/types/recordField';
 
 interface EmotionDrawerProps {
   onClose: () => void;
+  isOpen: boolean;
   onSelect: (emotion: string) => void;
   selectedEmotion: string | null;
 }
 
 export default function EmotionDrawer({
   onClose,
+  isOpen,
   onSelect,
   selectedEmotion,
 }: EmotionDrawerProps) {
   return (
-    <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
+    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent>
-        <div className="max-w-sm mx-auto w-full p-8 pb-12">
+        <div className="mx-auto w-full p-8 pb-12">
           <DrawerHeader className="px-0 mb-6">
             <div className="flex flex-col text-left">
               <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
@@ -43,7 +46,6 @@ export default function EmotionDrawer({
                   key={emo.label}
                   onClick={() => {
                     onSelect(emo.label);
-                    onClose();
                   }}
                   className={`flex flex-col items-center gap-2 p-2 rounded-2xl transition-all active:scale-90 ${
                     isSelected
@@ -59,13 +61,11 @@ export default function EmotionDrawer({
               );
             })}
           </div>
-
-          <button
-            onClick={onClose}
-            className="w-full py-4 rounded-2xl font-bold text-sm bg-[#333333] text-white dark:bg-white dark:text-[#121212] active:scale-95 transition-transform"
-          >
-            닫기
-          </button>
+          <DrawerClose className="w-full">
+            <div className="w-full py-4 rounded-2xl font-bold text-sm bg-[#333333] text-white dark:bg-white dark:text-[#121212] active:scale-95 transition-transform">
+              닫기
+            </div>
+          </DrawerClose>
         </div>
       </DrawerContent>
     </Drawer>

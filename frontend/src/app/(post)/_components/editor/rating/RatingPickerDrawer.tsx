@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
@@ -32,7 +32,7 @@ export default function RatingDrawer({
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent>
-        <div className=" max-w-sm mx-auto w-full px-8 pt-4 pb-10">
+        <div className="w-full px-8 pt-4 pb-10">
           <DrawerHeader className="px-0 items-start text-left">
             <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
               평가 남기기
@@ -77,11 +77,7 @@ export default function RatingDrawer({
             </div>
           </div>
 
-          <DrawerClose
-            className="mt-8 flex w-full py-4 rounded-2xl text-sm font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 items-center justify-center gap-2"
-            onClick={onClose}
-          >
-            <Check className="w-5 h-5" />
+          <DrawerClose className="mt-8 flex w-full py-4 rounded-2xl text-sm font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 items-center justify-center gap-2">
             확인
           </DrawerClose>
         </div>

@@ -8,7 +8,6 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import {
-  ArrowLeft,
   Search,
   X,
   Plus,
@@ -17,12 +16,14 @@ import {
   Tv,
   Music,
   Loader2,
+  ChevronLeft,
 } from 'lucide-react';
 import { CategoryChip } from './MediaCategoryChip';
 import { MediaManualInput } from './MediaManualInput';
 import { searchKopis, searchMovies } from '@/lib/api/externalMedia';
 import MediaField from './MediaField';
 import { MediaValue } from '@/lib/types/recordField';
+import { cn } from '@/lib/utils';
 
 interface MediaDrawerProps {
   onClose: () => void;
@@ -85,7 +86,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="h-[85%] bg-white dark:bg-[#121212]">
-        <div className="max-w-md mx-auto w-full flex flex-col h-full overflow-hidden">
+        <div className="w-full flex flex-col h-full overflow-hidden">
           {/* 헤더 */}
           <DrawerHeader className="px-5 py-4 flex flex-row items-center border-b border-gray-50 dark:border-white/5 space-y-0">
             {isManualInput && (
@@ -95,10 +96,15 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                 }
                 className="p-1 active:scale-90 transition-transform"
               >
-                <ArrowLeft className="w-6 h-6 text-[#333] dark:text-white" />
+                <ChevronLeft className="w-6 h-6 text-itta-black dark:text-white" />
               </button>
             )}
-            <DrawerTitle className="flex-1 text-center text-sm font-bold text-[#333] dark:text-white mr-8">
+            <DrawerTitle
+              className={cn(
+                'flex-1 text-center text-lg font-bold text-itta-black dark:text-white',
+                isManualInput && 'mr-8',
+              )}
+            >
               {isManualInput ? '직접 정보 입력' : '정보 검색'}
             </DrawerTitle>
           </DrawerHeader>
@@ -114,7 +120,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                       placeholder="이름을 입력하세요"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      className="w-full bg-[#F4F4F4] dark:bg-white/5 border-none rounded-xl px-12 py-4 text-sm font-medium focus:ring-2 focus:ring-[#10B981]/20 transition-all outline-none text-[#333] dark:text-white"
+                      className="w-full bg-[#F4F4F4] dark:bg-white/5 border-none rounded-xl px-12 py-4 text-sm font-medium focus:ring-2 focus:ring-[#10B981]/20 transition-all outline-none text-itta-black dark:text-white"
                     />
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     {query && (
@@ -190,7 +196,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
             {!isManualInput && (
               <div className="flex items-center gap-2 mb-6 px-1">
                 <AlertCircle className="w-4 h-4 text-[#10B981]" />
-                <p className="text-[12px] font-bold text-[#333] dark:text-gray-300">
+                <p className="text-[12px] font-bold text-itta-black dark:text-gray-300">
                   찾으시는 결과가 없나요?
                 </p>
               </div>
@@ -206,7 +212,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                   ? manualTitle.trim()
                     ? 'bg-itta-black text-white'
                     : 'bg-gray-200 text-gray-400'
-                  : 'bg-[#333] text-white dark:bg-white dark:text-[#121212]'
+                  : 'bg-itta-black text-white dark:bg-white dark:text-[#121212]'
               }`}
             >
               {isManualInput ? (

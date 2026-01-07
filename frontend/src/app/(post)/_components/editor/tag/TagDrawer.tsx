@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
@@ -50,7 +51,7 @@ export default function TagDrawer({
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent>
-        <div className="max-w-sm mx-auto w-full p-8 pb-12">
+        <div className="w-full p-8 pb-12">
           <DrawerHeader className="px-0 items-start text-left">
             <DrawerTitle className="text-xl font-bold text-itta-black">
               태그 추가하기
@@ -131,12 +132,11 @@ export default function TagDrawer({
             </div>
           )}
 
-          <button
-            onClick={onClose}
-            className="w-full py-4 rounded-2xl font-bold bg-[#333333] text-white active:scale-95 transition-all shadow-lg shadow-black/10"
-          >
-            확인
-          </button>
+          <DrawerClose className="w-full">
+            <div className="w-full py-4 rounded-2xl font-bold bg-[#333333] text-white active:scale-95 transition-all shadow-lg shadow-black/10">
+              확인
+            </div>
+          </DrawerClose>
         </div>
       </DrawerContent>
     </Drawer>
