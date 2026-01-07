@@ -16,3 +16,7 @@ export interface Group {
   groupThumnail: string;
   members: Member[];
 }
+
+export type ActiveMember = Member & {
+  recordId: string;
+};

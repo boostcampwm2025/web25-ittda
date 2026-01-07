@@ -1,11 +1,39 @@
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 import DailyDetailRecords from '@/app/(post)/_components/DailyDetailRecords';
 import DateDetailHeaderActions from '@/app/(post)/_components/DateDetailHeaderActions';
+import { ActiveMember } from '@/lib/types/group';
 import { MemoryRecord } from '@/lib/types/record';
 
 interface GroupDailyDetailPageProps {
   params: Promise<{ date: string; groupId: string }>;
 }
+
+const members: ActiveMember[] = [
+  {
+    recordId: '1',
+    id: 1,
+    name: '나',
+    avatar: '/profile-ex.jpeg',
+  },
+  {
+    recordId: '2',
+    id: 2,
+    name: '엄마',
+    avatar: '/profile-ex.jpeg',
+  },
+  {
+    recordId: '3',
+    id: 3,
+    name: '아빠',
+    avatar: '/profile-ex.jpeg',
+  },
+  {
+    recordId: '4',
+    id: 4,
+    name: '언니',
+    avatar: '/profile-ex.jpeg',
+  },
+];
 
 export default async function GroupDailyDetailPage({
   params,
@@ -93,7 +121,7 @@ export default async function GroupDailyDetailPage({
       </header>
 
       <div className="py-6">
-        <DailyDetailRecords memories={memories} />
+        <DailyDetailRecords memories={memories} members={members} />
         <DailyDetailFloatingActions
           date={date}
           groupId={groupId}
