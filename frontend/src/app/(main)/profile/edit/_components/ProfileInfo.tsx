@@ -4,7 +4,7 @@ import { Profile } from '@/lib/types/profile';
 import { Camera, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRef } from 'react';
-import { useProfileEdit } from '../profile/edit/_components/ProfileEditContext';
+import { useProfileEdit } from './ProfileEditContext';
 
 interface ProfileInfoProps {
   profile: Profile;

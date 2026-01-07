@@ -1,8 +1,8 @@
 import { ProfileTag } from '@/lib/types/profile';
-import Profile from '../_components/Profile';
-import ProfileHeaderActions from '../_components/ProfileHeaderActions';
-import TagDashboard from '../_components/TagDashboard';
-import Setting from '../_components/Setting';
+import Profile from './_components/Profile';
+import ProfileHeaderActions from './_components/ProfileHeaderActions';
+import TagDashboard from './_components/TagDashboard';
+import Setting from './_components/Setting';
 
 const tags: ProfileTag = {
   recent: [

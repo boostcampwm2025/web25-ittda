@@ -1,5 +1,5 @@
-import MonthlyDetailHeaderActions from '@/components/MonthlyDetailHeaderActions';
-import MonthlyDetailRecords from '@/components/MonthlyDetailRecords';
+import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
+import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
 
 const initialDays = [
   {

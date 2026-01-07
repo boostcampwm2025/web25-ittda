@@ -1,5 +1,5 @@
 import { Group } from '@/lib/types/group';
-import GroupEditClient from '../../_components/GroupEditClient';
+import GroupEditClient from './_components/GroupEditClient';
 
 interface GroupEditPageProps {
   params: Promise<{ groupId: string }>;

@@ -2,7 +2,7 @@
 
 import Back from '@/components/Back';
 import { useRouter } from 'next/navigation';
-import { useProfileEdit } from '../profile/edit/_components/ProfileEditContext';
+import { useProfileEdit } from './ProfileEditContext';
 
 export default function ProfileEditHeaderActions() {
   const router = useRouter();

@@ -2,10 +2,10 @@
 
 import { Group } from '@/lib/types/group';
 import { GroupEditProvider } from './GroupEditContext';
-import GroupEditHeaderActions from './GroupEditHeaderActions';
 import GroupInfo from './GroupInfo';
 import GroupMemberManagement from './GroupMemberManagement';
 import GroupDangerousZone from './GroupDangerousZone';
+import GroupEditHeaderActions from './GroupEditHeaderActions';
 
 interface GroupEditClientProps {
   groupId: string;

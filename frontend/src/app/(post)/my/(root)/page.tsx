@@ -1,4 +1,4 @@
-import MonthRecords from '@/components/MonthRecords';
+import MonthRecords from '@/app/(post)/_components/MonthRecords';
 
 const myMonthRecordsMock = [
   {
@@ -38,5 +38,7 @@ export default function MyRecordsPage() {
   // });
   // const posts = data ?? [];
 
-  return <MonthRecords monthRecords={myMonthRecordsMock} cardRoute={'/my/month'} />;
+  return (
+    <MonthRecords monthRecords={myMonthRecordsMock} cardRoute={'/my/month'} />
+  );
 }

@@ -1,4 +1,4 @@
-import MonthRecords from '@/components/MonthRecords';
+import MonthRecords from '@/app/(post)/_components/MonthRecords';
 
 const GroupMonthRecordsMock = [
   {

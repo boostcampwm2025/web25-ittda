@@ -11,7 +11,7 @@ import {
 import { MemoryRecord } from '@/lib/types/record';
 import { AlertCircle, Clock } from 'lucide-react';
 import { useState } from 'react';
-import DailyDetailRecordActions from './DailyDetailRecordActions';
+import DailyDetailRecordActions from '../app/(post)/_components/DailyDetailRecordActions';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Member } from '@/lib/types/group';

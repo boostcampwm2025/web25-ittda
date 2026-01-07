@@ -1,5 +1,5 @@
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
-import DailyDetailRecords from '@/app/(post)/_components/DailyDetailRecords';
+import DailyDetailRecords from '@/components/DailyDetailRecords';
 import DateDetailHeaderActions from '@/app/(post)/_components/DateDetailHeaderActions';
 import { ActiveMember } from '@/lib/types/group';
 import { MemoryRecord } from '@/lib/types/record';

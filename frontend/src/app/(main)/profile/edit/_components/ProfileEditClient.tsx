@@ -2,8 +2,8 @@
 
 import { Profile } from '@/lib/types/profile';
 import ProfileEditProvider from './ProfileEditContext';
-import ProfileEditHeaderActions from '@/app/(main)/_components/ProfileEditHeaderActions';
-import ProfileInfo from '@/app/(main)/_components/ProfileInfo';
+import ProfileEditHeaderActions from '@/app/(main)/profile/edit/_components/ProfileEditHeaderActions';
+import ProfileInfo from '@/app/(main)/profile/edit/_components/ProfileInfo';
 
 interface ProfileEditClientProps {
   profile: Profile;
