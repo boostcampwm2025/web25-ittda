@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 
 interface GroupProfileEditClientProps {
   groupId: string;
-  groupProfile: Profile;
+  groupProfile: Omit<Profile, 'email'>;
 }
 
 export default function GroupProfileEditClient({
