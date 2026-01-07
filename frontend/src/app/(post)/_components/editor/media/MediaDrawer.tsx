@@ -24,6 +24,7 @@ import { searchKopis, searchMovies } from '@/lib/api/externalMedia';
 import MediaField from './MediaField';
 import { MediaValue } from '@/lib/types/recordField';
 import { cn } from '@/lib/utils';
+import { useDebounce } from '@/lib/utils/useDebounce';
 
 interface MediaDrawerProps {
   onClose: () => void;
@@ -50,6 +51,19 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
   const [manualTitle, setManualTitle] = useState('');
   const [manualYear, setManualYear] = useState('2026');
 
+  const searchMedia = async (q: string, type: string) => {
+    let data: MediaValue[] = [];
+    if (type === '영화') {
+      data = await searchMovies(q);
+    } else {
+      const cateCode = CATEGORIES.find((c) => c.label === type)?.code || '';
+      data = await searchKopis(q, cateCode, type);
+    }
+
+    setResults(data);
+    setIsLoading(false);
+  };
+  const debouncedSearch = useDebounce(searchMedia, 500);
   useEffect(() => {
     if (!query.trim()) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -57,24 +71,8 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
       setResults([]);
       return;
     }
-    const active = true;
     setIsLoading(true);
-    const timer = setTimeout(async () => {
-      let data: MediaValue[] = [];
-      if (searchType === '영화') {
-        data = await searchMovies(query);
-      } else {
-        const cateCode =
-          CATEGORIES.find((c) => c.label === searchType)?.code || '';
-        data = await searchKopis(query, cateCode, searchType);
-      }
-      if (active) {
-        setResults(data);
-        setIsLoading(false);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
+    debouncedSearch(query, searchType);
   }, [query, searchType]);
 
   const handleManualSubmit = () => {
