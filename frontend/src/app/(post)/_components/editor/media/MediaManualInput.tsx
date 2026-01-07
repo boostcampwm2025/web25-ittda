@@ -31,7 +31,7 @@ export const MediaManualInput = ({
   setManualYear,
 }: ManualInputProps) => {
   return (
-    <div className="px-5 py-2 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="px-8 py-2 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {/* 카테고리 섹션 */}
       <section className="space-y-4">
         <div className="flex flex-col">
