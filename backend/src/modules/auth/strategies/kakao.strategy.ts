@@ -10,6 +10,7 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
   constructor(private configService: ConfigService) {
     super({
       clientID: configService.get<string>('KAKAO_CLIENT_ID')!,
+      clientSecret: configService.get<string>('KAKAO_CLIENT_SECRET')!,
       callbackURL: `/v1/auth/kakao/callback`,
     });
   }
@@ -18,8 +19,11 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     return {
       provider: 'kakao',
       providerId: profile.id,
-      email: profile._json.kakao_account?.email,
-      nickname: profile.username,
+      email: profile._json.kakao_account?.email || null,
+      nickname:
+        profile.username ||
+        profile._json.kakao_account?.profile?.nickname ||
+        null,
     }; // 이 객체가 req.user에 들어감
   }
 }
