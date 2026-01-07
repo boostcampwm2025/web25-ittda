@@ -1,10 +1,9 @@
-import DateSelectorDrawer from '@/components/DateSelectorDrawer';
 import MonthRecords from '@/components/MonthRecords';
 
 const myMonthRecordsMock = [
   {
-    id: '2025-12',
-    name: '2025년 12월',
+    id: '2024-12',
+    name: '2024년 12월',
     count: 12,
     latestTitle: '동지 팥죽과 따뜻한 밤',
     latestLocation: '우리집',
@@ -12,8 +11,8 @@ const myMonthRecordsMock = [
       'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
   },
   {
-    id: '2025-11',
-    name: '2025년 11월',
+    id: '2024-11',
+    name: '2024년 11월',
     count: 8,
     latestTitle: '첫 눈 오던 날의 기록',
     latestLocation: '성수동 카페거리',
@@ -21,8 +20,8 @@ const myMonthRecordsMock = [
       'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=400',
   },
   {
-    id: '2025-10',
-    name: '2025년 10월',
+    id: '2024-10',
+    name: '2024년 10월',
     count: 15,
     latestTitle: '가을 단풍 여행',
     latestLocation: '서울숲',
@@ -31,7 +30,7 @@ const myMonthRecordsMock = [
   },
 ];
 
-export default function MyRecordsPage() {
+export default function MyYearRecordsPage() {
   // const { data } = useQuery({
   //   queryKey: ['posts'],
   //   queryFn: () => fetchPostList(),
@@ -40,14 +39,6 @@ export default function MyRecordsPage() {
   // const posts = data ?? [];
 
   return (
-    <main className="w-full flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight dark:text-white text-[#222222]">
-          내 기록함
-        </h2>
-        <DateSelectorDrawer dayRoute="/my/detail" monthRoute="/my/month" />
-      </div>
-      <MonthRecords monthRecords={myMonthRecordsMock} cardRoute={'/my/month'} />
-    </main>
+    <MonthRecords monthRecords={myMonthRecordsMock} cardRoute={'/my/month'} />
   );
 }

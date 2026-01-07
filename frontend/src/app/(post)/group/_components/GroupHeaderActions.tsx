@@ -144,6 +144,7 @@ export default function GroupHeaderActions({
         <DateSelectorDrawer
           dayRoute={`/group/${groupId}/detail`}
           monthRoute={`/group/${groupId}/month`}
+          yearRoute={`/group/${groupId}/year`}
         />
 
         <Popover>

@@ -5,6 +5,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Layers,
   X,
 } from 'lucide-react';
 import {
@@ -22,11 +23,13 @@ import { useState } from 'react';
 interface DateSelectorDrawerProps {
   dayRoute: string;
   monthRoute: string;
+  yearRoute: string;
 }
 
 export default function DateSelectorDrawer({
   dayRoute,
   monthRoute,
+  yearRoute,
 }: DateSelectorDrawerProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -81,7 +84,7 @@ export default function DateSelectorDrawer({
           </button>
         </DrawerTrigger>
         <DrawerContent>
-          <div className="w-full px-8 pt-4 pb-10 overflow-y-auto scrollbar-hide">
+          <div className="w-full px-8 pt-4 pb-8 overflow-y-auto scrollbar-hide">
             <DrawerHeader className="mb-0 pb-0 mx-0 px-0">
               <div className="flex justify-between items-center mb-6 w-full">
                 <DrawerTitle className="text-lg font-bold dark:text-white text-itta-black">
@@ -235,16 +238,27 @@ export default function DateSelectorDrawer({
               )}
             </div>
 
-            <DrawerClose
-              className="mt-8 flex w-full flex-1 py-4 rounded-2xl text-sm font-bold shadow-xl transition-all active:scale-95 items-center justify-center gap-2 dark:bg-white dark:text-[#121212] bg-itta-black text-white"
-              onClick={() => {
-                const monthId = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-                router.push(`${monthRoute}/${monthId}`);
-              }}
-            >
-              <Check className="w-5 h-5" />
-              해당 월 기록 전체보기
-            </DrawerClose>
+            <div className="mt-8 flex flex-col gap-3">
+              <DrawerClose
+                className="flex w-full flex-1 py-4 rounded-2xl text-sm font-bold shadow-xl transition-all active:scale-95 items-center justify-center gap-2 dark:bg-white dark:text-[#121212] bg-itta-black text-white"
+                onClick={() => {
+                  const monthId = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+                  router.push(`${monthRoute}/${monthId}`);
+                }}
+              >
+                <Check className="w-5 h-5" />월 기록 전체보기
+              </DrawerClose>
+
+              <DrawerClose
+                className="w-full py-4 rounded-2xl text-sm font-bold border transition-all active:scale-[0.98] flex items-center justify-center gap-2 dark:bg-white/5 dark:border-white/10 dark:text-gray-300 bg-white border-gray-100 text-gray-500"
+                onClick={() => {
+                  router.push(`${yearRoute}/${currentDate.getFullYear()}`);
+                }}
+              >
+                <Layers className="w-4 h-4" />
+                {currentDate.getFullYear()}년 기록 전체보기
+              </DrawerClose>
+            </div>
           </div>
         </DrawerContent>
       </Drawer>
