@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useCallback, useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Search, X } from 'lucide-react';
 import TagSearchDrawer from '../_components/TagSearchDrawer';
 import { FilterChip } from '@/components/FilterChip';
 import SearchItem from '../_components/SearchItem';
 import DateDrawer from '@/components/DateDrawer';
+import LocationDrawer from '@/components/map/LocationDrawer';
 import { RecordSearchItem } from '@/lib/types/record';
+import { useDebounce } from '@/lib/utils/useDebounce';
+import { LocationValue } from '@/lib/types/recordField';
 
 const ALL_TAGS = [
   '일상',
@@ -56,42 +59,38 @@ const dummyRecords: RecordSearchItem[] = [
   },
 ];
 
-interface DateRange {
-  start: string | null;
-  end: string | null;
-}
-
 export default function SearchPage() {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const [query, setQuery] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedRange, setSelectedRange] = useState<DateRange>({
-    start: null,
-    end: null,
-  });
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | null
   >(null);
 
-  const tagLabel = useMemo(() => {
-    if (selectedTags.length === 0) return '태그';
-    return selectedTags.length === 1
-      ? `#${selectedTags[0]}`
-      : `#${selectedTags[0]} 외 ${selectedTags.length - 1}`;
-  }, [selectedTags]);
+  // URL에서 데이터 필터 상태 가져옴
+  const query = searchParams.get('q') || '';
+  const selectedTags = useMemo(() => {
+    return searchParams.get('tags')?.split(',').filter(Boolean) || [];
+  }, [searchParams]);
 
-  const dateLabel = useMemo(() => {
-    if (!selectedRange.start) return '날짜';
-    if (!selectedRange.end) return selectedRange.start;
-    return `${selectedRange.start.slice(2)} ~ ${selectedRange.end.slice(2)}`;
-  }, [selectedRange]);
+  const startDate = searchParams.get('start');
+  const endDate = searchParams.get('end');
 
+  //현재는 never used 떠서 삭제. 이후 실제 백엔드 로직 거칠 때 사용될듯
+  //const lat = searchParams.get('lat');
+  //const lng = searchParams.get('lng');
+  const address = searchParams.get('address');
+  //const radius = searchParams.get('radius');
+
+  // 로컬 검색어 상태
+  const [localQuery, setLocalQuery] = useState(query);
+
+  // 이후에는 백엔드 로직으로 대체될 부분으로
+  // 프론트에서 임시로 필터링 처리함(보여주기위한 용도)
   const filteredResults = useMemo(() => {
     let results = [...dummyRecords];
 
+    // 검색어 필터링
     if (query.trim()) {
       const lowerQuery = query.toLowerCase();
       results = results.filter(
@@ -101,22 +100,103 @@ export default function SearchPage() {
       );
     }
 
+    // 태그 필터링
     if (selectedTags.length > 0) {
       results = results.filter((r) =>
         selectedTags.some((tag) => r.tags?.includes(tag)),
       );
     }
 
-    if (selectedRange.start) {
+    // 날짜 필터링
+    if (startDate) {
       results = results.filter((r) => {
-        if (!selectedRange.end) return r.date === selectedRange.start;
-        return r.date >= selectedRange.start! && r.date <= selectedRange.end!;
+        if (!endDate) return r.date === startDate;
+        return r.date >= startDate && r.date <= endDate;
       });
     }
 
-    return results;
-  }, [query, selectedTags, selectedRange]);
+    // 위치 필터링 (더미데이터에는 좌표가 없으므로 주소 텍스트 포함 여부로 예시)
+    if (address) {
+      results = results.filter((r) => r.address.includes(address));
+    }
 
+    return results;
+  }, [query, selectedTags, startDate, endDate, address]);
+
+  // URL 업데이트
+  const updateUrl = useCallback(
+    (params: Record<string, string | null>) => {
+      const newParams = new URLSearchParams(searchParams.toString());
+      Object.entries(params).forEach(([key, value]) => {
+        if (value === null || value === '') {
+          newParams.delete(key);
+        } else {
+          newParams.set(key, value);
+        }
+      });
+
+      router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
+    },
+    [searchParams, pathname, router],
+  );
+
+  // 검색어 디바운스
+  const debouncedUpdateQuery = useDebounce((val: string) => {
+    updateUrl({ q: val });
+  }, 500);
+
+  const handleQueryChange = (query: string) => {
+    setLocalQuery(query);
+    debouncedUpdateQuery(query);
+  };
+
+  // 위치 필터 핸들러
+  const handleLocationSelect = (loc: LocationValue) => {
+    updateUrl({
+      lat: String(loc.lat),
+      lng: String(loc.lng),
+      address: loc.address || null,
+      radius: String(loc.radius || 5000),
+    });
+    setActiveDrawer(null);
+  };
+
+  // 날짜 필터 핸들러
+  const handleDateSelect = (range: {
+    start: string | null;
+    end: string | null;
+  }) => {
+    updateUrl({
+      start: range.start,
+      end: range.end,
+    });
+    setActiveDrawer(null);
+  };
+
+  const handleTagsSelect = (tag: string) => {
+    const nextTags = selectedTags.includes(tag)
+      ? selectedTags.filter((t) => t !== tag)
+      : [...selectedTags, tag];
+    updateUrl({ tags: nextTags.join(',') });
+  };
+
+  // 필터칩 내부 텍스트 계산
+  const tagLabel = useMemo(() => {
+    if (selectedTags.length === 0) return '태그';
+    return selectedTags.length === 1
+      ? `#${selectedTags[0]}`
+      : `#${selectedTags[0]} 외 ${selectedTags.length - 1}`;
+  }, [selectedTags]);
+
+  const dateLabel = useMemo(() => {
+    if (!startDate) return '날짜';
+    if (!endDate || startDate === endDate) return startDate.slice(2);
+    return `${startDate.slice(2)} ~ ${endDate.slice(2)}`;
+  }, [startDate, endDate]);
+
+  const locationLabel = address || '위치';
+
+  // 드로어 렌더링
   const renderActiveDrawer = () => {
     switch (activeDrawer) {
       case 'tag':
@@ -125,22 +205,24 @@ export default function SearchPage() {
             onClose={() => setActiveDrawer(null)}
             allTags={ALL_TAGS}
             selectedTags={selectedTags}
-            onToggleTag={(tag) =>
-              setSelectedTags((prev) =>
-                prev.includes(tag)
-                  ? prev.filter((t) => t !== tag)
-                  : [...prev, tag],
-              )
-            }
-            onReset={() => setSelectedTags([])}
+            onToggleTag={handleTagsSelect}
+            onReset={() => updateUrl({ tags: null })}
           />
         );
       case 'date':
         return (
           <DateDrawer
             mode="range"
-            currentRange={selectedRange}
-            onSelectRange={setSelectedRange}
+            currentRange={{ start: startDate, end: endDate }}
+            onSelectRange={handleDateSelect}
+            onClose={() => setActiveDrawer(null)}
+          />
+        );
+      case 'location':
+        return (
+          <LocationDrawer
+            mode="search"
+            onSelect={handleLocationSelect}
             onClose={() => setActiveDrawer(null)}
           />
         );
@@ -150,7 +232,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#121212] transition-colors duration-300">
+    <div className="min-h-screen bg-white dark:bg-[#121212]">
       <header className="sticky top-0 z-20 border-b border-gray-50 dark:border-white/5 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-4 space-y-4">
         <div className="flex items-center gap-3">
           <button
@@ -161,17 +243,16 @@ export default function SearchPage() {
           </button>
           <div className="flex-1 relative">
             <input
-              ref={inputRef}
               type="text"
               placeholder="제목이나 내용으로 검색"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg px-11 py-3 bg-gray-50 dark:bg-white/5 text-sm outline-none transition-all dark:text-white focus:ring-1 focus:ring-itta-point/30"
+              value={localQuery}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              className="w-full rounded-lg px-11 py-3 bg-gray-50 dark:bg-white/5 text-sm outline-none dark:text-white"
             />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            {query && (
+            {localQuery && (
               <button
-                onClick={() => setQuery('')}
+                onClick={() => handleQueryChange('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-1"
               >
                 <X size={16} className="text-gray-400" />
@@ -186,21 +267,23 @@ export default function SearchPage() {
             label={tagLabel}
             isActive={selectedTags.length > 0}
             onClick={() => setActiveDrawer('tag')}
-            onClear={() => setSelectedTags([])}
+            onClear={() => updateUrl({ tags: null })}
           />
           <FilterChip
             type="date"
             label={dateLabel}
-            isActive={!!selectedRange.start}
+            isActive={!!startDate}
             onClick={() => setActiveDrawer('date')}
-            onClear={() => setSelectedRange({ start: null, end: null })}
+            onClear={() => updateUrl({ start: null, end: null })}
           />
           <FilterChip
             type="location"
-            label={selectedLocation || '위치'}
-            isActive={!!selectedLocation}
-            onClick={() => setSelectedLocation('서울 성수동')}
-            onClear={() => setSelectedLocation(null)}
+            label={locationLabel}
+            isActive={!!address}
+            onClick={() => setActiveDrawer('location')}
+            onClear={() =>
+              updateUrl({ lat: null, lng: null, address: null, radius: null })
+            }
           />
         </div>
       </header>
