@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPostsByBbox } from '@/lib/api/posts';
 import GoogleMap from '../../_components/GoogleMap';
-import ListPanel from '../../_components/ListPanel';
 
 type Bbox = { minLat: number; minLng: number; maxLat: number; maxLng: number };
 
@@ -111,13 +110,13 @@ export default function RecordMapPage() {
           height: isMobile ? `${bottomHeight}px` : '100%',
         }}
       >
-        <ListPanel
+        {/* <ListPanel
           posts={posts}
           selectedPostId={selectedPostId}
           onSelectPost={setSelectedPostId}
           onStartDrag={() => setIsDragging(true)}
           isMobile={isMobile}
-        />
+        /> */}
       </div>
     </main>
   );
