@@ -1,9 +1,9 @@
 import type { PostListItem } from '../types/record';
-import type { CreatePostRequest } from '../types/record';
 import {
   serverComponentApiPrefix,
   clientComponentNestApiPrefix,
 } from './api_prefix';
+import type { CreateRecordRequest } from '../types/record';
 
 export function getApiPrefix(isServerComponent: boolean) {
   if (isServerComponent) {
@@ -73,14 +73,13 @@ export async function fetchPostById(postId: string): Promise<PostListItem> {
   return res.json();
 }
 
-export async function createPost(body: CreatePostRequest) {
+export async function createPost(body: CreateRecordRequest) {
   const res = await fetch(`${API_PREFIX}/posts`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      templateType: body.templateType ?? 'diary',
       ...body,
     }),
   });
