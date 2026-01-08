@@ -156,3 +156,12 @@ export const getWeekDays = (baseDate: Date = new Date()) => {
 
   return days;
 };
+
+/**
+ * "2025.12.21" 형식의 문자열을 받아 요일(월, 화...) 반환
+ */
+export function getWeekdayFromDotString(dateStr: string): string {
+  const [y, m, d] = dateStr.split('.').map(Number);
+  const date = new Date(y, m - 1, d);
+  return new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date); // '월', '화' 등
+}
