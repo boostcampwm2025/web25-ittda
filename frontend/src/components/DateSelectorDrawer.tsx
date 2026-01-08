@@ -115,51 +115,61 @@ export default function DateSelectorDrawer({
                     History Calendar
                   </span>
                 </button>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() =>
-                      isPickingMonth
-                        ? setCurrentDate(
-                            new Date(
-                              currentDate.getFullYear() - 1,
-                              currentDate.getMonth(),
-                              1,
-                            ),
-                          )
-                        : setCurrentDate(
-                            new Date(
-                              currentDate.getFullYear(),
-                              currentDate.getMonth() - 1,
-                              1,
-                            ),
-                          )
-                    }
-                    className="p-2 rounded-xl transition-colors dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500 cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      isPickingMonth
-                        ? setCurrentDate(
-                            new Date(
-                              currentDate.getFullYear() + 1,
-                              currentDate.getMonth(),
-                              1,
-                            ),
-                          )
-                        : setCurrentDate(
-                            new Date(
-                              currentDate.getFullYear(),
-                              currentDate.getMonth() + 1,
-                              1,
-                            ),
-                          )
-                    }
-                    className="p-2 rounded-xl transition-colors dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500 cursor-pointer"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      onClick={() =>
+                        isPickingMonth
+                          ? setCurrentDate(
+                              new Date(
+                                currentDate.getFullYear() - 1,
+                                currentDate.getMonth(),
+                                1,
+                              ),
+                            )
+                          : setCurrentDate(
+                              new Date(
+                                currentDate.getFullYear(),
+                                currentDate.getMonth() - 1,
+                                1,
+                              ),
+                            )
+                      }
+                      className="p-2 rounded-xl transition-colors dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500 cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">
+                      {isPickingMonth ? '전년' : '전월'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      onClick={() =>
+                        isPickingMonth
+                          ? setCurrentDate(
+                              new Date(
+                                currentDate.getFullYear() + 1,
+                                currentDate.getMonth(),
+                                1,
+                              ),
+                            )
+                          : setCurrentDate(
+                              new Date(
+                                currentDate.getFullYear(),
+                                currentDate.getMonth() + 1,
+                                1,
+                              ),
+                            )
+                      }
+                      className="p-2 rounded-xl transition-colors dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500 cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">
+                      {isPickingMonth ? '후년' : '후월'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -175,7 +185,7 @@ export default function DateSelectorDrawer({
                         setIsPickingMonth(false);
                       }}
                       className={cn(
-                        'py-4 rounded-2xl text-sm font-bold transition-all',
+                        'cursor-pointer py-4 rounded-2xl text-sm font-bold transition-all',
                         currentDate.getMonth() === i
                           ? 'bg-[#10B981] text-white shadow-lg'
                           : 'dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-500',
@@ -219,7 +229,7 @@ export default function DateSelectorDrawer({
                           router.push(`${dayRoute}/${dateStr}`);
                         }}
                         className={cn(
-                          'relative aspect-square flex flex-col items-center justify-center rounded-xl transition-all',
+                          'cursor-pointer relative aspect-square flex flex-col items-center justify-center rounded-xl transition-all',
                           isToday
                             ? 'dark:bg-white dark:text-black bg-itta-black text-white'
                             : 'dark:hover:bg-white/5 dark:text-gray-300 hover:bg-gray-50 text-gray-600',
@@ -240,7 +250,7 @@ export default function DateSelectorDrawer({
 
             <div className="mt-8 flex flex-col gap-3">
               <DrawerClose
-                className="flex w-full flex-1 py-4 rounded-2xl text-sm font-bold shadow-xl transition-all active:scale-95 items-center justify-center gap-2 dark:bg-white dark:text-[#121212] bg-itta-black text-white"
+                className="cursor-pointer flex w-full flex-1 py-4 rounded-2xl text-sm font-bold shadow-xl transition-all active:scale-95 items-center justify-center gap-2 dark:bg-white dark:text-[#121212] bg-itta-black text-white"
                 onClick={() => {
                   const monthId = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
                   router.push(`${monthRoute}/${monthId}`);
@@ -250,7 +260,7 @@ export default function DateSelectorDrawer({
               </DrawerClose>
 
               <DrawerClose
-                className="w-full py-4 rounded-2xl text-sm font-bold border transition-all active:scale-[0.98] flex items-center justify-center gap-2 dark:bg-white/5 dark:border-white/10 dark:text-gray-300 bg-white border-gray-100 text-gray-500"
+                className="cursor-pointer w-full py-4 rounded-2xl text-sm font-bold border transition-all active:scale-[0.98] flex items-center justify-center gap-2 dark:bg-white/5 dark:border-white/10 dark:text-gray-300 bg-white border-gray-100 text-gray-500"
                 onClick={() => {
                   router.push(`${yearRoute}/${currentDate.getFullYear()}`);
                 }}
