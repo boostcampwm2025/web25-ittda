@@ -6,6 +6,7 @@ import Providers from './providers';
 import BottomNavigation from '@/components/BottomNavigation';
 import Script from 'next/script';
 import ConditionalHeader from '@/components/ConditionalHeader';
+import { ThemeProvider } from 'next-themes';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -23,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="scrollbar-hide">
+    <html lang="ko" className="scrollbar-hide" suppressHydrationWarning>
       <body
         className={`${notoSans.variable} antialiased relative`}
         suppressHydrationWarning
@@ -34,11 +35,17 @@ export default function RootLayout({
         />
         <Providers>
           <MswLoader />
-          <div className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
-            <ConditionalHeader />
-            {children}
-            <BottomNavigation />
-          </div>
+          <ThemeProvider
+            attribute="class"
+            enableSystem={true}
+            defaultTheme="system"
+          >
+            <div className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+              <ConditionalHeader />
+              {children}
+              <BottomNavigation />
+            </div>
+          </ThemeProvider>
         </Providers>
       </body>
     </html>

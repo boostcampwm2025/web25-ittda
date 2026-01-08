@@ -86,6 +86,11 @@ export interface DayRecord {
   coverUrl: string;
 }
 
+export interface Tag {
+  name: string;
+  count: number;
+}
+
 export interface PostListItem {
   id: string;
   title: string;
