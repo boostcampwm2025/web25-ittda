@@ -1,5 +1,5 @@
 import { DayRecord } from '@/lib/types/record';
-import { DateRecordCard } from './ui/RecordCard';
+import { DateRecordCard } from '../../../components/ui/RecordCard';
 import ViewOnMapButton from './ViewOnMapButton';
 
 interface MonthlyDetailRecordsProps {

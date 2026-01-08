@@ -4,7 +4,7 @@ import { MonthRecord } from '@/lib/types/record';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
-import GalleryDrawer from '@/components/GalleryDrawer';
+import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
   Drawer,
   DrawerClose,

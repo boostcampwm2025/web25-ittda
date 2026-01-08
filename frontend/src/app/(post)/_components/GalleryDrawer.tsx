@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import Image from 'next/image';
 import { Dispatch, SetStateAction } from 'react';
-import { DrawerClose } from './ui/drawer';
+import { DrawerClose } from '../../../components/ui/drawer';
 
 interface GalleryDrawerProps<T extends MonthRecord[] | SharedRecord[]> {
   recordPhotos: string[];

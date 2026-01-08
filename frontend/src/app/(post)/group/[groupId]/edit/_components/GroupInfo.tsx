@@ -1,17 +1,26 @@
 'use client';
 
 import { Group } from '@/lib/types/group';
-import { Camera, X } from 'lucide-react';
+import { Camera, ChevronRight, X } from 'lucide-react';
 import Image from 'next/image';
 import React, { useRef } from 'react';
 import { useGroupEdit } from './GroupEditContext';
+import { useRouter } from 'next/navigation';
 
-type GroupInfoProps = Pick<Group, 'groupThumnail'>;
+type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
+  groupId: string;
+  nickname: Group['nicknameInGroup'];
+};
 
-export default function GroupInfo({ groupThumnail }: GroupInfoProps) {
+export default function GroupInfo({
+  groupThumnail,
+  groupId,
+  nickname,
+}: GroupInfoProps) {
   const { groupName, setGroupName, groupThumbnail, setGroupThumbnail } =
     useGroupEdit();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -74,6 +83,35 @@ export default function GroupInfo({ groupThumnail }: GroupInfoProps) {
           )}
         </div>
       </div>
+
+      <section className="space-y-4">
+        <label className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest px-1">
+          나의 그룹 프로필
+        </label>
+        <button
+          onClick={() => router.push(`/group/${groupId}/edit/profile`)}
+          className="cursor-pointer mt-4 w-full flex items-center justify-between p-5 rounded-3xl border transition-all active:scale-[0.98] dark:bg-[#10B981]/5 dark:border-[#10B981]/10 dark:hover:bg-[#10B981]/10 bg-[#10B981]/5 border-[#10B981]/10 hover:bg-[#10B981]/10"
+        >
+          <div className="flex items-center gap-4">
+            <Image
+              width={50}
+              height={50}
+              src="/profile-ex.jpeg"
+              className="w-12 h-12 rounded-2xl border bg-white shadow-sm shrink-0"
+              alt="그룹에서 나의 프로필"
+            />
+            <div className="text-left">
+              <p className="text-sm font-bold dark:text-white text-itta-black">
+                {nickname}
+              </p>
+              <p className="text-[11px] text-[#10B981] font-medium">
+                이 그룹 전용 프로필 설정하기
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-[#10B981]/50" />
+        </button>
+      </section>
     </section>
   );
 }
