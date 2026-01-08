@@ -31,6 +31,11 @@ import MediaDrawer from './media/MediaDrawer';
 import { FieldType } from '@/lib/types/record';
 import { PostBlock, MediaValue } from '@/lib/types/recordField';
 import { formatDateDot, formatTime } from '@/lib/date';
+import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
+import {
+  canBeHalfWidth,
+  normalizeLayout,
+} from '../../_utils/recordLayoutHelper';
 
 // 개수 제한
 const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
@@ -56,9 +61,16 @@ export default function PostEditor({
     id: string;
   } | null>(null);
 
-  const [isDraggingId, setIsDraggingId] = useState<string | null>(null);
-  const lastUpdateRef = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    gridRef,
+    isDraggingId,
+    setIsDraggingId,
+    handleDragStart,
+    handleDragOver,
+    handleGridDragOver,
+  } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
 
   useEffect(() => {
     if (initialPost?.blocks) {
@@ -76,7 +88,7 @@ export default function PostEditor({
   }, [initialPost]);
 
   // 기본값 생성
-  function getDefaultValue(type: FieldType): PostBlock['value'] {
+  const getDefaultValue = (type: FieldType): PostBlock['value'] => {
     switch (type) {
       case 'date':
         return formatDateDot(new Date());
@@ -104,41 +116,7 @@ export default function PostEditor({
       default:
         return '';
     }
-  }
-
-  function normalizeLayout(targetBlocks: PostBlock[]): PostBlock[] {
-    let currentRow = 1;
-    let currentCol = 1;
-    return targetBlocks.map((block) => {
-      const span = block.layout.span;
-      if (span === 2 && currentCol === 2) {
-        currentRow++;
-        currentCol = 1;
-      }
-      const updated = {
-        ...block,
-        layout: { row: currentRow, col: currentCol, span },
-      };
-      currentCol += span;
-      if (currentCol > 2) {
-        currentRow++;
-        currentCol = 1;
-      }
-      return updated as PostBlock;
-    });
-  }
-
-  const canBeHalfWidth = (type: FieldType) =>
-    [
-      'date',
-      'emotion',
-      'location',
-      'rating',
-      'time',
-      'media',
-      'content',
-      'tags',
-    ].includes(type);
+  };
 
   // 필드 값 업데이트 함수
   const updateFieldValue = <T extends PostBlock>(
@@ -202,36 +180,6 @@ export default function PostEditor({
 
   const removeBlock = (id: string) => {
     setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
-  };
-
-  const handleDragStart = (id: string) => setIsDraggingId(id);
-  const handleDragOver = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (isDraggingId === targetId) return;
-    const now = Date.now();
-    if (now - lastUpdateRef.current < 50) return;
-    lastUpdateRef.current = now;
-
-    const dragIdx = blocks.findIndex((b) => b.id === isDraggingId);
-    const hoverIdx = blocks.findIndex((b) => b.id === targetId);
-    if (dragIdx === -1 || hoverIdx === -1) return;
-
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const draggingBlock = blocks[dragIdx];
-
-    let newSpan = draggingBlock.layout.span;
-    if (canBeHalfWidth(draggingBlock.type)) {
-      newSpan = x < rect.width * 0.25 || x > rect.width * 0.75 ? 1 : 2;
-    }
-
-    if (dragIdx !== hoverIdx || draggingBlock.layout.span !== newSpan) {
-      const newBlocks = [...blocks];
-      newBlocks[dragIdx].layout.span = newSpan;
-      const [draggedItem] = newBlocks.splice(dragIdx, 1);
-      newBlocks.splice(hoverIdx, 0, draggedItem);
-      setBlocks(normalizeLayout(newBlocks));
-    }
   };
 
   const handleSave = () => {
@@ -439,7 +387,11 @@ export default function PostEditor({
       <RecordEditorHeader mode={mode} onSave={handleSave} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput value={title} onChange={setTitle} />
-        <div className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300">
+        <div
+          ref={gridRef}
+          onDragOver={handleGridDragOver}
+          className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300"
+        >
           {blocks.map((block) => (
             <div
               key={block.id}
