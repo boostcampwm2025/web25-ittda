@@ -10,6 +10,7 @@
   --itta-gray2: rgba(0, 0, 0, 0.2);
   --itta-gray: rgba(122, 122, 122, 0.2);
   --radius: 0.625rem;
+  --polar-grid-stroke: #f1f5f9;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -100,8 +101,21 @@
 /* } */
 
 html {
-  height: 100svh; /* "Small Viewport Height(작은 뷰포트 높이)의 100% */
+  height: 100svh;
   display: flex;
+  width: 100%;
+}
+
+html {
+  scrollbar-gutter: stable; /* 스크롤바가 사라져도 너비 유지 */
+}
+
+/* 라이브러리가 강제로 넣는 패딩 차단 */
+html[style*='overflow: hidden'],
+body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: auto !important;
+  margin-left: auto !important;
 }
 
 body {
@@ -115,7 +129,9 @@ body {
 }
 
 main {
-  max-width: 1024px;
+  width: 100%;
+
+  margin: 0 auto;
 }
 
 .dark {
@@ -150,6 +166,7 @@ main {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+  --polar-grid-stroke: #333333;
 }
 
 @layer base {
