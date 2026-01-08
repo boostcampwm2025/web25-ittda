@@ -1,6 +1,7 @@
 'use client';
 
 import { TrendingUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
   Radar,
   RadarChart,
@@ -10,6 +11,13 @@ import {
 } from 'recharts';
 
 export default function MonthlyPatternChart() {
+  const [isInitialRender, setIsInitialRender] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitialRender(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const emotionData = [
     { subject: '행복', A: 120 },
     { subject: '슬픔', A: 40 },
@@ -28,7 +36,13 @@ export default function MonthlyPatternChart() {
       </div>
       <div className="h-44 w-full mb-2">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={emotionData}>
+          <RadarChart
+            cx="50%"
+            cy="50%"
+            outerRadius="70%"
+            responsive
+            data={emotionData}
+          >
             <PolarGrid stroke="var(--polar-grid-stroke)" />
             <PolarAngleAxis
               dataKey="subject"
@@ -40,6 +54,7 @@ export default function MonthlyPatternChart() {
               stroke="#10B981"
               fill="#10B981"
               fillOpacity={0.15}
+              isAnimationActive={isInitialRender}
             />
           </RadarChart>
         </ResponsiveContainer>

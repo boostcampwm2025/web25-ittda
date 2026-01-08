@@ -1,11 +1,39 @@
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
-import DailyDetailRecords from '@/app/(post)/_components/DailyDetailRecords';
+import DailyDetailRecords from '@/components/DailyDetailRecords';
 import DateDetailHeaderActions from '@/app/(post)/_components/DateDetailHeaderActions';
+import { ActiveMember } from '@/lib/types/group';
 import { MemoryRecord } from '@/lib/types/record';
 
 interface GroupDailyDetailPageProps {
   params: Promise<{ date: string; groupId: string }>;
 }
+
+const members: ActiveMember[] = [
+  {
+    recordId: '1',
+    id: 1,
+    name: '나',
+    avatar: '/profile-ex.jpeg',
+  },
+  {
+    recordId: '2',
+    id: 2,
+    name: '엄마',
+    avatar: '/profile-ex.jpeg',
+  },
+  {
+    recordId: '3',
+    id: 3,
+    name: '아빠',
+    avatar: '/profile-ex.jpeg',
+  },
+  {
+    recordId: '4',
+    id: 4,
+    name: '언니',
+    avatar: '/profile-ex.jpeg',
+  },
+];
 
 export default async function GroupDailyDetailPage({
   params,
@@ -72,7 +100,7 @@ export default async function GroupDailyDetailPage({
 
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
-      <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors duration-300 dark:bg-[#121212]/80 dark:border-white/5 bg-white/80 border-gray-100">
+      <header className="sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors duration-300 dark:bg-[#121212]/80 dark:border-white/5 bg-white/80 border-gray-100">
         <DateDetailHeaderActions
           routePath={
             currentMonth
@@ -92,8 +120,8 @@ export default async function GroupDailyDetailPage({
         <div className="w-8" />
       </header>
 
-      <div className="py-6">
-        <DailyDetailRecords memories={memories} />
+      <div className="p-6">
+        <DailyDetailRecords memories={memories} members={members} />
         <DailyDetailFloatingActions
           date={date}
           groupId={groupId}

@@ -1,5 +1,5 @@
 import { Group } from '@/lib/types/group';
-import GroupEditClient from '../../_components/GroupEditClient';
+import GroupEditClient from './_components/GroupEditClient';
 
 interface GroupEditPageProps {
   params: Promise<{ groupId: string }>;
@@ -8,6 +8,7 @@ interface GroupEditPageProps {
 const groupInfo: Group = {
   groupName: '우리 가족 추억함',
   groupThumnail: '/profile-ex.jpeg',
+  nicknameInGroup: '도비',
   members: [
     {
       id: 1,

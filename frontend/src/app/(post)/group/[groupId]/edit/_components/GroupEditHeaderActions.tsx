@@ -33,7 +33,7 @@ export default function GroupEditHeaderActions({
     <>
       <button
         onClick={() => router.back()}
-        className="cursor-pointer p-1 -ml-1 active:scale-90 transition-transform"
+        className="cursor-pointer active:scale-90 transition-transform"
       >
         <ArrowLeft className="w-6 h-6 dark:text-white text-itta-black" />
       </button>
