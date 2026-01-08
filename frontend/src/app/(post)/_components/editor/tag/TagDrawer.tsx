@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import {
   Drawer,
@@ -24,10 +24,34 @@ export default function TagDrawer({
   previousTags = [],
 }: TagDrawerProps) {
   const [inputValue, setInputValue] = useState('');
+  const [showWarning, setShowWarning] = useState(false); // 경고 메시지
+
+  const MAX_TAGS = 4;
+  const isLimitReached = tags.length >= MAX_TAGS;
+
+  const triggerWarning = () => {
+    setShowWarning(true);
+  };
+
+  // 3초후에 꺼지도록
+  useEffect(() => {
+    if (showWarning) {
+      const timer = setTimeout(() => {
+        setShowWarning(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showWarning]);
 
   // 태그 추가 로직
   const addTag = () => {
     const trimmedValue = inputValue.trim();
+
+    if (isLimitReached) {
+      triggerWarning();
+      return;
+    }
+
     if (trimmedValue && !tags.includes(trimmedValue)) {
       onUpdateTags([...tags, trimmedValue]);
       setInputValue('');
@@ -37,6 +61,7 @@ export default function TagDrawer({
   // 태그 삭제 로직
   const removeTag = (tagToRemove: string) => {
     onUpdateTags(tags.filter((t) => t !== tagToRemove));
+    if (showWarning) setShowWarning(false); // 삭제 시 경고창도 바로 삭제
   };
 
   // 이전 태그 토글 로직
@@ -44,6 +69,10 @@ export default function TagDrawer({
     if (tags.includes(tag)) {
       removeTag(tag);
     } else {
+      if (isLimitReached) {
+        triggerWarning();
+        return;
+      }
       onUpdateTags([...tags, tag]);
     }
   };
@@ -80,7 +109,9 @@ export default function TagDrawer({
           {/* 태그 입력창 */}
           <div className="flex gap-2 mb-6">
             <div className="flex-1 relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-itta-point font-bold">
+              <span
+                className={`absolute left-4 top-1/2 -translate-y-1/2 font-bold transition-colors ${isLimitReached ? 'text-itta-gray3' : 'text-itta-point'}`}
+              >
                 #
               </span>
               <input
@@ -93,7 +124,9 @@ export default function TagDrawer({
                   }
                 }}
                 className="w-full pl-8 pr-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 outline-none focus:ring-2 focus:ring-itta-point text-sm dark:text-white"
-                placeholder="새 태그 입력"
+                placeholder={
+                  isLimitReached ? '최대 개수 4개 도달' : '새 태그 입력'
+                }
               />
             </div>
             <button
@@ -131,6 +164,15 @@ export default function TagDrawer({
               </div>
             </div>
           )}
+
+          {/* 경고 메시지 영역 (이후 토스트로 변경?)*/}
+          <div className="h-6 mb-2 flex justify-center items-center">
+            {showWarning && (
+              <p className="text-rose-500 text-[13px] font-semibold animate-in fade-in slide-in-from-bottom-2 duration-300">
+                태그는 최대 {MAX_TAGS}개까지 추가할 수 있습니다.
+              </p>
+            )}
+          </div>
 
           <DrawerClose className="w-full py-4 rounded-2xl font-bold bg-[#333333] text-white active:scale-95 transition-all shadow-lg shadow-black/10">
             확인

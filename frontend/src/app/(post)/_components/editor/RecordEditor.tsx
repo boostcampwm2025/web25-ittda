@@ -32,6 +32,13 @@ import { FieldType } from '@/lib/types/record';
 import { PostBlock, MediaValue } from '@/lib/types/recordField';
 import { formatDateDot, formatTime } from '@/lib/date';
 
+// 개수 제한
+const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
+  emotion: 4,
+  table: 4,
+  content: 4,
+  photos: 10,
+};
 export default function PostEditor({
   mode,
   initialPost,
@@ -122,7 +129,16 @@ export default function PostEditor({
   }
 
   const canBeHalfWidth = (type: FieldType) =>
-    ['date', 'emotion', 'location', 'rating', 'time', 'media'].includes(type);
+    [
+      'date',
+      'emotion',
+      'location',
+      'rating',
+      'time',
+      'media',
+      'content',
+      'tags',
+    ].includes(type);
 
   // 필드 값 업데이트 함수
   const updateFieldValue = <T extends PostBlock>(
@@ -144,11 +160,6 @@ export default function PostEditor({
       'photos',
       'media',
     ];
-    const multiInstanceLimits: Partial<Record<FieldType, number>> = {
-      emotion: 4,
-      table: 4,
-      content: 4,
-    };
 
     const existingBlocks = blocks.filter((b) => b.type === type);
 
@@ -156,8 +167,7 @@ export default function PostEditor({
       setActiveDrawer({ type, id: existingBlocks[0].id });
       return;
     }
-
-    const limit = multiInstanceLimits[type];
+    const limit = MULTI_INSTANCE_LIMITS[type];
     if (limit && existingBlocks.length >= limit) {
       //TODO : 임시작업. 이후 토스트/모달 등
       //       또는 아래 툴바 막기
@@ -455,33 +465,51 @@ export default function PostEditor({
         ref={fileInputRef}
         className="hidden"
         multiple
-        accept="image/*"
+        accept="image/*,video/*"
         onChange={async (e) => {
           const files = e.target.files;
-          if (files && activeDrawer?.id) {
-            const blockId = activeDrawer.id;
-            const targetBlock = blocks.find((b) => b.id === blockId);
+          if (!files || !activeDrawer?.id) return;
 
-            if (targetBlock?.type === 'photos') {
-              // 모든 파일을 읽는 배열 생성
-              const readFilesPromises = Array.from(files).map((file) => {
-                return new Promise<string>((resolve, reject) => {
-                  const reader = new FileReader();
-                  reader.onload = (ev) => resolve(ev.target?.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
+          const MAX_PHOTO_COUNT = MULTI_INSTANCE_LIMITS['photos'] ?? 10;
+          const blockId = activeDrawer.id;
+          const targetBlock = blocks.find((b) => b.id === blockId);
+
+          if (targetBlock?.type === 'photos') {
+            const existingPhotos = targetBlock.value as unknown as string[];
+            const availableSlots = MAX_PHOTO_COUNT - existingPhotos.length;
+
+            if (availableSlots <= 0) {
+              // TODO: toast 변경 예정
+              alert(`이미 최대 개수인 ${MAX_PHOTO_COUNT}개를 모두 채웠습니다.`);
+              e.target.value = '';
+              return;
+            }
+            //10개 초과 시 10개만 넣기
+            const filesToProcess = Array.from(files).slice(0, availableSlots);
+
+            if (files.length > availableSlots) {
+              alert(
+                `최대 10개 제한으로 인해 상위 ${availableSlots}개의 파일만 추가됩니다.`,
+              );
+            }
+
+            const readFilesPromises = filesToProcess.map((file) => {
+              return new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => resolve(ev.target?.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
               });
+            });
 
-              try {
-                // 모든 사진 읽기 완료될 때까지 대기
-                const newImages = await Promise.all(readFilesPromises);
-                //기존 사진들과 합쳐서 한 번에 업데이트
-                const currentPhotos = targetBlock.value as unknown as string[];
-                updateFieldValue(blockId, [...currentPhotos, ...newImages]);
-              } catch (error) {
-                console.error('사진을 읽는 중 오류 발생:', error);
-              }
+            try {
+              const newImages = await Promise.all(readFilesPromises);
+              // 새로 읽은 사진들 넣기
+              updateFieldValue(blockId, [...existingPhotos, ...newImages]);
+            } catch (error) {
+              console.error('파일을 읽는 중 오류 발생:', error);
+            } finally {
+              e.target.value = '';
             }
           }
         }}
