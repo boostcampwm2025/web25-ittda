@@ -177,9 +177,9 @@ main {
   button {
     cursor: pointer;
   }
-  /* 비활성화된 버튼은 기본 커서 */
+  /* 비활성화된 버튼은 커서도 비활성화 */
   button:disabled {
-    cursor: default;
+    cursor: not-allowed;
   }
 }
 
