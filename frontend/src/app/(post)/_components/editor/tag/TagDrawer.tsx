@@ -82,7 +82,7 @@ export default function TagDrawer({
       <DrawerContent>
         <div className="w-full p-8 pb-12">
           <DrawerHeader className="px-0 items-start text-left">
-            <DrawerTitle className="text-xl font-bold text-itta-black">
+            <DrawerTitle className="text-xl font-bold text-itta-black dark:text-white">
               태그 추가하기
             </DrawerTitle>
           </DrawerHeader>

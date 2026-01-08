@@ -90,7 +90,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
                         placeholder={rIdx === 0 ? '항목명' : '내용'}
                         className={`w-full p-2.5 text-xs outline-none dark:focus:bg-white/5 transition-colors ${
                           rIdx === 0
-                            ? 'font-bold text-itta-black dark:text-white bg-gray-100 dark:bg-gray-100'
+                            ? 'font-bold text-itta-black dark:text-white bg-gray-100 dark:bg-white/10'
                             : 'font-medium text-itta-gray3 bg-transparent '
                         }`}
                       />
