@@ -11,6 +11,7 @@ const imageDomains = [
   'biz.chosun.com',
   'images.unsplash.com',
   'api.dicebear.com',
+  'image.tmdb.org',
 ];
 
 // 환경에 따라 백엔드 주소 분기
@@ -26,14 +27,30 @@ const nextConfig: NextConfig = {
         source: '/api/posts/:path*',
         destination: `${backendHost}/posts/:path*`,
       },
+      {
+        source: '/api/kopis/:path*',
+        destination: 'http://www.kopis.or.kr/openApi/restful/:path*',
+      },
     ];
   },
 
   images: {
-    remotePatterns: imageDomains.map((host) => ({
-      protocol: 'https',
-      hostname: host,
-    })),
+    remotePatterns: [
+      // 기존 도메인들 (https 전용)
+      ...imageDomains.map((host) => ({
+        protocol: 'https' as const,
+        hostname: host,
+      })),
+      //  KOPIS 도메인 (http 허용 추가)
+      {
+        protocol: 'http',
+        hostname: 'www.kopis.or.kr',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.kopis.or.kr',
+      },
+    ],
   },
 };
 

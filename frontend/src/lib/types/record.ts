@@ -1,3 +1,5 @@
+import { PostBlock } from './recordField';
+
 export type TemplateType =
   | 'diary'
   | 'travel'
@@ -94,7 +96,7 @@ export interface Tag {
 export interface PostListItem {
   id: string;
   title: string;
-  templateType: TemplateType;
+  templateType?: TemplateType;
   address: string;
   lat: number;
   lng: number;
@@ -105,14 +107,23 @@ export interface PostListItem {
   tags?: string[];
 }
 
-export interface CreatePostRequest {
-  templateType?: TemplateType; // 기본값 'diary'
+export interface RecordSearchItem {
+  id: string;
   title: string;
+  address: string;
+  date: string;
   content: string;
-  eventDate: string;
-  address?: string;
-  lat?: number;
-  lng?: number;
-  imageUrl?: string;
-  tags?: string[];
+  imageUrl: string;
+  tags: string[];
+}
+
+export type PostScope = 'PERSONAL' | 'GROUP';
+
+export interface CreateRecordRequest {
+  scope: PostScope;
+  groupId?: string;
+  templateId?: string;
+  title: string;
+  author: string[];
+  blocks: PostBlock[];
 }
