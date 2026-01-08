@@ -122,7 +122,7 @@ export default function GroupHeaderActions({
                   닫기
                 </DrawerClose>
                 {/* TODO: 카톡 공유 기능 추가 */}
-                <button className="cursor-pointer flex-2 py-4 rounded-2xl bg-itta-black text-white text-sm font-bold shadow-xl active:scale-95 transition-all">
+                <button className="cursor-pointer flex-2 py-4 rounded-2xl bg-itta-black dark:bg-white text-white dark:text-itta-black text-sm font-bold shadow-xl active:scale-95 transition-all">
                   카카오톡으로 공유
                 </button>
               </div>
@@ -147,7 +147,7 @@ export default function GroupHeaderActions({
           >
             <button
               onClick={() => router.push(`/group/${groupId}/edit`)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 text-gray-600 hover:bg-gray-50"
+              className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 text-gray-600 hover:bg-gray-50 dark:hover:bg-white/5"
             >
               <Settings className="w-4 h-4" />
               그룹 정보 수정
@@ -157,7 +157,7 @@ export default function GroupHeaderActions({
                 // TODO: confirm을 다른 toast나 모달 사용하는걸로 수정
                 if (confirm('정말 나가시겠습니까?')) router.push('/shared');
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold text-red-500 transition-colors dark:hover:bg-red-500/10 hover:bg-red-50"
+              className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold text-red-500 transition-colors dark:hover:bg-red-500/10 hover:bg-red-50"
             >
               <LogOut className="w-4 h-4" />
               그룹 나가기

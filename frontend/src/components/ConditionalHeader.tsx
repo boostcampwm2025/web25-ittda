@@ -8,7 +8,13 @@ export default function ConditionalHeader() {
 
   const isGroupChat = pathname.includes('/chat');
 
-  const minimalPaths = ['/add', '/search', '/search/media', '/profile/edit'];
+  const minimalPaths = [
+    '/add',
+    '/search',
+    '/search/media',
+    '/profile/edit',
+    '/profile/all-tags',
+  ];
   const isDetail =
     pathname.includes('/record/') ||
     pathname.includes('/detail/') ||

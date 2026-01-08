@@ -119,10 +119,13 @@ body[data-scroll-locked] {
 }
 
 body {
+  display: flex;
+  flex: 1;
+  justify-content: start;
+  align-items: start;
+  margin: 0 auto;
+  height: 100%;
   width: 100%;
-  min-height: 100svh;
-  margin: 0;
-  display: block;
 }
 
 main {
