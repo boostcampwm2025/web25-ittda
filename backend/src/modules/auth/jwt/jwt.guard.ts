@@ -3,3 +3,4 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {}
+// 인증 (JWT 유효성)

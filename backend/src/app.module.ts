@@ -8,6 +8,7 @@ import { LoggingModule } from './modules/logging_winston';
 import { PostModule } from './modules/post/post.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
+//import { GroupModule } from './modules/group/group.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AuthModule } from './modules/auth/auth.module';
     PostModule,
     UserModule,
     AuthModule,
+    //GroupModule
   ],
   controllers: [AppController],
   providers: [AppService],
