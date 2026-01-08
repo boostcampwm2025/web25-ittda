@@ -1,7 +1,6 @@
-import DateSelectorDrawer from '@/components/DateSelectorDrawer';
-import MonthRecords from '@/components/MonthRecords';
+import MonthRecords from '@/app/(post)/_components/MonthRecords';
 
-const myMonthRecordsMock = [
+const GroupMonthRecordsMock = [
   {
     id: '2025-12',
     name: '2025년 12월',
@@ -31,23 +30,28 @@ const myMonthRecordsMock = [
   },
 ];
 
-export default function MyRecordsPage() {
+interface GroupYearPageProps {
+  params: Promise<{ groupId: string; year: string }>;
+}
+
+export default async function GroupYearPage({ params }: GroupYearPageProps) {
+  const { groupId, year } = await params;
+
   // const { data } = useQuery({
-  //   queryKey: ['posts'],
-  //   queryFn: () => fetchPostList(),
+  //   queryKey: ['posts', year],
+  //   queryFn: () => fetchPostList(year),
   //   select: (res) => res.items,
   // });
   // const posts = data ?? [];
 
   return (
-    <main className="w-full flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight dark:text-white text-[#222222]">
-          내 기록함
-        </h2>
-        <DateSelectorDrawer dayRoute="/my/detail" monthRoute="/my/month" />
-      </div>
-      <MonthRecords monthRecords={myMonthRecordsMock} cardRoute={'/my/month'} />
-    </main>
+    <>
+      {groupId && (
+        <MonthRecords
+          monthRecords={GroupMonthRecordsMock}
+          cardRoute={`/group/${groupId}/month`}
+        />
+      )}
+    </>
   );
 }

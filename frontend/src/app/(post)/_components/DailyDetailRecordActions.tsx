@@ -79,7 +79,7 @@ export default function DailyDetailRecordActions({
           e.stopPropagation();
           setActiveMenuId(activeMenuId === record.id ? null : record.id);
         }}
-        className="cursor-pointer p-1 text-gray-300 hover:text-gray-500 transition-colors active:scale-90"
+        className="cursor-pointer p-1 text-gray-400 hover:text-gray-600 transition-colors active:scale-90"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>

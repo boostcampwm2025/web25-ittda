@@ -33,6 +33,14 @@ interface Role {
   icon: ReactNode;
 }
 
+// TODO: 유저 정보는 로그인 후 서버로부터 받아옴 (전역 상태로 관리 필요)
+const user = {
+  id: 1,
+  nickname: '도비',
+  profileImageUrl: '/profile-ex.jpeg',
+  email: 'test@naver.com',
+};
+
 const ROLE: Role[] = [
   {
     id: 'admin',
@@ -121,17 +129,22 @@ export default function GroupMemberManagement({}: GroupMemberManagementProps) {
                   )}
                 </div>
                 <button
-                  onClick={() => openRoleDrawer(member)}
+                  onClick={() =>
+                    user.id !== member.id && openRoleDrawer(member)
+                  }
                   className="cursor-pointer flex items-center gap-1 group transition-all dark:text-gray-500 dark:hover:text-gray-300 text-gray-400 hover:text-gray-600"
                 >
                   <span className="text-[10px] text-gray-400">
                     {member.role === 'admin' ? '관리자' : '멤버'}
                   </span>
-                  <ChevronRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                  {/* TODO: 내가 관리자가 아닐 경우의 조건 추가 */}
+                  {user.id !== member.id && (
+                    <ChevronRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                  )}
                 </button>
               </div>
             </div>
-            {/* TODO: 내가 아닐 경우의 조건 추가 */}
+            {/* TODO: 내가 아닐 경우, 내가 관리자 권한이 아닐 경우의 조건 추가 */}
             {member.role !== 'admin' && (
               <button
                 onClick={() => confirmRemoveMember(member.id, member.name)}

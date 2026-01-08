@@ -1,5 +1,5 @@
-import ProfileAllTagsHeaderActions from '../../_components/ProfileAllTagsHeaderActions';
-import TagList from '../../_components/TagList';
+import ProfileAllTagsHeaderActions from './_components/ProfileAllTagsHeaderActions';
+import TagList from './_components/TagList';
 
 const data = {
   nickname: '도비',

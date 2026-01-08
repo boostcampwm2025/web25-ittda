@@ -11,17 +11,21 @@ import {
 import { MemoryRecord } from '@/lib/types/record';
 import { AlertCircle, Clock } from 'lucide-react';
 import { useState } from 'react';
-import DailyDetailRecordActions from './DailyDetailRecordActions';
+import DailyDetailRecordActions from '../app/(post)/_components/DailyDetailRecordActions';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { Member } from '@/lib/types/group';
 
 interface DailyDetailRecordItemProps {
   record: MemoryRecord;
   groupId?: string;
+  members?: Member[];
 }
 
 export default function DailyDetailRecordItem({
   record,
   groupId,
+  members,
 }: DailyDetailRecordItemProps) {
   const [deleteTarget, setDeleteTarget] = useState<MemoryRecord | null>(null);
   const router = useRouter();
@@ -48,7 +52,7 @@ export default function DailyDetailRecordItem({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="w-3.5 h-3.5 text-gray-400" />
-            <span className="text-[11px] font-medium text-gray-500 uppercase">
+            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 uppercase">
               {record.data.time}
             </span>
           </div>
@@ -63,10 +67,30 @@ export default function DailyDetailRecordItem({
           onClick={() => handleRecordClick(record.id)}
           className="rounded-2xl p-5 border shadow-sm cursor-pointer active:scale-[0.99] transition-all overflow-hidden dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100/60"
         >
-          <div className="flex items-center gap-2 mb-4">
+          <div className="w-full flex justify-between items-center gap-2 mb-4">
             <h4 className="text-[15px] font-bold truncate dark:text-gray-200 text-itta-black">
               {record.title}
             </h4>
+
+            <div className="flex -space-x-2">
+              {members?.slice(0, 3).map((m) => (
+                <Image
+                  key={m.id}
+                  src={m.avatar}
+                  width={50}
+                  height={50}
+                  className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white"
+                  alt={m.name}
+                />
+              ))}
+              {members && members.length > 3 && (
+                <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
+                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                    +{members.length - 3}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
           <div>
             {record.fieldOrder.map((fieldType) => (
