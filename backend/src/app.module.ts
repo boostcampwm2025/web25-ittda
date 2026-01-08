@@ -4,7 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getTypeOrmConfig } from './config/typeorm.config';
-import { PostModule } from './post/post.module';
+import { LoggingModule } from './modules/logging_winston';
+import { PostModule } from './modules/post/post.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PostModule } from './post/post.module';
             inject: [ConfigService],
           }),
         ]),
+    LoggingModule,
     PostModule,
   ],
   controllers: [AppController],

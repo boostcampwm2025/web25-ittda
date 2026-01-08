@@ -20,16 +20,23 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.3.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
-    "@faker-js/faker": "^9.3.0",
+    "@nestjs/websockets": "^11.1.11",
+    "logform": "^2.7.0",
+    "nest-winston": "^1.10.2",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.28"
+    "socket.io": "^4.8.3",
+    "typeorm": "^0.3.28",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "winston-transport": "^4.9.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -59,13 +66,16 @@
     "typescript-eslint": "^8.20.0"
   },
   "jest": {
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
     "moduleFileExtensions": [
       "js",
       "json",
       "ts"
     ],
     "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
+    "testRegex": ".*\\.(spec|test)\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
