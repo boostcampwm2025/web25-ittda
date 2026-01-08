@@ -5,10 +5,7 @@ export type OAuthUserType = {
   providerId: string;
   email?: string;
   nickname: string;
-  role: string;
 };
-
-export type OAuthUser = { user: OAuthUserType };
 
 declare module 'passport-kakao' {
   import { Strategy as PassportStrategy } from 'passport';
@@ -31,11 +28,6 @@ declare module 'passport-kakao' {
   export interface KakaoProfileJson {
     id: number;
     connected_at?: string;
-    properties?: {
-      nickname?: string;
-      profile_image?: string;
-      thumbnail_image?: string;
-    };
     kakao_account?: KakaoAccount;
   }
 

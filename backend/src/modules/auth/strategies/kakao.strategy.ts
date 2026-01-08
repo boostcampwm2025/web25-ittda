@@ -19,12 +19,11 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     return {
       provider: 'kakao',
       providerId: profile.id,
-      email: profile._json.kakao_account?.email || 'no info',
+      email: profile._json.kakao_account?.email || null,
       nickname:
         profile.username ||
         profile._json.kakao_account?.profile?.nickname ||
-        profile.displayName ||
-        'kakao user',
+        null,
     }; // 이 객체가 req.user에 들어감
   }
 }

@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 
 import type { Request, Response } from 'express';
-import type { OAuthUser } from './auth.type';
+import type { OAuthUserType } from './auth.type';
 
 @Controller({
   path: 'auth',
@@ -25,7 +25,10 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleCallback(@Req() req: Request & OAuthUser, @Res() res: Response) {
+  async googleCallback(
+    @Req() req: Request & { user: OAuthUserType },
+    @Res() res: Response,
+  ) {
     const result = await this.authService.oauthLogin(req.user);
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true, // JavaScript에서 접근 불가 (XSS 방지)
@@ -43,7 +46,10 @@ export class AuthController {
 
   @Get('kakao/callback')
   @UseGuards(AuthGuard('kakao'))
-  async kakaoCallback(@Req() req: Request & OAuthUser, @Res() res: Response) {
+  async kakaoCallback(
+    @Req() req: Request & { user: OAuthUserType },
+    @Res() res: Response,
+  ) {
     const result = await this.authService.oauthLogin(req.user);
     // HttpOnly 쿠키 설정 (res.cookie 사용)
     res.cookie('accessToken', result.accessToken, {

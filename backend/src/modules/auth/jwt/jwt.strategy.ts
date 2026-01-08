@@ -7,8 +7,7 @@ import type { JwtPayload } from 'jsonwebtoken';
 
 interface MyJwtPayload extends JwtPayload {
   sub: string; // 사용자 ID
-  email?: string;
-  role: 'USER';
+  email: string; // 이메일
 }
 
 @Injectable()
