@@ -7,12 +7,13 @@ import {
   ManyToOne,
   UpdateDateColumn,
   DeleteDateColumn,
+  JoinColumn,
 } from 'typeorm';
 
-import type { Point } from 'typeorm';
+import type { Point } from 'geojson';
 import { User } from '@/modules/user/user.entity';
-import { TemplateType } from '@/enums/template-type.enum';
 import { Group } from '@/modules/group/entity/group.entity';
+import { PostScope } from '@/enums/post-scope.enum';
 
 @Entity('posts')
 @Index(['location'], { spatial: true })
@@ -20,20 +21,27 @@ export class Post {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'enum', enum: PostScope })
+  scope: PostScope;
+
+  @Index()
+  @Column({ name: 'owner_user_id' })
+  ownerUserId: string;
+
   @ManyToOne(() => User)
-  author: User;
+  @JoinColumn({ name: 'owner_user_id' })
+  ownerUser: User;
+
+  @Index()
+  @Column({ name: 'group_id', type: 'uuid', nullable: true })
+  groupId?: string | null;
 
   @ManyToOne(() => Group, { nullable: true })
-  group?: Group;
-
-  @Column({ type: 'enum', enum: TemplateType })
-  templateType: TemplateType;
+  @JoinColumn({ name: 'group_id' })
+  group?: Group | null;
 
   @Column({ type: 'varchar', length: 200 })
   title: string;
-
-  @Column({ type: 'text' })
-  content: string;
 
   @Column({
     type: 'geometry',
@@ -43,15 +51,22 @@ export class Post {
   })
   location?: Point;
 
-  @Column({ type: 'timestamp', nullable: true })
-  visitedAt?: Date;
+  @Column({ type: 'text', array: true, nullable: true })
+  tags?: string[] | null;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @Column({ type: 'smallint', nullable: true })
+  rating?: number | null;
+
+  @Index()
+  @Column({ name: 'event_at', type: 'timestamptz', nullable: true })
+  eventAt?: Date;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn()
-  deletedAt?: Date;
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
+  deletedAt?: Date | null;
 }
