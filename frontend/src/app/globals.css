@@ -177,6 +177,13 @@ main {
   body {
     @apply bg-background text-foreground;
   }
+  button {
+    cursor: pointer;
+  }
+  /* 비활성화된 버튼은 커서도 비활성화 */
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
 @media (max-width: 768px) {

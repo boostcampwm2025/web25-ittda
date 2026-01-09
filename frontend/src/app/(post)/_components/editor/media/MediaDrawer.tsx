@@ -16,7 +16,7 @@ import {
   Tv,
   Music,
   Loader2,
-  ChevronLeft,
+  ArrowLeft,
 } from 'lucide-react';
 import { CategoryChip } from './MediaCategoryChip';
 import { MediaManualInput } from './MediaManualInput';
@@ -94,7 +94,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                 }
                 className="p-1 active:scale-90 transition-transform"
               >
-                <ChevronLeft className="w-6 h-6 text-itta-black dark:text-white" />
+                <ArrowLeft className="w-6 h-6 text-itta-black dark:text-white" />
               </button>
             )}
             <DrawerTitle

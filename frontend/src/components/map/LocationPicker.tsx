@@ -182,6 +182,7 @@ export function LocationPicker({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="dark:text-itta-black"
                 />
                 <Input.Right>
                   <button onClick={handleSearch} type="button">
