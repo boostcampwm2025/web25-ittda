@@ -23,8 +23,10 @@ export default function BottomNavigation() {
     pathname.includes('/month/') ||
     pathname.includes('/edit');
   const isGroupChat = pathname.includes('/chat');
+  const isLogin = pathname.includes('/login');
 
-  const showNav = !minimalPaths.includes(pathname) && !isDetail && !isGroupChat;
+  const showNav =
+    !minimalPaths.includes(pathname) && !isDetail && !isGroupChat && !isLogin;
 
   const groupMatch = pathname.match(/\/group\/([^/]+)/);
   const pathGroupId = groupMatch ? groupMatch[1] : null;
