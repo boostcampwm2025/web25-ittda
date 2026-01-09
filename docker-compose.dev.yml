@@ -3,7 +3,7 @@ name: record-app-dev
 
 services:
   postgres:
-    image: postgis/postgis:15-3.4
+    image: postgis/postgis:16-3.4
     container_name: recordapp-postgres
     environment:
       POSTGRES_USER: dev
