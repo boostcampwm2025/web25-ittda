@@ -51,7 +51,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
 
   return (
     <div className="group/table relative w-full animate-in fade-in zoom-in-95 duration-300">
-      <div className="flex items-start gap-2">
+      <div className="flex items-stretch gap-2">
         <div className="flex-1 min-w-0 relative overflow-x-auto hide-scrollbar rounded-xl border border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02] shadow-sm mb-2">
           <table className="w-full border-collapse">
             <thead>
@@ -90,7 +90,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
                         placeholder={rIdx === 0 ? '항목명' : '내용'}
                         className={`w-full p-2.5 text-xs outline-none dark:focus:bg-white/5 transition-colors ${
                           rIdx === 0
-                            ? 'font-bold text-itta-black dark:text-white bg-gray-100 dark:bg-gray-100'
+                            ? 'font-bold text-itta-black dark:text-white bg-gray-100 dark:bg-white/10'
                             : 'font-medium text-itta-gray3 bg-transparent '
                         }`}
                       />
@@ -113,7 +113,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
         <button
           title="열 추가"
           onClick={addColumn}
-          className="shrink-0 mt-1 flex items-center p-2 rounded-lg border border-dashed border-itta-gray2 dark:border-white/10 text-xs font-bold text-gray-400 hover:text-itta-point hover:border-itta-point transition-all active:scale-95 bg-white dark:bg-transparent"
+          className="shrink-0 mb-2 flex items-center p-2 rounded-lg border border-dashed border-itta-gray2 dark:border-white/10 text-xs font-bold text-gray-400 hover:text-itta-point hover:border-itta-point transition-all active:scale-95 bg-white dark:bg-transparent"
         >
           <Plus size={10} />
         </button>

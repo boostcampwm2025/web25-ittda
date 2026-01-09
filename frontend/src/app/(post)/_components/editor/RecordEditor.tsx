@@ -31,7 +31,19 @@ import MediaDrawer from './media/MediaDrawer';
 import { FieldType } from '@/lib/types/record';
 import { PostBlock, MediaValue } from '@/lib/types/recordField';
 import { formatDateDot, formatTime } from '@/lib/date';
+import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
+import {
+  canBeHalfWidth,
+  normalizeLayout,
+} from '../../_utils/recordLayoutHelper';
 
+// 개수 제한
+const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
+  emotion: 4,
+  table: 4,
+  content: 4,
+  photos: 10,
+};
 export default function PostEditor({
   mode,
   initialPost,
@@ -49,9 +61,16 @@ export default function PostEditor({
     id: string;
   } | null>(null);
 
-  const [isDraggingId, setIsDraggingId] = useState<string | null>(null);
-  const lastUpdateRef = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    gridRef,
+    isDraggingId,
+    setIsDraggingId,
+    handleDragStart,
+    handleDragOver,
+    handleGridDragOver,
+  } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
 
   useEffect(() => {
     if (initialPost?.blocks) {
@@ -69,7 +88,7 @@ export default function PostEditor({
   }, [initialPost]);
 
   // 기본값 생성
-  function getDefaultValue(type: FieldType): PostBlock['value'] {
+  const getDefaultValue = (type: FieldType): PostBlock['value'] => {
     switch (type) {
       case 'date':
         return formatDateDot(new Date());
@@ -97,32 +116,7 @@ export default function PostEditor({
       default:
         return '';
     }
-  }
-
-  function normalizeLayout(targetBlocks: PostBlock[]): PostBlock[] {
-    let currentRow = 1;
-    let currentCol = 1;
-    return targetBlocks.map((block) => {
-      const span = block.layout.span;
-      if (span === 2 && currentCol === 2) {
-        currentRow++;
-        currentCol = 1;
-      }
-      const updated = {
-        ...block,
-        layout: { row: currentRow, col: currentCol, span },
-      };
-      currentCol += span;
-      if (currentCol > 2) {
-        currentRow++;
-        currentCol = 1;
-      }
-      return updated as PostBlock;
-    });
-  }
-
-  const canBeHalfWidth = (type: FieldType) =>
-    ['date', 'emotion', 'location', 'rating', 'time', 'media'].includes(type);
+  };
 
   // 필드 값 업데이트 함수
   const updateFieldValue = <T extends PostBlock>(
@@ -144,11 +138,6 @@ export default function PostEditor({
       'photos',
       'media',
     ];
-    const multiInstanceLimits: Partial<Record<FieldType, number>> = {
-      emotion: 4,
-      table: 4,
-      content: 4,
-    };
 
     const existingBlocks = blocks.filter((b) => b.type === type);
 
@@ -156,8 +145,7 @@ export default function PostEditor({
       setActiveDrawer({ type, id: existingBlocks[0].id });
       return;
     }
-
-    const limit = multiInstanceLimits[type];
+    const limit = MULTI_INSTANCE_LIMITS[type];
     if (limit && existingBlocks.length >= limit) {
       //TODO : 임시작업. 이후 토스트/모달 등
       //       또는 아래 툴바 막기
@@ -192,36 +180,6 @@ export default function PostEditor({
 
   const removeBlock = (id: string) => {
     setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
-  };
-
-  const handleDragStart = (id: string) => setIsDraggingId(id);
-  const handleDragOver = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (isDraggingId === targetId) return;
-    const now = Date.now();
-    if (now - lastUpdateRef.current < 50) return;
-    lastUpdateRef.current = now;
-
-    const dragIdx = blocks.findIndex((b) => b.id === isDraggingId);
-    const hoverIdx = blocks.findIndex((b) => b.id === targetId);
-    if (dragIdx === -1 || hoverIdx === -1) return;
-
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const draggingBlock = blocks[dragIdx];
-
-    let newSpan = draggingBlock.layout.span;
-    if (canBeHalfWidth(draggingBlock.type)) {
-      newSpan = x < rect.width * 0.25 || x > rect.width * 0.75 ? 1 : 2;
-    }
-
-    if (dragIdx !== hoverIdx || draggingBlock.layout.span !== newSpan) {
-      const newBlocks = [...blocks];
-      newBlocks[dragIdx].layout.span = newSpan;
-      const [draggedItem] = newBlocks.splice(dragIdx, 1);
-      newBlocks.splice(hoverIdx, 0, draggedItem);
-      setBlocks(normalizeLayout(newBlocks));
-    }
   };
 
   const handleSave = () => {
@@ -429,7 +387,11 @@ export default function PostEditor({
       <RecordEditorHeader mode={mode} onSave={handleSave} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput value={title} onChange={setTitle} />
-        <div className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300">
+        <div
+          ref={gridRef}
+          onDragOver={handleGridDragOver}
+          className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300"
+        >
           {blocks.map((block) => (
             <div
               key={block.id}
@@ -455,33 +417,51 @@ export default function PostEditor({
         ref={fileInputRef}
         className="hidden"
         multiple
-        accept="image/*"
+        accept="image/*,video/*"
         onChange={async (e) => {
           const files = e.target.files;
-          if (files && activeDrawer?.id) {
-            const blockId = activeDrawer.id;
-            const targetBlock = blocks.find((b) => b.id === blockId);
+          if (!files || !activeDrawer?.id) return;
 
-            if (targetBlock?.type === 'photos') {
-              // 모든 파일을 읽는 배열 생성
-              const readFilesPromises = Array.from(files).map((file) => {
-                return new Promise<string>((resolve, reject) => {
-                  const reader = new FileReader();
-                  reader.onload = (ev) => resolve(ev.target?.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
+          const MAX_PHOTO_COUNT = MULTI_INSTANCE_LIMITS['photos'] ?? 10;
+          const blockId = activeDrawer.id;
+          const targetBlock = blocks.find((b) => b.id === blockId);
+
+          if (targetBlock?.type === 'photos') {
+            const existingPhotos = targetBlock.value as unknown as string[];
+            const availableSlots = MAX_PHOTO_COUNT - existingPhotos.length;
+
+            if (availableSlots <= 0) {
+              // TODO: toast 변경 예정
+              alert(`이미 최대 개수인 ${MAX_PHOTO_COUNT}개를 모두 채웠습니다.`);
+              e.target.value = '';
+              return;
+            }
+            //10개 초과 시 10개만 넣기
+            const filesToProcess = Array.from(files).slice(0, availableSlots);
+
+            if (files.length > availableSlots) {
+              alert(
+                `최대 10개 제한으로 인해 상위 ${availableSlots}개의 파일만 추가됩니다.`,
+              );
+            }
+
+            const readFilesPromises = filesToProcess.map((file) => {
+              return new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => resolve(ev.target?.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
               });
+            });
 
-              try {
-                // 모든 사진 읽기 완료될 때까지 대기
-                const newImages = await Promise.all(readFilesPromises);
-                //기존 사진들과 합쳐서 한 번에 업데이트
-                const currentPhotos = targetBlock.value as unknown as string[];
-                updateFieldValue(blockId, [...currentPhotos, ...newImages]);
-              } catch (error) {
-                console.error('사진을 읽는 중 오류 발생:', error);
-              }
+            try {
+              const newImages = await Promise.all(readFilesPromises);
+              // 새로 읽은 사진들 넣기
+              updateFieldValue(blockId, [...existingPhotos, ...newImages]);
+            } catch (error) {
+              console.error('파일을 읽는 중 오류 발생:', error);
+            } finally {
+              e.target.value = '';
             }
           }
         }}
