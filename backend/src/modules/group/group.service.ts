@@ -72,7 +72,7 @@ export class GroupService {
     });
   }
 
-  /** 멤버 초대 (OWNER만 가능하도록 Controller/Guard에서 제한) */
+  /** 멤버 초대 (OWNER/EDITOR만 가능하도록 Controller/Guard에서 제한) */
   async addMember(
     groupId: string,
     userId: string,

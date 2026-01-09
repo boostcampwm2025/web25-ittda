@@ -26,7 +26,7 @@ export class GroupController {
 
   /** 멤버 초대 */
   @UseGuards(JwtAuthGuard, GroupRoleGuard)
-  @GroupRoles('OWNER')
+  @GroupRoles('OWNER', 'EDITOR')
   @Post(':groupId/members')
   addMember(@Param('groupId') groupId: string, @Body() dto: AddMemberDto) {
     return this.groupService.addMember(groupId, dto.userId, dto.role);
