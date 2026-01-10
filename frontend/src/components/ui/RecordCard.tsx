@@ -69,9 +69,9 @@ export function RecordCard({
             >
               {latestLocation}
             </PostCard.Meta>
-            <PostCard.Meta className="font-semibold p-1 text-[8px] pl-0">
+            <span className="font-semibold p-1 text-[8px] pl-0 text-white/70">
               {createdAt}
-            </PostCard.Meta>
+            </span>
           </div>
         </div>
       </PostCard.Overlay>
