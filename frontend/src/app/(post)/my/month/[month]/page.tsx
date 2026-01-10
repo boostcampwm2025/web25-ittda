@@ -47,11 +47,7 @@ export default async function MyMonthlyDetailPage({
     <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <div className="-mx-6 py-6 px-6 sticky top-0 z-50 transition-colors duration-300 dark:bg-[#121212] bg-white">
         <header className="flex items-center justify-between">
-          <MonthlyDetailHeaderActions
-            month={month}
-            title="Memory archive"
-            backRoutePath="/my"
-          />
+          <MonthlyDetailHeaderActions month={month} title="Memory archive" />
         </header>
       </div>
 

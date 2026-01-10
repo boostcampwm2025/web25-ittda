@@ -1,5 +1,6 @@
 'use client';
 
+import Back from '@/components/Back';
 import {
   Drawer,
   DrawerClose,
@@ -14,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
-import { AlertCircle, ArrowLeft, MoreHorizontal } from 'lucide-react';
+import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -87,12 +88,7 @@ export default function RecordDetailHeaderActions({
 
   return (
     <>
-      <button
-        onClick={() => router.back()}
-        className="cursor-pointer p-1 -ml-1 active:scale-90 transition-transform"
-      >
-        <ArrowLeft className="w-6 h-6 dark:text-white text-itta-black" />
-      </button>
+      <Back />
       <div className="relative">
         <Popover>
           <PopoverTrigger className="cursor-pointer p-1 active:scale-90 transition-transform text-gray-400">

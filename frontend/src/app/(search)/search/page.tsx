@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import TagSearchDrawer from '../_components/TagSearchDrawer';
 import { FilterChip } from '@/components/FilterChip';
 import SearchItem from '../_components/SearchItem';
@@ -11,6 +11,7 @@ import LocationDrawer from '@/components/map/LocationDrawer';
 import { RecordSearchItem } from '@/lib/types/record';
 import { useDebounce } from '@/lib/utils/useDebounce';
 import { LocationValue } from '@/lib/types/recordField';
+import Back from '@/components/Back';
 
 const ALL_TAGS = [
   '일상',
@@ -235,12 +236,7 @@ export default function SearchPage() {
     <div className="min-h-screen bg-white dark:bg-[#121212]">
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-4 space-y-4">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="p-1 active:scale-90 transition-transform"
-          >
-            <ArrowLeft className="dark:text-white" />
-          </button>
+          <Back />
           <div className="flex-1 relative">
             <input
               type="text"

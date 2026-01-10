@@ -1,5 +1,6 @@
 'use client';
 
+import Back from '@/components/Back';
 import DateSelectorDrawer from '@/components/DateSelectorDrawer';
 import {
   Drawer,
@@ -19,7 +20,6 @@ import {
   PopoverTrigger,
 } from '@radix-ui/react-popover';
 import {
-  ArrowLeft,
   LogOut,
   Mic,
   MoreVertical,
@@ -60,12 +60,7 @@ export default function GroupHeaderActions({
 
   return (
     <div className="flex items-center justify-between mb-6">
-      <button
-        onClick={() => router.push('/shared')}
-        className="cursor-pointer p-1 -ml-1 active:scale-90 transition-transform"
-      >
-        <ArrowLeft className="w-6 h-6 dark:text-white text-itta-black" />
-      </button>
+      <Back />
       <div className="flex items-center gap-2">
         {/* 보이스 컨트롤은 이제 App.tsx에서 전역으로 관리되므로, 여기서는 개별적으로 대화를 시작하는 버튼만 남겨둠 */}
         {/* TODO: 보이스 연결에 필요한 데이터 전역 상태에 추가 */}

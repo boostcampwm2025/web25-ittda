@@ -47,11 +47,7 @@ export default async function GroupMonthlyDetailPage({
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <div className="py-6 px-6 sticky top-0 z-50 transition-colors duration-300 dark:bg-[#121212] bg-white">
         <header className="flex items-center justify-between">
-          <MonthlyDetailHeaderActions
-            month={month}
-            title="Together archive"
-            backRoutePath={`/group/${groupId}`}
-          />
+          <MonthlyDetailHeaderActions month={month} title="Together archive" />
         </header>
       </div>
 
