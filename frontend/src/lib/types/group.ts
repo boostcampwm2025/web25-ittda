@@ -21,3 +21,5 @@ export interface Group {
 export type ActiveMember = Member & {
   recordId: string;
 };
+
+export type InviteRole = 'admin' | 'editor' | 'viewer';

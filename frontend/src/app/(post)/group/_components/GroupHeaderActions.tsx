@@ -11,7 +11,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
-import { GroupInfo } from '@/lib/types/group';
+import { GroupInfo, InviteRole } from '@/lib/types/group';
 import { cn } from '@/lib/utils';
 import { useGroupVoice } from '@/store/useGroupVoice';
 import {
@@ -29,6 +29,9 @@ import {
   Check,
   Copy,
   AlertCircle,
+  ShieldCheck,
+  Edit3,
+  Eye,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -46,6 +49,29 @@ export default function GroupHeaderActions({
   const { isVoiceActive, setIsVoiceActive } = useGroupVoice();
   const [copied, setCopied] = useState(false);
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
+  const [selectedInviteRole, setSelectedInviteRole] =
+    useState<InviteRole>('editor');
+
+  const roles = [
+    {
+      id: 'admin',
+      label: '관리자',
+      desc: '모든 관리 및 기록 권한',
+      icon: <ShieldCheck className="w-4 h-4" />,
+    },
+    {
+      id: 'editor',
+      label: '에디터',
+      desc: '기록 생성 및 수정 권한',
+      icon: <Edit3 className="w-4 h-4" />,
+    },
+    {
+      id: 'viewer',
+      label: '뷰어',
+      desc: '기록 열람만 가능한 권한',
+      icon: <Eye className="w-4 h-4" />,
+    },
+  ];
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(groupInfo.inviteCode);
@@ -97,13 +123,62 @@ export default function GroupHeaderActions({
 
             <div className="space-y-8">
               <div className="space-y-4">
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1">
+                  초대 권한 설정
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {roles.map((role) => {
+                    const isSelected = selectedInviteRole === role.id;
+                    return (
+                      <button
+                        key={role.id}
+                        onClick={() =>
+                          setSelectedInviteRole(role.id as InviteRole)
+                        }
+                        className={cn(
+                          'flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all active:scale-95',
+                          isSelected
+                            ? 'bg-[#10B981]/10 border-[#10B981] text-[#10B981]'
+                            : 'dark:bg-white/5 dark:border-white/5 dark:text-gray-500 bg-gray-50 border-gray-100 text-gray-400',
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                            isSelected
+                              ? 'bg-[#10B981] text-white shadow-lg shadow-[#10B981]/20'
+                              : 'dark:bg-black/20 dark:text-gray-600 bg-white text-gray-300 shadow-sm',
+                          )}
+                        >
+                          {role.icon}
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[13px] font-bold mb-0.5">
+                            {role.label}
+                          </p>
+                          <p className="text-[9px] font-medium opacity-60 leading-tight">
+                            {role.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-4">
                 <p className="text-[13px] font-medium text-gray-400">
                   초대 코드를 공유하여 가족이나 친구와 함께 추억을 쌓아보세요.
                 </p>
                 <div className="p-6 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 dark:bg-black/20 dark:border-white/10 bg-gray-50 border-gray-100">
-                  <span className="text-lg font-bold tracking-widest text-[#10B981]">
-                    {groupInfo.inviteCode}
-                  </span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-lg font-bold tracking-widest text-[#10B981]">
+                      {groupInfo.inviteCode}
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                      {selectedInviteRole} LEVEL
+                    </span>
+                  </div>
                   <button
                     onClick={handleCopyCode}
                     className={cn(
