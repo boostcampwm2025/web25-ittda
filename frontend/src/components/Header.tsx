@@ -13,9 +13,9 @@ export default function Header() {
       className={cn(
         'sticky top-0 z-50 max-w-4xl w-full px-6 py-4 mx-auto',
         'flex items-center justify-between',
-        'backdrop-blur-xl transition-all duration-500 border-b',
-        'bg-white/80 border-gray-100/50',
-        'dark:bg-[#121212]/80 dark:border-white/5',
+        'backdrop-blur-xl transition-all duration-500',
+        'bg-white/80',
+        'dark:bg-[#121212]/80',
       )}
     >
       <button

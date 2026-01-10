@@ -30,15 +30,15 @@ export default function CompactFieldRenderer({
     case 'photos':
       return (
         data.length > 0 && (
-          <div className="w-full aspect-2/1 rounded-xl overflow-hidden mb-3">
+          <div className="w-full rounded-xs overflow-hidden mb-3">
             <Image
               src={data[0]}
-              className="w-full h-full object-cover"
+              className="w-full h-auto"
               alt=""
               // placeholder="blur"
               // blurDataURL=''
-              width={50}
-              height={50}
+              width={800}
+              height={800}
             />
           </div>
         )

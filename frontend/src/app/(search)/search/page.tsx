@@ -233,7 +233,7 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
-      <header className="sticky top-0 z-20 border-b border-gray-50 dark:border-white/5 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-4 space-y-4">
+      <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-4 space-y-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}

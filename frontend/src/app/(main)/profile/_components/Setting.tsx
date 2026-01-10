@@ -53,7 +53,7 @@ export default function Setting() {
   const currentTheme = resolvedTheme;
 
   return (
-    <div className="rounded-2xl p-6 shadow-sm border space-y-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
+    <div className="rounded-2xl p-6 shadow-xs border space-y-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg transition-colors dark:bg-purple-500/10 dark:text-purple-400 bg-yellow-50 text-yellow-500">

@@ -100,7 +100,7 @@ export default async function GroupDailyDetailPage({
 
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
-      <header className="sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors duration-300 dark:bg-[#121212]/80 dark:border-white/5 bg-white/80 border-gray-100">
+      <header className="sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/80 bg-white/80">
         <DateDetailHeaderActions
           routePath={
             currentMonth
