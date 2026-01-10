@@ -3,6 +3,10 @@ import Profile from './_components/Profile';
 import ProfileHeaderActions from './_components/ProfileHeaderActions';
 import TagDashboard from './_components/TagDashboard';
 import Setting from './_components/Setting';
+// import MonthlyPatternChart from '../_components/MonthlyPatternChart';
+import RecordStatistics from './_components/RecordStatistics';
+import EmotionDashboard from './_components/EmotionDashboard';
+import PlaceDashboard from './_components/PlaceDashboard';
 
 const tags: ProfileTag = {
   recent: [
@@ -46,6 +50,9 @@ export default function ProfilePage() {
         {/* 프로필 섹션 */}
         <Profile />
         <TagDashboard tags={tags} />
+        <EmotionDashboard />
+        <PlaceDashboard />
+        <RecordStatistics />
         <Setting />
       </div>
     </div>
