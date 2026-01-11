@@ -1,0 +1,23 @@
+# docker-compose.test.yml
+name: record-app-test
+
+services:
+  postgres_test:
+    image: postgis/postgis:16-3.4
+    container_name: recordapp-postgres-test
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: app_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d app_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pg-test-data:
