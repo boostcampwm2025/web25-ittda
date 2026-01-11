@@ -9,7 +9,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-    "start:dev": "nest start --watch",
+    "start:dev": "NODE_ENV=local nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -18,11 +18,11 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migration:generate": "pnpm typeorm-ts-node-commonjs migration:generate -d src/config/typeorm/typeorm-cli.config.ts",
-    "migration:create": "pnpm typeorm-ts-node-commonjs migration:create",
-    "migration:run": "pnpm typeorm-ts-node-commonjs migration:run -d src/config/typeorm/typeorm-cli.config.ts",
-    "migration:revert": "pnpm typeorm-ts-node-commonjs migration:revert -d src/config/typeorm/typeorm-cli.config.ts",
-    "migration:show": "pnpm typeorm-ts-node-commonjs migration:show -d src/config/typeorm/typeorm-cli.config.ts"
+    "db:mig:gen": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations/$MIGRATION_NAME -d ./src/data-source.ts",
+    "db:mig:create": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
+    "db:mig:run": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
+    "db:mig:revert": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
+    "db:mig:show": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d ./src/data-source.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^9.3.0",
@@ -66,6 +66,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-kakao": "^1.0.3",
     "@types/supertest": "^6.0.2",
+    "dotenv": "^17.2.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
