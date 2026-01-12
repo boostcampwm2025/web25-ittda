@@ -11,11 +11,6 @@ import type { OAuthProvider } from '../auth/auth.type';
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-  // sql 변환 예시: "id" UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-  // PostgreSQL에서 uuid_generate_v4() 함수를 사용하려면
-  // PostgreSQL의 uuid-ossp 확장 프로그램이 활성화되어 있어야 합니다.
-  // CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-  // SQL 명령을 사용하여 활성화할 수 있습니다.
 
   @Column({ nullable: true }) // email은 카카오에서 optional
   email: string;

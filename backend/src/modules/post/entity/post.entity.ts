@@ -10,10 +10,9 @@ import {
 } from 'typeorm';
 
 import type { Point } from 'typeorm';
-
-import { User } from '../../../modules/user/user.entity';
-import { TemplateType } from '../../../enums/template-type.enum';
-import { Group } from '../../../modules/group/entity/group.entity';
+import { User } from '@/modules/user/user.entity';
+import { TemplateType } from '@/enums/template-type.enum';
+import { Group } from '@/modules/group/entity/group.entity';
 
 @Entity('posts')
 @Index(['location'], { spatial: true })
@@ -30,7 +29,7 @@ export class Post {
   @Column({ type: 'enum', enum: TemplateType })
   templateType: TemplateType;
 
-  @Column()
+  @Column({ type: 'varchar', length: 200 })
   title: string;
 
   @Column({ type: 'text' })
@@ -47,7 +46,7 @@ export class Post {
   @Column({ type: 'timestamp', nullable: true })
   visitedAt?: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
   @UpdateDateColumn()

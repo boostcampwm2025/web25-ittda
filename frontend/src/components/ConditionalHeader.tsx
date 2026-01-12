@@ -21,9 +21,11 @@ export default function ConditionalHeader() {
     pathname.includes('/month/') ||
     pathname.includes('/edit');
 
+  const isLogin = pathname.includes('/login');
   const isProfile = pathname === '/profile';
   const isMap = pathname.includes('/map');
   const showHeader =
+    !isLogin &&
     !minimalPaths.includes(pathname) &&
     !isDetail &&
     !isGroupChat &&
