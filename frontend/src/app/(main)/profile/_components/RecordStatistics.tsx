@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-// import MonthlyPatternChart from '../../_components/MonthlyPatternChart';
 import MonthlyUsageChart from './MonthlyUsageChart';
 import WritingRecordStatistics from './WritingRecordStatistics';
 import { cn } from '@/lib/utils';
 import PlaceDashboard from './PlaceDashboard';
+import EmotionDashboard from './EmotionDashboard';
 
 export default function RecordStatistics() {
   const [isChartVisible, setIsChartVisible] = useState(false);
@@ -37,18 +37,21 @@ export default function RecordStatistics() {
       <div
         className={cn(
           'overflow-hidden transition-all duration-300 ease-in-out',
-          isChartVisible ? 'max-h-150 opacity-100' : 'max-h-0 opacity-0',
+          isChartVisible ? 'max-h-300 opacity-100' : 'max-h-0 opacity-0',
         )}
       >
         <div className="pt-3">
           <MonthlyUsageChart />
         </div>
+
         <div className="pt-8">
           <PlaceDashboard />
         </div>
-      </div>
 
-      {/* <MonthlyPatternChart /> */}
+        <div className="pt-8">
+          <EmotionDashboard />
+        </div>
+      </div>
     </section>
   );
 }

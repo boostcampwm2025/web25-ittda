@@ -1,9 +1,8 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import MonthlyPatternChart from '../../_components/MonthlyPatternChart';
+import { cn } from '@/lib/utils';
 
 const emotions = {
   recent: [
@@ -34,68 +33,69 @@ const emotions = {
 
 export default function EmotionDashboard() {
   const router = useRouter();
-  const [tagTab, setTagTab] = useState<'recent' | 'frequent'>('frequent');
 
-  const currentEmotions = emotions[tagTab];
+  const currentEmotions = emotions['frequent'];
 
   return (
-    <div className="rounded-2xl p-6 shadow-xs border transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
-      <div className="flex flex-col justify-start items-cetner">
-        <h4 className="text-[13px] font-bold dark:text-white text-itta-black">
+    <section className="space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-[13px] font-bold dark:text-white text-itta-black">
           자주 사용된 감정
-        </h4>
-        <div className="w-full"></div>
+        </h2>
       </div>
-      {/* <div className="flex items-center justify-end mb-6">
-        <div className="p-1 rounded-xl flex items-center dark:bg-black/20 bg-gray-50">
-          <button
-            onClick={() => setTagTab('recent')}
-            className={cn(
-              'cursor-pointer px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border',
-              tagTab === 'recent'
-                ? 'dark:bg-white/10 dark:text-white bg-white text-itta-black shadow-xs border-black/5'
-                : 'text-gray-400 border-transparent',
-            )}
-          >
-            최근 사용
-          </button>
-          <button
-            onClick={() => setTagTab('frequent')}
-            className={cn(
-              'cursor-pointer px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border',
-              tagTab === 'frequent'
-                ? 'dark:bg-white/10 dark:text-white bg-white text-itta-black shadow-xs border-black/5'
-                : 'text-gray-400 border-transparent',
-            )}
-          >
-            자주 사용
-          </button>
-        </div>
-      </div> */}
 
       <div className="w-full justify-between items-center">
         <MonthlyPatternChart />
-        <div
-          className={cn(
-            'flex flex-wrap justify-center items-center gap-2 mt-5',
-            currentEmotions.length > 0 ? 'mb-6' : 'mb-2',
-          )}
-        >
+
+        {/* 리스트 형태로 감정 데이터 표시 */}
+        <div className="mt-5 mb-6">
           {currentEmotions.length > 0 ? (
-            currentEmotions.slice(0, 5).map((emotion) => (
-              <div
-                key={emotion.name}
-                className="flex items-center h-fit gap-1.5 px-3 py-1.5 border rounded-lg shadow-xs dark:bg-white/5 dark:border-white/5 bg-white border-gray-100"
-              >
-                <span className="text-[11px] font-medium">{emotion.emoji}</span>
-                <span className="text-[11px] font-medium dark:text-gray-200 text-itta-black">
-                  {emotion.name}
-                </span>
-                <span className="text-[10px] font-medium text-[#10B981]/90 ml-0.5">
-                  {emotion.count}
-                </span>
-              </div>
-            ))
+            <div className="space-y-2">
+              {currentEmotions.slice(0, 5).map((emotion, index) => {
+                const totalCount = currentEmotions.reduce(
+                  (sum, e) => sum + e.count,
+                  0,
+                );
+                const percentage = ((emotion.count / totalCount) * 100).toFixed(
+                  1,
+                );
+
+                return (
+                  <div
+                    key={emotion.name}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg dark:bg-white/5 bg-white transition-colors"
+                  >
+                    {/* 순위 */}
+                    <span
+                      className={cn(
+                        'text-[13px] font-semobold text-itta-point w-5 text-center',
+                        index > 0 && 'text-gray-400',
+                      )}
+                    >
+                      {index + 1}
+                    </span>
+
+                    {/* 이모지 */}
+                    <span className="text-lg">{emotion.emoji}</span>
+
+                    {/* 감정명 */}
+                    <span className="text-[13px] font-medium dark:text-gray-200 text-itta-black flex-1">
+                      {emotion.name}
+                    </span>
+
+                    {/* 횟수 */}
+                    <span className="text-[12px] font-bold text-[#10B981]/90">
+                      {emotion.count}회
+                    </span>
+
+                    {/* 퍼센티지 */}
+                    <span className="text-[11px] font-medium text-gray-400 w-12 text-right">
+                      {percentage}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <p className="w-full text-center py-4 text-[11px] text-gray-400">
               사용된 감정이 없습니다.
@@ -112,6 +112,6 @@ export default function EmotionDashboard() {
           모두 보기
         </button>
       </div>
-    </div>
+    </section>
   );
 }
