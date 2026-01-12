@@ -37,7 +37,7 @@ export default function EmotionDrawer({
                 SELECT EMOTION
               </span>
               <DrawerTitle className="text-lg font-bold">
-                지금 기분이 어떠신가요?
+                {mode === 'edit' ? '지금 기분이 어떠신가요?' : '감정으로 검색'}
               </DrawerTitle>
             </div>
           </DrawerHeader>
