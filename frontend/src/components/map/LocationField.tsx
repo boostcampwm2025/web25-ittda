@@ -1,4 +1,8 @@
-import { MapPin, X } from 'lucide-react';
+'use client';
+
+import PlaceholderButton from '@/app/(post)/_components/editor/core/FieldDefaultButton';
+import { FieldDeleteButton } from '@/app/(post)/_components/editor/core/FieldDeleteButton';
+import { MapPin } from 'lucide-react';
 
 interface LocationFieldProps {
   address?: string;
@@ -11,28 +15,27 @@ export function LocationField({
   onClick,
   onRemove,
 }: LocationFieldProps) {
-  if (!address) return null;
   return (
-    <div className="flex items-center justify-between w-full py-2 group">
-      <div
-        onClick={onClick}
-        className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
-      >
-        <MapPin className="w-3.5 h-3.5 text-itta-point flex-shrink-0" />
-        <span className="font-bold text-xs text-itta-black dark:text-white truncate">
-          {address || '위치 추가'}
-        </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          className="flex items-center text-itta-gray2 hover:text-rose-500 transition-colors active:scale-90"
-          aria-label="위치 삭제"
+    <div className="flex items-center gap-2 w-full py-1 group">
+      {!address ? (
+        <PlaceholderButton
+          icon={MapPin}
+          label="장소 추가하기"
+          onClick={onClick}
+        />
+      ) : (
+        <div
+          onClick={onClick}
+          className="flex items-center gap-2 cursor-pointer flex-1 min-w-0 px-1"
         >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
+          <MapPin className="w-3.5 h-3.5 text-itta-point flex-shrink-0" />
+          <span className="font-bold text-xs text-itta-black dark:text-white truncate">
+            {address}
+          </span>
+        </div>
+      )}
+
+      <FieldDeleteButton onRemove={onRemove} ariaLabel="위치 필드 삭제" />
     </div>
   );
 }

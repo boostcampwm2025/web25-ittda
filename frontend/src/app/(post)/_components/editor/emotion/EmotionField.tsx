@@ -1,6 +1,8 @@
 'use client';
 import { EMOTION_MAP } from '@/lib/constants/constants';
-import { X } from 'lucide-react';
+import { Smile } from 'lucide-react';
+import FieldDefaultButton from '../core/FieldDefaultButton';
+import { FieldDeleteButton } from '../core/FieldDeleteButton';
 
 interface EmotionFieldProps {
   emotion: string | null;
@@ -13,7 +15,17 @@ export const EmotionField = ({
   onClick,
   onRemove,
 }: EmotionFieldProps) => {
-  if (!emotion) return null;
+  if (!emotion)
+    return (
+      <div className="flex items-center gap-2 w-full py-1 group">
+        <FieldDefaultButton
+          icon={Smile}
+          label="지금 기분은?"
+          onClick={onClick}
+        />
+        <FieldDeleteButton onRemove={onRemove} ariaLabel="감정 필드 삭제" />
+      </div>
+    );
 
   return (
     <div className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/5 shadow-sm transition-all w-fit">
@@ -28,17 +40,7 @@ export const EmotionField = ({
           {emotion}
         </span>
       </button>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="flex items-center text-itta-gray2 hover:text-rose-500 transition-colors active:scale-90"
-        aria-label="감정 삭제"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+      <FieldDeleteButton onRemove={onRemove} ariaLabel="감정 필드 삭제" />
     </div>
   );
 };
