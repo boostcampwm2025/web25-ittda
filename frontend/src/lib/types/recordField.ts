@@ -46,3 +46,5 @@ export type PostBlock =
   | (BaseBlock<File> & { type: 'photos' });
 
 export type BaseBlockForLayout<T = unknown> = Omit<BaseBlock<T>, 'value'>;
+
+export type BlockValue = PostBlock['value'];
