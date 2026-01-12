@@ -130,7 +130,7 @@ export default function WeekCalendar() {
                 className="flex flex-col items-center gap-2 min-w-11"
               >
                 <span
-                  className="text-[10px] font-medium"
+                  className="text-[11px] font-medium"
                   style={{ color: dayColor }}
                 >
                   {item.dayName}
@@ -181,7 +181,7 @@ export default function WeekCalendar() {
                   >
                     <div
                       className={cn(
-                        'w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all',
+                        'w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all dark:text-gray-200',
                         isSelected
                           ? 'dark:bg-white dark:text-[#121212] bg-itta-black text-white shadow-md'
                           : item.isToday
