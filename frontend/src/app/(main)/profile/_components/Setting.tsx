@@ -47,7 +47,8 @@ export default function Setting() {
   const handleLogout = () => {};
 
   const toggleDarkMode = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
   };
 
   const currentTheme = resolvedTheme;
