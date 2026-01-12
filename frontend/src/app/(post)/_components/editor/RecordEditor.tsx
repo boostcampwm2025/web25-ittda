@@ -30,10 +30,10 @@ import MediaDrawer from './media/MediaDrawer';
 // 타입
 import { FieldType } from '@/lib/types/record';
 import { PostBlock, MediaValue } from '@/lib/types/recordField';
-import { formatDateDot, formatTime } from '@/lib/date';
 import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
 import {
   canBeHalfWidth,
+  getDefaultValue,
   normalizeLayout,
 } from '../../_utils/recordLayoutHelper';
 
@@ -86,37 +86,6 @@ export default function PostEditor({
       setBlocks(normalizeLayout(initialBlocks));
     }
   }, [initialPost]);
-
-  // 기본값 생성
-  const getDefaultValue = (type: FieldType): PostBlock['value'] => {
-    switch (type) {
-      case 'date':
-        return formatDateDot(new Date());
-      case 'time':
-        return formatTime(new Date());
-      case 'rating':
-        return 0;
-      case 'tags':
-        return [];
-      case 'photos':
-        return [];
-      case 'table':
-        return [
-          ['', ''],
-          ['', ''],
-        ];
-      case 'content':
-        return '';
-      case 'emotion':
-        return '';
-      case 'location':
-        return { address: '' };
-      case 'media':
-        return { image: '', type: '', title: '', year: '' };
-      default:
-        return '';
-    }
-  };
 
   // 필드 값 업데이트 함수
   const updateFieldValue = <T extends PostBlock>(
@@ -401,7 +370,7 @@ export default function PostEditor({
               onDragEnd={() => setIsDraggingId(null)}
               className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
             >
-              <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-0 group-hover/field:opacity-40 transition-opacity cursor-grab active:cursor-grabbing">
+              <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
                 <GripVertical className="w-4 h-4 text-gray-500" />
               </div>
               <div className="w-full">{renderField(block)}</div>
