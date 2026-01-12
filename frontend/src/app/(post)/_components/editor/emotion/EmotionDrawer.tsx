@@ -16,7 +16,7 @@ interface EmotionDrawerProps {
   onSelect: (emotion: string) => void;
   selectedEmotion: string | string[] | null;
   mode?: 'edit' | 'search';
-  onReset: () => void;
+  onReset?: () => void;
 }
 
 export default function EmotionDrawer({
