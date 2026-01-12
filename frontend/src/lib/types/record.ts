@@ -91,7 +91,7 @@ export interface DayRecord {
 export interface PostListItem {
   id: string;
   title: string;
-  templateType: TemplateType;
+  templateType?: TemplateType;
   address: string;
   lat: number;
   lng: number;
@@ -100,6 +100,16 @@ export interface PostListItem {
   content: string;
   imageUrl?: string;
   tags?: string[];
+}
+
+export interface RecordSearchItem {
+  id: string;
+  title: string;
+  address: string;
+  date: string;
+  content: string;
+  imageUrl: string;
+  tags: string[];
 }
 
 export type PostScope = 'PERSONAL' | 'GROUP';
