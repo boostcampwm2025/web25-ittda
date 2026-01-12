@@ -1,5 +1,5 @@
 export enum GroupRoleEnum {
-  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
   EDITOR = 'EDITOR',
   VIEWER = 'VIEWER',
 }

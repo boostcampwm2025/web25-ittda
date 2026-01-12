@@ -26,7 +26,7 @@ export class GroupService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /** 그룹 생성 + OWNER 등록 (트랜잭션 적용) */
+  /** 그룹 생성 + ADMIN 등록 (트랜잭션 적용) */
   async createGroup(ownerId: string, name: string): Promise<Group> {
     // 1. 트랜잭션 시작
     return await this.dataSource.transaction(async (manager) => {
@@ -38,11 +38,11 @@ export class GroupService {
         });
         const savedGroup = await manager.save(group);
 
-        // 3. 방장을 멤버 테이블에 OWNER로 등록 (manager 사용 필수)
+        // 3. 방장을 멤버 테이블에 ADMIN로 등록 (manager 사용 필수)
         const ownerMember = manager.create(GroupMember, {
           group: savedGroup,
           user: { id: ownerId } as User,
-          role: GroupRoleEnum.OWNER,
+          role: GroupRoleEnum.ADMIN,
         });
         await manager.save(ownerMember);
 
@@ -72,7 +72,7 @@ export class GroupService {
     });
   }
 
-  /** 멤버 초대 (OWNER/EDITOR만 가능하도록 Controller/Guard에서 제한) */
+  /** 멤버 초대 (ADMIN/EDITOR만 가능하도록 Controller/Guard에서 제한) */
   async addMember(
     groupId: string,
     userId: string,
