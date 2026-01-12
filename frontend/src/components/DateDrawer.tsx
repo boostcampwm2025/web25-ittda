@@ -97,7 +97,7 @@ export default function DateDrawer({
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="dark:bg-[#1E1E1E]">
-        <div className="max-w-md mx-auto w-full px-8 pt-8 pb-12 flex flex-col gap-4">
+        <div className="w-full px-8 pt-8 pb-12 flex flex-col gap-4">
           {/* 헤더 섹션 */}
           <div className="flex justify-between items-end">
             <div className="flex flex-col items-start text-left">

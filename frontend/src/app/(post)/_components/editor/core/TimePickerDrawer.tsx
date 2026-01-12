@@ -76,7 +76,7 @@ export default function TimePickerDrawer({
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent>
-        <div className="max-w-sm mx-auto w-full p-8 pb-12">
+        <div className="w-full p-8 pb-12">
           <DrawerHeader className="px-0 mb-8">
             <div className="flex items-center justify-between">
               <div className="flex flex-col text-left">
