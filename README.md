@@ -118,6 +118,15 @@ style 코드 포매팅/스타일 변경`
 
 <br />
 
+## 🧪 개발/테스트 인프라
+
+- dev 인프라: `pnpm run infra:up` / `pnpm run infra:down`
+- test DB 인프라: `pnpm run infra:test:up` / `pnpm run infra:test:down`
+- 마이그레이션(backend):
+  - dev: `pnpm -C backend run db:mig:run`
+  - test: `pnpm -C backend run db:mig:run:test`
+  - 기타: `pnpm -C backend run db:mig:show` / `db:mig:show:test`
+
 ## 📒 회의록/이슈/위키 연결 : 협업과 개발 과정의 문서 자료
 
 - [회의록](https://github.com/boostcampwm2025/web25-boostcamp/wiki/12%EC%9B%94-%ED%9A%8C%EC%9D%98%EB%A1%9D)

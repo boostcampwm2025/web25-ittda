@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { VersioningType } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllHttpExceptionFilter } from '@/common/exception_filters/AllHttpExceptionFilter';
 import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
@@ -25,6 +25,14 @@ async function bootstrap() {
     origin: ['http://localhost:3000', 'http://211.188.48.38'], // FE 주소(TODO: 도메인으로 변경)
     credentials: true, // 쿠키/세션 허용
   });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // DTO에 없는 필드 자동 제거
+      forbidNonWhitelisted: true, // DTO에 없는 필드 오면 400
+      transform: true, // payload를 DTO 인스턴스로 변환
+    }),
+  );
 
   await app.listen(process.env.PORT ?? 4000); // next랑 3000겹쳐서 4000함
 }
