@@ -12,11 +12,10 @@ import { createApiError } from '@/lib/utils/errorHandler';
 
 type FetchParams = Record<string, string | number | boolean>;
 
-interface UseApiQueryOptions<TData, TError = Error>
-  extends Omit<
-    UseQueryOptions<ApiResponse<TData>, TError, TData, QueryKey>,
-    'queryKey' | 'queryFn'
-  > {
+interface UseApiQueryOptions<TData, TError = Error> extends Omit<
+  UseQueryOptions<ApiResponse<TData>, TError, TData, QueryKey>,
+  'queryKey' | 'queryFn'
+> {
   params?: FetchParams;
 }
 
@@ -67,7 +66,10 @@ export function useApiQuery<TData = unknown>(
  * });
  * mutate({ name: 'John' });
  */
-export function useApiPost<TData = unknown, TVariables = Record<string, unknown>>(
+export function useApiPost<
+  TData = unknown,
+  TVariables = Record<string, unknown>,
+>(
   endpoint: string,
   options?: UseApiMutationOptions<TData, TVariables>,
   sendCookie?: boolean,
@@ -104,15 +106,18 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
  * const { mutate } = useApiPut('/users/1');
  * mutate({ name: 'John Updated' });
  */
-export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>(
-  endpoint: string,
-  options?: UseApiMutationOptions<TData, TVariables>,
-) {
+export function useApiPut<
+  TData = unknown,
+  TVariables = Record<string, unknown>,
+>(endpoint: string, options?: UseApiMutationOptions<TData, TVariables>) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (variables: TVariables) => {
-      const response = await put<TData>(endpoint, variables as Record<string, unknown>);
+      const response = await put<TData>(
+        endpoint,
+        variables as Record<string, unknown>,
+      );
 
       // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
       if (!response.success) {
@@ -143,7 +148,8 @@ export function useApiDelete<TData = unknown, TVariables = unknown>(
 
   return useMutation({
     mutationFn: async (variables: TVariables) => {
-      const url = typeof endpoint === 'function' ? endpoint(variables) : endpoint;
+      const url =
+        typeof endpoint === 'function' ? endpoint(variables) : endpoint;
       const response = await del<TData>(url);
 
       // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
@@ -167,15 +173,18 @@ export function useApiDelete<TData = unknown, TVariables = unknown>(
  * const { mutate } = useApiPatch('/users/1');
  * mutate({ name: 'John' });
  */
-export function useApiPatch<TData = unknown, TVariables = Record<string, unknown>>(
-  endpoint: string,
-  options?: UseApiMutationOptions<TData, TVariables>,
-) {
+export function useApiPatch<
+  TData = unknown,
+  TVariables = Record<string, unknown>,
+>(endpoint: string, options?: UseApiMutationOptions<TData, TVariables>) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (variables: TVariables) => {
-      const response = await patch<TData>(endpoint, variables as Record<string, unknown>);
+      const response = await patch<TData>(
+        endpoint,
+        variables as Record<string, unknown>,
+      );
 
       // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
       if (!response.success) {
