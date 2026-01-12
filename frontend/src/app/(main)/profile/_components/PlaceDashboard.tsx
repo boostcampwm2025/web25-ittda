@@ -10,7 +10,7 @@ export default function PlaceDashboard() {
   ];
 
   return (
-    <section className="space-y-5 rounded-2xl p-6 shadow-xs border transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-200/60">
+    <section className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-[13px] font-bold dark:text-white text-itta-black">
           방문 장소 통계

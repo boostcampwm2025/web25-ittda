@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import MonthlyPatternChart from '../../_components/MonthlyPatternChart';
 
 const emotions = {
   recent: [
@@ -33,16 +34,19 @@ const emotions = {
 
 export default function EmotionDashboard() {
   const router = useRouter();
-  const [tagTab, setTagTab] = useState<'recent' | 'frequent'>('recent');
+  const [tagTab, setTagTab] = useState<'recent' | 'frequent'>('frequent');
 
   const currentEmotions = emotions[tagTab];
 
   return (
     <div className="rounded-2xl p-6 shadow-xs border transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col justify-start items-cetner">
         <h4 className="text-[13px] font-bold dark:text-white text-itta-black">
-          감정
+          자주 사용된 감정
         </h4>
+        <div className="w-full"></div>
+      </div>
+      {/* <div className="flex items-center justify-end mb-6">
         <div className="p-1 rounded-xl flex items-center dark:bg-black/20 bg-gray-50">
           <button
             onClick={() => setTagTab('recent')}
@@ -67,34 +71,37 @@ export default function EmotionDashboard() {
             자주 사용
           </button>
         </div>
-      </div>
+      </div> */}
 
-      <div
-        className={cn(
-          'flex flex-wrap gap-2',
-          currentEmotions.length > 0 ? 'mb-6' : 'mb-2',
-        )}
-      >
-        {currentEmotions.length > 0 ? (
-          currentEmotions.slice(0, 5).map((emotion) => (
-            <div
-              key={emotion.name}
-              className="flex items-center h-fit gap-1.5 px-3 py-1.5 border rounded-lg shadow-xs dark:bg-white/5 dark:border-white/5 bg-white border-gray-100"
-            >
-              <span className="text-[11px] font-medium">{emotion.emoji}</span>
-              <span className="text-[11px] font-medium dark:text-gray-200 text-itta-black">
-                {emotion.name}
-              </span>
-              <span className="text-[10px] font-medium text-[#10B981]/90 ml-0.5">
-                {emotion.count}
-              </span>
-            </div>
-          ))
-        ) : (
-          <p className="w-full text-center py-4 text-[11px] text-gray-400">
-            사용된 감정이 없습니다.
-          </p>
-        )}
+      <div className="w-full justify-between items-center">
+        <MonthlyPatternChart />
+        <div
+          className={cn(
+            'flex flex-wrap justify-center items-center gap-2 mt-5',
+            currentEmotions.length > 0 ? 'mb-6' : 'mb-2',
+          )}
+        >
+          {currentEmotions.length > 0 ? (
+            currentEmotions.slice(0, 5).map((emotion) => (
+              <div
+                key={emotion.name}
+                className="flex items-center h-fit gap-1.5 px-3 py-1.5 border rounded-lg shadow-xs dark:bg-white/5 dark:border-white/5 bg-white border-gray-100"
+              >
+                <span className="text-[11px] font-medium">{emotion.emoji}</span>
+                <span className="text-[11px] font-medium dark:text-gray-200 text-itta-black">
+                  {emotion.name}
+                </span>
+                <span className="text-[10px] font-medium text-[#10B981]/90 ml-0.5">
+                  {emotion.count}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="w-full text-center py-4 text-[11px] text-gray-400">
+              사용된 감정이 없습니다.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 border-t pt-5 dark:border-white/5 border-gray-50">

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import MonthlyUsageChart from './MonthlyUsageChart';
 import WritingRecordStatistics from './WritingRecordStatistics';
 import { cn } from '@/lib/utils';
+import PlaceDashboard from './PlaceDashboard';
 
 export default function RecordStatistics() {
   const [isChartVisible, setIsChartVisible] = useState(false);
@@ -17,9 +18,7 @@ export default function RecordStatistics() {
         onClick={() => setIsChartVisible(!isChartVisible)}
         className="w-full text-xs text-gray-400 font-bold dark:text-gray-400 active:scale-95 transition-all hover:text-gray-500 dark:hover:text-gray-200 flex items-center justify-center gap-2 py-2"
       >
-        <span>
-          {isChartVisible ? '월별 사용 그래프 접기' : '월별 사용 그래프 더보기'}
-        </span>
+        <span>{isChartVisible ? '접기' : '통계 더보기'}</span>
         <svg
           className={`w-4 h-4 transition-transform duration-200 ${isChartVisible ? 'rotate-180' : ''}`}
           fill="none"
@@ -43,6 +42,9 @@ export default function RecordStatistics() {
       >
         <div className="pt-3">
           <MonthlyUsageChart />
+        </div>
+        <div className="pt-8">
+          <PlaceDashboard />
         </div>
       </div>
 

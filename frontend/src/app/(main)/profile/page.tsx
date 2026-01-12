@@ -51,7 +51,6 @@ export default function ProfilePage() {
         <Profile />
         <TagDashboard tags={tags} />
         <EmotionDashboard />
-        <PlaceDashboard />
         <RecordStatistics />
         <Setting />
       </div>
