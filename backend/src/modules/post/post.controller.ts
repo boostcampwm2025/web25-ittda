@@ -4,8 +4,6 @@ import {
   Param,
   Post as HttpPost,
   Body,
-  UsePipes,
-  ValidationPipe,
   Req,
 } from '@nestjs/common';
 import { PostService } from './post.service';
@@ -36,7 +34,6 @@ export class PostController {
 
   // TODO: 나중에 AuthGuard 붙이기
   @HttpPost()
-  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(@Req() req: AuthedRequest, @Body() dto: CreatePostDto) {
     // 임시: authorId를 헤더로 받거나, 테스트용 고정
     // TODO: 실제론 JWT payload에서 userId를 뽑아야 함
