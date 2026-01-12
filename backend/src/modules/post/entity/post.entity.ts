@@ -16,7 +16,7 @@ import { Group } from '@/modules/group/entity/group.entity';
 import { PostScope } from '@/enums/post-scope.enum';
 
 @Entity('posts')
-@Index(['location'], { spatial: true })
+@Index('IDX_posts_location_gist', ['location'], { spatial: true })
 export class Post {
   @PrimaryGeneratedColumn('uuid')
   id: string;
