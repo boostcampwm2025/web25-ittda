@@ -1,5 +1,6 @@
 'use client';
 
+import Back from '@/components/Back';
 import {
   Drawer,
   DrawerClose,
@@ -9,15 +10,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
-import {
-  ArrowLeft,
-  BarChart3,
-  CalendarDays,
-  Check,
-  ListFilter,
-  X,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { BarChart3, CalendarDays, Check, ListFilter, X } from 'lucide-react';
 import { useState } from 'react';
 
 type SortOption = 'date-desc' | 'date-asc' | 'count-desc';
@@ -26,16 +19,13 @@ interface MonthlyDetailHeaderActionsProps {
   month: string;
   title: string;
   onClick?: VoidFunction;
-  backRoutePath: string;
 }
 
 export default function MonthlyDetailHeaderActions({
   month,
   title,
   onClick,
-  backRoutePath,
 }: MonthlyDetailHeaderActionsProps) {
-  const router = useRouter();
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
 
@@ -59,12 +49,7 @@ export default function MonthlyDetailHeaderActions({
 
   return (
     <>
-      <button
-        onClick={() => router.push(backRoutePath)}
-        className="cursor-pointer p-1 -ml-1 active:scale-90 transition-transform"
-      >
-        <ArrowLeft className="w-6 h-6 dark:text-white text-itta-black" />
-      </button>
+      <Back />
       <div className="flex flex-col items-center">
         <span className="text-[10px] font-bold uppercase tracking-widest leading-none mb-1 text-[#10B981]">
           {title}

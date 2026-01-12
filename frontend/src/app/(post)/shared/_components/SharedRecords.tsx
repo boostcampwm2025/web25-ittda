@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/drawer';
 import { X } from 'lucide-react';
 import { SharedRecord } from '@/lib/types/record';
+import { formatDateISO } from '@/lib/date';
 
 // 사진 데이터
 const recordPhotosData = [
@@ -66,6 +67,7 @@ export default function SharedRecords({ sharedRecords }: SharedRecordsProps) {
             coverUrl={g.coverUrl}
             onClick={() => router.push(`/group/${g.id}`)}
             onChangeCover={openGallery}
+            createdAt={formatDateISO(new Date(g.updatedAt))}
           />
         ))}
       </div>

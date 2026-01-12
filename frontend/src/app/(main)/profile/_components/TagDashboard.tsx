@@ -43,10 +43,10 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
   };
 
   return (
-    <div className="rounded-2xl p-6 shadow-sm border transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
+    <div className="rounded-2xl p-6 shadow-xs border transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
       <div className="flex items-center justify-between mb-6">
         <h4 className="text-[13px] font-bold dark:text-white text-itta-black">
-          태그 관리
+          태그
         </h4>
         <div className="p-1 rounded-xl flex items-center dark:bg-black/20 bg-gray-50">
           <button
@@ -54,7 +54,7 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
             className={cn(
               'cursor-pointer px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border',
               tagTab === 'recent'
-                ? 'dark:bg-white/10 dark:text-white bg-white text-itta-black shadow-sm border-black/5'
+                ? 'dark:bg-white/10 dark:text-white bg-white text-itta-black shadow-xs border-black/5'
                 : 'text-gray-400 border-transparent',
             )}
           >
@@ -65,7 +65,7 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
             className={cn(
               'cursor-pointer px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border',
               tagTab === 'frequent'
-                ? 'dark:bg-white/10 dark:text-white bg-white text-itta-black shadow-sm border-black/5'
+                ? 'dark:bg-white/10 dark:text-white bg-white text-itta-black shadow-xs border-black/5'
                 : 'text-gray-400 border-transparent',
             )}
           >
@@ -84,7 +84,7 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
           currentTags.slice(0, 5).map((tag) => (
             <div
               key={tag.name}
-              className="flex items-center h-fit gap-1 px-3 py-1.5 border rounded-lg shadow-sm dark:bg-white/5 dark:border-white/5 bg-white border-gray-100"
+              className="flex items-center h-fit gap-1 px-3 py-1.5 border rounded-lg shadow-xs dark:bg-white/5 dark:border-white/5 bg-white border-gray-100"
             >
               <span className="text-[11px] font-medium text-[#10B981]">#</span>
               <span className="text-[11px] font-medium dark:text-gray-200 text-itta-black">
@@ -137,7 +137,7 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
                         'cursor-pointer flex items-center gap-0.5 px-4 py-2.5 border rounded-2xl transition-all active:scale-95',
                         isSelected
                           ? 'bg-itta-black dark:bg-itta-point border-itta-black text-white shadow-lg shadow-[#10B981]/20'
-                          : 'dark:bg-white/5 dark:border-white/5 dark:text-gray-200 dark:hover:bg-white/10 bg-gray-50 border-gray-100 text-gray-500 hover:bg-white shadow-sm',
+                          : 'dark:bg-white/5 dark:border-white/5 dark:text-gray-200 dark:hover:bg-white/10 bg-gray-50 border-gray-100 text-gray-500 hover:bg-white shadow-xs',
                       )}
                     >
                       <span

@@ -1,8 +1,8 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useGroupEdit } from './GroupEditContext';
+import Back from '@/components/Back';
 
 interface GroupEditHeaderActionsProps {
   groupId: string;
@@ -31,12 +31,7 @@ export default function GroupEditHeaderActions({
 
   return (
     <>
-      <button
-        onClick={() => router.back()}
-        className="cursor-pointer active:scale-90 transition-transform"
-      >
-        <ArrowLeft className="w-6 h-6 dark:text-white text-itta-black" />
-      </button>
+      <Back />
       <h2 className="text-sm font-bold dark:text-white text-itta-black">
         그룹 정보 수정
       </h2>
