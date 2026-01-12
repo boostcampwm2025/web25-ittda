@@ -1,9 +1,9 @@
 'use client';
 
-import { X, Tag, MapPin, Calendar, LucideIcon } from 'lucide-react';
+import { X, Tag, MapPin, Calendar, LucideIcon, SmileIcon } from 'lucide-react';
 
 // 필터 타입
-type FilterType = 'tag' | 'location' | 'date';
+type FilterType = 'tag' | 'location' | 'date' | 'emotion';
 
 interface Props {
   type: FilterType;
@@ -18,6 +18,7 @@ const iconMap: Record<FilterType, LucideIcon> = {
   tag: Tag,
   location: MapPin,
   date: Calendar,
+  emotion: SmileIcon,
 };
 
 export const FilterChip = ({

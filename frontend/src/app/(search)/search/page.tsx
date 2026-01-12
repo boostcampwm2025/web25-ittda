@@ -11,6 +11,7 @@ import LocationDrawer from '@/components/map/LocationDrawer';
 import { RecordSearchItem } from '@/lib/types/record';
 import { useDebounce } from '@/lib/utils/useDebounce';
 import { LocationValue } from '@/lib/types/recordField';
+import EmotionDrawer from '@/app/(post)/_components/editor/emotion/EmotionDrawer';
 
 const ALL_TAGS = [
   '일상',
@@ -64,13 +65,17 @@ export default function SearchPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [activeDrawer, setActiveDrawer] = useState<
-    'tag' | 'date' | 'location' | null
+    'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
 
   // URL에서 데이터 필터 상태 가져옴
   const query = searchParams.get('q') || '';
   const selectedTags = useMemo(() => {
     return searchParams.get('tags')?.split(',').filter(Boolean) || [];
+  }, [searchParams]);
+
+  const selectedEmotions = useMemo(() => {
+    return searchParams.get('emotions')?.split(',').filter(Boolean) || [];
   }, [searchParams]);
 
   const startDate = searchParams.get('start');
@@ -161,6 +166,13 @@ export default function SearchPage() {
     setActiveDrawer(null);
   };
 
+  const handleEmotionSelect = (emotion: string) => {
+    const nextEmotions = selectedEmotions.includes(emotion)
+      ? selectedEmotions.filter((t) => t !== emotion)
+      : [...selectedEmotions, emotion];
+    updateUrl({ emotions: nextEmotions.join(',') });
+  };
+
   // 날짜 필터 핸들러
   const handleDateSelect = (range: {
     start: string | null;
@@ -196,6 +208,15 @@ export default function SearchPage() {
 
   const locationLabel = address || '위치';
 
+  const emotionLabel = useMemo(() => {
+    if (selectedEmotions.length === 0) return '감정';
+    return selectedEmotions.length === 1
+      ? `${selectedEmotions[0]}`
+      : `${selectedEmotions[0]} 외 ${selectedEmotions.length - 1}`;
+  }, [selectedEmotions]);
+
+  //selectedEmotions || '감정';
+
   // 드로어 렌더링
   const renderActiveDrawer = () => {
     switch (activeDrawer) {
@@ -207,6 +228,17 @@ export default function SearchPage() {
             selectedTags={selectedTags}
             onToggleTag={handleTagsSelect}
             onReset={() => updateUrl({ tags: null })}
+          />
+        );
+      case 'emotion':
+        return (
+          <EmotionDrawer
+            isOpen={activeDrawer === 'emotion'}
+            selectedEmotion={selectedEmotions}
+            onSelect={handleEmotionSelect}
+            onClose={() => setActiveDrawer(null)}
+            onReset={() => updateUrl({ emotions: null })}
+            mode="search"
           />
         );
       case 'date':
@@ -268,6 +300,13 @@ export default function SearchPage() {
             isActive={selectedTags.length > 0}
             onClick={() => setActiveDrawer('tag')}
             onClear={() => updateUrl({ tags: null })}
+          />
+          <FilterChip
+            type="emotion"
+            label={emotionLabel}
+            isActive={selectedEmotions.length > 0}
+            onClick={() => setActiveDrawer('emotion')}
+            onClear={() => updateUrl({ emotion: null })}
           />
           <FilterChip
             type="date"
