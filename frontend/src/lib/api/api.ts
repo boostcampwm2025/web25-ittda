@@ -155,7 +155,8 @@ export async function fetchApi<T>(
   if (!skipAuth) {
     const token = getAccessToken();
     if (token) {
-      (defaultHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
+      (defaultHeaders as Record<string, string>).Authorization =
+        `Bearer ${token}`;
     }
   }
 
