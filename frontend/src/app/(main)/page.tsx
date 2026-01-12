@@ -2,6 +2,7 @@ import { MemoryRecord } from '@/lib/types/record';
 import MonthlyPatternChart from './_components/MonthlyPatternChart';
 import RecordList from './_components/RecordList';
 import { formatDateISO } from '@/lib/date';
+import WeekCalendar from './_components/WeekCalendar';
 
 const allMockRecords: MemoryRecord[] = [
   {
@@ -58,9 +59,14 @@ export default function HomePage() {
   // const posts = data ?? [];
 
   return (
-    <div className="w-full flex flex-col gap-6">
-      <MonthlyPatternChart />
-      <RecordList records={allMockRecords} />
-    </div>
+    <>
+      <WeekCalendar />
+      <div className="flex-1 w-full p-5 space-y-6 pb-30 transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9]">
+        <div className="w-full flex flex-col gap-6">
+          <MonthlyPatternChart />
+          <RecordList records={allMockRecords} />
+        </div>
+      </div>
+    </>
   );
 }

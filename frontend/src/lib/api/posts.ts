@@ -1,7 +1,20 @@
 import type { PostListItem } from '../types/record';
+import {
+  serverComponentApiPrefix,
+  clientComponentNestApiPrefix,
+} from './api_prefix';
 import type { CreateRecordRequest } from '../types/record';
 
-const API_PREFIX = '/api';
+export function getApiPrefix(isServerComponent: boolean) {
+  if (isServerComponent) {
+    return serverComponentApiPrefix;
+  } else {
+    return clientComponentNestApiPrefix;
+  }
+}
+
+// TODO: API_PREFIX를 상황에 맞게 설정 후 아래 fetchPostsByBbox 등에 인자로 넣어주세요!
+const API_PREFIX = getApiPrefix(true); // TODO: 폐기 예정
 
 export interface Bbox {
   minLat: number;

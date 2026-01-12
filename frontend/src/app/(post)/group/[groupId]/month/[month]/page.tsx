@@ -1,5 +1,5 @@
-import MonthlyDetailHeaderActions from '@/components/MonthlyDetailHeaderActions';
-import MonthlyDetailRecords from '@/components/MonthlyDetailRecords';
+import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
+import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
 
 const initialDays = [
   {
@@ -45,7 +45,7 @@ export default async function GroupMonthlyDetailPage({
 
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
-      <div className="-mx-6 py-6 px-6 sticky top-0 z-50 border-b  transition-colors duration-300 dark:bg-[#121212] dark:border-white/5 bg-white border-gray-100">
+      <div className="py-6 px-6 sticky top-0 z-50 border-b  transition-colors duration-300 dark:bg-[#121212] dark:border-white/5 bg-white border-gray-100">
         <header className="flex items-center justify-between">
           <MonthlyDetailHeaderActions
             month={month}
@@ -55,7 +55,7 @@ export default async function GroupMonthlyDetailPage({
         </header>
       </div>
 
-      <div className="py-6 pb-40">
+      <div className="p-6 pb-40">
         <MonthlyDetailRecords
           dayRecords={initialDays}
           routePath={`/group/${groupId}/detail`}
