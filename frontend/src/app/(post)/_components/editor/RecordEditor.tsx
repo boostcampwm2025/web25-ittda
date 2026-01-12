@@ -354,7 +354,6 @@ export default function PostEditor({
             tags={initialValue as string[]}
             previousTags={['식단', '운동']} //TODO: 실제 최근 사용 태그 리스트
             onUpdateTags={(nt) => {
-              debugger;
               if (id) updateFieldValue(nt, id);
               else handleDone(nt);
             }}
