@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
         source: '/api/kopis/:path*',
         destination: 'http://www.kopis.or.kr/openApi/restful/:path*',
       },
+      {
+        source: '/api/v1/:path*',
+        destination: `${backendHost}/v1/:path*`,
+      },
     ];
   },
 
