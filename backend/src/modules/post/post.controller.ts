@@ -5,6 +5,7 @@ import {
   Post as HttpPost,
   Body,
   Req,
+  NotImplementedException,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -20,11 +21,15 @@ export class PostController {
 
   // TODO: 나중에 구현 예정
   @Get()
-  getPosts() {}
+  getPosts() {
+    throw new NotImplementedException('PostController.getPosts is not ready');
+  }
 
   @Get('list')
   getPostList() {
-    return null;
+    throw new NotImplementedException(
+      'PostController.getPostList is not ready',
+    );
   }
 
   @Get(':id')
@@ -34,7 +39,7 @@ export class PostController {
 
   // TODO: 나중에 AuthGuard 붙이기
   @HttpPost()
-  async create(@Req() req: AuthedRequest, @Body() dto: CreatePostDto) {
+  create(@Req() req: AuthedRequest, @Body() dto: CreatePostDto) {
     // 임시: authorId를 헤더로 받거나, 테스트용 고정
     // TODO: 실제론 JWT payload에서 userId를 뽑아야 함
     const headerUserId = req.header('x-user-id');
