@@ -8,6 +8,7 @@ import Script from 'next/script';
 import ConditionalHeader from '@/components/ConditionalHeader';
 import { ThemeProvider } from 'next-themes';
 import ThemeColorSetter from '@/components/ThemeColorSetter';
+import PWAInstallBanner from '@/components/PWAInstallBanner';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -91,6 +92,7 @@ export default function RootLayout({
           >
             <ThemeColorSetter />
             <div className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+              <PWAInstallBanner />
               <ConditionalHeader />
               {children}
               <BottomNavigation />
