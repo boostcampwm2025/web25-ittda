@@ -7,6 +7,7 @@ import {
   Req,
   NotImplementedException,
 } from '@nestjs/common';
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
@@ -16,6 +17,7 @@ type AuthedRequest = Request & {
   user?: { id: string };
 };
 
+@ApiTags('posts')
 @Controller({ path: 'posts', version: '1' })
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -34,12 +36,14 @@ export class PostController {
   }
 
   @Get(':id')
+  @ApiOkResponse({ type: PostDetailDto })
   getOne(@Param('id') id: string): Promise<PostDetailDto> {
     return this.postService.findOne(id);
   }
 
   // TODO: 나중에 AuthGuard 붙이기
   @HttpPost()
+  @ApiCreatedResponse({ type: PostDetailDto })
   create(
     @Req() req: AuthedRequest,
     @Body() dto: CreatePostDto,

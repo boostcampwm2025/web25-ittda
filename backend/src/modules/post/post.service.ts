@@ -149,7 +149,7 @@ export class PostService {
     const contributorDtos = contributors.map((c) => ({
       userId: c.userId,
       role: c.role,
-      user: c.user ? { id: c.user.id, nickname: c.user.nickname } : undefined,
+      nickname: c.user?.nickname,
     }));
 
     const dto: PostDetailDto = {
