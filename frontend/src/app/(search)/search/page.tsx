@@ -1,28 +1,20 @@
 'use client';
 
-import { useMemo, useCallback, useState } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Search, X } from 'lucide-react';
-import TagSearchDrawer from '../_components/TagSearchDrawer';
-import { FilterChip } from '@/components/FilterChip';
+import { FilterChip } from '@/components/search/FilterChip';
 import SearchItem from '../_components/SearchItem';
-import DateDrawer from '@/components/DateDrawer';
-import LocationDrawer from '@/components/map/LocationDrawer';
 import { RecordSearchItem } from '@/lib/types/record';
 import { useDebounce } from '@/lib/utils/useDebounce';
-import { LocationValue } from '@/lib/types/recordField';
-import EmotionDrawer from '@/app/(post)/_components/editor/emotion/EmotionDrawer';
-
-const ALL_TAGS = [
-  '일상',
-  '맛집',
-  '성수동',
-  '여행',
-  '운동',
-  '독서',
-  '가족',
-  '카페',
-];
+import {
+  makeDateLabel,
+  makeEmotionLabel,
+  makeLocationLabel,
+  makeTagLabel,
+} from '@/lib/utils/filterLabels';
+import { useSearchFilters } from '@/hooks/useSearchFilters';
+import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
 
 const dummyRecords: RecordSearchItem[] = [
   {
@@ -62,32 +54,21 @@ const dummyRecords: RecordSearchItem[] = [
 
 export default function SearchPage() {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
 
-  // URL에서 데이터 필터 상태 가져옴
-  const query = searchParams.get('q') || '';
-  const selectedTags = useMemo(() => {
-    return searchParams.get('tags')?.split(',').filter(Boolean) || [];
-  }, [searchParams]);
+  const {
+    query,
+    tags: selectedTags,
+    emotions: selectedEmotions,
+    start: startDate,
+    end: endDate,
+    location,
+    updateUrl,
+  } = useSearchFilters({ withLocation: true });
+  const locationAddress = location?.address ?? null;
 
-  const selectedEmotions = useMemo(() => {
-    return searchParams.get('emotions')?.split(',').filter(Boolean) || [];
-  }, [searchParams]);
-
-  const startDate = searchParams.get('start');
-  const endDate = searchParams.get('end');
-
-  //현재는 never used 떠서 삭제. 이후 실제 백엔드 로직 거칠 때 사용될듯
-  //const lat = searchParams.get('lat');
-  //const lng = searchParams.get('lng');
-  const address = searchParams.get('address');
-  //const radius = searchParams.get('radius');
-
-  // 로컬 검색어 상태
   const [localQuery, setLocalQuery] = useState(query);
 
   // 이후에는 백엔드 로직으로 대체될 부분으로
@@ -121,31 +102,13 @@ export default function SearchPage() {
     }
 
     // 위치 필터링 (더미데이터에는 좌표가 없으므로 주소 텍스트 포함 여부로 예시)
-    if (address) {
-      results = results.filter((r) => r.address.includes(address));
+    if (locationAddress) {
+      results = results.filter((r) => r.address.includes(locationAddress));
     }
 
     return results;
-  }, [query, selectedTags, startDate, endDate, address]);
+  }, [query, selectedTags, startDate, endDate, locationAddress]);
 
-  // URL 업데이트
-  const updateUrl = useCallback(
-    (params: Record<string, string | null>) => {
-      const newParams = new URLSearchParams(searchParams.toString());
-      Object.entries(params).forEach(([key, value]) => {
-        if (value === null || value === '') {
-          newParams.delete(key);
-        } else {
-          newParams.set(key, value);
-        }
-      });
-
-      router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
-    },
-    [searchParams, pathname, router],
-  );
-
-  // 검색어 디바운스
   const debouncedUpdateQuery = useDebounce((val: string) => {
     updateUrl({ q: val });
   }, 500);
@@ -153,114 +116,6 @@ export default function SearchPage() {
   const handleQueryChange = (query: string) => {
     setLocalQuery(query);
     debouncedUpdateQuery(query);
-  };
-
-  // 위치 필터 핸들러
-  const handleLocationSelect = (loc: LocationValue) => {
-    updateUrl({
-      lat: String(loc.lat),
-      lng: String(loc.lng),
-      address: loc.address || null,
-      radius: String(loc.radius || 5000),
-    });
-    setActiveDrawer(null);
-  };
-
-  const handleEmotionSelect = (emotion: string) => {
-    const nextEmotions = selectedEmotions.includes(emotion)
-      ? selectedEmotions.filter((t) => t !== emotion)
-      : [...selectedEmotions, emotion];
-    updateUrl({ emotions: nextEmotions.join(',') });
-  };
-
-  // 날짜 필터 핸들러
-  const handleDateSelect = (range: {
-    start: string | null;
-    end: string | null;
-  }) => {
-    updateUrl({
-      start: range.start,
-      end: range.end,
-    });
-    setActiveDrawer(null);
-  };
-
-  const handleTagsSelect = (tag: string) => {
-    const nextTags = selectedTags.includes(tag)
-      ? selectedTags.filter((t) => t !== tag)
-      : [...selectedTags, tag];
-    updateUrl({ tags: nextTags.join(',') });
-  };
-
-  // 필터칩 내부 텍스트 계산
-  const tagLabel = useMemo(() => {
-    if (selectedTags.length === 0) return '태그';
-    return selectedTags.length === 1
-      ? `#${selectedTags[0]}`
-      : `#${selectedTags[0]} 외 ${selectedTags.length - 1}`;
-  }, [selectedTags]);
-
-  const dateLabel = useMemo(() => {
-    if (!startDate) return '날짜';
-    if (!endDate || startDate === endDate) return startDate.slice(2);
-    return `${startDate.slice(2)} ~ ${endDate.slice(2)}`;
-  }, [startDate, endDate]);
-
-  const locationLabel = address || '위치';
-
-  const emotionLabel = useMemo(() => {
-    if (selectedEmotions.length === 0) return '감정';
-    return selectedEmotions.length === 1
-      ? `${selectedEmotions[0]}`
-      : `${selectedEmotions[0]} 외 ${selectedEmotions.length - 1}`;
-  }, [selectedEmotions]);
-
-  //selectedEmotions || '감정';
-
-  // 드로어 렌더링
-  const renderActiveDrawer = () => {
-    switch (activeDrawer) {
-      case 'tag':
-        return (
-          <TagSearchDrawer
-            onClose={() => setActiveDrawer(null)}
-            allTags={ALL_TAGS}
-            selectedTags={selectedTags}
-            onToggleTag={handleTagsSelect}
-            onReset={() => updateUrl({ tags: null })}
-          />
-        );
-      case 'emotion':
-        return (
-          <EmotionDrawer
-            isOpen={activeDrawer === 'emotion'}
-            selectedEmotion={selectedEmotions}
-            onSelect={handleEmotionSelect}
-            onClose={() => setActiveDrawer(null)}
-            onReset={() => updateUrl({ emotions: null })}
-            mode="search"
-          />
-        );
-      case 'date':
-        return (
-          <DateDrawer
-            mode="range"
-            currentRange={{ start: startDate, end: endDate }}
-            onSelectRange={handleDateSelect}
-            onClose={() => setActiveDrawer(null)}
-          />
-        );
-      case 'location':
-        return (
-          <LocationDrawer
-            mode="search"
-            onSelect={handleLocationSelect}
-            onClose={() => setActiveDrawer(null)}
-          />
-        );
-      default:
-        return null;
-    }
   };
 
   return (
@@ -296,29 +151,29 @@ export default function SearchPage() {
         <div className="flex gap-2 overflow-x-auto hide-scrollbar px-1">
           <FilterChip
             type="tag"
-            label={tagLabel}
+            label={makeTagLabel(selectedTags)}
             isActive={selectedTags.length > 0}
             onClick={() => setActiveDrawer('tag')}
             onClear={() => updateUrl({ tags: null })}
           />
           <FilterChip
             type="emotion"
-            label={emotionLabel}
+            label={makeEmotionLabel(selectedEmotions)}
             isActive={selectedEmotions.length > 0}
             onClick={() => setActiveDrawer('emotion')}
             onClear={() => updateUrl({ emotion: null })}
           />
           <FilterChip
             type="date"
-            label={dateLabel}
+            label={makeDateLabel(startDate, endDate)}
             isActive={!!startDate}
             onClick={() => setActiveDrawer('date')}
             onClear={() => updateUrl({ start: null, end: null })}
           />
           <FilterChip
             type="location"
-            label={locationLabel}
-            isActive={!!address}
+            label={makeLocationLabel(locationAddress)}
+            isActive={!!locationAddress}
             onClick={() => setActiveDrawer('location')}
             onClear={() =>
               updateUrl({ lat: null, lng: null, address: null, radius: null })
@@ -360,7 +215,15 @@ export default function SearchPage() {
         )}
       </main>
 
-      {renderActiveDrawer()}
+      <FilterDrawerRenderer
+        activeDrawer={activeDrawer}
+        close={() => setActiveDrawer(null)}
+        tags={selectedTags}
+        emotions={selectedEmotions}
+        dateRange={{ start: startDate, end: endDate }}
+        location={location}
+        onUpdateUrl={updateUrl}
+      />
     </div>
   );
 }
