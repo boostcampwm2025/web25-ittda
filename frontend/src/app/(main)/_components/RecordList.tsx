@@ -65,7 +65,7 @@ export default function RecordList({ records }: RecordListProps) {
         ))
       ) : (
         <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">
-          <p className="text-xs text-gray-400 font-medium">
+          <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
             이날의 기록이 없습니다.
           </p>
           <button

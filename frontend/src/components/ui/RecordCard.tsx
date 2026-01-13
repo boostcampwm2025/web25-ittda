@@ -16,6 +16,7 @@ export interface RecordCardProps {
   latestLocation: string;
   coverUrl?: string | null;
   hasNotification?: boolean;
+  createdAt?: string;
   onClick?: () => void;
   onChangeCover?: (id: string) => void;
 }
@@ -30,6 +31,7 @@ export function RecordCard({
   hasNotification,
   onClick,
   onChangeCover,
+  createdAt,
 }: RecordCardProps) {
   return (
     <PostCard imageUrl={coverUrl} imageAlt={name} onClick={onClick}>
@@ -53,18 +55,24 @@ export function RecordCard({
 
           <PostCard.Badge>{count}</PostCard.Badge>
         </div>
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           <PostCard.Description>{latestTitle}</PostCard.Description>
-          <PostCard.Meta
-            icon={
-              <MapPin
-                className="w-2.5 h-2.5 text-[#10B981]"
-                strokeWidth={2.5}
-              />
-            }
-          >
-            {latestLocation}
-          </PostCard.Meta>
+          <div className="flex justify-between items-center flex-wrap">
+            <PostCard.Meta
+              className="pr-3"
+              icon={
+                <MapPin
+                  className="w-2.5 h-2.5 text-[#10B981]"
+                  strokeWidth={2.5}
+                />
+              }
+            >
+              {latestLocation}
+            </PostCard.Meta>
+            <span className="font-semibold p-1 text-[8px] pl-0 text-white/70">
+              {createdAt}
+            </span>
+          </div>
         </div>
       </PostCard.Overlay>
     </PostCard>

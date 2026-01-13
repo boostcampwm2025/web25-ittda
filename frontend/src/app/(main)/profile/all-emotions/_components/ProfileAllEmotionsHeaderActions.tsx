@@ -4,14 +4,14 @@ import Back from '@/components/Back';
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function ProfileAllTagsHeaderActions() {
+export default function ProfileAllEmotionsHeaderActions() {
   const router = useRouter();
 
   return (
     <header className="px-5 py-6 flex items-center justify-between transition-colors dark:bg-[#121212] bg-white">
       <Back />
       <h2 className="text-[16px] font-medium dark:text-white text-itta-black">
-        태그
+        감정
       </h2>
       <button
         onClick={() => router.push('/search')}

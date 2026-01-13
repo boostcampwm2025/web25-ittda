@@ -34,6 +34,14 @@ async function bootstrap() {
     credentials: true, // 쿠키/세션 허용
   });
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // DTO에 없는 필드 자동 제거
+      forbidNonWhitelisted: true, // DTO에 없는 필드 오면 400
+      transform: true, // payload를 DTO 인스턴스로 변환
+    }),
+  );
+
   await app.listen(process.env.PORT ?? 4000); // next랑 3000겹쳐서 4000함
 }
 void bootstrap();
