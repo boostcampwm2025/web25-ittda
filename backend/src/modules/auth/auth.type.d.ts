@@ -1,3 +1,5 @@
+import type { JwtPayload } from 'jsonwebtoken';
+
 export type OAuthProvider = 'google' | 'kakao';
 
 export type OAuthUserType = {
@@ -6,6 +8,11 @@ export type OAuthUserType = {
   email?: string;
   nickname: string;
 };
+
+export interface MyJwtPayload extends JwtPayload {
+  sub: string; // 사용자 ID
+  email: string; // 이메일
+}
 
 declare module 'passport-kakao' {
   import { Strategy as PassportStrategy } from 'passport';

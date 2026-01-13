@@ -9,7 +9,7 @@ import type { OAuthUserType } from './auth.type';
 @Controller({
   path: 'auth',
   version: '1',
-}) // /api/v1/auth/~
+}) // /v1/auth/~
 export class AuthController {
   private FRONTEND_URL: string;
   constructor(

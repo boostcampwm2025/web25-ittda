@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { VersioningType, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllHttpExceptionFilter } from '@/common/exception_filters/AllHttpExceptionFilter';
 import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
@@ -12,6 +12,14 @@ async function bootstrap() {
   app.enableVersioning({
     type: VersioningType.URI,
   });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // DTO에 없는 속성은 제거
+      forbidNonWhitelisted: true, // DTO에 없는 속성 포함 시 에러 발생
+      transform: true, // 자동 타입 변환
+    }),
+  );
 
   // 전역 예외 필터를 HTTP, WS에 대해 분리
   // HTTP 전역 예외 필터 설정
