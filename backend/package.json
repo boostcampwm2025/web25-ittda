@@ -9,7 +9,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-    "start:dev": "NODE_ENV=local nest start --watch",
+    "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -18,11 +18,11 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "db:mig:gen": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations/$MIGRATION_NAME -d ./src/data-source.ts",
-    "db:mig:create": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
-    "db:mig:run": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
-    "db:mig:revert": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
-    "db:mig:show": "NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d ./src/data-source.ts"
+    "db:mig:gen": "ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations/$MIGRATION_NAME -d ./src/data-source.ts",
+    "db:mig:create": "ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
+    "db:mig:run": "ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
+    "db:mig:revert": "ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
+    "db:mig:show": "ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d ./src/data-source.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^9.3.0",
