@@ -108,7 +108,7 @@ export default function PWAInstallBanner() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-popover rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            className="relative dark:bg-popover bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
           >
             <button
               onClick={() => setShowInstructions(false)}
