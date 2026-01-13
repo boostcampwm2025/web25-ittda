@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { PostDetailDto } from './dto/post-detail.dto';
 import type { Request } from 'express';
 
 type AuthedRequest = Request & {
@@ -33,13 +34,16 @@ export class PostController {
   }
 
   @Get(':id')
-  getOne(@Param('id') id: string) {
+  getOne(@Param('id') id: string): Promise<PostDetailDto> {
     return this.postService.findOne(id);
   }
 
   // TODO: 나중에 AuthGuard 붙이기
   @HttpPost()
-  create(@Req() req: AuthedRequest, @Body() dto: CreatePostDto) {
+  create(
+    @Req() req: AuthedRequest,
+    @Body() dto: CreatePostDto,
+  ): Promise<PostDetailDto> {
     // 임시: authorId를 헤더로 받거나, 테스트용 고정
     // TODO: 실제론 JWT payload에서 userId를 뽑아야 함
     const headerUserId = req.header('x-user-id');

@@ -42,6 +42,7 @@ export function validateBlocks(
   blocks?: BlockDto[],
   options: ValidateBlocksOptions = {},
 ) {
+  // DATE/TIME 필수 여부와 메타 블록 중복 제한 등 기본 규칙을 검사
   const { requireDateTimeBlocks = true, enforceSingleMetaBlocks = true } =
     options;
 
@@ -52,6 +53,7 @@ export function validateBlocks(
     return;
   }
 
+  // 타입별 블록 개수 집계
   const counts = new Map<PostBlockType, number>();
   for (const b of blocks) counts.set(b.type, (counts.get(b.type) ?? 0) + 1);
 
@@ -77,6 +79,7 @@ export function validateBlocks(
     }
   }
 
+  // 레이아웃 점유 셀 충돌 검사 준비
   const used = new Map<string, number>(); // cellKey -> blockIndex
 
   blocks.forEach((b, idx) => {

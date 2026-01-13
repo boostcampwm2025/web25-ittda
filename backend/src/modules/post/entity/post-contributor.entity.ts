@@ -9,12 +9,7 @@ import {
 } from 'typeorm';
 import { Post } from './post.entity';
 import { User } from '@/modules/user/user.entity';
-
-export enum PostContributorRole {
-  AUTHOR = 'AUTHOR',
-  EDITOR = 'EDITOR',
-  VIEWER = 'VIEWER',
-}
+import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 
 @Entity('post_contributors')
 @Index(['post', 'user'], { unique: true })

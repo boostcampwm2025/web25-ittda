@@ -9,19 +9,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Post } from './post.entity';
-
-export enum PostBlockType {
-  TITLE = 'TITLE',
-  DATE = 'DATE',
-  TIME = 'TIME',
-  TEXT = 'TEXT',
-  MOOD = 'MOOD',
-  TAG = 'TAG',
-  RATING = 'RATING',
-  LOCATION = 'LOCATION',
-  IMAGE = 'IMAGE',
-  TABLE = 'TABLE',
-}
+import { PostBlockType } from '@/enums/post-block-type.enum';
+import { BlockValueMap } from '@/modules/post/types/post-block.types';
 
 @Entity('post_blocks')
 @Index(['post', 'layoutRow', 'layoutCol'], { unique: true }) // DEFERRABLE은 migration에서 처리
@@ -40,7 +29,7 @@ export class PostBlock {
   type: PostBlockType;
 
   @Column({ type: 'jsonb' })
-  value: any;
+  value: BlockValueMap[PostBlockType];
 
   @Column({ name: 'layout_row', type: 'int' })
   layoutRow: number;

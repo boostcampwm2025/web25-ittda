@@ -1,16 +1,176 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import type { Point } from 'geojson';
+
+import { Post } from './entity/post.entity';
+import { PostBlock } from './entity/post-block.entity';
+import { PostContributor } from './entity/post-contributor.entity';
+import { User } from '@/modules/user/user.entity';
+import { Group } from '@/modules/group/entity/group.entity';
 import { CreatePostDto } from './dto/create-post.dto';
+import { PostDetailDto } from './dto/post-detail.dto';
+import { PostScope } from '@/enums/post-scope.enum';
+import { PostContributorRole } from '@/enums/post-contributor-role.enum';
+import { validateBlocks } from './validator/blocks.validator';
+import { extractMetaFromBlocks } from './validator/meta.extractor';
+import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 
 @Injectable()
 export class PostService {
-  createPost(ownerUserId: string, dto: CreatePostDto) {
-    void ownerUserId;
-    void dto;
-    throw new NotImplementedException('PostService.createPost is not ready');
+  constructor(
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
+    @InjectRepository(PostBlock)
+    private readonly postBlockRepository: Repository<PostBlock>,
+    @InjectRepository(PostContributor)
+    private readonly postContributorRepository: Repository<PostContributor>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
+  ) {}
+
+  /**
+   * 게시글 생성: 블록 검증 → 메타 추출 → eventAt 생성 후,
+   * Post/Contributor/Block을 트랜잭션으로 저장한다.
+   */
+  async createPost(ownerUserId: string, dto: CreatePostDto) {
+    // 블록 검증 → 메타 추출 → eventAt 생성 순서로 선행 처리
+    validateBlocks(dto.blocks);
+
+    const owner = await this.userRepository.findOne({
+      where: { id: ownerUserId },
+    });
+    if (!owner) throw new BadRequestException('Owner not found');
+
+    if (dto.scope === PostScope.GROUP && !dto.groupId) {
+      throw new BadRequestException('groupId is required when scope=GROUP');
+    }
+    if (dto.scope === PostScope.PERSONAL && dto.groupId) {
+      throw new BadRequestException(
+        'groupId must be omitted when scope=PERSONAL',
+      );
+    }
+
+    let group: Group | null = null;
+    if (dto.groupId) {
+      group = await this.groupRepository.findOne({
+        where: { id: dto.groupId },
+      });
+      if (!group) throw new BadRequestException('Group not found');
+    }
+
+    const meta = extractMetaFromBlocks(dto.blocks);
+    const eventAt = resolveEventAtFromBlocks(meta.date, meta.time); // 세번째 인자는 옵션: timezoneOffset
+
+    const location: Point | undefined = meta.location
+      ? {
+          type: 'Point',
+          coordinates: [meta.location.lng, meta.location.lat],
+        }
+      : undefined;
+
+    // Post와 PostBlock을 트랜잭션으로 원자적 저장
+    const postId = await this.postRepository.manager.transaction(
+      async (manager) => {
+        const postRepo = manager.getRepository(Post);
+        const blockRepo = manager.getRepository(PostBlock);
+        const contributorRepo = manager.getRepository(PostContributor);
+
+        const post = postRepo.create({
+          scope: dto.scope,
+          ownerUserId,
+          ownerUser: owner,
+          groupId: dto.scope === PostScope.GROUP ? (dto.groupId ?? null) : null,
+          group: dto.scope === PostScope.GROUP ? group : null,
+          title: dto.title,
+          location: location ?? undefined,
+          eventAt,
+          tags: meta.tags ?? null,
+          rating: meta.rating ?? null,
+        });
+
+        const saved = await postRepo.save(post);
+
+        const contributor = contributorRepo.create({
+          postId: saved.id,
+          post: saved,
+          userId: ownerUserId,
+          user: owner,
+          role: PostContributorRole.AUTHOR,
+        });
+        await contributorRepo.save(contributor);
+
+        const blocks = dto.blocks.map((b) =>
+          blockRepo.create({
+            postId: saved.id,
+            post: saved,
+            type: b.type,
+            value: b.value,
+            layoutRow: b.layout.row,
+            layoutCol: b.layout.col,
+            layoutSpan: b.layout.span,
+          }),
+        );
+
+        if (blocks.length > 0) {
+          await blockRepo.save(blocks);
+        }
+
+        return saved.id;
+      },
+    );
+
+    return this.findOne(postId);
   }
 
-  findOne(postId: string) {
-    void postId;
-    throw new NotImplementedException('PostService.findOne is not ready');
+  /**
+   * 게시글 상세 조회: Post 기본 정보에 블록과 기여자 정보를 합쳐 반환한다.
+   */
+  async findOne(postId: string) {
+    const post = await this.postRepository.findOne({
+      where: { id: postId },
+      relations: ['ownerUser', 'group'],
+    });
+    if (!post) throw new NotFoundException('Post not found');
+    const blocks = await this.postBlockRepository.find({
+      where: { postId },
+      order: { layoutRow: 'ASC', layoutCol: 'ASC', layoutSpan: 'ASC' },
+    });
+    const contributors = await this.postContributorRepository.find({
+      where: { postId },
+      relations: ['user'],
+    });
+    const contributorDtos = contributors.map((c) => ({
+      userId: c.userId,
+      role: c.role,
+      user: c.user ? { id: c.user.id, nickname: c.user.nickname } : undefined,
+    }));
+
+    const dto: PostDetailDto = {
+      id: post.id,
+      scope: post.scope,
+      ownerUserId: post.ownerUserId,
+      groupId: post.groupId ?? null,
+      title: post.title,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      blocks: blocks.map((b) => ({
+        type: b.type,
+        value: b.value,
+        layout: {
+          row: b.layoutRow,
+          col: b.layoutCol,
+          span: b.layoutSpan,
+        },
+      })),
+      contributors: contributorDtos,
+    };
+    return dto;
   }
 }
