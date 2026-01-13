@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
 import type { Marker } from '@googlemaps/markerclusterer';
-import type { PostListItem } from '@/lib/types/record';
+import type { MapPostItem } from '@/lib/types/record';
 import Image from 'next/image';
 
 export type PinMarkerProps = {
-  post: PostListItem;
+  post: MapPostItem;
   onClick: (id: string) => void;
   setMarkerRef: (marker: Marker | null, key: string) => void;
 };
