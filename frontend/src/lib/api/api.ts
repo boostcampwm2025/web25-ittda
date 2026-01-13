@@ -1,7 +1,10 @@
 import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, clearTokens } from './auth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_MOCK === 'true'
+    ? ''
+    : process.env.NEXT_PUBLIC_API_URL || '/api';
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
@@ -95,6 +98,22 @@ async function fetchWithRetry<T>(
     return data;
   } catch (error) {
     const err = error instanceof Error ? error : new Error('unknown error');
+
+    // JSON 파싱 에러는 재시도하지 않음
+    if (
+      err.message.includes('JSON') ||
+      err.message.includes('Unexpected token')
+    ) {
+      return {
+        success: false,
+        data: null,
+        error: {
+          code: 'PARSE_ERROR',
+          message: '서버 응답을 처리할 수 없습니다.',
+          details: { originalError: err.message },
+        },
+      };
+    }
 
     // 마지막 시도면 에러 반환
     if (attempt >= maxRetries) {
