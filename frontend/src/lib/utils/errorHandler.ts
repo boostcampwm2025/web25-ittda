@@ -32,12 +32,26 @@ export function isAuthError(errorCode?: string): boolean {
  * API 에러를 사용자 친화적인 메시지로 변환
  */
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
+  // ApiError 타입인 경우
+  if (error && typeof error === 'object' && 'message' in error) {
+    const apiError = error as ApiError;
+    if (apiError.message && apiError.message.trim() !== '') {
+      return apiError.message;
+    }
   }
-  if (typeof error === 'string') {
+
+  // Error 인스턴스인 경우
+  if (error instanceof Error) {
+    if (error.message && error.message.trim() !== '') {
+      return error.message;
+    }
+  }
+
+  // 문자열인 경우
+  if (typeof error === 'string' && error.trim() !== '') {
     return error;
   }
+
   return '알 수 없는 오류가 발생했습니다.';
 }
 
