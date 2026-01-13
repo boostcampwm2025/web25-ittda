@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { GripVertical } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -29,8 +29,7 @@ import MediaDrawer from './media/MediaDrawer';
 
 // 타입
 import { FieldType } from '@/lib/types/record';
-import { PostBlock, MediaValue, BlockValue } from '@/lib/types/recordField';
-import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
+import { PostBlock, MediaValue } from '@/lib/types/recordField';
 import {
   canBeHalfWidth,
   getDefaultValue,
@@ -38,15 +37,8 @@ import {
 } from '../../_utils/recordLayoutHelper';
 import SaveTemplateDrawer from './core/SaveTemplateDrawer';
 import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
-import { TemplateRecord } from '@/lib/types/template';
-
-// 개수 제한
-const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
-  emotion: 4,
-  table: 4,
-  content: 4,
-  photos: 10,
-};
+import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
+import { usePostEditorBlocks } from '../../_hooks/usePostEditorBlocks';
 
 export default function PostEditor({
   mode,
@@ -57,15 +49,19 @@ export default function PostEditor({
 }) {
   const [title, setTitle] = useState(initialPost?.title ?? '');
 
-  // 전체 블록 상태
-  const [blocks, setBlocks] = useState<PostBlock[]>([]);
-
-  const [activeDrawer, setActiveDrawer] = useState<{
-    type: FieldType | 'layout' | 'saveLayout';
-    id?: string;
-  } | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    blocks,
+    setBlocks,
+    activeDrawer,
+    setActiveDrawer,
+    fileInputRef,
+    updateFieldValue,
+    handleDone,
+    addOrShowBlock,
+    removeBlock,
+    handleApplyTemplate,
+    handlePhotoUpload,
+  } = usePostEditorBlocks();
 
   const {
     gridRef,
@@ -76,6 +72,8 @@ export default function PostEditor({
     handleGridDragOver,
   } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
 
+  // 초기화 로직
+  // TODO: 이후 키 형태로 변경
   useEffect(() => {
     if (initialPost?.blocks) {
       setBlocks(normalizeLayout(initialPost.blocks));
@@ -89,117 +87,13 @@ export default function PostEditor({
       })) as PostBlock[];
       setBlocks(normalizeLayout(initialBlocks));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPost]);
 
-  // 필드 값 업데이트 또는 신규 추가 함수
-  const updateFieldValue = (
-    value: BlockValue,
-    id?: string,
-    type?: FieldType,
-  ) => {
-    if (id && id !== 'new') {
-      // ID가 존재하는 경우: 기존 블록 업데이트
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, value } : b) as PostBlock),
-      );
-    } else if (type) {
-      // ID가 없는 경우: 신규 블록 생성 및 추가
-      const newBlock = {
-        id: uuidv4(),
-        type,
-        value,
-        layout: { row: 0, col: 0, span: 2 },
-      } as PostBlock;
-
-      setBlocks((prev) => normalizeLayout([...prev, newBlock]));
-    }
-  };
-
-  const addOrShowBlock = (type: FieldType) => {
-    const singleInstanceTypes: FieldType[] = [
-      'date',
-      'time',
-      'rating',
-      'location',
-      'tags',
-      'photos',
-      'media',
-    ];
-
-    const existingBlocks = blocks.filter((b) => b.type === type);
-
-    if (singleInstanceTypes.includes(type) && existingBlocks.length > 0) {
-      setActiveDrawer({ type, id: existingBlocks[0].id });
-      return;
-    }
-    const limit = MULTI_INSTANCE_LIMITS[type];
-    if (limit && existingBlocks.length >= limit) {
-      //TODO : toast 추가 후 변경
-      alert(`${type} 필드는 최대 ${limit}개까지만 추가 가능합니다.`);
-      return;
-    }
-
-    const newDrawerTypes = [
-      'tags',
-      'rating',
-      'photos',
-      'emotion',
-      'location',
-      'media',
-    ];
-
-    if (newDrawerTypes.includes(type)) {
-      setActiveDrawer({ type });
-      return;
-    }
-
-    const newId = uuidv4();
-    const newBlock = {
-      id: newId,
-      type,
-      value: getDefaultValue(type),
-      layout: { row: 0, col: 0, span: 2 },
-    } as PostBlock;
-
-    setBlocks((prev) => normalizeLayout([...prev, newBlock]));
-
-    const drawerTypes = [
-      'date',
-      'time',
-      'tags',
-      'rating',
-      'photos',
-      'emotion',
-      'location',
-      'media',
-      'layout',
-      'saveLayout',
-    ];
-
-    if (drawerTypes.includes(type)) {
-      setActiveDrawer({ type, id: newId });
-    }
-  };
-
-  const removeBlock = (id: string) => {
-    setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
-  };
-
   const handleSave = () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const payload = { title, blocks };
-    console.log('Save:', payload);
-  };
-
-  const handleApplyTemplate = (template: TemplateRecord) => {
-    const newBlocks = template.blocks.map((tBlock) => ({
-      id: uuidv4(),
-      type: tBlock.type as FieldType,
-      value: getDefaultValue(tBlock.type as FieldType),
-      layout: { ...tBlock.layout },
-    })) as PostBlock[];
-
-    setBlocks(normalizeLayout(newBlocks));
-    setActiveDrawer(null);
+    //TODO: 게시글 생성 API 호출
   };
 
   const renderField = (block: PostBlock) => {
@@ -324,11 +218,7 @@ export default function PostEditor({
       ? block.value
       : getDefaultValue(type as FieldType);
 
-    const handleDone = (val: BlockValue) => {
-      updateFieldValue(val, id, type as FieldType);
-      setActiveDrawer(null);
-    };
-
+    debugger;
     switch (type) {
       case 'date':
         return (
@@ -353,10 +243,7 @@ export default function PostEditor({
             onClose={() => setActiveDrawer(null)}
             tags={initialValue as string[]}
             previousTags={['식단', '운동']} //TODO: 실제 최근 사용 태그 리스트
-            onUpdateTags={(nt) => {
-              if (id) updateFieldValue(nt, id);
-              else handleDone(nt);
-            }}
+            onUpdateTags={(nt) => handleDone(nt, false)}
           />
         );
       case 'rating':
@@ -376,6 +263,8 @@ export default function PostEditor({
               const next = (initialValue as string[]).filter(
                 (_, i) => i !== idx,
               );
+              // id가 있으면 즉시 반영, 없으면 드로어 내 상태값만 변경(필요시)
+              // 현재 구조상 id가 없으면 아직 생성 전이므로 handleDone으로 생성 유도
               if (id) updateFieldValue(next, id);
               else handleDone(next);
             }}
@@ -447,52 +336,7 @@ export default function PostEditor({
         className="hidden"
         multiple
         accept="image/*,video/*"
-        onChange={async (e) => {
-          const files = e.target.files;
-          if (!files || !activeDrawer?.id) return;
-
-          const MAX_PHOTO_COUNT = MULTI_INSTANCE_LIMITS['photos'] ?? 10;
-          const blockId = activeDrawer.id;
-          const targetBlock = blocks.find((b) => b.id === blockId);
-
-          if (targetBlock?.type === 'photos') {
-            const existingPhotos = targetBlock.value as unknown as string[];
-            const availableSlots = MAX_PHOTO_COUNT - existingPhotos.length;
-
-            if (availableSlots <= 0) {
-              // TODO :이후 toast 등으로 변경
-              alert(`이미 최대 개수인 ${MAX_PHOTO_COUNT}개를 모두 채웠습니다.`);
-              e.target.value = '';
-              return;
-            }
-            const filesToProcess = Array.from(files).slice(0, availableSlots);
-
-            if (files.length > availableSlots) {
-              // TODO :이후 toast 등으로 변경
-              alert(
-                `최대 10개 제한으로 인해 상위 ${availableSlots}개의 파일만 추가됩니다.`,
-              );
-            }
-
-            const readFilesPromises = filesToProcess.map((file) => {
-              return new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => resolve(ev.target?.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-              });
-            });
-
-            try {
-              const newImages = await Promise.all(readFilesPromises);
-              updateFieldValue([...existingPhotos, ...newImages], blockId);
-            } catch (error) {
-              console.error('파일을 읽는 중 오류 발생:', error);
-            } finally {
-              e.target.value = '';
-            }
-          }
-        }}
+        onChange={handlePhotoUpload}
       />
       {renderActiveDrawer()}
     </div>
