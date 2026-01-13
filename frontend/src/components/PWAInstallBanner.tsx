@@ -294,7 +294,7 @@ export default function PWAInstallBanner() {
             <X className="w-4 h-4 text-white" />
           </button>
 
-          <div className="rounded-2xl bg-[#121212] text-[12px] px-3 py-2 text-white absolute top-1/2 -translate-x-1/2 -translate-y-1/2 right-5">
+          <div className="hidden sm:block rounded-2xl bg-[#121212] text-[12px] px-3 py-2 text-white absolute top-1/2 -translate-x-1/2 -translate-y-1/2 right-5">
             앱 설치하기
           </div>
 
