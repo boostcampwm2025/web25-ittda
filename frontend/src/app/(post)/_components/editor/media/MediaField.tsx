@@ -1,6 +1,12 @@
 import Image from 'next/image';
-import { Film, X } from 'lucide-react';
+import { Film, Search } from 'lucide-react';
 import { MediaValue } from '@/lib/types/recordField';
+import {
+  FieldDefaultButton,
+  FieldDefaultButtonIcon,
+  FieldDefaultButtonLabel,
+} from '../core/FieldDefaultButton';
+import { FieldDeleteButton } from '../core/FieldDeleteButton';
 
 interface Props {
   data: MediaValue | null;
@@ -17,6 +23,21 @@ export default function MediaField({
 }: Props) {
   const isEmpty = data && Object.values(data).every((value) => value === '');
 
+  if (mode == 'editor' && isEmpty) {
+    return (
+      <div className="flex items-center gap-2 w-full py-1 group">
+        <FieldDefaultButton onClick={onClick}>
+          <FieldDefaultButtonIcon icon={Search} />
+          <FieldDefaultButtonLabel>
+            관련 정보 찾기(영화, 연극 등)
+          </FieldDefaultButtonLabel>
+        </FieldDefaultButton>
+        {onRemove && (
+          <FieldDeleteButton onRemove={onRemove} ariaLabel="미디어 필드 삭제" />
+        )}
+      </div>
+    );
+  }
   if (isEmpty || !data) {
     return null;
   }
@@ -24,7 +45,7 @@ export default function MediaField({
   const isSearchMode = mode === 'search';
 
   return (
-    <button
+    <div
       onClick={onClick}
       className={`w-full flex items-center gap-4 transition-all text-left group active:scale-[0.98] ${
         isSearchMode
@@ -62,17 +83,8 @@ export default function MediaField({
 
       {/* 에디터 모드 전용 */}
       {!isSearchMode && onRemove && (
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          className="p-2 -mr-2 text-gray-300 hover:text-rose-500 transition-colors active:scale-90 cursor-pointer"
-          aria-label="미디어 삭제"
-        >
-          <X className="w-4 h-4" />
-        </div>
+        <FieldDeleteButton onRemove={onRemove} ariaLabel="미디어 필드 삭제" />
       )}
-    </button>
+    </div>
   );
 }

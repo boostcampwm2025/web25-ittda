@@ -26,17 +26,26 @@ const TOOL_ITEMS = [
 
 interface ToolbarProps {
   onAddBlock: (type: FieldType) => void;
+  onOpenDrawer: (drawerType: {
+    type: FieldType | 'layout' | 'saveLayout';
+  }) => void;
 }
 
-export default function Toolbar({ onAddBlock }: ToolbarProps) {
+export default function Toolbar({ onAddBlock, onOpenDrawer }: ToolbarProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 max-w-4xl mx-auto flex flex-col gap-3 w-full">
       {/* 상단 플로팅 버튼 */}
       <div className="w-full flex gap-3 justify-start px-6">
-        <button className="flex items-center gap-2 px-3 md:px-6 py-3 rounded-full bg-[#333333] text-white text-xs md:text-sm font-bold shadow-xl active:scale-95 transition-all">
+        <button
+          onClick={() => onOpenDrawer({ type: 'layout' })}
+          className="flex items-center gap-2 px-3 md:px-6 py-3 rounded-full bg-[#333333] text-white text-xs md:text-sm font-bold shadow-xl active:scale-95 transition-all"
+        >
           <Layout size={18} /> 레이아웃 템플릿
         </button>
-        <button className="flex items-center gap-2 px-3 md:px-6 py-3 rounded-full bg-[#10B981] text-white text-xs md:text-sm font-bold shadow-xl active:scale-95 transition-all">
+        <button
+          onClick={() => onOpenDrawer({ type: 'saveLayout' })}
+          className="flex items-center gap-2 px-3 md:px-6 py-3 rounded-full bg-[#10B981] text-white text-xs md:text-sm font-bold shadow-xl active:scale-95 transition-all"
+        >
           <Save size={18} /> 내 템플릿 저장
         </button>
       </div>
