@@ -65,14 +65,14 @@ export class GroupService {
   ): Promise<GroupMember | null> {
     return this.groupMemberRepo.findOne({
       where: {
-        user: { id: userId },
-        group: { id: groupId },
+        userId, // 객체 대신 문자열 ID 직접 사용
+        groupId,
       },
       relations: ['group', 'user'],
     });
   }
 
-  /** 멤버 초대 (ADMIN/EDITOR만 가능하도록 Controller/Guard에서 제한) */
+  /** 멤버 초대 (ADMIN만 가능하도록 Controller/Guard에서 제한) */
   async addMember(
     groupId: string,
     userId: string,
@@ -96,8 +96,18 @@ export class GroupService {
     }
   }
 
-  /** 권한 변경 */
-  async updateMemberRole(groupId: string, userId: string, role: GroupRoleEnum) {
+  /** 권한 변경 (본인 권한 변경 불가 로직 추가) */
+  async updateMemberRole(
+    requesterId: string, // 요청자 ID 추가
+    groupId: string,
+    userId: string,
+    role: GroupRoleEnum,
+  ) {
+    // 1. 본인 여부 확인
+    if (requesterId === userId) {
+      throw new BadRequestException('자신의 권한은 직접 수정할 수 없습니다.');
+    }
+
     try {
       const member = await this.groupMemberRepo.findOneOrFail({
         where: {
@@ -106,14 +116,14 @@ export class GroupService {
         },
       });
 
-      if (!member) {
-        throw new BadRequestException('멤버를 찾을 수 없습니다.');
-      }
+      // 2. 관리자 권한 유지 로직 (선택 사항: 그룹에 관리자가 최소 한 명은 있어야 함)
+      // 만약 마지막 남은 ADMIN이 자신의 권한을 낮추는 것을 방지해야 한다면 추가 검증이 필요합니다.
 
       member.role = role;
-      return this.groupMemberRepo.save(member);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      return await this.groupMemberRepo.save(member);
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+
       throw new InternalServerErrorException(
         '권한 변경 중 오류가 발생했습니다.',
       );

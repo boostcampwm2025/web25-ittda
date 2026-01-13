@@ -34,6 +34,7 @@ export class GroupRoleGuard implements CanActivate {
     const groupId = request.params.groupId;
 
     const member = await this.groupService.findMember(userId, groupId);
+    // TODO: 서비스 규모가 커지면 이 권한 정보를 Redis 등에 캐싱 고려
 
     if (!member) return false;
 
