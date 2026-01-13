@@ -8,11 +8,7 @@ import {
 } from '@tanstack/react-query';
 import { get, post, put, del, patch } from '@/lib/api/api';
 import type { ApiResponse } from '@/lib/types/response';
-import {
-  createApiError,
-  isTokenExpiredError,
-  retryWithTokenRefresh,
-} from '@/lib/utils/errorHandler';
+import { createApiError } from '@/lib/utils/errorHandler';
 
 type FetchParams = Record<string, string | number | boolean>;
 
@@ -46,16 +42,9 @@ export function useApiQuery<TData = unknown>(
     queryFn: async () => {
       const response = await get<TData>(endpoint, params);
 
-      // 에러 응답 처리
+      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
       if (!response.success) {
-        const error = createApiError(response);
-
-        // 토큰 만료 시 재발급 후 재시도
-        if (isTokenExpiredError(error.code)) {
-          return retryWithTokenRefresh(() => get<TData>(endpoint, params));
-        }
-
-        throw error;
+        throw createApiError(response);
       }
 
       return response;
@@ -94,22 +83,9 @@ export function useApiPost<TData = unknown, TVariables = Record<string, unknown>
         sendCookie,
       );
 
+      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
       if (!response.success) {
-        const error = createApiError(response);
-
-        // 토큰 만료 시 재발급 후 재시도
-        if (isTokenExpiredError(error.code)) {
-          return retryWithTokenRefresh(() =>
-            post<TData>(
-              endpoint,
-              variables as Record<string, unknown>,
-              undefined,
-              sendCookie,
-            ),
-          );
-        }
-
-        throw error;
+        throw createApiError(response);
       }
 
       return response;
@@ -138,16 +114,9 @@ export function useApiPut<TData = unknown, TVariables = Record<string, unknown>>
     mutationFn: async (variables: TVariables) => {
       const response = await put<TData>(endpoint, variables as Record<string, unknown>);
 
+      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
       if (!response.success) {
-        const error = createApiError(response);
-
-        if (isTokenExpiredError(error.code)) {
-          return retryWithTokenRefresh(() =>
-            put<TData>(endpoint, variables as Record<string, unknown>),
-          );
-        }
-
-        throw error;
+        throw createApiError(response);
       }
 
       return response;
@@ -177,14 +146,9 @@ export function useApiDelete<TData = unknown, TVariables = unknown>(
       const url = typeof endpoint === 'function' ? endpoint(variables) : endpoint;
       const response = await del<TData>(url);
 
+      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
       if (!response.success) {
-        const error = createApiError(response);
-
-        if (isTokenExpiredError(error.code)) {
-          return retryWithTokenRefresh(() => del<TData>(url));
-        }
-
-        throw error;
+        throw createApiError(response);
       }
 
       return response;
@@ -213,16 +177,9 @@ export function useApiPatch<TData = unknown, TVariables = Record<string, unknown
     mutationFn: async (variables: TVariables) => {
       const response = await patch<TData>(endpoint, variables as Record<string, unknown>);
 
+      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
       if (!response.success) {
-        const error = createApiError(response);
-
-        if (isTokenExpiredError(error.code)) {
-          return retryWithTokenRefresh(() =>
-            patch<TData>(endpoint, variables as Record<string, unknown>),
-          );
-        }
-
-        throw error;
+        throw createApiError(response);
       }
 
       return response;

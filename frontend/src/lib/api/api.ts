@@ -1,5 +1,5 @@
 import { ApiResponse } from '../types/response';
-import { getAccessToken } from './auth';
+import { getAccessToken, refreshAccessToken, clearTokens } from './auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -43,10 +43,54 @@ async function fetchWithRetry<T>(
   attempt: number,
   maxRetries: number,
   retryDelay: number,
+  skipAuth: boolean,
 ) {
   try {
     const response = await fetch(url, fetchOptions);
     const data = await response.json();
+
+    // 토큰 만료 에러 처리 (인터셉터 역할)
+    if (
+      !data.success &&
+      data.error?.code === 'TOKEN_EXPIRED' &&
+      !skipAuth &&
+      !url.includes('/auth/reissue') // 재발급 API는 제외
+    ) {
+      // 토큰 재발급 시도
+      const newToken = await refreshAccessToken();
+
+      if (!newToken) {
+        // 재발급 실패 - 로그인 페이지로 리다이렉트
+        clearTokens();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return {
+          success: false,
+          data: null,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: '인증이 만료되었습니다. 다시 로그인해주세요.',
+            details: {},
+          },
+        };
+      }
+
+      // 새 토큰으로 헤더 업데이트 후 재시도
+      const newHeaders = {
+        ...fetchOptions.headers,
+        Authorization: `Bearer ${newToken}`,
+      } as HeadersInit;
+
+      return fetchWithRetry<T>(
+        url,
+        { ...fetchOptions, headers: newHeaders },
+        attempt,
+        maxRetries,
+        retryDelay,
+        skipAuth,
+      );
+    }
 
     return data;
   } catch (error) {
@@ -75,6 +119,7 @@ async function fetchWithRetry<T>(
       attempt + 1,
       maxRetries,
       retryDelay,
+      skipAuth,
     );
   }
 }
@@ -124,6 +169,7 @@ export async function fetchApi<T>(
     0,
     maxRetries,
     retryDelay,
+    skipAuth,
   );
 }
 

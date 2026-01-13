@@ -1,4 +1,3 @@
-import { refreshAccessToken, clearTokens } from '../api/auth';
 import type { ApiResponse } from '../types/response';
 
 export interface ApiError extends Error {
@@ -30,13 +29,6 @@ export function isAuthError(errorCode?: string): boolean {
 }
 
 /**
- * 토큰 만료 에러 여부 확인
- */
-export function isTokenExpiredError(errorCode?: string): boolean {
-  return errorCode === ERROR_CODES.TOKEN_EXPIRED;
-}
-
-/**
  * API 에러를 사용자 친화적인 메시지로 변환
  */
 export function getErrorMessage(error: unknown): string {
@@ -62,25 +54,4 @@ export function createApiError(response: ApiResponse<unknown>): ApiError {
   error.isAuthError = isAuthError(response.error.code);
 
   return error;
-}
-
-/**
- * 토큰 재발급 후 요청 재시도
- */
-export async function retryWithTokenRefresh<T>(
-  retryFn: () => Promise<T>,
-): Promise<T> {
-  const newToken = await refreshAccessToken();
-
-  if (!newToken) {
-    // 재발급 실패 - 로그인 페이지로 리다이렉트
-    clearTokens();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
-    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
-  }
-
-  // 새 토큰으로 재시도
-  return retryFn();
 }
