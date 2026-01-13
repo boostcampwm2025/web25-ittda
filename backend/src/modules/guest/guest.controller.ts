@@ -5,14 +5,13 @@ import { GuestSessionService } from './guest-session.service';
   path: 'auth',
   version: '1',
 })
-export class GuestAuthController {
+export class GuestController {
   constructor(private readonly guestSessionService: GuestSessionService) {}
 
   @Post('guest')
   async startGuest() {
     // 로그인 이전 활동을 위한 게스트 세션 발급
     const session = await this.guestSessionService.create();
-    // TODO: 차후 Redis 등에 세션 저장 가능
 
     return {
       guest: true,
@@ -21,3 +20,4 @@ export class GuestAuthController {
     };
   }
 }
+// 차후 Redis 등에 세션 저장 고려 가능

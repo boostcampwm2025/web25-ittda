@@ -1,6 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
+import { randomUUID } from 'crypto';
+import { GuestSessionService } from '../guest/guest-session.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { RefreshToken } from './refresh_token/refresh_token.entity';
+
 import type { OAuthUserType } from './auth.type';
 
 @Injectable()
@@ -8,19 +14,59 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepo: Repository<RefreshToken>,
+    private readonly guestSessionService: GuestSessionService,
   ) {}
 
-  async oauthLogin(oauthUser: OAuthUserType) {
+  async oauthLogin(oauthUser: OAuthUserType, guestSessionId?: string) {
     const user = await this.userService.findOrCreateOAuthUser(oauthUser);
 
-    const payload = {
-      sub: user.id,
-      provider: user.provider,
-    };
+    const accessToken = this.jwtService.sign(
+      { sub: user.id },
+      { expiresIn: '15m' },
+    );
+
+    const refreshToken = randomUUID();
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14);
+
+    await this.refreshTokenRepo.save({
+      userId: user.id,
+      token: refreshToken,
+      expiresAt,
+    });
+
+    if (guestSessionId) {
+      await this.mergeGuestSession(user.id, guestSessionId);
+    }
+
+    return { user, accessToken, refreshToken };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    const saved = await this.refreshTokenRepo.findOne({
+      where: { token: refreshToken },
+    });
+
+    if (!saved || saved.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
 
     return {
-      accessToken: this.jwtService.sign(payload),
-      user,
+      accessToken: this.jwtService.sign(
+        { sub: saved.userId },
+        { expiresIn: '15m' },
+      ),
     };
+  }
+
+  async logout(userId: string) {
+    await this.refreshTokenRepo.delete({ userId });
+  }
+
+  private async mergeGuestSession(userId: string, guestSessionId: string) {
+    // TODO: guestSessionId에 담긴 활동 데이터를 userId에 병합하는 로직 구현
+    // 게스트 활동 데이터를 문서에 명시해주세요.
+    await this.guestSessionService.invalidate(guestSessionId);
   }
 }

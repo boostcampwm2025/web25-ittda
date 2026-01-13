@@ -11,7 +11,7 @@ export type OAuthUserType = {
 
 export interface MyJwtPayload extends JwtPayload {
   sub: string; // 사용자 ID
-  email: string; // 이메일
+  email?: string; // 이메일
 }
 
 declare module 'passport-kakao' {
@@ -65,4 +65,10 @@ declare module 'passport-kakao' {
   }
 
   export { Strategy };
+}
+
+declare namespace Express {
+  export interface Request {
+    cookies: { refreshToken?: string; [key: string]: string | undefined };
+  }
 }

@@ -1,10 +1,27 @@
-import { Controller, Get, Req, UseGuards, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Req,
+  UseGuards,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
+import { JwtAuthGuard } from './jwt/jwt.guard';
 
 import type { Request, Response } from 'express';
 import type { OAuthUserType } from './auth.type';
+
+interface AuthenticatedRequest extends Request {
+  user: { sub: string; email?: string };
+  cookies: {
+    refreshToken?: string;
+    [key: string]: string | undefined;
+  };
+}
 
 @Controller({
   path: 'auth',
@@ -29,15 +46,22 @@ export class AuthController {
     @Req() req: Request & { user: OAuthUserType },
     @Res() res: Response,
   ) {
-    const result = await this.authService.oauthLogin(req.user);
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true, // JavaScript에서 접근 불가 (XSS 방지)
-      secure: this.configService.get<string>('NODE_ENV') === 'production', // HTTPS에서만 전송
-      sameSite: 'lax', // Cross-site 요청 제한 (CSRF 방어)
-      //domain: this.configService.get<string>('COOKIE_DOMAIN'), // .domain.com 등으로 설정 시 서브도메인 간 공유 가능
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
+    const guestSessionId = req.headers['x-guest-session-id'] as
+      | string
+      | undefined;
+
+    const { user, accessToken, refreshToken } =
+      await this.authService.oauthLogin(req.user, guestSessionId);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/', // TODO: 추후 변경
+      maxAge: 1000 * 60 * 60 * 24 * 14,
     });
-    res.redirect(`${this.FRONTEND_URL}/oauth/callback`);
+
+    res.json({ user, accessToken });
   }
 
   @Get('kakao')
@@ -50,15 +74,46 @@ export class AuthController {
     @Req() req: Request & { user: OAuthUserType },
     @Res() res: Response,
   ) {
-    const result = await this.authService.oauthLogin(req.user);
-    // HttpOnly 쿠키 설정 (res.cookie 사용)
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true, // JavaScript에서 접근 불가 (XSS 방지)
-      secure: this.configService.get<string>('NODE_ENV') === 'production', // HTTPS에서만 전송
-      sameSite: 'lax', // Cross-site 요청 제한 (CSRF 방어)
-      //domain: this.configService.get<string>('COOKIE_DOMAIN'), // .domain.com 등으로 설정 시 서브도메인 간 공유 가능
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
+    const guestSessionId = req.headers['x-guest-session-id'] as
+      | string
+      | undefined;
+
+    const { user, accessToken, refreshToken } =
+      await this.authService.oauthLogin(req.user, guestSessionId);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/', // TODO: 추후 변경
+      maxAge: 1000 * 60 * 60 * 24 * 14,
     });
-    res.redirect(`${this.FRONTEND_URL}/oauth/callback`);
+
+    res.json({ user, accessToken });
+  }
+
+  @Post('refresh')
+  async refresh(@Req() req: AuthenticatedRequest) {
+    const token = req.cookies?.refreshToken;
+    if (!token) {
+      throw new UnauthorizedException('No refresh token found');
+    }
+
+    return this.authService.refreshAccessToken(token);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(@Req() req: AuthenticatedRequest, @Res() res: Response) {
+    await this.authService.logout(req.user.sub);
+
+    res.clearCookie('refreshToken', {
+      path: '/',
+    });
+
+    res.status(200).send({
+      success: true,
+      error: null,
+    });
   }
 }

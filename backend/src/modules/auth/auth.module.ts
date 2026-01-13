@@ -8,9 +8,13 @@ import { UserModule } from '../user/user.module';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { KakaoStrategy } from './strategies/kakao.strategy';
 import { JwtStrategy } from './jwt/jwt.strategy';
+import { GuestModule } from '../guest/guest.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { RefreshToken } from './refresh_token/refresh_token.entity';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([RefreshToken]),
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -20,6 +24,7 @@ import { JwtStrategy } from './jwt/jwt.strategy';
       }),
     }),
     UserModule,
+    GuestModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, GoogleStrategy, KakaoStrategy, JwtStrategy],

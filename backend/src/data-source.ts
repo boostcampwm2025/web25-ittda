@@ -21,11 +21,11 @@ export default new DataSource({
   // migration 위치
   migrations: [path.join(__dirname, '/../migrations/*{.ts,.js}')],
 
-  synchronize: false,
+  synchronize: process.env.NODE_ENV === 'development' ? true : false,
   migrationsRun: false,
 
   logging:
     nodeEnv === 'production'
       ? ['error', 'warn']
-      : ['error', 'warn', 'migration'],
+      : ['error', 'warn', 'migration', 'info', 'log'],
 });
