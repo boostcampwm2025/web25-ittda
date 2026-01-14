@@ -66,7 +66,7 @@ export default async function RecordPage({ params }: RecordPageProps) {
 
   return (
     <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
-      <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100">
+      <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
         <RecordDetailHeaderActions record={record} />
       </header>
 

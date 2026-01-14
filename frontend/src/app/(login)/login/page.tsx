@@ -39,7 +39,8 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = (provider: 'google' | 'kakao') => {
-    // TODO: 서버로 로그인 요청
+    const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/${provider}/callback`;
+    window.location.href = redirectUrl;
   };
 
   return (
@@ -65,7 +66,7 @@ export default function LoginPage() {
             </h1>
 
             <div className="flex flex-col items-center space-y-1.5">
-              <p className="text-[13px] font-medium tracking-tight opacity-90 dark:text-gray-400 text-[#666666]">
+              <p className="text-[13px] font-medium tracking-tight opacity-90 dark:text-gray-300 text-[#666666]">
                 기억과 맥락을 잇다.
               </p>
               <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-60 text-itta-point">
@@ -79,7 +80,7 @@ export default function LoginPage() {
           {/* SNS 구분선 */}
           <div className="w-full flex items-center gap-4 mb-10">
             <div className="flex-1 h-px dark:bg-white/20 bg-gray-200" />
-            <span className="text-[13px] font-medium whitespace-nowrap tracking-tight dark:text-gray-500 text-gray-400">
+            <span className="text-[13px] font-medium whitespace-nowrap tracking-tight dark:text-gray-400 text-gray-400">
               SNS 계정으로 간편하게 시작하기
             </span>
             <div className="flex-1 h-px dark:bg-white/20 bg-gray-200" />
@@ -89,7 +90,7 @@ export default function LoginPage() {
             {/* 구글 로그인 */}
             <button
               onClick={() => handleLogin('google')}
-              className="dark:bg-white/5 dark:border-white/10 bg-white border-gray-100 w-14 h-14 rounded-full flex items-center justify-center border shadow-sm transition-all hover:shadow-md active:scale-90"
+              className="bg-white border-gray-100 w-14 h-14 rounded-full flex items-center justify-center border shadow-sm transition-all hover:shadow-md active:scale-90"
             >
               <svg viewBox="0 0 24 24" className="w-6 h-6">
                 <path
@@ -124,7 +125,7 @@ export default function LoginPage() {
 
           <button
             onClick={() => router.push('/')}
-            className="text-[13px] font-medium transition-all hover:opacity-60 active:scale-95 dark:text-gray-500 text-gray-400"
+            className="text-[13px] font-medium transition-all hover:opacity-60 active:scale-95 dark:text-gray-400 text-gray-400"
           >
             가입 없이 시작하기
           </button>

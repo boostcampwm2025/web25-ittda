@@ -3,12 +3,7 @@ import { Strategy, ExtractJwt } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
 
-import type { JwtPayload } from 'jsonwebtoken';
-
-interface MyJwtPayload extends JwtPayload {
-  sub: string; // 사용자 ID
-  email: string; // 이메일
-}
+import type { MyJwtPayload } from '../auth.type';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -20,6 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: MyJwtPayload) {
-    return payload;
+    // 여기서 반환하는 객체가 곧 req.user가 됩니다.
+    return { sub: payload.sub, email: payload.email };
   }
 }

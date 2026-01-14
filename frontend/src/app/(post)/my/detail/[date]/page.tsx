@@ -1,7 +1,7 @@
-import DateDetailHeaderActions from '../../../_components/DateDetailHeaderActions';
 import DailyDetailRecords from '../../../../../components/DailyDetailRecords';
 import { MemoryRecord } from '@/lib/types/record';
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
+import Back from '@/components/Back';
 
 interface MyMonthlyDetailPageProps {
   params: Promise<{ date: string }>;
@@ -65,18 +65,13 @@ export default async function MyDateDetailPage({
     },
   ];
 
-  const currentMonth = date?.substring(0, 7);
-
   // TODO: 서버로부터 데이터 받아와야 함
   const recordedDates = ['2025-12-20', '2025-12-21', '2025-12-15'];
 
   return (
     <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
-      <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between border-b transition-colors duration-300 dark:bg-[#121212]/80 dark:border-white/5 bg-white/80 border-gray-100">
-        <DateDetailHeaderActions
-          routePath={currentMonth ? `/my/month/${currentMonth}` : '/my'}
-        />
-
+      <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/80 bg-white/80">
+        <Back />
         <div className="flex flex-col items-center">
           <span className="text-[10px] font-bold uppercase tracking-widest leading-none mb-1 text-[#10B981]">
             RECORD OF

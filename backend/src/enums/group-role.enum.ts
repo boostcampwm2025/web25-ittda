@@ -1,5 +1,5 @@
-export enum GroupRole {
-  OWNER = 'OWNER',
+export enum GroupRoleEnum {
+  ADMIN = 'ADMIN',
   EDITOR = 'EDITOR',
   VIEWER = 'VIEWER',
 }

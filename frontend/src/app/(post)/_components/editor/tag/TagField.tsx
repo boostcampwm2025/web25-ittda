@@ -1,6 +1,10 @@
 'use client';
 import { Plus, Tag } from 'lucide-react';
-import PlaceholderButton from '../core/FieldDefaultButton';
+import {
+  FieldDefaultButton,
+  FieldDefaultButtonIcon,
+  FieldDefaultButtonLabel,
+} from '../core/FieldDefaultButton';
 import { FieldDeleteButton } from '../core/FieldDeleteButton';
 
 interface Props {
@@ -14,8 +18,10 @@ export const TagField = ({ tags, onRemove, onAdd, onRemoveField }: Props) => {
   if (tags.length <= 0)
     return (
       <div className="flex items-center gap-2 w-full py-1 group">
-        <PlaceholderButton icon={Tag} label="태그 추가하기" onClick={onAdd} />
-
+        <FieldDefaultButton onClick={onAdd}>
+          <FieldDefaultButtonIcon icon={Tag} />
+          <FieldDefaultButtonLabel>태그 추가하기</FieldDefaultButtonLabel>
+        </FieldDefaultButton>
         <FieldDeleteButton
           onRemove={onRemoveField}
           ariaLabel="태그 필드 삭제"

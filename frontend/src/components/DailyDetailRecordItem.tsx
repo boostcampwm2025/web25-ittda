@@ -48,11 +48,11 @@ export default function DailyDetailRecordItem({
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="w-3.5 h-3.5 text-gray-400" />
-            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 uppercase">
+            <span className="text-[13px] font-medium text-gray-600 dark:text-gray-300 uppercase">
               {record.data.time}
             </span>
           </div>

@@ -1,70 +1,52 @@
-import { Controller, Get, Param, Query, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post as HttpPost,
+  Body,
+  Req,
+} from '@nestjs/common';
 import { PostService } from './post.service';
-import type { CreatePostDto, Post as PostType } from './post.types';
+import { CreatePostDto } from './dto/create-post.dto';
+import type { Request } from 'express';
 
-@Controller('posts')
+type AuthedRequest = Request & {
+  user?: { id: string };
+};
+
+@Controller({ path: 'posts', version: '1' })
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
+  // TODO: 나중에 구현 예정
   @Get()
-  getPosts(@Query('bbox') bboxStr?: string, @Query('limit') limitStr?: string) {
-    if (!bboxStr) {
-      return {
-        meta: { bbox: null, count: 0 },
-        items: [],
-      };
-    }
-
-    const parts = bboxStr.split(',').map((v) => Number(v));
-    if (parts.length !== 4 || parts.some((v) => Number.isNaN(v))) {
-      return {
-        meta: { bbox: null, count: 0 },
-        items: [],
-      };
-    }
-
-    const [minLat, minLng, maxLat, maxLng] = parts;
-    const limit = limitStr ? Number(limitStr) || 50 : 50;
-
-    const items = this.postService.findByBbox(
-      { minLat, minLng, maxLat, maxLng },
-      limit,
-    );
-
-    return {
-      meta: { bbox: { minLat, minLng, maxLat, maxLng }, count: items.length },
-      items,
-    };
-  }
+  getPosts() {}
 
   @Get('list')
-  getPostList(
-    @Query('page') pageStr?: string,
-    @Query('limit') limitStr?: string,
-  ) {
-    const page = pageStr ? Number(pageStr) || 1 : 1;
-    const limit = limitStr ? Number(limitStr) || 10 : 10;
-
-    const { items, totalCount } = this.postService.findPaginated(page, limit);
-    const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
-
-    return {
-      meta: {
-        totalCount,
-        currentPage: page,
-        totalPages,
-      },
-      items,
-    };
+  getPostList() {
+    return null;
   }
 
   @Get(':id')
-  getPost(@Param('id') id: string) {
+  getOne(@Param('id') id: string) {
     return this.postService.findOne(id);
   }
 
-  @Post()
-  createPost(@Body() body: CreatePostDto): PostType {
-    return this.postService.createPost(body);
+  // TODO: 나중에 AuthGuard 붙이기
+  @HttpPost()
+  async create(@Req() req: AuthedRequest, @Body() dto: CreatePostDto) {
+    // 임시: authorId를 헤더로 받거나, 테스트용 고정
+    // TODO: 실제론 JWT payload에서 userId를 뽑아야 함
+    const headerUserId = req.header('x-user-id');
+    const ownerId =
+      req.user?.id ??
+      (typeof headerUserId === 'string' ? headerUserId : undefined);
+    if (!ownerId) {
+      // 개발 단계에서만 허용: 테스트용
+      throw new Error(
+        'ownerId is missing. Provide req.user.id or x-user-id header.',
+      );
+    }
+    return this.postService.createPost(ownerId, dto);
   }
 }

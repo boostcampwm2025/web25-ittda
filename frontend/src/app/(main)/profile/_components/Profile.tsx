@@ -7,7 +7,7 @@ export default function Profile() {
   const router = useRouter();
 
   return (
-    <div className="rounded-2xl p-6 shadow-sm border flex items-center gap-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
+    <div className="rounded-2xl p-6 shadow-xs border flex items-center gap-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
       <div className="w-20 h-20 rounded-full border-4 overflow-hidden shadow-sm dark:border-[#121212] border-[#F9F9F9]">
         <Image
           width={100}
