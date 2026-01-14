@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { MapPostItem } from '@/lib/types/record';
-import { useBottomSheet } from './_hooks/useBottomSheet';
+import { useBottomSheet } from '../_hooks/useBottomSheet';
 
 interface Props {
   posts: MapPostItem[];
