@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { FilterChip } from '@/components/search/FilterChip';
 import SearchItem from '../_components/SearchItem';
 import { RecordSearchItem } from '@/lib/types/record';
@@ -15,6 +15,7 @@ import {
 } from '@/lib/utils/filterLabels';
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
+import Back from '@/components/Back';
 
 const dummyRecords: RecordSearchItem[] = [
   {
