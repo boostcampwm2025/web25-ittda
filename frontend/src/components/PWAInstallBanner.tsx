@@ -3,273 +3,126 @@
 import { useEffect, useState } from 'react';
 import { X, Download, Smartphone } from 'lucide-react';
 import Image from 'next/image';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { usePWAInstall } from '@/hooks/usePWAInstall';
+import PWAInstallModal from './PWAInstallModal';
 
 export default function PWAInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const {
+    deferredPrompt,
+    isInstalled,
+    promptInstall,
+    isIOS,
+    isSafari,
+    isMacOS,
+  } = usePWAInstall();
   const [showBanner, setShowBanner] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [shouldShowBanner, setShouldShowBanner] = useState<boolean | null>(
+    null,
+  );
 
   useEffect(() => {
-    // 이미 설치되었는지 확인
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      requestAnimationFrame(() => {
-        setIsInstalled(true);
-      });
-      return;
-    }
-
-    // 배너를 닫은 적이 있는지 확인
-    const dismissedUntil = localStorage.getItem('pwa-banner-dismissed-until');
-    if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) {
-      return;
-    }
-
-    // beforeinstallprompt 이벤트 리스너
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowBanner(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    // beforeinstallprompt를 지원하지 않는 브라우저
-    // (Safari, Vivaldi 등) - 바로 배너 표시
-    const timeout = setTimeout(() => {
-      if (!deferredPrompt) {
-        setShowBanner(true);
+    // 배너를 표시할지 여부를 동기적으로 빠르게 판단
+    const checkShouldShowBanner = () => {
+      // 이미 설치되었는지 확인
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        return false;
       }
-    }, 1000);
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      clearTimeout(timeout);
+      // '다시 보지 않기'를 선택한 경우 영구적으로 숨김
+      const neverShowAgain = localStorage.getItem('pwa-banner-never-show');
+      if (neverShowAgain === 'true') {
+        return false;
+      }
+
+      // 배너를 닫은 적이 있는지 확인
+      const dismissedUntil = localStorage.getItem('pwa-banner-dismissed-until');
+      if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) {
+        return false;
+      }
+
+      return true;
     };
+
+    const shouldShow = checkShouldShowBanner();
+    requestAnimationFrame(() => {
+      setShouldShowBanner(shouldShow);
+    });
+
+    if (shouldShow) {
+      // deferredPrompt가 있거나, beforeinstallprompt를 지원하지 않는 브라우저
+      // (Safari, Vivaldi 등)인 경우 배너 표시
+      // LCP 개선을 위해 지연 없이 즉시 표시
+      requestAnimationFrame(() => {
+        setShowBanner(true);
+      });
+    }
   }, [deferredPrompt]);
 
   const [showInstructions, setShowInstructions] = useState(false);
 
   const handleInstallClick = async () => {
     // Chrome/Edge 등에서 기본 프롬프트 지원하는 경우
-    if (deferredPrompt) {
-      try {
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+    const outcome = await promptInstall();
 
-        if (outcome === 'accepted') {
-          setIsInstalled(true);
-        }
-
-        setShowBanner(false);
-        setDeferredPrompt(null);
-      } catch (error) {
-        console.error('PWA 설치 실패:', error);
-      }
-    } else {
+    if (outcome === 'accepted') {
+      setShowBanner(false);
+    } else if (outcome === null) {
       // 프롬프트를 지원하지 않는 브라우저 (Safari, Vivaldi 등)
       // 커스텀 안내 모달 표시
       setShowInstructions(true);
+    } else if (outcome === 'dismissed') {
+      setShowBanner(false);
     }
   };
 
   const handleClose = () => {
     setShowBanner(false);
-    // 1일 동안 배너 숨김
-    const dismissedUntil = Date.now() + 1 * 24 * 60 * 60 * 1000;
+    // 2주(14일) 동안 배너 숨김
+    const dismissedUntil = Date.now() + 14 * 24 * 60 * 60 * 1000;
     localStorage.setItem(
       'pwa-banner-dismissed-until',
       dismissedUntil.toString(),
     );
   };
 
-  if (isInstalled || !showBanner) {
+  const handleNeverShowAgain = () => {
+    setShowBanner(false);
+    // 영구적으로 배너 숨김
+    localStorage.setItem('pwa-banner-never-show', 'true');
+  };
+
+  if (isInstalled) {
     return null;
   }
 
-  // 브라우저 감지
-  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-  const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-  const isMacOS = /Macintosh|MacIntel|MacPPC|Mac68K/.test(userAgent);
+  // 스켈레톤 placeholder JSX
+  const skeletonBanner = <div className="relative w-full h-31" />;
+
+  // 배너 표시 여부를 아직 판단하지 못한 경우 스켈레톤 표시
+  if (shouldShowBanner === null) {
+    return skeletonBanner;
+  }
+
+  // 배너를 표시하지 않기로 결정된 경우
+  if (!shouldShowBanner) {
+    return null;
+  }
+
+  // 배너를 표시하기로 결정되었지만 아직 렌더링되지 않은 경우 스켈레톤 표시
+  if (!showBanner) {
+    return skeletonBanner;
+  }
 
   return (
     <>
       {/* 설치 안내 모달 */}
-      {showInstructions && (
-        <div
-          onClick={() => setShowInstructions(false)}
-          className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative dark:bg-popover bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
-          >
-            <button
-              onClick={() => setShowInstructions(false)}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                앱 설치 방법
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                브라우저에서 앱을 설치하려면 아래 단계를 따라주세요.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {isIOS ? (
-                // Safari iOS
-                <>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      1
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        Safari 하단의&nbsp;
-                        <span className="inline-flex items-center mx-1">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M18 8h2V6h-2v2zm0 4h2v-2h-2v2zm-4-8h2V2h-2v2zm4 0h2V2h-2v2z" />
-                          </svg>
-                        </span>
-                        &nbsp;
-                        <strong>(공유)</strong> 버튼을 누르세요.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      2
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>&quot;홈 화면에 추가&quot;</strong>를
-                        선택하세요.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      3
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>&quot;추가&quot;</strong> 버튼을 누르면 완료!
-                      </p>
-                    </div>
-                  </div>
-                </>
-              ) : isSafari && isMacOS ? (
-                // Safari macOS
-                <>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      1
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        Safari 상단 메뉴에서 <strong>파일</strong> 또는&nbsp;
-                        <span className="inline-flex items-center mx-1">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M18 8h2V6h-2v2zm0 4h2v-2h-2v2zm-4-8h2V2h-2v2zm4 0h2V2h-2v2z" />
-                          </svg>
-                        </span>
-                        &nbsp;
-                        <strong>(공유)</strong>를 클릭하세요.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      2
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>&quot;Dock에 추가&quot;</strong>를 선택하세요.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      3
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>&quot;추가&quot;</strong> 버튼을 누르면 완료!
-                      </p>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                // 기타 브라우저 (Vivaldi 등)
-                <>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      1
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        브라우저 주소창 오른쪽의&nbsp;
-                        <strong className="inline-flex items-center mx-1">
-                          ⋮ (메뉴)
-                        </strong>
-                        &nbsp; 버튼을 누르세요.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      2
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>&quot;앱 설치&quot;</strong> 또는&nbsp;
-                        <strong>&quot;홈 화면에 추가&quot;</strong>를
-                        선택하세요.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 bg-itta-point/10 rounded-full flex items-center justify-center text-itta-point font-bold">
-                      3
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <strong>&quot;설치&quot;</strong> 버튼을 누르면 완료!
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={() => setShowInstructions(false)}
-              className="w-full mt-6 py-3 px-4 bg-itta-point text-white rounded-xl font-medium hover:bg-itta-point/90 active:scale-95 transition-all"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
+      <PWAInstallModal
+        isOpen={showInstructions}
+        onClose={() => setShowInstructions(false)}
+        isIOS={isIOS}
+        isSafari={isSafari}
+        isMacOS={isMacOS}
+      />
 
       {/* 배너 */}
       <div className="relative w-full">
@@ -327,6 +180,17 @@ export default function PWAInstallBanner() {
               </p>
             </div>
           </div>
+
+          {/* 다시 보지 않기 버튼 */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNeverShowAgain();
+            }}
+            className="relative mt-2 w-full py-1.5 text-xs text-white/70 hover:text-white/90 transition-colors underline underline-offset-2 z-10"
+          >
+            다시 보지 않기
+          </button>
         </div>
       </div>
     </>
