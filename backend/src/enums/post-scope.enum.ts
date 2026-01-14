@@ -1,4 +1,6 @@
-export enum PostScope {
-  PERSONAL = 'PERSONAL',
-  GROUP = 'GROUP',
-}
+export const PostScope = {
+  PERSONAL: 'PERSONAL',
+  GROUP: 'GROUP',
+} as const;
+
+export type PostScope = (typeof PostScope)[keyof typeof PostScope];

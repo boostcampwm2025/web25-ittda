@@ -4,53 +4,37 @@ import {
   IsString,
   MaxLength,
   ValidateNested,
-  IsNumber,
   IsUUID,
   IsArray,
-  ArrayMaxSize,
-  Min,
-  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PostScope } from '@/enums/post-scope.enum';
-
-class LocationDto {
-  @IsNumber()
-  lat: number;
-
-  @IsNumber()
-  lng: number;
-}
+import { PostBlockDto } from './post-block.dto';
 
 export class CreatePostDto {
+  @ApiProperty({ enum: PostScope })
   @IsEnum(PostScope)
   scope: PostScope;
 
+  @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
   @IsUUID()
   groupId?: string;
 
+  @ApiProperty()
   @IsString()
   @MaxLength(200)
   title: string;
 
+  @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
-  @ValidateNested()
-  @Type(() => LocationDto)
-  location?: LocationDto;
+  @IsUUID()
+  thumbnailMediaId?: string;
 
-  @IsOptional()
-  eventAt?: string; // ISO string으로 받고 Date로 변환
-
-  @IsOptional()
+  @ApiProperty({ type: () => [PostBlockDto] })
   @IsArray()
-  @ArrayMaxSize(10)
-  @IsString({ each: true })
-  tags?: string[];
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(5)
-  rating?: number;
+  @ValidateNested({ each: true })
+  @Type(() => PostBlockDto)
+  blocks: PostBlockDto[];
 }
