@@ -6,6 +6,8 @@ import {
   UseGuards,
   Res,
   UnauthorizedException,
+  Body,
+  Headers,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -26,9 +28,10 @@ interface AuthenticatedRequest extends Request {
 @Controller({
   path: 'auth',
   version: '1',
-}) // /v1/auth/~
+})
 export class AuthController {
   private FRONTEND_URL: string;
+
   constructor(
     private readonly authService: AuthService,
     private configService: ConfigService,
@@ -45,23 +48,22 @@ export class AuthController {
   async googleCallback(
     @Req() req: Request & { user: OAuthUserType },
     @Res() res: Response,
+    @Headers('x-guest-session-id') guestSessionId?: string,
   ) {
-    const guestSessionId = req.headers['x-guest-session-id'] as
-      | string
-      | undefined;
-
-    const { accessToken: accessToken, refreshToken: refreshToken } =
+    // 1. DB에 유저 생성/조회 + 토큰 발급 (실제 oauthLogin 호출)
+    const { accessToken, refreshToken, expiresAt } =
       await this.authService.oauthLogin(req.user, guestSessionId);
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/', // TODO: 추후 변경
-      maxAge: 1000 * 60 * 60 * 24 * 14,
+    // 2. 토큰 정보를 담은 임시 code 생성
+    const code = this.authService.createTemporaryCode({
+      userId: req.user.provider + '_' + req.user.providerId, // 실제론 user.id 사용
+      accessToken,
+      refreshToken,
+      expiresAt,
     });
 
-    const redirectUrl = `${this.FRONTEND_URL}/oauth/callback?accessToken=${accessToken}`;
+    // 3. FE로 리다이렉트
+    const redirectUrl = `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
     return res.redirect(302, redirectUrl);
   }
 
@@ -74,30 +76,51 @@ export class AuthController {
   async kakaoCallback(
     @Req() req: Request & { user: OAuthUserType },
     @Res() res: Response,
+    @Headers('x-guest-session-id') guestSessionId?: string,
   ) {
-    const guestSessionId = req.headers['x-guest-session-id'] as
-      | string
-      | undefined;
-
-    const { accessToken: accessToken, refreshToken: refreshToken } =
+    // Google과 동일한 로직
+    const { accessToken, refreshToken, expiresAt } =
       await this.authService.oauthLogin(req.user, guestSessionId);
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/', // TODO: 추후 변경
-      maxAge: 1000 * 60 * 60 * 24 * 14,
+    const code = this.authService.createTemporaryCode({
+      userId: req.user.provider + '_' + req.user.providerId,
+      accessToken,
+      refreshToken,
+      expiresAt,
     });
 
-    const redirectUrl = `${this.FRONTEND_URL}/oauth/callback?accessToken=${accessToken}`;
+    const redirectUrl = `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
     return res.redirect(302, redirectUrl);
   }
 
+  @Post('exchange')
+  exchangeCode(
+    @Body('code') code: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // code 검증 후 저장된 토큰 반환
+    const { accessToken, refreshToken } =
+      this.authService.exchangeCodeForTokens(code);
+
+    // HttpOnly 쿠키에 refresh token 저장
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 14,
+    });
+
+    return { accessToken };
+  }
+
   @Post('refresh')
-  async refresh(@Req() req: AuthenticatedRequest, @Res() res: Response) {
-    // refresh token rotation 구현 (acess token 만료로 401시 FE에서 호출)
+  async refresh(
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const oldToken = req.cookies?.refreshToken;
+
     if (!oldToken) {
       throw new UnauthorizedException('No refresh token');
     }
@@ -113,32 +136,47 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 14,
     });
 
-    return res.json({ accessToken });
+    return { accessToken };
   }
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
-  async logout(@Req() req: AuthenticatedRequest, @Res() res: Response) {
+  async logout(
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     await this.authService.logout(req.user.sub);
 
     res.clearCookie('refreshToken', {
       path: '/',
     });
 
-    res.status(200).send({
-      success: true,
-      error: null,
-    });
+    return { success: true, error: null };
   }
 }
+
 /*
-FE 처리: 프론트엔드에서는 jwt-decode와 같은 라이브러리를 사용하여 
-다음과 같이 user.id를 얻을 수 있습니다.
+## 실행 흐름 정리
 
-import { jwtDecode } from 'jwt-decode';
-const decoded = jwtDecode(accessToken);
-console.log(decoded.sub); // user.id 출력
-
-이 정보를 이용해 로그아웃 요청 시 req.user.sub 전달 가능
-@UseGuards(JwtAuthGuard)는 Authorization: Bearer <accessToken> 헤더를 담아 요청해야 함
+사용자 클릭: "Google 로그인"
+   ↓
+1. GET /v1/auth/google
+   ↓
+2. Google OAuth 페이지로 리다이렉트
+   ↓
+3. 사용자 인증 완료
+   ↓
+4. GET /v1/auth/google/callback
+   - Guard가 req.user에 OAuth 정보 주입
+   - authService.oauthLogin() 호출
+     → findOrCreateOAuthUser() 실행 (DB 조회/생성)
+     → mergeGuestSession() 실행 (헤더에 x-guest-session-id 있으면)
+     → 토큰 생성 및 DB 저장
+   - 임시 code 생성 (토큰 정보 포함)
+   - FE로 리다이렉트 (code 포함)
+   ↓
+5. FE가 POST /v1/auth/exchange 호출 (code 전달)
+   - code 검증 및 토큰 반환
+   - refresh token을 HttpOnly 쿠키에 저장
+   - access token을 응답 본문에 반환
 */
