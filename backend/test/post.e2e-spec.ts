@@ -91,6 +91,15 @@ describe('PostController (e2e)', () => {
           value: { rating: 4 },
           layout: { row: 3, col: 2, span: 1 },
         },
+        {
+          type: 'IMAGE',
+          value: {
+            tempUrls: [
+              'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=800',
+            ],
+          },
+          layout: { row: 4, col: 1, span: 2 },
+        },
       ],
     };
 
@@ -105,7 +114,7 @@ describe('PostController (e2e)', () => {
       title: string;
       scope: PostScope;
       ownerUserId: string;
-      blocks: Array<{ type: string }>;
+      blocks: Array<{ type: string; value?: { tempUrls?: string[] } }>;
       contributors: Array<{ userId: string; role: string }>;
     };
 
@@ -115,6 +124,9 @@ describe('PostController (e2e)', () => {
     expect(created.ownerUserId).toBe(owner.id);
     expect(created.blocks.length).toBeGreaterThan(0);
     expect(created.contributors[0]?.userId).toBe(owner.id);
+    expect(
+      created.blocks.find((b) => b.type === 'IMAGE')?.value?.tempUrls?.length,
+    ).toBeGreaterThan(0);
 
     const getRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
