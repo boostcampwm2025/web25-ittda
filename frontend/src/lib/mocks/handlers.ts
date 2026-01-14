@@ -5,7 +5,7 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
-  http.post('/v1/auth/guest', () => {
+  http.post('/api/auth/guest', () => {
     return HttpResponse.json(
       {
         success: true,
