@@ -1,5 +1,6 @@
 'use client';
-import { getWeekdayFromDotString } from '@/lib/date';
+import { formatDateDot, getWeekdayFromDotString } from '@/lib/date';
+import { convertTo12Hour } from '@/lib/utils/time';
 import { Calendar, ChevronDown, Clock } from 'lucide-react';
 
 interface DateProps {
@@ -8,15 +9,16 @@ interface DateProps {
 }
 
 export const DateField = ({ date, onClick }: DateProps) => {
-  const dayName = getWeekdayFromDotString(date);
-
+  const formattedDate = formatDateDot(new Date(date));
+  const dayName = getWeekdayFromDotString(formattedDate);
   return (
     <button
       onClick={onClick}
       className="flex items-center gap-2 font-bold text-xs text-itta-black dark:text-gray-300 active:scale-95 transition-transform"
     >
       <Calendar className="w-3.5 h-3.5 text-itta-point" />
-      {date}. ({dayName}) <ChevronDown className="w-3 h-3 text-gray-400" />
+      {formattedDate}. ({dayName}){' '}
+      <ChevronDown className="w-3 h-3 text-gray-400" />
     </button>
   );
 };
@@ -25,15 +27,18 @@ interface TimeProps {
   onClick: () => void;
 }
 
-export const TimeField = ({ time, onClick }: TimeProps) => (
-  <button
-    onClick={onClick}
-    className="flex items-center gap-2 font-bold text-xs text-itta-black dark:text-gray-300 active:scale-95 transition-transform"
-  >
-    <Clock className="w-3.5 h-3.5 text-itta-point" />
-    {time} <ChevronDown className="w-3 h-3 text-gray-400" />
-  </button>
-);
+export const TimeField = ({ time, onClick }: TimeProps) => {
+  const formattedTime = convertTo12Hour(time);
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-2 font-bold text-xs text-itta-black dark:text-gray-300 active:scale-95 transition-transform"
+    >
+      <Clock className="w-3.5 h-3.5 text-itta-point" />
+      {formattedTime} <ChevronDown className="w-3 h-3 text-gray-400" />
+    </button>
+  );
+};
 
 interface ContentProps {
   value: string;
