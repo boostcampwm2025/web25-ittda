@@ -22,12 +22,6 @@ type AuthedRequest = Request & {
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  // TODO: 나중에 구현 예정
-  @Get()
-  getPosts() {
-    throw new NotImplementedException('PostController.getPosts is not ready');
-  }
-
   @Get('list')
   getPostList() {
     throw new NotImplementedException(
