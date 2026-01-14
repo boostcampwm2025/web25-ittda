@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import type { Point } from 'geojson';
 
 import { Post } from './entity/post.entity';
@@ -134,7 +134,7 @@ export class PostService {
    */
   async findOne(postId: string) {
     const post = await this.postRepository.findOne({
-      where: { id: postId },
+      where: { id: postId, deletedAt: IsNull() },
       relations: ['ownerUser', 'group'],
     });
     if (!post) throw new NotFoundException('Post not found');
