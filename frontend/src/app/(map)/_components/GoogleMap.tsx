@@ -1,7 +1,13 @@
 'use client';
 
 import { useMemo, useEffect } from 'react';
-import { Map, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import {
+  AdvancedMarker,
+  Map,
+  Pin,
+  useMap,
+  useMapsLibrary,
+} from '@vis.gl/react-google-maps';
 import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
 
@@ -13,6 +19,7 @@ interface GoogleMapProps {
   onMapClick?: () => void;
   mapRef: React.MutableRefObject<google.maps.Map | null>;
   placesServiceRef: React.MutableRefObject<google.maps.places.PlacesService | null>;
+  searchedLocation: { lat: number; lng: number } | null;
 }
 
 function FlyToOnSelect({
@@ -46,6 +53,7 @@ export default function GoogleMap({
   onMapClick,
   mapRef,
   placesServiceRef,
+  searchedLocation,
 }: GoogleMapProps) {
   const placesLib = useMapsLibrary('places');
   const selectedPost = useMemo(() => {
@@ -90,6 +98,11 @@ export default function GoogleMap({
             mapRef.current = map;
           }}
         />
+        {searchedLocation && (
+          <AdvancedMarker position={searchedLocation}>
+            <Pin background={'#FB4E4E'} glyphColor={'#FFFFFF'} />
+          </AdvancedMarker>
+        )}
       </Map>
     </div>
   );

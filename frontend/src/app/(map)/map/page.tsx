@@ -181,6 +181,10 @@ export default function RecordMapPage() {
   const [selectedPostId, setSelectedPostId] = useState<
     string | string[] | null
   >(null);
+  const [searchedLocation, setSearchedLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [mapBounds, setMapBounds] = useState<google.maps.LatLngBounds | null>(
     null,
   );
@@ -267,13 +271,13 @@ export default function RecordMapPage() {
 
     const location = place.geometry.location;
 
-    // 지도 해당 위치로 이동
-    mapRef.current.panTo({
-      lat: location.lat(),
-      lng: location.lng(),
-    });
+    const lat = location.lat();
+    const lng = location.lng();
 
+    // 지도 해당 위치로 이동
+    mapRef.current.panTo({ lat, lng });
     mapRef.current.setZoom(16);
+    setSearchedLocation({ lat, lng });
   };
 
   const handleSearch = async (keyword: string) => {
@@ -288,6 +292,11 @@ export default function RecordMapPage() {
 
     setSearchResults(results.slice(0, 10));
     setIsProcessing(false);
+  };
+
+  const handleClearSearch = () => {
+    setSearchedLocation(null);
+    setSearchResults([]);
   };
 
   return (
@@ -305,6 +314,7 @@ export default function RecordMapPage() {
             onMapClick={() => setSelectedPostId(null)}
             mapRef={mapRef}
             placesServiceRef={placesServiceRef}
+            searchedLocation={searchedLocation}
           />
         </div>
 
@@ -317,6 +327,8 @@ export default function RecordMapPage() {
               searchResults={searchResults}
               onSearch={handleSearch}
               isSearching={isProcessing}
+              hasSelectedLocation={!!searchedLocation}
+              onClear={handleClearSearch}
             />
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               <FilterChip

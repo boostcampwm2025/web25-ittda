@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/popover';
 import { useState } from 'react';
 import Input from '../Input';
-import { Search, MapPin, Loader2 } from 'lucide-react';
+import { Search, MapPin, Loader2, X } from 'lucide-react';
 
 interface MapSearchBarProps {
   onSelect: (place: google.maps.places.PlaceResult) => void;
@@ -13,7 +13,10 @@ interface MapSearchBarProps {
   searchResults: google.maps.places.PlaceResult[];
   onSearch: (query: string) => void;
   isSearching?: boolean;
+  hasSelectedLocation?: boolean;
+  onClear?: () => void;
 }
+type RightIconState = 'loading' | 'clear' | 'search';
 
 export function MapSearchBar({
   onSelect,
@@ -21,6 +24,8 @@ export function MapSearchBar({
   searchResults,
   onSearch,
   isSearching,
+  hasSelectedLocation,
+  onClear,
 }: MapSearchBarProps) {
   const [query, setQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -31,6 +36,18 @@ export function MapSearchBar({
     onSearch(query);
     setShowResults(true);
   };
+  const handleClear = () => {
+    if (!onClear) return;
+    setQuery('');
+    onClear();
+    setShowResults(false);
+  };
+
+  const rightIconState: RightIconState = isSearching
+    ? 'loading'
+    : hasSelectedLocation
+      ? 'clear'
+      : 'search';
 
   return (
     <Popover
@@ -52,12 +69,20 @@ export function MapSearchBar({
             <Input.Right>
               <button
                 type="button"
-                onClick={triggerSearch}
+                onClick={
+                  rightIconState === 'clear' ? handleClear : triggerSearch
+                }
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               >
-                {isSearching ? (
+                {rightIconState === 'loading' && (
                   <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                ) : (
+                )}
+
+                {rightIconState === 'clear' && (
+                  <X className="w-4 h-4 text-gray-400" />
+                )}
+
+                {rightIconState === 'search' && (
                   <Search className="w-4 h-4 text-gray-400" />
                 )}
               </button>
