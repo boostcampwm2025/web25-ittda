@@ -1,11 +1,17 @@
 'use client';
 
 import Input from '@/components/Input';
-import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
+import {
+  APIProvider,
+  Map,
+  useMap,
+  ColorScheme,
+} from '@vis.gl/react-google-maps';
 import { Calendar, Search } from 'lucide-react';
 import type { PostListItem } from '@/lib/types/record';
 import { useEffect } from 'react';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
+import { useTheme } from 'next-themes';
 
 interface GoogleMapProps {
   posts: PostListItem[];
@@ -45,6 +51,7 @@ export default function GoogleMap({
   onSelectPost,
   isMobile,
 }: GoogleMapProps) {
+  const { theme } = useTheme();
   const filterWidth = leftPanelWidth > 500 ? 500 + 17 : leftPanelWidth + 17;
 
   const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null;
@@ -57,7 +64,8 @@ export default function GoogleMap({
     <div className="bg-yellow-50 w-full h-full relative">
       <APIProvider apiKey={apiKey!}>
         <Map
-          mapId="MAP_ID"
+          colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
+          mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
           defaultCenter={{ lat: 37.5665, lng: 126.978 }}
           defaultZoom={12}
           gestureHandling="greedy"
