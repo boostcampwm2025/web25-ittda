@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
 import type { Marker } from '@googlemaps/markerclusterer';
 import type { MapPostItem } from '@/lib/types/record';
@@ -11,6 +11,7 @@ export type PinMarkerProps = {
 };
 
 export const PinMarker = ({ post, onClick, setMarkerRef }: PinMarkerProps) => {
+  const [isError, setIsError] = useState(false);
   const handleClick = useCallback(() => onClick(post.id), [onClick, post.id]);
 
   // AdvancedMarker의 실제 구글 객체를 부모의 clusterer에 등록하기 위한 ref
@@ -26,14 +27,20 @@ export const PinMarker = ({ post, onClick, setMarkerRef }: PinMarkerProps) => {
       ref={ref}
       onClick={handleClick}
     >
-      <div className="relative w-12 h-12 bg-secondary rounded-full rounded-br-none transform rotate-45 border-[3px] border-secondary overflow-hidden">
-        <Image
-          src={post.imageUrl || '/profile-ex.jpeg'}
-          alt="Pin Image"
-          fill
-          sizes="48px"
-          className="object-cover transform -rotate-45 scale-125"
-        />
+      <div className="relative w-12 h-12 bg-white rounded-full rounded-br-none transform rotate-45 border-[3px] border-secondary overflow-hidden">
+        {post.imageUrl && !isError ? (
+          <Image
+            src={post.imageUrl}
+            alt={post.title}
+            fill
+            sizes="48px"
+            className="object-cover transform -rotate-45 scale-125"
+            onError={() => setIsError(true)} // 로딩 실패 시 호출
+          />
+        ) : (
+          /* 이미지가 없거나 로딩에 실패했을 때 */
+          <div className="w-full h-full bg-white"></div>
+        )}
       </div>
     </AdvancedMarker>
   );
