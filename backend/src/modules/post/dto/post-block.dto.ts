@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, ValidateNested } from 'class-validator';
+import { IsEnum, IsObject, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
@@ -10,6 +10,7 @@ export class PostBlockDto {
   @IsEnum(PostBlockType)
   type: PostBlockType;
 
+  @IsObject()
   @ApiProperty()
   value: BlockValueMap[PostBlockType];
 
