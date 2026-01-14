@@ -9,25 +9,27 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { TagsValue } from '@/lib/types/recordField';
 
 interface TagDrawerProps {
   onClose: () => void;
-  tags: string[];
+  tags: TagsValue;
   onUpdateTags: (newTags: string[]) => void;
   previousTags: string[];
 }
 
 export default function TagDrawer({
   onClose,
-  tags = [],
+  tags = { tags: [] },
   onUpdateTags,
   previousTags = [],
 }: TagDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showWarning, setShowWarning] = useState(false); // 경고 메시지
 
+  const prevTags = tags.tags;
   const MAX_TAGS = 4;
-  const isLimitReached = tags.length >= MAX_TAGS;
+  const isLimitReached = prevTags.length >= MAX_TAGS;
 
   const triggerWarning = () => {
     setShowWarning(true);
@@ -52,31 +54,31 @@ export default function TagDrawer({
       return;
     }
 
-    if (trimmedValue && !tags.includes(trimmedValue)) {
-      onUpdateTags([...tags, trimmedValue]);
+    if (trimmedValue && !prevTags.includes(trimmedValue)) {
+      onUpdateTags([...prevTags, trimmedValue]);
       setInputValue('');
     }
   };
 
   // 태그 삭제 로직
   const removeTag = (tagToRemove: string) => {
-    onUpdateTags(tags.filter((t) => t !== tagToRemove));
+    onUpdateTags(prevTags.filter((t) => t !== tagToRemove));
     if (showWarning) setShowWarning(false); // 삭제 시 경고창도 바로 삭제
   };
 
   // 이전 태그 토글 로직
   const togglePreviousTag = (tag: string) => {
-    if (tags.includes(tag)) {
+    if (prevTags.includes(tag)) {
       removeTag(tag);
     } else {
       if (isLimitReached) {
         triggerWarning();
         return;
       }
-      onUpdateTags([...tags, tag]);
+      onUpdateTags([...prevTags, tag]);
     }
   };
-
+  console.log(prevTags);
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent>
@@ -88,9 +90,9 @@ export default function TagDrawer({
           </DrawerHeader>
 
           {/* 현재 선택된 태그 리스트 */}
-          {tags.length !== 0 && (
+          {prevTags.length !== 0 && (
             <div className="flex flex-wrap gap-2 mb-3 min-h-[32px]">
-              {tags.map((tag) => (
+              {prevTags.map((tag) => (
                 <span
                   key={tag}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-itta-point/10 text-itta-point text-xs font-bold animate-in fade-in zoom-in-95"
@@ -145,7 +147,7 @@ export default function TagDrawer({
               </p>
               <div className="flex flex-wrap gap-2">
                 {previousTags.map((tag) => {
-                  const isSelected = tags.includes(tag);
+                  const isSelected = prevTags.includes(tag);
                   return (
                     <button
                       key={tag}

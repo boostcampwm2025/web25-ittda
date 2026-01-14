@@ -1,41 +1,44 @@
 import { FieldType } from '@/lib/types/record';
-import { PostBlock } from '@/lib/types/recordField';
-import { formatDateDot, formatTime } from '@/lib/date';
+import { BlockValue, PhotoValue, RecordBlock } from '@/lib/types/recordField';
+import { getDateMetadata } from '@/lib/date';
 
 // 해당 타입의 기본값 생성
-export const getDefaultValue = (type: FieldType): PostBlock['value'] => {
+export const getDefaultValue = (type: FieldType): RecordBlock['value'] => {
+  const { date, time } = getDateMetadata(new Date());
   switch (type) {
     case 'date':
-      return formatDateDot(new Date());
+      return { date };
     case 'time':
-      return formatTime(new Date());
-    case 'rating':
-      return 0;
-    case 'tags':
-      return [];
-    case 'photos':
-      return [];
-    case 'table':
-      return [
-        ['', ''],
-        ['', ''],
-      ];
+      return { time };
     case 'content':
-      return '';
+      return { text: '' };
     case 'emotion':
-      return '';
+      return { mood: '' };
+    case 'tags':
+      return { tags: [] };
+    case 'rating':
+      return { rating: 0 };
     case 'location':
-      return { address: '' };
-    case 'media':
-      return { image: '', type: '', title: '', year: '' };
+      return { lat: 0, lng: 0, address: '', placeName: '' };
+    case 'photos':
+      return { mediaIds: [], tempUrls: [] };
+    case 'table':
+      return {
+        rows: 2,
+        cols: 2,
+        cells: [
+          ['', ''],
+          ['', ''],
+        ],
+      };
     default:
-      return '';
+      return {};
   }
 };
 
 // 그리드 레이아웃 좌표 재계산
-export const normalizeLayout = (targetBlocks: PostBlock[]): PostBlock[] => {
-  const result: PostBlock[] = [];
+export const normalizeLayout = (targetBlocks: RecordBlock[]): RecordBlock[] => {
+  const result: RecordBlock[] = [];
   let i = 0;
 
   while (i < targetBlocks.length) {
@@ -89,3 +92,47 @@ export const canBeHalfWidth = (type: FieldType) =>
     'content',
     'tags',
   ].includes(type);
+
+// 레코드 블록의 값인 객체의 내부 내용이 비어있는지 확인
+export const isRecordBlockEmpty = (value: BlockValue): boolean => {
+  if (!value) return true;
+
+  // 텍스트
+  if ('text' in value) {
+    return !value.text.trim();
+  }
+
+  // 태그
+  if ('tags' in value) {
+    return value.tags.length === 0;
+  }
+
+  // 사진
+  if ('mediaIds' in value || 'tempUrls' in value) {
+    const v = value as PhotoValue;
+    return (v.mediaIds?.length ?? 0) === 0 && (v.tempUrls?.length ?? 0) === 0;
+  }
+
+  // 감정
+  if ('mood' in value) {
+    return !value.mood;
+  }
+
+  // 별점
+  if ('rating' in value) {
+    return value.rating === 0;
+  }
+
+  // 위치
+  if ('address' in value) {
+    return !value.lat || !value.lng;
+  }
+
+  // 테이블
+  if ('cells' in value) {
+    // 모든 셀이 비어있는지 확인
+    return value.cells.every((row) => row.every((cell) => !cell.trim()));
+  }
+
+  return false;
+};

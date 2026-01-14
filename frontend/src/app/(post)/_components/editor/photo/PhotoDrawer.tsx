@@ -9,10 +9,11 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import Image from 'next/image';
+import { PhotoValue } from '@/lib/types/recordField';
 
 interface PhotoDrawerProps {
   onClose: () => void;
-  photos: string[];
+  photos: PhotoValue;
   onUploadClick: () => void;
   onRemovePhoto: (index: number) => void;
   onRemoveAll: () => void;
@@ -25,15 +26,18 @@ export default function PhotoDrawer({
   onRemovePhoto,
   onRemoveAll,
 }: PhotoDrawerProps) {
+  const allPhotos = [...(photos.mediaIds || []), ...(photos.tempUrls || [])];
+
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="h-[80vh] flex flex-col outline-none">
         <div className="w-full px-6 pt-4 pb-10 flex flex-col h-full overflow-hidden">
           <DrawerHeader className="px-0 items-start text-left">
             <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-              사진 관리 ({photos.length})
+              사진 관리 ({allPhotos.length})
             </DrawerTitle>
           </DrawerHeader>
+
           <div className="flex-1 overflow-y-auto pr-1 hide-scrollbar">
             <div className="grid grid-cols-3 md:grid-cols-4 gap-3 py-2">
               <button
@@ -44,17 +48,16 @@ export default function PhotoDrawer({
                 <span className="text-[10px] font-bold">사진 추가</span>
               </button>
 
-              {/* 사진 리스트 */}
-              {photos.map((url, idx) => (
+              {allPhotos.map((url, idx) => (
                 <div
-                  key={idx}
+                  key={`${url}-${idx}`}
                   className="relative aspect-square rounded-2xl overflow-hidden shadow-sm group bg-gray-100 dark:bg-white/5"
                 >
                   <Image
                     src={url}
                     fill
-                    alt={`첨부사진 ${idx}`}
-                    className="object-contain"
+                    alt={`첨부사진 ${url}`}
+                    className="object-cover"
                   />
                   <button
                     onClick={() => onRemovePhoto(idx)}
@@ -66,8 +69,9 @@ export default function PhotoDrawer({
               ))}
             </div>
           </div>
+
           <div className="mt-6 flex flex-col gap-3 flex-shrink-0">
-            {photos.length > 0 && (
+            {allPhotos.length > 0 && (
               <button
                 onClick={() => {
                   onRemoveAll();
