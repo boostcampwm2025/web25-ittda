@@ -1,6 +1,8 @@
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   Post as HttpPost,
   Body,
@@ -10,6 +12,7 @@ import {
 import {
   ApiCreatedResponse,
   ApiHeader,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -75,5 +78,30 @@ export class PostController {
       );
     }
     return this.postService.createPost(ownerId, dto);
+  }
+
+  // TODO: 나중에 AuthGuard 붙이기
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiNoContentResponse()
+  @ApiHeader({
+    name: 'x-user-id',
+    description: '임시 사용자 ID (AuthGuard 적용 전)',
+    required: false,
+  })
+  async deleteOne(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+  ): Promise<void> {
+    const headerUserId = req.header('x-user-id');
+    const requesterId =
+      req.user?.id ??
+      (typeof headerUserId === 'string' ? headerUserId : undefined);
+    if (!requesterId) {
+      throw new Error(
+        'requesterId is missing. Provide req.user.id or x-user-id header.',
+      );
+    }
+    await this.postService.deletePost(id, requesterId);
   }
 }

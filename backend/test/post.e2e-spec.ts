@@ -135,7 +135,7 @@ describe('PostController (e2e)', () => {
     expect(fetched.contributors[0]?.userId).toBe(owner.id);
   });
 
-  it('GET /posts/:id should return 404 for soft-deleted posts', async () => {
+  it('DELETE /posts/:id should soft-delete and return 404 on fetch', async () => {
     const payload = {
       scope: PostScope.PERSONAL,
       title: '삭제 테스트',
@@ -161,7 +161,10 @@ describe('PostController (e2e)', () => {
 
     const created = createRes.body as { id: string };
 
-    await postRepository.update(created.id, { deletedAt: new Date() });
+    await request(app.getHttpServer())
+      .delete(`/posts/${created.id}`)
+      .set('x-user-id', owner.id)
+      .expect(204);
 
     await request(app.getHttpServer()).get(`/posts/${created.id}`).expect(404);
   });
