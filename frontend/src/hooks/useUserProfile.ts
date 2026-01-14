@@ -7,7 +7,7 @@ export const useUserProfile = () => {
 
   return useApiQuery<UserProfile>(
     ['user', 'profile', userId],
-    `/v1/users/${userId}`,
+    `/api/users/${userId}`,
     {
       enabled: isLoggedIn && userType === 'social' && !!userId, // 소셜 로그인 유저만 API 호출
       staleTime: 1000 * 60 * 5, // 5분 동안 신선한 데이터로 간주
