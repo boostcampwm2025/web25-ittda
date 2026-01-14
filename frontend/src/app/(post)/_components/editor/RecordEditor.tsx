@@ -126,10 +126,16 @@ export default function PostEditor({
           />
         );
       case 'content':
+        const contentBlockCount = blocks.filter(
+          (b) => b.type === 'content',
+        ).length;
+        const isLastContentBlock = contentBlockCount === 1;
         return (
           <ContentField
             value={block.value.text}
             onChange={(v) => updateFieldValue({ text: v }, block.id)}
+            onRemove={() => removeBlock(block.id)}
+            isLastContentBlock={isLastContentBlock}
           />
         );
       case 'photos':
@@ -166,9 +172,10 @@ export default function PostEditor({
         return (
           <TableField
             data={block.value}
-            onUpdate={(d) =>
-              d ? updateFieldValue(d, block.id) : removeBlock(block.id)
-            }
+            onUpdate={(d) => {
+              debugger;
+              d ? updateFieldValue(d, block.id) : removeBlock(block.id);
+            }}
           />
         );
       case 'rating':

@@ -10,11 +10,13 @@ import {
   Layout,
   Table,
   Save,
+  Type,
 } from 'lucide-react';
 import { FieldType } from '@/lib/types/record';
 
 // 아이콘 설정
 const TOOL_ITEMS = [
+  { id: 'content', Icon: Type },
   { id: 'photos', Icon: ImageIcon },
   { id: 'emotion', Icon: Smile },
   { id: 'tags', Icon: TagIcon },
