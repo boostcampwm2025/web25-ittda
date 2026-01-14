@@ -43,21 +43,37 @@ export class AuthService {
     return { user, accessToken, refreshToken };
   }
 
-  async refreshAccessToken(refreshToken: string) {
+  async refreshAccessToken(oldToken: string) {
     const saved = await this.refreshTokenRepo.findOne({
-      where: { token: refreshToken },
+      where: { token: oldToken },
     });
 
-    if (!saved || saved.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+    if (!saved || saved.revoked || saved.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token reuse or expired');
     }
 
-    return {
-      accessToken: this.jwtService.sign(
+    return await this.refreshTokenRepo.manager.transaction(async (em) => {
+      // 1. 기존 토큰 폐기
+      await em.update(RefreshToken, { id: saved.id }, { revoked: true });
+
+      // 2. 새 refresh token 발급
+      const newRefreshToken = randomUUID();
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14);
+
+      await em.insert(RefreshToken, {
+        userId: saved.userId,
+        token: newRefreshToken,
+        expiresAt,
+      });
+
+      // 3. 새 access token 발급
+      const accessToken = this.jwtService.sign(
         { sub: saved.userId },
         { expiresIn: '15m' },
-      ),
-    };
+      );
+
+      return { accessToken, refreshToken: newRefreshToken };
+    });
   }
 
   async logout(userId: string) {

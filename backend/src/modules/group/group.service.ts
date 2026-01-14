@@ -129,11 +129,31 @@ export class GroupService {
       );
     }
   }
+
+  /** 그룹 삭제 (방장만 가능) */
+  async deleteGroup(userId: string, groupId: string): Promise<void> {
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+      relations: ['owner'],
+    });
+
+    if (!group) {
+      throw new BadRequestException('존재하지 않는 그룹입니다.');
+    }
+
+    // 방장인지 확인
+    if (group.owner.id !== userId) {
+      throw new BadRequestException('그룹을 삭제할 권한이 없습니다.');
+    }
+
+    // 그룹 삭제 (Cascade 설정으로 멤버들도 자동 삭제됨)
+    await this.groupRepo.remove(group);
+  }
 }
 
 /*
- const owner = await manager.findOneOrFail(User, {
-    where: { id: ownerId },
+const owner = await manager.findOneOrFail(User, {
+  where: { id: ownerId },
 }); // 이런 실제 owner 엔티티를 사용하지 않는 이유
 
 TypeORM은 엔티티 객체를 저장할 때, 

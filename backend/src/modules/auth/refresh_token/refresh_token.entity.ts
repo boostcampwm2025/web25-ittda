@@ -13,11 +13,14 @@ export class RefreshToken {
   @Column()
   userId: string;
 
-  @Column()
+  @Column({ unique: true })
   token: string;
 
-  @Column({ type: 'timestamp' })
+  @Column()
   expiresAt: Date;
+
+  @Column({ default: false })
+  revoked: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

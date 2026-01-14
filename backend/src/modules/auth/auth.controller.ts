@@ -50,7 +50,7 @@ export class AuthController {
       | string
       | undefined;
 
-    const { user, accessToken, refreshToken } =
+    const { accessToken: accessToken, refreshToken: refreshToken } =
       await this.authService.oauthLogin(req.user, guestSessionId);
 
     res.cookie('refreshToken', refreshToken, {
@@ -61,7 +61,8 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 14,
     });
 
-    res.json({ user, accessToken });
+    const redirectUrl = `${this.FRONTEND_URL}/oauth/callback?accessToken=${accessToken}`;
+    return res.redirect(302, redirectUrl);
   }
 
   @Get('kakao')
@@ -78,7 +79,7 @@ export class AuthController {
       | string
       | undefined;
 
-    const { user, accessToken, refreshToken } =
+    const { accessToken: accessToken, refreshToken: refreshToken } =
       await this.authService.oauthLogin(req.user, guestSessionId);
 
     res.cookie('refreshToken', refreshToken, {
@@ -89,17 +90,30 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 14,
     });
 
-    res.json({ user, accessToken });
+    const redirectUrl = `${this.FRONTEND_URL}/oauth/callback?accessToken=${accessToken}`;
+    return res.redirect(302, redirectUrl);
   }
 
   @Post('refresh')
-  async refresh(@Req() req: AuthenticatedRequest) {
-    const token = req.cookies?.refreshToken;
-    if (!token) {
-      throw new UnauthorizedException('No refresh token found');
+  async refresh(@Req() req: AuthenticatedRequest, @Res() res: Response) {
+    // refresh token rotation 구현 (acess token 만료로 401시 FE에서 호출)
+    const oldToken = req.cookies?.refreshToken;
+    if (!oldToken) {
+      throw new UnauthorizedException('No refresh token');
     }
 
-    return this.authService.refreshAccessToken(token);
+    const { accessToken, refreshToken } =
+      await this.authService.refreshAccessToken(oldToken);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 14,
+    });
+
+    return res.json({ accessToken });
   }
 
   @Post('logout')
@@ -117,3 +131,14 @@ export class AuthController {
     });
   }
 }
+/*
+FE 처리: 프론트엔드에서는 jwt-decode와 같은 라이브러리를 사용하여 
+다음과 같이 user.id를 얻을 수 있습니다.
+
+import { jwtDecode } from 'jwt-decode';
+const decoded = jwtDecode(accessToken);
+console.log(decoded.sub); // user.id 출력
+
+이 정보를 이용해 로그아웃 요청 시 req.user.sub 전달 가능
+@UseGuards(JwtAuthGuard)는 Authorization: Bearer <accessToken> 헤더를 담아 요청해야 함
+*/

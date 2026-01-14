@@ -6,6 +6,7 @@ import {
   Req,
   Param,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
@@ -60,5 +61,17 @@ export class GroupController {
       userId,
       newRole,
     );
+  }
+
+  /** 그룹 삭제 (방장만 가능) */
+  @UseGuards(JwtAuthGuard, GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.ADMIN)
+  @Delete(':groupId')
+  async deleteGroup(
+    @Req() req: RequestWithUser,
+    @Param('groupId') groupId: string,
+  ) {
+    const user = req.user as MyJwtPayload;
+    return this.groupService.deleteGroup(user.sub, groupId);
   }
 }
