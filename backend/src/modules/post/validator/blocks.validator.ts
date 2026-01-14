@@ -45,6 +45,9 @@ function validateRequiredBlocks(counts: Map<PostBlockType, number>) {
   if ((counts.get(PostBlockType.TIME) ?? 0) !== 1) {
     throw new BadRequestException(`TIME block must exist exactly once`);
   }
+  if ((counts.get(PostBlockType.TEXT) ?? 0) < 1) {
+    throw new BadRequestException(`TEXT block must exist at least once`);
+  }
 }
 
 function validateSingleMetaBlocks(counts: Map<PostBlockType, number>) {
