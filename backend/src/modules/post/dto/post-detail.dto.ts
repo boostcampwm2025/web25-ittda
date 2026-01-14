@@ -1,8 +1,7 @@
 import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { PostScope } from '@/enums/post-scope.enum';
-import { PostBlockType } from '@/enums/post-block-type.enum';
-import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PostBlockDto } from './post-block.dto';
 
 export class PostContributorUserDto {
   @ApiProperty()
@@ -16,24 +15,6 @@ export class PostContributorDto {
   role: PostContributorRole;
   @ApiPropertyOptional()
   nickname?: string;
-}
-
-export class PostBlockLayoutDto {
-  @ApiProperty()
-  row: number;
-  @ApiProperty()
-  col: number;
-  @ApiProperty()
-  span: number;
-}
-
-export class PostBlockDto {
-  @ApiProperty({ enum: PostBlockType })
-  type: PostBlockType;
-  @ApiProperty()
-  value: BlockValueMap[PostBlockType];
-  @ApiProperty({ type: () => PostBlockLayoutDto })
-  layout: PostBlockLayoutDto;
 }
 
 export class PostDetailDto {

@@ -6,46 +6,11 @@ import {
   ValidateNested,
   IsUUID,
   IsArray,
-  Min,
-  Max,
-  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PostScope } from '@/enums/post-scope.enum';
-import { PostBlockType } from '@/enums/post-block-type.enum';
-import { BlockValueMap } from '@/modules/post/types/post-block.types';
-
-class LayoutDto {
-  @ApiProperty()
-  @IsInt()
-  @Min(1)
-  row: number;
-  @ApiProperty()
-  @IsInt()
-  @Min(1)
-  @Max(2)
-  col: number;
-  @ApiProperty()
-  @IsInt()
-  @Min(1)
-  @Max(2)
-  span: number;
-}
-
-export class BlockDto {
-  @ApiProperty({ enum: PostBlockType })
-  @IsEnum(PostBlockType)
-  type: PostBlockType;
-
-  @ApiProperty()
-  value: BlockValueMap[PostBlockType];
-
-  @ApiProperty({ type: () => LayoutDto })
-  @ValidateNested()
-  @Type(() => LayoutDto)
-  layout: LayoutDto;
-}
+import { PostBlockDto } from './post-block.dto';
 
 export class CreatePostDto {
   @ApiProperty({ enum: PostScope })
@@ -67,9 +32,9 @@ export class CreatePostDto {
   @IsUUID()
   thumbnailMediaId?: string;
 
-  @ApiProperty({ type: () => [BlockDto] })
+  @ApiProperty({ type: () => [PostBlockDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => BlockDto)
-  blocks: BlockDto[];
+  @Type(() => PostBlockDto)
+  blocks: PostBlockDto[];
 }

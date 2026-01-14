@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { PostBlockType } from '@/enums/post-block-type.enum';
-import { BlockDto } from '@/modules/post/dto/create-post.dto';
+import { PostBlockDto } from '@/modules/post/dto/post-block.dto';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 
 type LocationValue = {
@@ -18,13 +18,13 @@ type ExtractedMeta = {
   time: string; // required
 };
 
-type BlockWithType<T extends PostBlockType> = BlockDto & {
+type BlockWithType<T extends PostBlockType> = PostBlockDto & {
   type: T;
   value: BlockValueMap[T];
 };
 
 function isBlockType<T extends PostBlockType>(
-  block: BlockDto,
+  block: PostBlockDto,
   type: T,
 ): block is BlockWithType<T> {
   return block.type === type;
@@ -39,7 +39,7 @@ function normalizeTags(tags: unknown): string[] {
   return Array.from(new Set(cleaned)).slice(0, 10);
 }
 
-export function extractMetaFromBlocks(blocks: BlockDto[]): ExtractedMeta {
+export function extractMetaFromBlocks(blocks: PostBlockDto[]): ExtractedMeta {
   let date: string | undefined;
   let time: string | undefined;
   let location: LocationValue | undefined;
