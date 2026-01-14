@@ -180,4 +180,29 @@ describe('PostController (e2e)', () => {
 
     await request(app.getHttpServer()).get(`/posts/${created.id}`).expect(404);
   });
+
+  it('POST /posts should return 400 when TEXT block is missing', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '텍스트 없음',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+      ],
+    };
+
+    await request(app.getHttpServer())
+      .post('/posts')
+      .set('x-user-id', owner.id)
+      .send(payload)
+      .expect(400);
+  });
 });
