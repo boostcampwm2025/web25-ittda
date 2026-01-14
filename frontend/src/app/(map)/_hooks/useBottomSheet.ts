@@ -1,14 +1,14 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
-const getSnapPoints = () => ({
-  collapsed: window.innerHeight * 0.25,
-  half: window.innerHeight * 0.5,
-  full: window.innerHeight * 0.92,
-});
-
-type SnapPoints = ReturnType<typeof getSnapPoints>;
-
-export function useBottomSheet(snapPoints: SnapPoints) {
+export function useBottomSheet() {
+  const snapPoints = useMemo(
+    () => ({
+      collapsed: window.innerHeight * 0.15,
+      half: window.innerHeight * 0.5,
+      full: window.innerHeight * 0.92,
+    }),
+    [],
+  );
   const [height, setHeight] = useState(snapPoints.collapsed);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -25,10 +25,7 @@ export function useBottomSheet(snapPoints: SnapPoints) {
   const onPointerMove = (e: React.PointerEvent) => {
     if (!isDragging) return;
     const delta = startY.current - e.clientY;
-    const nextHeight = Math.max(
-      snapPoints.collapsed,
-      Math.min(snapPoints.full, startH.current + delta),
-    );
+    const nextHeight = startH.current + delta;
     setHeight(nextHeight);
   };
 
@@ -36,6 +33,13 @@ export function useBottomSheet(snapPoints: SnapPoints) {
     if (!isDragging) return;
     setIsDragging(false);
     e.currentTarget.releasePointerCapture(e.pointerId);
+    setHeight((prev) =>
+      Math.max(snapPoints.collapsed, Math.min(snapPoints.full, prev)),
+    );
+  };
+
+  const snapTo = (point: 'collapsed' | 'half' | 'full') => {
+    setHeight(snapPoints[point]);
   };
 
   return {
@@ -45,5 +49,6 @@ export function useBottomSheet(snapPoints: SnapPoints) {
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    snapTo,
   };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { Map as MapIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -23,11 +23,7 @@ export default function RecordMapDrawer({
 }: Props) {
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [snapPoints, setSnapPoints] = useState({
-    collapsed: 100,
-    half: 550,
-    full: 750,
-  });
+  const lastSnappedIdRef = useRef<string | string[] | null>(null);
 
   // TODO : 백엔드 연결 (클러스터 선택 시 표시할 포스트 필터링)
   const displayPosts = useMemo(() => {
@@ -57,8 +53,26 @@ export default function RecordMapDrawer({
     }
   }, [selectedPostId]);
 
-  const { height, isDragging, onPointerDown, onPointerMove, onPointerUp } =
-    useBottomSheet(snapPoints);
+  const {
+    height,
+    isDragging,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    snapTo,
+  } = useBottomSheet();
+
+  useEffect(() => {
+    // 샤로운 postID를 클릭했을 때 처음 한 번만 튀어오르게 기억하는 용도
+    if (
+      selectedPostId &&
+      !isDragging &&
+      lastSnappedIdRef.current !== selectedPostId
+    ) {
+      snapTo('half');
+      lastSnappedIdRef.current = selectedPostId;
+    }
+  }, [selectedPostId, isDragging, snapTo]);
 
   return (
     <div
