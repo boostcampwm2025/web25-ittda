@@ -4,33 +4,50 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
+import type { Point } from 'geojson';
 
 import { Post } from './entity/post.entity';
+import { PostBlock } from './entity/post-block.entity';
+import { PostContributor } from './entity/post-contributor.entity';
 import { User } from '@/modules/user/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { CreatePostDto } from './dto/create-post.dto';
+import { PostDetailDto } from './dto/post-detail.dto';
 import { PostScope } from '@/enums/post-scope.enum';
-import { Point } from 'geojson';
+import { PostContributorRole } from '@/enums/post-contributor-role.enum';
+import { validateBlocks } from './validator/blocks.validator';
+import { extractMetaFromBlocks } from './validator/meta.extractor';
+import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 
 @Injectable()
 export class PostService {
   constructor(
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+    @InjectRepository(PostBlock)
+    private readonly postBlockRepository: Repository<PostBlock>,
+    @InjectRepository(PostContributor)
+    private readonly postContributorRepository: Repository<PostContributor>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
   ) {}
 
+  /**
+   * 게시글 생성: 블록 검증 → 메타 추출 → eventAt 생성 후,
+   * Post/Contributor/Block을 트랜잭션으로 저장한다.
+   */
   async createPost(ownerUserId: string, dto: CreatePostDto) {
+    // 블록 검증 → 메타 추출 → eventAt 생성 순서로 선행 처리
+    validateBlocks(dto.blocks);
+
     const owner = await this.userRepository.findOne({
       where: { id: ownerUserId },
     });
     if (!owner) throw new BadRequestException('Owner not found');
 
-    // scope/group 일관성 검사
     if (dto.scope === PostScope.GROUP && !dto.groupId) {
       throw new BadRequestException('groupId is required when scope=GROUP');
     }
@@ -40,7 +57,6 @@ export class PostService {
       );
     }
 
-    // group 검증
     let group: Group | null = null;
     if (dto.groupId) {
       group = await this.groupRepository.findOne({
@@ -49,52 +65,112 @@ export class PostService {
       if (!group) throw new BadRequestException('Group not found');
     }
 
-    const groupId: string | null =
-      dto.scope === PostScope.GROUP ? (dto.groupId ?? null) : null;
+    const meta = extractMetaFromBlocks(dto.blocks);
+    const eventAt = resolveEventAtFromBlocks(meta.date, meta.time); // 세번째 인자는 옵션: timezoneOffset
 
-    const eventAt = dto.eventAt ? new Date(dto.eventAt) : undefined;
-    if (dto.eventAt && Number.isNaN(eventAt!.getTime())) {
-      throw new BadRequestException('eventAt must be a valid ISO date string');
-    }
-
-    const location: Point | undefined = dto.location
+    const location: Point | undefined = meta.location
       ? {
           type: 'Point',
-          coordinates: [dto.location.lng, dto.location.lat], // [lng, lat] 순서
+          coordinates: [meta.location.lng, meta.location.lat],
         }
       : undefined;
 
-    const tags: string[] | null =
-      dto.tags
-        ?.map((t) => t.trim())
-        .filter((t) => t.length > 0)
-        .slice(0, 10) ?? null;
+    // Post와 PostBlock을 트랜잭션으로 원자적 저장
+    const postId = await this.postRepository.manager.transaction(
+      async (manager) => {
+        const postRepo = manager.getRepository(Post);
+        const blockRepo = manager.getRepository(PostBlock);
+        const contributorRepo = manager.getRepository(PostContributor);
 
-    const post = this.postRepository.create({
-      scope: dto.scope,
-      ownerUserId,
-      ownerUser: owner,
-      groupId: groupId,
-      group: dto.scope === PostScope.GROUP ? group : null,
-      title: dto.title,
-      location: location ?? undefined,
-      eventAt,
-      tags,
-      rating: dto.rating ?? null,
-    });
+        const post = postRepo.create({
+          scope: dto.scope,
+          ownerUserId,
+          ownerUser: owner,
+          groupId: dto.scope === PostScope.GROUP ? (dto.groupId ?? null) : null,
+          group: dto.scope === PostScope.GROUP ? group : null,
+          title: dto.title,
+          location: location ?? undefined,
+          eventAt,
+          tags: meta.tags ?? null,
+          rating: meta.rating ?? null,
+        });
 
-    const saved = await this.postRepository.save(post);
-    return this.findOne(saved.id);
+        const saved = await postRepo.save(post);
+
+        const contributor = contributorRepo.create({
+          postId: saved.id,
+          post: saved,
+          userId: ownerUserId,
+          user: owner,
+          role: PostContributorRole.AUTHOR,
+        });
+        await contributorRepo.save(contributor);
+
+        const blocks = dto.blocks.map((b) =>
+          blockRepo.create({
+            postId: saved.id,
+            post: saved,
+            type: b.type,
+            value: b.value,
+            layoutRow: b.layout.row,
+            layoutCol: b.layout.col,
+            layoutSpan: b.layout.span,
+          }),
+        );
+
+        if (blocks.length > 0) {
+          await blockRepo.save(blocks);
+        }
+
+        return saved.id;
+      },
+    );
+
+    return this.findOne(postId);
   }
 
+  /**
+   * 게시글 상세 조회: Post 기본 정보에 블록과 기여자 정보를 합쳐 반환한다.
+   */
   async findOne(postId: string) {
-    // 관계를 포함하여 반환하기 위해서
-
     const post = await this.postRepository.findOne({
-      where: { id: postId },
+      where: { id: postId, deletedAt: IsNull() },
       relations: ['ownerUser', 'group'],
     });
     if (!post) throw new NotFoundException('Post not found');
-    return post;
+    const blocks = await this.postBlockRepository.find({
+      where: { postId },
+      order: { layoutRow: 'ASC', layoutCol: 'ASC', layoutSpan: 'ASC' },
+    });
+    const contributors = await this.postContributorRepository.find({
+      where: { postId },
+      relations: ['user'],
+    });
+    const contributorDtos = contributors.map((c) => ({
+      userId: c.userId,
+      role: c.role,
+      nickname: c.user?.nickname,
+    }));
+
+    const dto: PostDetailDto = {
+      id: post.id,
+      scope: post.scope,
+      ownerUserId: post.ownerUserId,
+      groupId: post.groupId ?? null,
+      title: post.title,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      blocks: blocks.map((b) => ({
+        type: b.type,
+        value: b.value,
+        layout: {
+          row: b.layoutRow,
+          col: b.layoutCol,
+          span: b.layoutSpan,
+        },
+      })),
+      contributors: contributorDtos,
+    };
+    return dto;
   }
 }

@@ -58,8 +58,33 @@ describe('PostController (e2e)', () => {
     const payload = {
       scope: PostScope.PERSONAL,
       title: '테스트 제목',
-      tags: ['tag1', 'tag2'],
-      rating: 4,
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '본문 테스트' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+        {
+          type: 'TAG',
+          value: { tags: ['tag1', 'tag2'] },
+          layout: { row: 3, col: 1, span: 1 },
+        },
+        {
+          type: 'RATING',
+          value: { rating: 4 },
+          layout: { row: 3, col: 2, span: 1 },
+        },
+      ],
     };
 
     const createRes = await request(app.getHttpServer())
@@ -73,12 +98,16 @@ describe('PostController (e2e)', () => {
       title: string;
       scope: PostScope;
       ownerUserId: string;
+      blocks: Array<{ type: string }>;
+      contributors: Array<{ userId: string; role: string }>;
     };
 
     expect(created.id).toBeDefined();
     expect(created.title).toBe(payload.title);
     expect(created.scope).toBe(payload.scope);
     expect(created.ownerUserId).toBe(owner.id);
+    expect(created.blocks.length).toBeGreaterThan(0);
+    expect(created.contributors[0]?.userId).toBe(owner.id);
 
     const getRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
@@ -88,10 +117,45 @@ describe('PostController (e2e)', () => {
       id: string;
       title: string;
       ownerUserId: string;
+      blocks: Array<{ type: string }>;
+      contributors: Array<{ userId: string; role: string }>;
     };
 
     expect(fetched.id).toBe(created.id);
     expect(fetched.title).toBe(payload.title);
     expect(fetched.ownerUserId).toBe(owner.id);
+    expect(fetched.blocks.length).toBeGreaterThan(0);
+    expect(fetched.contributors[0]?.userId).toBe(owner.id);
+  });
+
+  it('GET /posts/:id should return 404 for soft-deleted posts', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '삭제 테스트',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+      ],
+    };
+
+    const createRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('x-user-id', owner.id)
+      .send(payload)
+      .expect(201);
+
+    const created = createRes.body as { id: string };
+
+    await postRepository.update(created.id, { deletedAt: new Date() });
+
+    await request(app.getHttpServer()).get(`/posts/${created.id}`).expect(404);
   });
 });
