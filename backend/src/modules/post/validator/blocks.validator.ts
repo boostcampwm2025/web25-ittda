@@ -32,53 +32,35 @@ function occupiedCells(layout: Layout): Array<[number, number]> {
   return cells;
 }
 
-/**
- * - layout 범위 검증
- * - span=2일 때 col=2 금지 (2열 고정)
- * - 점유 셀 충돌 검사 (span 고려)
- * - (선택) 타입별 개수 제한은 여기서도 가능하지만 v1은 서비스에서 따로 해도 됨
- */
-export function validateBlocks(
-  blocks?: BlockDto[],
-  options: ValidateBlocksOptions = {},
-) {
-  // DATE/TIME 필수 여부와 메타 블록 중복 제한 등 기본 규칙을 검사
-  const { requireDateTimeBlocks = true, enforceSingleMetaBlocks = true } =
-    options;
-
-  if (!blocks || blocks.length === 0) {
-    if (requireDateTimeBlocks) {
-      throw new BadRequestException(`blocks are required: missing DATE, TIME`);
-    }
-    return;
-  }
-
-  // 타입별 블록 개수 집계
+function buildCounts(blocks: BlockDto[]) {
   const counts = new Map<PostBlockType, number>();
   for (const b of blocks) counts.set(b.type, (counts.get(b.type) ?? 0) + 1);
+  return counts;
+}
 
-  if (requireDateTimeBlocks) {
-    if ((counts.get(PostBlockType.DATE) ?? 0) !== 1) {
-      throw new BadRequestException(`DATE block must exist exactly once`);
-    }
-    if ((counts.get(PostBlockType.TIME) ?? 0) !== 1) {
-      throw new BadRequestException(`TIME block must exist exactly once`);
+function validateRequiredBlocks(counts: Map<PostBlockType, number>) {
+  if ((counts.get(PostBlockType.DATE) ?? 0) !== 1) {
+    throw new BadRequestException(`DATE block must exist exactly once`);
+  }
+  if ((counts.get(PostBlockType.TIME) ?? 0) !== 1) {
+    throw new BadRequestException(`TIME block must exist exactly once`);
+  }
+}
+
+function validateSingleMetaBlocks(counts: Map<PostBlockType, number>) {
+  const singles: PostBlockType[] = [
+    PostBlockType.LOCATION,
+    PostBlockType.TAG,
+    PostBlockType.RATING,
+  ];
+  for (const t of singles) {
+    if ((counts.get(t) ?? 0) > 1) {
+      throw new BadRequestException(`${t} block must be at most one`);
     }
   }
+}
 
-  if (enforceSingleMetaBlocks) {
-    const singles: PostBlockType[] = [
-      PostBlockType.LOCATION,
-      PostBlockType.TAG,
-      PostBlockType.RATING,
-    ];
-    for (const t of singles) {
-      if ((counts.get(t) ?? 0) > 1) {
-        throw new BadRequestException(`${t} block must be at most one`);
-      }
-    }
-  }
-
+function validateLayout(blocks: BlockDto[]) {
   // 레이아웃 점유 셀 충돌 검사 준비
   const used = new Map<string, number>(); // cellKey -> blockIndex
 
@@ -130,4 +112,38 @@ export function validateBlocks(
       used.set(key, idx);
     }
   });
+}
+
+/**
+ * - layout 범위 검증
+ * - span=2일 때 col=2 금지 (2열 고정)
+ * - 점유 셀 충돌 검사 (span 고려)
+ * - (선택) 타입별 개수 제한은 여기서도 가능하지만 v1은 서비스에서 따로 해도 됨
+ */
+export function validateBlocks(
+  blocks?: BlockDto[],
+  options: ValidateBlocksOptions = {},
+) {
+  // DATE/TIME 필수 여부와 메타 블록 중복 제한 등 기본 규칙을 검사
+  const { requireDateTimeBlocks = true, enforceSingleMetaBlocks = true } =
+    options;
+
+  if (!blocks || blocks.length === 0) {
+    if (requireDateTimeBlocks) {
+      throw new BadRequestException(`blocks are required: missing DATE, TIME`);
+    }
+    return;
+  }
+
+  const counts = buildCounts(blocks);
+
+  if (requireDateTimeBlocks) {
+    validateRequiredBlocks(counts);
+  }
+
+  if (enforceSingleMetaBlocks) {
+    validateSingleMetaBlocks(counts);
+  }
+
+  validateLayout(blocks);
 }
