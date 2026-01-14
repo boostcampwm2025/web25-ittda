@@ -1,5 +1,11 @@
 'use client';
-import { Star, X } from 'lucide-react';
+import { Star } from 'lucide-react';
+import {
+  FieldDefaultButton,
+  FieldDefaultButtonIcon,
+  FieldDefaultButtonLabel,
+} from '../core/FieldDefaultButton';
+import { FieldDeleteButton } from '../core/FieldDeleteButton';
 
 interface Props {
   value: number;
@@ -9,8 +15,19 @@ interface Props {
 }
 
 export const RatingField = ({ value, max, onClick, onRemove }: Props) => {
-  if (value === 0) return null;
+  //데이터가 없을 때
+  if (value === 0)
+    return (
+      <div className="flex items-center gap-2 w-full py-1 group">
+        <FieldDefaultButton onClick={onClick}>
+          <FieldDefaultButtonIcon icon={Star} />
+          <FieldDefaultButtonLabel>평점 매기기</FieldDefaultButtonLabel>
+        </FieldDefaultButton>
+        <FieldDeleteButton onRemove={onRemove} ariaLabel="별점 필드 삭제" />
+      </div>
+    );
 
+  // 데이터가 있을 때
   return (
     <div className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/5 shadow-sm transition-all w-fit">
       <button
@@ -22,17 +39,7 @@ export const RatingField = ({ value, max, onClick, onRemove }: Props) => {
           {value} / {max}
         </span>
       </button>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="flex items-center text-itta-gray2 hover:text-rose-500 transition-colors active:scale-90"
-        aria-label="별점 삭제"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+      <FieldDeleteButton onRemove={onRemove} ariaLabel="별점 필드 삭제" />
     </div>
   );
 };

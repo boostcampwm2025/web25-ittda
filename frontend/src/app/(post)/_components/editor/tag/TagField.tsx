@@ -1,14 +1,33 @@
 'use client';
-import { X, Plus } from 'lucide-react';
+import { Plus, Tag } from 'lucide-react';
+import {
+  FieldDefaultButton,
+  FieldDefaultButtonIcon,
+  FieldDefaultButtonLabel,
+} from '../core/FieldDefaultButton';
+import { FieldDeleteButton } from '../core/FieldDeleteButton';
 
 interface Props {
   tags: string[];
   onRemove: (tag: string) => void;
   onAdd: () => void;
+  onRemoveField: () => void;
 }
 
-export const TagField = ({ tags, onRemove, onAdd }: Props) => {
-  if (tags.length <= 0) return null;
+export const TagField = ({ tags, onRemove, onAdd, onRemoveField }: Props) => {
+  if (tags.length <= 0)
+    return (
+      <div className="flex items-center gap-2 w-full py-1 group">
+        <FieldDefaultButton onClick={onAdd}>
+          <FieldDefaultButtonIcon icon={Tag} />
+          <FieldDefaultButtonLabel>태그 추가하기</FieldDefaultButtonLabel>
+        </FieldDefaultButton>
+        <FieldDeleteButton
+          onRemove={onRemoveField}
+          ariaLabel="태그 필드 삭제"
+        />
+      </div>
+    );
   const MAX_TAGS = 4;
   const isLimitReached = tags.length >= MAX_TAGS;
   return (
@@ -24,16 +43,10 @@ export const TagField = ({ tags, onRemove, onAdd }: Props) => {
             {tag}
           </span>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove(tag);
-            }}
-            className="flex items-center text-itta-gray2 hover:text-rose-500 transition-colors active:scale-90"
-            aria-label="태그 삭제"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <FieldDeleteButton
+            onRemove={() => onRemove(tag)}
+            ariaLabel="태그 필드 삭제"
+          />
         </div>
       ))}
       {!isLimitReached && (

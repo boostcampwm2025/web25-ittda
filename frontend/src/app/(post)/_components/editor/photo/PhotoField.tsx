@@ -1,15 +1,32 @@
 'use client';
+import { ImageIcon } from 'lucide-react';
 import Image from 'next/image';
+import {
+  FieldDefaultButton,
+  FieldDefaultButtonIcon,
+  FieldDefaultButtonLabel,
+} from '../core/FieldDefaultButton';
+import { FieldDeleteButton } from '../core/FieldDeleteButton';
 
 interface Props {
   photos: string[];
   onClick: () => void;
+  onRemove: () => void;
 }
 
-export const PhotoField = ({ photos, onClick }: Props) => {
+export const PhotoField = ({ photos, onClick, onRemove }: Props) => {
   const MAX_VISIBLE = 3;
   const hasMore = photos.length > MAX_VISIBLE;
-  if (photos.length === 0) return null;
+  if (photos.length === 0)
+    return (
+      <div className="flex items-center gap-2 w-full py-1 group">
+        <FieldDefaultButton onClick={onClick}>
+          <FieldDefaultButtonIcon icon={ImageIcon} />
+          <FieldDefaultButtonLabel>사진 추가하기</FieldDefaultButtonLabel>
+        </FieldDefaultButton>
+        <FieldDeleteButton onRemove={onRemove} ariaLabel="사진 필드 삭제" />
+      </div>
+    );
 
   return (
     <div
