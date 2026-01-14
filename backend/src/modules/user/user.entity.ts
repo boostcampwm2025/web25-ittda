@@ -18,7 +18,7 @@ export class User {
   @Column()
   nickname: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   provider: OAuthProvider;
 
   @Column()

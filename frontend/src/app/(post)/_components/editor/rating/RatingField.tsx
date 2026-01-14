@@ -1,6 +1,10 @@
 'use client';
 import { Star } from 'lucide-react';
-import PlaceholderButton from '../core/FieldDefaultButton';
+import {
+  FieldDefaultButton,
+  FieldDefaultButtonIcon,
+  FieldDefaultButtonLabel,
+} from '../core/FieldDefaultButton';
 import { FieldDeleteButton } from '../core/FieldDeleteButton';
 
 interface Props {
@@ -15,7 +19,10 @@ export const RatingField = ({ value, max, onClick, onRemove }: Props) => {
   if (value === 0)
     return (
       <div className="flex items-center gap-2 w-full py-1 group">
-        <PlaceholderButton icon={Star} label="평점 매기기" onClick={onClick} />
+        <FieldDefaultButton onClick={onClick}>
+          <FieldDefaultButtonIcon icon={Star} />
+          <FieldDefaultButtonLabel>평점 매기기</FieldDefaultButtonLabel>
+        </FieldDefaultButton>
         <FieldDeleteButton onRemove={onRemove} ariaLabel="별점 필드 삭제" />
       </div>
     );

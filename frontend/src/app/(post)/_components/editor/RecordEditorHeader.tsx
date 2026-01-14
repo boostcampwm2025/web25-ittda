@@ -13,7 +13,7 @@ export default function RecordEditorHeader({
   onSave,
 }: RecordEditorHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 shrink-0 backdrop-blur-md px-5 py-4 flex items-center justify-between border-b transition-colors duration-300 bg-white/95 border-gray-100 dark:bg-[#121212]/95 dark:border-white/5">
+    <header className="sticky top-0 z-50 shrink-0 backdrop-blur-md px-5 py-4 flex items-center justify-between transition-colors duration-300 bg-white/95 dark:bg-[#121212]/95">
       <Back />
 
       {/* 페이지 제목 */}

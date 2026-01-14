@@ -1,7 +1,11 @@
 import Image from 'next/image';
 import { Film, Search } from 'lucide-react';
 import { MediaValue } from '@/lib/types/recordField';
-import PlaceholderButton from '../core/FieldDefaultButton';
+import {
+  FieldDefaultButton,
+  FieldDefaultButtonIcon,
+  FieldDefaultButtonLabel,
+} from '../core/FieldDefaultButton';
 import { FieldDeleteButton } from '../core/FieldDeleteButton';
 
 interface Props {
@@ -22,11 +26,12 @@ export default function MediaField({
   if (mode == 'editor' && isEmpty) {
     return (
       <div className="flex items-center gap-2 w-full py-1 group">
-        <PlaceholderButton
-          icon={Search}
-          label="관련 정보 찾기(영화, 연극 등)"
-          onClick={onClick}
-        />
+        <FieldDefaultButton onClick={onClick}>
+          <FieldDefaultButtonIcon icon={Search} />
+          <FieldDefaultButtonLabel>
+            관련 정보 찾기(영화, 연극 등)
+          </FieldDefaultButtonLabel>
+        </FieldDefaultButton>
         {onRemove && (
           <FieldDeleteButton onRemove={onRemove} ariaLabel="미디어 필드 삭제" />
         )}

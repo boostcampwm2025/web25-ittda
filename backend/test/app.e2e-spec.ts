@@ -3,6 +3,9 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { GoogleStrategy } from '../src/modules/auth/strategies/google.strategy';
+import { KakaoStrategy } from '../src/modules/auth/strategies/kakao.strategy';
+import { JwtStrategy } from '../src/modules/auth/jwt/jwt.strategy';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -10,7 +13,14 @@ describe('AppController (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(GoogleStrategy)
+      .useValue({})
+      .overrideProvider(KakaoStrategy)
+      .useValue({})
+      .overrideProvider(JwtStrategy)
+      .useValue({})
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init(); // app.init()을 호출하면 NestJS 애플리케이션이

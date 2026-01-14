@@ -130,7 +130,7 @@ export default function WeekCalendar() {
                 className="flex flex-col items-center gap-2 min-w-11"
               >
                 <span
-                  className="text-[10px] font-medium"
+                  className="text-[11px] font-medium"
                   style={{ color: dayColor }}
                 >
                   {item.dayName}
@@ -141,7 +141,7 @@ export default function WeekCalendar() {
         </div>
 
         {/* 스와이프 가능한 영역 */}
-        <div className="absolute top-8.5 left-0 right-0 h-[calc(100%-34px)]">
+        <div className="border-gray-100 absolute top-8.5 left-0 right-0 h-[calc(100%-34px)]">
           <AnimatePresence initial={false} custom={direction} mode="popLayout">
             <motion.div
               key={currentWeekStart.toISOString()}
@@ -181,12 +181,12 @@ export default function WeekCalendar() {
                   >
                     <div
                       className={cn(
-                        'w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all',
+                        'w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all dark:text-gray-200',
                         isSelected
                           ? 'dark:bg-white dark:text-[#121212] bg-itta-black text-white shadow-md'
                           : item.isToday
                             ? 'dark:text-[#10B981] dark:bg-[#10B981]/10 text-[#10B981] bg-[#10B981]/5'
-                            : 'text-gray-400',
+                            : 'text-gray-500',
                         item.dayName === '일' && 'text-[#F43F5E]',
                         item.dayName === '토' && 'text-[#3B82F6]',
                       )}

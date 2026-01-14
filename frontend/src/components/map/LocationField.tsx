@@ -1,6 +1,10 @@
 'use client';
 
-import PlaceholderButton from '@/app/(post)/_components/editor/core/FieldDefaultButton';
+import {
+  FieldDefaultButton,
+  FieldDefaultButtonIcon,
+  FieldDefaultButtonLabel,
+} from '@/app/(post)/_components/editor/core/FieldDefaultButton';
 import { FieldDeleteButton } from '@/app/(post)/_components/editor/core/FieldDeleteButton';
 import { MapPin } from 'lucide-react';
 
@@ -18,11 +22,10 @@ export function LocationField({
   return (
     <div className="flex items-center gap-2 w-full py-1 group">
       {!address ? (
-        <PlaceholderButton
-          icon={MapPin}
-          label="장소 추가하기"
-          onClick={onClick}
-        />
+        <FieldDefaultButton onClick={onClick}>
+          <FieldDefaultButtonIcon icon={MapPin} />
+          <FieldDefaultButtonLabel>장소 추가하기</FieldDefaultButtonLabel>
+        </FieldDefaultButton>
       ) : (
         <div
           onClick={onClick}
