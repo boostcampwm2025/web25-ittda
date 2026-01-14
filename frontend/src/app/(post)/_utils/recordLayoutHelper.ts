@@ -97,11 +97,6 @@ export const canBeHalfWidth = (type: FieldType) =>
 export const isRecordBlockEmpty = (value: BlockValue): boolean => {
   if (!value) return true;
 
-  // 텍스트
-  if ('text' in value) {
-    return !value.text.trim();
-  }
-
   // 태그
   if ('tags' in value) {
     return value.tags.length === 0;
@@ -126,12 +121,6 @@ export const isRecordBlockEmpty = (value: BlockValue): boolean => {
   // 위치
   if ('address' in value) {
     return !value.lat || !value.lng;
-  }
-
-  // 테이블
-  if ('cells' in value) {
-    // 모든 셀이 비어있는지 확인
-    return value.cells.every((row) => row.every((cell) => !cell.trim()));
   }
 
   return false;
