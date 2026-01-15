@@ -81,7 +81,7 @@ export default function GoogleMap({
         defaultCenter={{ lat: 37.5665, lng: 126.978 }}
         defaultZoom={12}
         gestureHandling="greedy"
-        disableDefaultUI={false}
+        disableDefaultUI={true}
         onClick={() => onMapClick?.()}
         onIdle={(e) => onBoundsChange?.(e.map.getBounds() ?? null)}
       >
