@@ -111,7 +111,7 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 14,
     });
 
-    // 3. 응답 헤더에 Access Token 설정
+    // 응답 헤더에 Access Token 설정
     // 표준적인 방법은 Authorization 헤더에 Bearer 스키마를 사용하는 것입니다.
     res.set('Authorization', `Bearer ${accessToken}`);
 
@@ -144,7 +144,15 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 14,
     });
 
-    return { accessToken };
+    // 응답 헤더에 Access Token 설정
+    // 표준적인 방법은 Authorization 헤더에 Bearer 스키마를 사용하는 것입니다.
+    res.set('Authorization', `Bearer ${accessToken}`);
+
+    // 만약 클라이언트(브라우저)에서 이 헤더에 접근해야 한다면 Access-Control-Expose-Headers 설정이 필요할 수 있습니다.
+    res.set('Access-Control-Expose-Headers', 'Authorization');
+
+    // Body는 비워서 보냅니다.
+    return;
   }
 
   @Post('logout')
