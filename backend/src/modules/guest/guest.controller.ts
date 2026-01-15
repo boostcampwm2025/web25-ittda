@@ -14,13 +14,9 @@ export class GuestController {
     const session = await this.guestSessionService.create();
 
     return {
-      success: true,
-      data: {
-        guest: true,
-        guestSessionId: session.id,
-        expiresAt: session.expiresAt,
-      },
-      error: null,
+      guest: true,
+      guestSessionId: session.id,
+      expiresAt: session.expiresAt,
     };
   }
 }

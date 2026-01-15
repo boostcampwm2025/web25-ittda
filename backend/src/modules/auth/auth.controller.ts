@@ -167,7 +167,7 @@ export class AuthController {
       path: '/',
     });
 
-    return { success: true, error: null };
+    return;
   }
 }
 

@@ -164,6 +164,6 @@ export class GroupController {
   ) {
     // GroupRoleGuard가 groupId로 권한 체크를 해줌
     await this.groupService.deleteInvite(inviteId);
-    return { success: true };
+    return;
   }
 }

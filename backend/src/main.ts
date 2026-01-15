@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllHttpExceptionFilter } from '@/common/exception_filters/AllHttpExceptionFilter';
 import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
+import { TransformInterceptor } from '@/common/interceptors/transform.interceptor';
 import cookieParser from 'cookie-parser';
 
 import 'reflect-metadata';
@@ -31,6 +32,9 @@ async function bootstrap() {
     new AllHttpExceptionFilter(),
     new AllWsExceptionFilter(),
   );
+
+  // ✅ 전역 응답 인터셉터 등록 (성공 응답 통일)
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   // CORS 설정
   app.enableCors({
