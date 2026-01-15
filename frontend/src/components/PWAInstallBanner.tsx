@@ -109,7 +109,16 @@ export default function PWAInstallBanner() {
   }
 
   // 배너를 표시하기로 결정되었지만 아직 렌더링되지 않은 경우 스켈레톤 표시
+  // 사용자가 배너를 닫은 경우 완전히 제거 (shouldShowBanner가 false로 변경되지 않은 상태)
   if (!showBanner) {
+    // localStorage에 dismiss 정보가 있는 경우 = 사용자가 닫은 경우
+    const dismissedUntil = localStorage.getItem('pwa-banner-dismissed-until');
+    const neverShowAgain = localStorage.getItem('pwa-banner-never-show');
+
+    if (dismissedUntil || neverShowAgain) {
+      return null;
+    }
+
     return skeletonBanner;
   }
 
@@ -128,7 +137,7 @@ export default function PWAInstallBanner() {
       <div className="relative w-full">
         <div
           onClick={handleInstallClick}
-          className="relative p-4 bg-linear-to-br from-itta-point to-itta-point/80 cursor-pointer overflow-hidden group hover:shadow-lg transition-all active:scale-[0.98]"
+          className="relative p-4 bg-linear-to-br from-itta-point to-itta-point/80 cursor-pointer overflow-hidden group hover:shadow-lg transition-all"
         >
           {/* 배경 패턴 */}
           <div className="absolute inset-0 opacity-10">
@@ -182,15 +191,17 @@ export default function PWAInstallBanner() {
           </div>
 
           {/* 다시 보지 않기 버튼 */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleNeverShowAgain();
-            }}
-            className="relative mt-2 w-full py-1.5 text-xs text-white/70 hover:text-white/90 transition-colors underline underline-offset-2 z-10"
-          >
-            다시 보지 않기
-          </button>
+          <div className="w-full flex justify-center items-center">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNeverShowAgain();
+              }}
+              className="relative mt-2 w-fit py-1.5 text-xs text-white/70 hover:text-white/90 transition-colors underline underline-offset-2 z-10"
+            >
+              다시 보지 않기
+            </button>
+          </div>
         </div>
       </div>
     </>
