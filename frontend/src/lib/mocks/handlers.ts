@@ -5,6 +5,22 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.post('/api/auth/guest', () => {
+    return HttpResponse.json(
+      {
+        success: true,
+        data: {
+          guest: true,
+          guestSessionId: 'gs_abc123',
+          expiresAt: '2026-01-14T12:00:00Z',
+        },
+        error: null,
+      },
+      {
+        status: 200,
+      },
+    );
+  }),
   http.get('/api/posts/list', ({ request }) => {
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') ?? '1');
