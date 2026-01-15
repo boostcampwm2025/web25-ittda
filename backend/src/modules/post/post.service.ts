@@ -161,6 +161,7 @@ export class PostService {
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       blocks: blocks.map((b) => ({
+        id: b.id,
         type: b.type,
         value: b.value,
         layout: {

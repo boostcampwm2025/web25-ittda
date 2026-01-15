@@ -2,6 +2,7 @@ import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { PostScope } from '@/enums/post-scope.enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PostBlockDto } from './post-block.dto';
+import { IsUUID } from 'class-validator';
 
 export class PostContributorUserDto {
   @ApiProperty()
@@ -9,7 +10,7 @@ export class PostContributorUserDto {
 }
 
 export class PostContributorDto {
-  @ApiProperty()
+  @ApiProperty({ format: 'uuid' })
   userId: string;
   @ApiProperty({ enum: PostContributorRole })
   role: PostContributorRole;
@@ -18,13 +19,16 @@ export class PostContributorDto {
 }
 
 export class PostDetailDto {
-  @ApiProperty()
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
   id: string;
   @ApiProperty({ enum: PostScope })
   scope: PostScope;
-  @ApiProperty()
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
   ownerUserId: string;
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsUUID()
   groupId?: string | null;
   @ApiProperty()
   title: string;

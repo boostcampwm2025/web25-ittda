@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Search, Loader2 } from 'lucide-react'; // 로딩 아이콘 추가
+import { Loader2 } from 'lucide-react';
 import {
   APIProvider,
   Map,
@@ -10,14 +10,10 @@ import {
   useMapsLibrary,
 } from '@vis.gl/react-google-maps';
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import Input from '../Input';
 import { LocationValue } from '@/lib/types/recordField';
+import { MapSearchBar } from './MapSearchBar';
+import { searchPlacesByKeyword } from '@/lib/utils/googleMaps';
 
 export type LocationMode = 'search' | 'post';
 
@@ -45,16 +41,13 @@ export function LocationPicker({
 
   const placesLib = useMapsLibrary('places');
   const geometryLib = useMapsLibrary('geometry');
-
-  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<
     google.maps.places.PlaceResult[]
   >([]);
-  const [showResults, setShowResults] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const [centerAddress, setCenterAddress] = useState<string>(''); // 현재 중심 주소
-  const [isAddressLoading, setIsAddressLoading] = useState(false); // 주소 로딩 상태
+  const [centerAddress, setCenterAddress] = useState<string>('');
+  const [isAddressLoading, setIsAddressLoading] = useState(false);
 
   useEffect(() => {
     if (!mapRef.current || !placesLib) return;
@@ -69,26 +62,25 @@ export function LocationPicker({
     }
   }, [geoLat, geoLng]);
 
-  const handleSearch = () => {
-    if (!searchQuery.trim() || !mapRef.current) return;
-
+  const handleSearch = async (keyword: string) => {
+    debugger;
+    if (!keyword.trim() || !mapRef.current) return;
     if (!placesServiceRef.current) {
       placesServiceRef.current = new google.maps.places.PlacesService(
         mapRef.current,
       );
     }
+    const currentPlacesServiceRef = placesServiceRef.current;
     const currentCenter = mapRef.current.getCenter();
-    const request: google.maps.places.TextSearchRequest = {
-      query: searchQuery,
-      location: currentCenter,
-    };
+    setIsProcessing(true);
 
-    placesServiceRef.current?.textSearch(request, (results, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-        setSearchResults(results.slice(0, 10));
-        setShowResults(true);
-      }
-    });
+    const results = await searchPlacesByKeyword(
+      currentPlacesServiceRef,
+      keyword,
+      currentCenter,
+    );
+    setSearchResults(results.slice(0, 10));
+    setIsProcessing(false);
   };
 
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
@@ -127,23 +119,31 @@ export function LocationPicker({
     }
   };
 
-  const handleConfirm = async (place?: google.maps.places.PlaceResult) => {
+  const handleSelectPlace = (place: google.maps.places.PlaceResult) => {
+    if (!mapRef.current || !place.geometry?.location) return;
+
+    const location = place.geometry.location;
+
+    // 지도를 해당 위치로 이동
+    mapRef.current.panTo({
+      lat: location.lat(),
+      lng: location.lng(),
+    });
+
+    mapRef.current.setZoom(17);
+  };
+
+  const handleConfirm = async () => {
     if (!mapRef.current) return;
     setIsProcessing(true);
 
     try {
       const center = mapRef.current.getCenter()!;
-      let lat = center.lat();
-      let lng = center.lng();
-      let addr = centerAddress; // 이미 구해놓은 중심 주소 사용
-
-      if (place && place.geometry?.location) {
-        lat = place.geometry.location.lat();
-        lng = place.geometry.location.lng();
-        addr = place.name || place.formatted_address || '';
-      }
-
-      const data: LocationValue = { lat, lng, address: addr };
+      const data: LocationValue = {
+        lat: center.lat(),
+        lng: center.lng(),
+        address: centerAddress,
+      };
 
       if (mode === 'search') {
         const bounds = mapRef.current.getBounds();
@@ -160,7 +160,6 @@ export function LocationPicker({
       console.error('Location Confirm Error:', error);
     } finally {
       setIsProcessing(false);
-      setShowResults(false);
     }
   };
 
@@ -168,53 +167,13 @@ export function LocationPicker({
     <div className="w-full h-[500px] md:h-[600px] flex flex-col relative overflow-hidden bg-white">
       {/* 검색 바 */}
       <div className="absolute top-4 w-full px-4 z-50 max-w-md left-1/2 -translate-x-1/2">
-        <Popover
-          open={showResults && searchResults.length > 0}
-          onOpenChange={setShowResults}
-        >
-          <PopoverTrigger asChild>
-            <div className="w-full">
-              <Input className="shadow-xl border-none bg-white">
-                <Input.Field
-                  placeholder={
-                    mode === 'search' ? '검색할 지역 입력' : '장소 검색'
-                  }
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="dark:text-itta-black"
-                />
-                <Input.Right>
-                  <button onClick={handleSearch} type="button">
-                    <Search className="w-4 h-4 text-gray-400" />
-                  </button>
-                </Input.Right>
-              </Input>
-            </div>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-[var(--radix-popover-trigger-width)] p-0 bg-white shadow-2xl border"
-            align="start"
-          >
-            <div className="max-h-60 overflow-y-auto">
-              {searchResults.map((p) => (
-                <button
-                  key={p.place_id}
-                  type="button"
-                  onClick={() => handleConfirm(p)}
-                  className="w-full p-3 text-left hover:bg-gray-100 border-b last:border-0 flex flex-col"
-                >
-                  <span className="font-bold text-sm text-gray-900">
-                    {p.name}
-                  </span>
-                  <span className="text-xs text-gray-500 truncate">
-                    {p.formatted_address}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
+        <MapSearchBar
+          onSelect={handleSelectPlace}
+          placeholder={mode === 'search' ? '검색할 지역 입력' : '장소 검색'}
+          searchResults={searchResults}
+          onSearch={handleSearch}
+          isSearching={isProcessing}
+        />
       </div>
 
       {/* 지도 */}
@@ -226,7 +185,6 @@ export function LocationPicker({
             disableDefaultUI
             gestureHandling="greedy"
             onDragstart={() => {
-              setShowResults(false);
               setIsAddressLoading(true); // 드래그 시작 시 로딩 상태로 변경
             }}
             onIdle={handleMapIdle} // 지도가 멈추면 주소 갱신

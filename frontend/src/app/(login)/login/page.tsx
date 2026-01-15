@@ -10,17 +10,13 @@ import { useRouter } from 'next/navigation';
 export default function LoginPage() {
   const router = useRouter();
   const { setGuestInfo } = useAuthStore();
-  const { mutateAsync, isPending } = useApiPost<GuestInfo>('/v1/auth/guest');
+  const { mutateAsync, isPending } = useApiPost<GuestInfo>('/api/auth/guest');
 
   const handleLoginGuest = async () => {
-    try {
-      const response = await mutateAsync({});
-      if (response.success && response.data) {
-        setGuestInfo(response.data);
-        router.push('/');
-      }
-    } catch {
-      // 전역 에러 핸들러에서 toast를 띄우므로 여기서는 아무것도 안 함
+    const response = await mutateAsync({});
+    if (response.success && response.data) {
+      setGuestInfo(response.data);
+      router.push('/');
     }
   };
 

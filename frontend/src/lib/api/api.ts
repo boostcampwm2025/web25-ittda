@@ -5,6 +5,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_MOCK === 'true'
     ? ''
     : process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_MOCK === 'true' ? '' : '/api';
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;

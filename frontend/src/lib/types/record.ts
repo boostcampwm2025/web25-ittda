@@ -127,3 +127,15 @@ export interface CreateRecordRequest {
   thumbnailMediaId?: string;
   blocks: CreateRecordBlock[];
 }
+
+// 지도 리스트 아이템
+export interface MapPostItem {
+  id: string;
+  lat: number;
+  lng: number;
+  title: string;
+  imageUrl: string;
+  createdAt: string;
+  tags: string[];
+  placeName: string;
+}
