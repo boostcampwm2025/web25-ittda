@@ -182,7 +182,11 @@ export async function fetchApi<T>(
     ...fetchOptions
   } = options;
 
-  const url = buildUrl(`${API_BASE_URL}${endpoint}`, params);
+  // 서버 환경에서는 /api -> /v1로 변환 (rewrites 규칙 반영)
+  const finalEndpoint =
+    typeof window === 'undefined' ? endpoint.replace(/^\/api/, '') : endpoint;
+
+  const url = buildUrl(`${API_BASE_URL}${finalEndpoint}`, params);
 
   // 인증 헤더 추가
   const defaultHeaders: HeadersInit = {
