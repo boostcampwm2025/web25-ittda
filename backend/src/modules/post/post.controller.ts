@@ -9,17 +9,15 @@ import {
   Req,
   NotImplementedException,
 } from '@nestjs/common';
-import {
-  ApiCreatedResponse,
-  ApiHeader,
-  ApiNoContentResponse,
-  ApiOkResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiHeader, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
 import type { Request } from 'express';
+import {
+  ApiWrappedCreatedResponse,
+  ApiWrappedOkResponse,
+} from '@/common/swagger/api-wrapped-response.decorator';
 
 type AuthedRequest = Request & {
   user?: { id: string };
@@ -48,14 +46,14 @@ export class PostController {
     required: false,
   })
   @Get(':id')
-  @ApiOkResponse({ type: PostDetailDto })
+  @ApiWrappedOkResponse({ type: PostDetailDto })
   getOne(@Param('id') id: string): Promise<PostDetailDto> {
     return this.postService.findOne(id);
   }
 
   // TODO: 나중에 AuthGuard 붙이기
   @HttpPost()
-  @ApiCreatedResponse({ type: PostDetailDto })
+  @ApiWrappedCreatedResponse({ type: PostDetailDto })
   @ApiHeader({
     name: 'x-user-id',
     description: '임시 사용자 ID (AuthGuard 적용 전)',
