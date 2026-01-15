@@ -29,7 +29,8 @@ export default function BottomNavigation() {
     pathname.includes('/month/') ||
     pathname.includes('/edit');
   const isGroupChat = pathname.includes('/chat');
-  const isLogin = pathname.includes('/login');
+  const isLogin =
+    pathname.includes('/login') || pathname.includes('/oauth/callback');
 
   const showNav =
     !minimalPaths.includes(pathname) && !isDetail && !isGroupChat && !isLogin;
