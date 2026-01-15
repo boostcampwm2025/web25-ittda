@@ -1,8 +1,6 @@
 import EmotionDrawer from '@/app/(post)/_components/editor/emotion/EmotionDrawer';
 import DateDrawer from '../DateDrawer';
 import TagSearchDrawer from '@/app/(search)/_components/TagSearchDrawer';
-import { LocationValue } from '@/lib/types/recordField';
-import LocationDrawer from '../map/LocationDrawer';
 
 export type FilterDrawerType = 'tag' | 'date' | 'location' | 'emotion' | null;
 
@@ -12,7 +10,6 @@ interface Props {
   tags: string[];
   emotions: string[];
   dateRange: { start: string | null; end: string | null };
-  location?: LocationValue;
   onUpdateUrl: (params: Record<string, string | null>) => void;
 }
 const ALL_TAGS = [
@@ -33,7 +30,6 @@ export function FilterDrawerRenderer({
   tags,
   emotions,
   dateRange,
-  location,
   onUpdateUrl,
 }: Props) {
   if (!activeDrawer) return;
@@ -78,22 +74,6 @@ export function FilterDrawerRenderer({
           currentRange={dateRange}
           onSelectRange={(r) => {
             onUpdateUrl({ start: r.start, end: r.end });
-            close();
-          }}
-          onClose={close}
-        />
-      );
-    case 'location':
-      return (
-        <LocationDrawer
-          mode="search"
-          onSelect={(loc: LocationValue) => {
-            onUpdateUrl({
-              lat: String(loc.lat),
-              lng: String(loc.lng),
-              address: loc.address || null,
-              radius: String(loc.radius || 5000),
-            });
             close();
           }}
           onClose={close}
