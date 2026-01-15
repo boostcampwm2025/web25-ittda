@@ -1,10 +1,6 @@
 import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, clearTokens } from './auth';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_MOCK === 'true'
-    ? ''
-    : process.env.NEXT_PUBLIC_API_URL || '/api';
 const API_BASE_URL = process.env.NEXT_PUBLIC_MOCK === 'true' ? '' : '/api';
 
 interface FetchOptions extends RequestInit {
