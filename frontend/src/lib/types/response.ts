@@ -33,6 +33,10 @@ export interface GuestLoginResponse {
   expiresAt: string;
 }
 
+export interface TempCodeResponse {
+  accessToken: string;
+}
+
 export interface ReissueResponse {
   accessToken: string;
 }
