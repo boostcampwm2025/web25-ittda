@@ -65,7 +65,7 @@ export default function DailyDetailRecordItem({
         </div>
         <div
           onClick={() => handleRecordClick(record.id)}
-          className="rounded-2xl p-5 border shadow-sm cursor-pointer active:scale-[0.99] transition-all overflow-hidden dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100/60"
+          className="rounded-lg p-5 border shadow-sm cursor-pointer active:scale-[0.99] transition-all overflow-hidden dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100/60"
         >
           <div className="w-full flex justify-between items-center gap-2 mb-4">
             <h4 className="text-[15px] font-bold truncate dark:text-gray-200 text-itta-black">

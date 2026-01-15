@@ -128,6 +128,71 @@ export interface CreateRecordRequest {
   blocks: CreateRecordBlock[];
 }
 
+export type BlockType =
+  | 'DATE'
+  | 'TIME'
+  | 'TEXT'
+  | 'TAG'
+  | 'RATING'
+  | 'IMAGE'
+  | 'LOCATION'
+  | 'MOOD'
+  | 'TABLE'
+  | 'MEDIA';
+
+export interface BlockLayout {
+  row: number;
+  col: number;
+  span: number;
+}
+
+export type BlockValue =
+  | { text: string }
+  | { mood: string }
+  | { tags: string[] }
+  | { rating: number }
+  | { date: string }
+  | { time: string }
+  | {
+      lat: number;
+      lng: number;
+      address: string;
+      placeName?: string;
+    }
+  | { mediaIds?: string[]; tempUrls?: string[] }
+  | { rows: number; cols: number; cells: string[][] }
+  | {
+      title: string;
+      type: string;
+      year?: string;
+      imageUrl?: string;
+    };
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  value: BlockValue;
+  layout: BlockLayout;
+}
+
+export interface RecordContributor {
+  userId: string;
+  role: 'AUTHOR' | 'EDITOR';
+  nickname: string;
+}
+
+export interface RecordDetailResponse {
+  id: string;
+  scope: PostScope;
+  ownerUserId: string;
+  groupId: string | null;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  blocks: Block[];
+  contributors: RecordContributor[];
+}
+
 // 지도 리스트 아이템
 export interface MapPostItem {
   id: string;
