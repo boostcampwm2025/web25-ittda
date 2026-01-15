@@ -5,7 +5,7 @@ import { Map as MapIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { MapPostItem } from '@/lib/types/record';
-import { useBottomSheet } from '../_hooks/useBottomSheet';
+import { useBottomSheetResize } from '../_hooks/useBottomSheetResize';
 import { MapRecordItem } from './MapRecordItem';
 
 interface Props {
@@ -60,7 +60,7 @@ export default function RecordMapDrawer({
     onPointerMove,
     onPointerUp,
     snapTo,
-  } = useBottomSheet();
+  } = useBottomSheetResize();
 
   useEffect(() => {
     // 샤로운 postID를 클릭했을 때 처음 한 번만 튀어오르게 기억하는 용도

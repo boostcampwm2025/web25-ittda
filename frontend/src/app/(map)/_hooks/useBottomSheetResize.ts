@@ -1,16 +1,24 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-export function useBottomSheet() {
-  const snapPoints = useMemo(
-    () => ({
+export function useBottomSheetResize() {
+  // 각 window.innerHeight 을 기반으로 최소/최대 조정하기 위함
+  const snapPoints = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return { collapsed: 150, half: 500, full: 900 };
+    }
+    return {
       collapsed: window.innerHeight * 0.15,
       half: window.innerHeight * 0.5,
       full: window.innerHeight * 0.92,
-    }),
-    [],
-  );
-  const [height, setHeight] = useState(snapPoints.collapsed);
+    };
+  }, []);
+
+  const [height, setHeight] = useState(150);
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    setHeight(snapPoints.collapsed);
+  }, [snapPoints]);
 
   const startY = useRef(0);
   const startH = useRef(0);
