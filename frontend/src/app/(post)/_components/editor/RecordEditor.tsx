@@ -218,7 +218,6 @@ export default function PostEditor({
       ? block.value
       : getDefaultValue(type as FieldType);
 
-    debugger;
     switch (type) {
       case 'date':
         return (

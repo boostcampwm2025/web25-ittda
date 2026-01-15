@@ -8,10 +8,12 @@ import {
   Map,
   useMap,
   useMapsLibrary,
+  ColorScheme,
 } from '@vis.gl/react-google-maps';
 import { Button } from '@/components/ui/button';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationValue } from '@/lib/types/recordField';
+import { useTheme } from 'next-themes';
 import { MapSearchBar } from './MapSearchBar';
 import { searchPlacesByKeyword } from '@/lib/utils/googleMaps';
 
@@ -28,6 +30,7 @@ export function LocationPicker({
   onSelect,
   initialCenter,
 }: LocationPickerProps) {
+  const { theme } = useTheme();
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string;
 
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -180,6 +183,10 @@ export function LocationPicker({
       <div className="flex-1 relative z-10">
         <APIProvider apiKey={apiKey}>
           <Map
+            colorScheme={
+              theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT
+            }
+            mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
             defaultCenter={initialCenter || { lat: 37.5665, lng: 126.978 }}
             defaultZoom={15}
             disableDefaultUI
