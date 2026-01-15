@@ -71,7 +71,8 @@ export default function GoogleMap({
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-  if (!apiKey) return <div>API KEY가 없습니다 (.env.local 확인)</div>;
+  // 전역 에러에서 잡아 에러 페이지 뜨도록
+  if (!apiKey) throw new Error('지도 호출 에러');
 
   return (
     <div className="bg-yellow-50 w-full h-full relative">
