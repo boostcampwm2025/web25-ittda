@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { GripVertical } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 
 // 컴포넌트 및 필드 임포트
 import RecordEditorHeader from './RecordEditorHeader';
@@ -24,7 +23,6 @@ import TagDrawer from './tag/TagDrawer';
 import RatingDrawer from './rating/RatingPickerDrawer';
 import PhotoDrawer from './photo/PhotoDrawer';
 import EmotionDrawer from './emotion/EmotionDrawer';
-import LocationDrawer from '@/components/map/LocationDrawer';
 import MediaDrawer from './media/MediaDrawer';
 
 // 타입
@@ -40,7 +38,6 @@ import {
 import {
   canBeHalfWidth,
   getDefaultValue,
-  normalizeLayout,
 } from '../../_utils/recordLayoutHelper';
 import SaveTemplateDrawer from './core/SaveTemplateDrawer';
 import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
@@ -48,6 +45,8 @@ import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
 import { usePostEditorBlocks } from '../../_hooks/usePostEditorBlocks';
 import { useCreateRecord } from '@/hooks/useCreateRecord';
 import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
+import { useRouter } from 'next/navigation';
+import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
 
 export default function PostEditor({
   mode,
@@ -56,8 +55,10 @@ export default function PostEditor({
   mode: 'add' | 'edit';
   initialPost?: { title: string; blocks: RecordBlock[] };
 }) {
+  const router = useRouter();
+
   const [title, setTitle] = useState(initialPost?.title ?? '');
-  const { mutate: createRecord, isPending } = useCreateRecord();
+  const { mutate: createRecord } = useCreateRecord();
 
   const {
     blocks,
@@ -82,23 +83,20 @@ export default function PostEditor({
     handleGridDragOver,
   } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
 
-  // 초기화 로직
+  // 페이지 초기화/복구 및 위치 데이터 받기
   // TODO: 이후 키 형태로 변경
-  useEffect(() => {
-    if (initialPost?.blocks) {
-      setBlocks(normalizeLayout(initialPost.blocks));
-    } else {
-      const initialTypes: FieldType[] = ['date', 'time', 'content'];
-      const initialBlocks = initialTypes.map((type) => ({
-        id: uuidv4(),
-        type,
-        value: getDefaultValue(type),
-        layout: { row: 0, col: 0, span: 2 },
-      })) as RecordBlock[];
-      setBlocks(normalizeLayout(initialBlocks));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPost]);
+  usePostEditorInitializer({
+    initialPost,
+    onInitialized: ({ title, blocks }) => {
+      setTitle(title);
+      setBlocks(blocks);
+    },
+  });
+
+  const goToLocationPicker = () => {
+    sessionStorage.setItem('editor_draft', JSON.stringify({ title, blocks }));
+    router.push('/location-picker');
+  };
 
   const handleSave = () => {
     const payload = {
@@ -173,7 +171,11 @@ export default function PostEditor({
           <TableField
             data={block.value}
             onUpdate={(d) => {
-              d ? updateFieldValue(d, block.id) : removeBlock(block.id);
+              if (d) {
+                updateFieldValue(d, block.id);
+              } else {
+                removeBlock(block.id);
+              }
             }}
           />
         );
@@ -189,8 +191,8 @@ export default function PostEditor({
       case 'location':
         return (
           <LocationField
-            address={block.value.address}
-            onClick={() => setActiveDrawer({ type: 'location', id: block.id })}
+            location={block.value}
+            onClick={() => goToLocationPicker()}
             onRemove={() => removeBlock(block.id)}
           />
         );
@@ -321,21 +323,6 @@ export default function PostEditor({
             onClose={() => setActiveDrawer(null)}
           />
         );
-      case 'location':
-        return (
-          <LocationDrawer
-            mode="post"
-            onSelect={(v) =>
-              handleDone({
-                lat: v.lat || 0,
-                lng: v.lng || 0,
-                address: v.address || '',
-                placeName: v.placeName || '',
-              })
-            }
-            onClose={() => setActiveDrawer(null)}
-          />
-        );
       case 'media':
         return (
           <MediaDrawer
@@ -348,6 +335,14 @@ export default function PostEditor({
     }
   };
 
+  // location 분기처리를 위한 Toolbar 전달용 핸들러
+  const handleToolbarAddBlock = (type: FieldType) => {
+    if (type === 'location') {
+      goToLocationPicker();
+    } else {
+      addOrShowBlock(type);
+    }
+  };
   return (
     <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
       <RecordEditorHeader mode={mode} onSave={handleSave} />
@@ -375,7 +370,10 @@ export default function PostEditor({
           ))}
         </div>
       </main>
-      <Toolbar onAddBlock={addOrShowBlock} onOpenDrawer={setActiveDrawer} />
+      <Toolbar
+        onAddBlock={handleToolbarAddBlock}
+        onOpenDrawer={setActiveDrawer}
+      />
 
       <input
         type="file"
