@@ -8,7 +8,9 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
+import { useApiPost } from '@/hooks/useApi';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,
   CalendarDays,
@@ -21,6 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 type GroupSortOption = 'latest' | 'count' | 'members' | 'name';
 
@@ -31,26 +34,35 @@ export default function SharedHeaderActions() {
   const [isCreating, setIsCreating] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
 
-  const handleCreateGroup = () => {
-    if (!newGroupName.trim()) return;
-    setIsCreating(true);
-    setTimeout(() => {
-      // TODO: 서버로 새로운 그룹 생성 요청
-      const newGroup = {
-        id: `g${Date.now()}`,
-        name: newGroupName,
-        members: 1,
-        count: 0,
-        latestTitle: '첫 기록을 남겨보세요',
-        latestLocation: '장소 정보 없음',
-        updatedAt: Date.now(),
-        hasNotification: false,
-        coverUrl: '',
-      };
+  const queryClient = useQueryClient();
+
+  const { mutate } = useApiPost('/api/groups', {
+    onSuccess: () => {
+      // 공유 기록함 리스트 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ['share'] });
+    },
+    onSettled: () => {
       setNewGroupName('');
       setShowCreateModal(false);
       setIsCreating(false);
-    }, 600);
+    },
+  });
+
+  const handleCreateGroup = () => {
+    const groupNameRegex = /^[a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s]{2,10}$/;
+
+    if (!newGroupName.trim()) {
+      toast.error('그룹 이름을 입력해주세요.');
+      return;
+    }
+
+    if (!groupNameRegex.test(newGroupName)) {
+      toast.error('이름은 2~10자의 한글, 영문, 숫자, 공백만 가능합니다.');
+      return;
+    }
+
+    setIsCreating(true);
+    mutate({ name: newGroupName });
   };
 
   return (
