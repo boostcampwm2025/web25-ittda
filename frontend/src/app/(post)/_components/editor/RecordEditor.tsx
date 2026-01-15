@@ -173,7 +173,6 @@ export default function PostEditor({
           <TableField
             data={block.value}
             onUpdate={(d) => {
-              debugger;
               d ? updateFieldValue(d, block.id) : removeBlock(block.id);
             }}
           />
