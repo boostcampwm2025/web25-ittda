@@ -307,7 +307,7 @@ export default function RecordMapPage() {
       <APIProvider apiKey={apiKey!}>
         <div className="absolute inset-0 z-0">
           <GoogleMap
-            posts={DUMMY_POSTS}
+            posts={displayPosts}
             selectedPostId={selectedPostId}
             onSelectPost={setSelectedPostId}
             onBoundsChange={handleBoundsChange}
