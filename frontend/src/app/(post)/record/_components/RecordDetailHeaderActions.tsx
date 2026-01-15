@@ -9,7 +9,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
-import { MemoryRecord } from '@/lib/types/record';
+import { RecordDetailResponse } from '@/lib/types/record';
 import {
   PopoverClose,
   PopoverContent,
@@ -20,7 +20,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface RecordDetailHeaderActionsProps {
-  record: MemoryRecord;
+  record: RecordDetailResponse;
 }
 
 export default function RecordDetailHeaderActions({
@@ -52,9 +52,13 @@ export default function RecordDetailHeaderActions({
       return;
     }
 
+    // TEXT 타입 블록에서 내용 추출
+    const textBlock = record.blocks.find((block) => block.type === 'TEXT');
+    const content = textBlock?.value.text || '';
+
     const shareData = {
       title: record.title,
-      text: record.data.content,
+      text: content,
       url: window.location.href,
     };
 
@@ -69,7 +73,7 @@ export default function RecordDetailHeaderActions({
         try {
           await navigator.share({
             title: record.title,
-            text: record.data.content,
+            text: content,
           });
         } catch (innerErr) {
           console.error('Share failed even without URL:', innerErr);
