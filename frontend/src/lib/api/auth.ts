@@ -52,7 +52,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
   try {
     const response = await post<ReissueResponse>(
-      '/auth/reissue',
+      '/api/auth/refresh',
       undefined,
       undefined,
       true, // sendCookie = true (refresh token 전송)
@@ -68,7 +68,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     // 재발급 실패 (refresh token도 만료됨)
     setAccessToken(null);
     return null;
-  } catch (error) {
+  } catch {
     setAccessToken(null);
     return null;
   } finally {
