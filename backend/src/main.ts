@@ -38,17 +38,10 @@ async function bootstrap() {
 
   // CORS 설정
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://211.188.48.38'], // FE 주소(TODO: 도메인으로 변경)
+    origin: [process.env.FRONTEND_URL], // FE 주소(TODO: 도메인으로 변경)
     credentials: true, // 쿠키/세션 허용
+    exposedHeaders: ['Authorization'], // Access Token을 헤더로 보낼 경우 필수
   });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // DTO에 없는 필드 자동 제거
-      forbidNonWhitelisted: true, // DTO에 없는 필드 오면 400
-      transform: true, // payload를 DTO 인스턴스로 변환
-    }),
-  );
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('ITTDA API')
