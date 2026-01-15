@@ -4,10 +4,11 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
+import type { Response as ExpressResponse } from 'express';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-export interface Response<T> {
+export interface ApiResponse<T> {
   success: true;
   data: T | Record<string, never>;
   meta: unknown;
@@ -17,20 +18,29 @@ export interface Response<T> {
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor<
   T,
-  Response<T>
+  ApiResponse<T> | T
 > {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<Response<T>> {
+  ): Observable<ApiResponse<T> | T> {
+    const httpContext = context.switchToHttp();
+    const response = httpContext.getResponse<ExpressResponse>();
+
     return next.handle().pipe(
-      map((data) => ({
-        // controller에서 data를 반환하면 자동으로 공통 응답 형식으로 변환
-        success: true,
-        data: (data ?? {}) as T,
-        meta: {}, // 추후 페이지네이션 등 메타데이터 필요시 확장
-        error: null,
-      })),
+      map((data) => {
+        if (response.headersSent || response.statusCode === 204) {
+          return data as T;
+        }
+
+        return {
+          // controller에서 data를 반환하면 자동으로 공통 응답 형식으로 변환
+          success: true,
+          data: (data ?? {}) as T,
+          meta: {}, // 추후 페이지네이션 등 메타데이터 필요시 확장
+          error: null,
+        };
+      }),
     );
   }
 }

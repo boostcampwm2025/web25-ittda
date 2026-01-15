@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
@@ -173,5 +174,19 @@ export class PostService {
       contributors: contributorDtos,
     };
     return dto;
+  }
+
+  /**
+   * 게시글 삭제: 작성자만 삭제 가능, soft delete 처리.
+   */
+  async deletePost(postId: string, requesterId: string): Promise<void> {
+    const post = await this.postRepository.findOne({
+      where: { id: postId, deletedAt: IsNull() },
+    });
+    if (!post) throw new NotFoundException('Post not found');
+    if (post.ownerUserId !== requesterId) {
+      throw new ForbiddenException('Only the owner can delete this post');
+    }
+    await this.postRepository.softDelete(postId);
   }
 }

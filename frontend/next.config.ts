@@ -24,10 +24,6 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/posts/:path*',
-        destination: `${backendHost}/posts/:path*`,
-      },
-      {
         source: '/api/kopis/:path*',
         destination: 'http://www.kopis.or.kr/openApi/restful/:path*',
       },
