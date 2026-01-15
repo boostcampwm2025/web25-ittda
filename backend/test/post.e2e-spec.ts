@@ -91,6 +91,15 @@ describe('PostController (e2e)', () => {
           value: { rating: 4 },
           layout: { row: 3, col: 2, span: 1 },
         },
+        {
+          type: 'IMAGE',
+          value: {
+            tempUrls: [
+              'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=800',
+            ],
+          },
+          layout: { row: 4, col: 1, span: 2 },
+        },
       ],
     };
 
@@ -105,7 +114,7 @@ describe('PostController (e2e)', () => {
       title: string;
       scope: PostScope;
       ownerUserId: string;
-      blocks: Array<{ type: string }>;
+      blocks: Array<{ type: string; value?: { tempUrls?: string[] } }>;
       contributors: Array<{ userId: string; role: string }>;
     };
 
@@ -115,6 +124,9 @@ describe('PostController (e2e)', () => {
     expect(created.ownerUserId).toBe(owner.id);
     expect(created.blocks.length).toBeGreaterThan(0);
     expect(created.contributors[0]?.userId).toBe(owner.id);
+    expect(
+      created.blocks.find((b) => b.type === 'IMAGE')?.value?.tempUrls?.length,
+    ).toBeGreaterThan(0);
 
     const getRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
@@ -135,7 +147,7 @@ describe('PostController (e2e)', () => {
     expect(fetched.contributors[0]?.userId).toBe(owner.id);
   });
 
-  it('GET /posts/:id should return 404 for soft-deleted posts', async () => {
+  it('DELETE /posts/:id should soft-delete and return 404 on fetch', async () => {
     const payload = {
       scope: PostScope.PERSONAL,
       title: '삭제 테스트',
@@ -161,8 +173,36 @@ describe('PostController (e2e)', () => {
 
     const created = createRes.body as { id: string };
 
-    await postRepository.update(created.id, { deletedAt: new Date() });
+    await request(app.getHttpServer())
+      .delete(`/posts/${created.id}`)
+      .set('x-user-id', owner.id)
+      .expect(204);
 
     await request(app.getHttpServer()).get(`/posts/${created.id}`).expect(404);
+  });
+
+  it('POST /posts should return 400 when TEXT block is missing', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '텍스트 없음',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+      ],
+    };
+
+    await request(app.getHttpServer())
+      .post('/posts')
+      .set('x-user-id', owner.id)
+      .send(payload)
+      .expect(400);
   });
 });

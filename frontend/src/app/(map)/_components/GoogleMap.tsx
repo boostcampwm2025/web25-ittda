@@ -1,24 +1,27 @@
 'use client';
 
-import Input from '@/components/Input';
+import { useMemo, useEffect } from 'react';
 import {
-  APIProvider,
+  AdvancedMarker,
   Map,
+  Pin,
   useMap,
+  useMapsLibrary,
   ColorScheme,
 } from '@vis.gl/react-google-maps';
-import { Calendar, Search } from 'lucide-react';
-import type { PostListItem } from '@/lib/types/record';
-import { useEffect } from 'react';
+import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
 import { useTheme } from 'next-themes';
 
 interface GoogleMapProps {
-  posts: PostListItem[];
-  leftPanelWidth: number;
-  selectedPostId: string | null;
-  onSelectPost: (id: string | null) => void;
-  isMobile: boolean;
+  posts: MapPostItem[];
+  selectedPostId: string | string[] | null;
+  onSelectPost: (id: string | string[] | null) => void;
+  onBoundsChange?: (bounds: google.maps.LatLngBounds | null) => void;
+  onMapClick?: () => void;
+  mapRef: React.MutableRefObject<google.maps.Map | null>;
+  placesServiceRef: React.MutableRefObject<google.maps.places.PlacesService | null>;
+  searchedLocation: { lat: number; lng: number } | null;
 }
 
 function FlyToOnSelect({
@@ -46,64 +49,74 @@ function FlyToOnSelect({
 
 export default function GoogleMap({
   posts,
-  leftPanelWidth,
   selectedPostId,
   onSelectPost,
-  isMobile,
+  onBoundsChange,
+  onMapClick,
+  mapRef,
+  placesServiceRef,
+  searchedLocation,
 }: GoogleMapProps) {
   const { theme } = useTheme();
-  const filterWidth = leftPanelWidth > 500 ? 500 + 17 : leftPanelWidth + 17;
+  const placesLib = useMapsLibrary('places');
+  const selectedPost = useMemo(() => {
+    if (typeof selectedPostId === 'string') {
+      return posts.find((p) => p.id === selectedPostId) ?? null;
+    }
+    return null;
+  }, [posts, selectedPostId]);
 
-  const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null;
+  useEffect(() => {
+    if (!placesLib || !mapRef.current || placesServiceRef.current) return;
+
+    placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
+  }, [placesLib, mapRef, placesServiceRef]);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-  if (!apiKey) return <div>API KEY가 없습니다 (.env.local 확인)</div>;
+  // 전역 에러에서 잡아 에러 페이지 뜨도록
+  if (!apiKey) throw new Error('지도 호출 에러');
 
   return (
     <div className="bg-yellow-50 w-full h-full relative">
-      <APIProvider apiKey={apiKey!}>
-        <Map
-          colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
-          mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
-          defaultCenter={{ lat: 37.5665, lng: 126.978 }}
-          defaultZoom={12}
-          gestureHandling="greedy"
-          disableDefaultUI={false}
-        >
-          <ClusteredPostMarkers posts={posts} onSelectPost={onSelectPost} />
-
-          {/* 패널 선택 → 지도 이동 */}
-          {selectedPost && (
-            <FlyToOnSelect
-              lat={Number(selectedPost.lat)}
-              lng={Number(selectedPost.lng)}
-              offsetX={leftPanelWidth / 2} // 패널 폭의 절반만큼 오른쪽으로 보이게
-            />
-          )}
-        </Map>
-      </APIProvider>
-
-      <section
-        className="absolute top-3.5 right-4.25"
-        style={{ left: isMobile ? '5px' : `${filterWidth}px` }}
+      <Map
+        colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
+        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
+        defaultCenter={{ lat: 37.5665, lng: 126.978 }}
+        defaultZoom={12}
+        gestureHandling="greedy"
+        disableDefaultUI={true}
+        onClick={() => onMapClick?.()}
+        onIdle={(e) => onBoundsChange?.(e.map.getBounds() ?? null)}
       >
-        <Input className="w-full">
-          <Input.Left>
-            <Search className="w-5 h-5 text-itta-gray2" />
-          </Input.Left>
-          <Input.Field placeholder="로그 검색하기" />
-          <Input.Right>
-            <button
-              type="button"
-              onClick={() => {}}
-              className="shrink-0 p-1 hover:bg-itta-gray2/10 rounded transition-colors cursor-pointer"
-            >
-              <Calendar className="w-5 h-5 text-itta-gray3" />
-            </button>
-          </Input.Right>
-        </Input>
-      </section>
+        <ClusteredPostMarkers posts={posts} onSelectPost={onSelectPost} />
+
+        {selectedPost && (
+          <FlyToOnSelect
+            lat={Number(selectedPost.lat)}
+            lng={Number(selectedPost.lng)}
+            offsetX={250}
+          />
+        )}
+        <MapHandler
+          setMap={(map) => {
+            mapRef.current = map;
+          }}
+        />
+        {searchedLocation && (
+          <AdvancedMarker position={searchedLocation}>
+            <Pin background={'#FB4E4E'} glyphColor={'#FFFFFF'} />
+          </AdvancedMarker>
+        )}
+      </Map>
     </div>
   );
+}
+
+function MapHandler({ setMap }: { setMap: (map: google.maps.Map) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map) setMap(map);
+  }, [map, setMap]);
+  return null;
 }
