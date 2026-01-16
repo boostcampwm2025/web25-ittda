@@ -13,15 +13,11 @@ import { ApiHeader, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
-import type { Request } from 'express';
 import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
 } from '@/common/swagger/api-wrapped-response.decorator';
-
-type AuthedRequest = Request & {
-  user?: { id: string };
-};
+import { type AuthedRequest } from '@/common/types/auth-request.type';
 
 @ApiTags('posts')
 @Controller({ path: 'posts', version: '1' })
