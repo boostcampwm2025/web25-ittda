@@ -13,6 +13,11 @@ export const RecordBlockType = {
   TABLE: 'TABLE',
 } as const;
 
+export interface Emotion {
+  emoji: string;
+  label: string;
+}
+
 export type RecordBlockType =
   (typeof RecordBlockType)[keyof typeof RecordBlockType];
 
