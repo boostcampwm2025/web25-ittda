@@ -26,6 +26,13 @@ const isApiResponse = (value: unknown): value is ApiResponse<unknown> => {
   );
 };
 
+const isDataMetaPayload = (
+  value: unknown,
+): value is { data?: unknown; meta?: unknown } => {
+  if (!value || typeof value !== 'object') return false;
+  return 'data' in value || 'meta' in value;
+};
+
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor<
   T,
@@ -45,6 +52,15 @@ export class TransformInterceptor<T> implements NestInterceptor<
         }
         if (isApiResponse(data)) {
           return data as ApiResponse<T>;
+        }
+        if (isDataMetaPayload(data)) {
+          const payload = data as { data?: T; meta?: unknown };
+          return {
+            success: true,
+            data: (payload.data ?? {}) as T,
+            meta: payload.meta ?? {},
+            error: null,
+          };
         }
 
         return {

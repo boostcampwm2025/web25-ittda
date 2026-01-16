@@ -15,8 +15,11 @@ import { BlockValueMap } from '@/modules/post/types/post-block.types';
 type DayRange = { from: Date; to: Date };
 type FeedWarning = {
   code: 'EVENT_AT_MISSING';
-  postId: string;
-  title?: string | null;
+  message: string;
+  context?: {
+    postId: string;
+    title: string;
+  };
 };
 
 function dayRange(day: string, tz: string): DayRange {
@@ -110,9 +113,10 @@ export class FeedQueryService {
       locationByPostId.set(b.postId, b.value);
     }
 
-    // 4) 응답 매핑
+    // 3) 응답 매핑
     const cards: FeedCardResponseDto[] = [];
     const warnings: FeedWarning[] = [];
+    const addWarning = (warning: FeedWarning) => warnings.push(warning);
     for (const p of posts) {
       const loc = locationByPostId.get(p.id) ?? null;
       const scope = p.groupId ? 'GROUP' : 'ME';
@@ -120,10 +124,13 @@ export class FeedQueryService {
         this.logger.warn(
           `eventAt is missing for postId=${p.id} title=${p.title}`,
         );
-        warnings.push({
+        addWarning({
           code: 'EVENT_AT_MISSING',
-          postId: p.id,
-          title: p.title ?? null,
+          message: 'eventAt is missing',
+          context: {
+            postId: p.id,
+            title: p.title,
+          },
         });
         continue;
       }

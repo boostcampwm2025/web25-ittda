@@ -6,7 +6,6 @@ import { ApiHeader, ApiTags } from '@nestjs/swagger';
 import { FeedCardResponseDto } from './dto/feed-card.response.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import type { AuthedRequest } from '@/common/types/auth-request.type';
-import type { ApiResponse } from '@/common/interceptors/transform.interceptor';
 
 @ApiTags('feed')
 @Controller({ path: 'feed', version: '1' })
@@ -26,7 +25,7 @@ export class FeedController {
   async getFeed(
     @Req() req: AuthedRequest,
     @Query() query: GetFeedQueryDto,
-  ): Promise<ApiResponse<FeedCardResponseDto[]>> {
+  ): Promise<{ data: FeedCardResponseDto[]; meta: { warnings: unknown[] } }> {
     const tempUserId = req.header('x-user-id');
     const userId =
       req.user?.id ?? (typeof tempUserId === 'string' ? tempUserId : undefined);
@@ -40,11 +39,6 @@ export class FeedController {
       userId,
       query,
     );
-    return {
-      success: true,
-      data: cards,
-      meta: { warnings },
-      error: null,
-    };
+    return { data: cards, meta: { warnings } };
   }
 }
