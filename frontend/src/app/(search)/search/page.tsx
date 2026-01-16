@@ -119,6 +119,14 @@ export default function SearchPage() {
     debouncedUpdateQuery(query);
   };
 
+  const handleLocationChipClick = () => {
+    // 현재 파라미터 가져와서 같이 넘겨주도록
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('from', 'search');
+
+    router.push(`/location-picker?${currentParams.toString()}`);
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-4 space-y-4">
@@ -170,7 +178,7 @@ export default function SearchPage() {
             type="location"
             label={makeLocationLabel(locationAddress)}
             isActive={!!locationAddress}
-            onClick={() => setActiveDrawer('location')}
+            onClick={handleLocationChipClick}
             onClear={() =>
               updateUrl({ lat: null, lng: null, address: null, radius: null })
             }
@@ -217,7 +225,6 @@ export default function SearchPage() {
         tags={selectedTags}
         emotions={selectedEmotions}
         dateRange={{ start: startDate, end: endDate }}
-        location={location}
         onUpdateUrl={updateUrl}
       />
     </div>

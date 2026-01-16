@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
-import { formatDateDot } from '@/lib/date';
+import { formatDateISO } from '@/lib/date';
 
 interface DateRange {
   start: string | null;
@@ -89,8 +89,8 @@ export default function DateDrawer({
   };
 
   const handleSelectMonth = () => {
-    const firstDate = formatDateDot(new Date(year, month, 1));
-    const lastDate = formatDateDot(new Date(year, month + 1, 0));
+    const firstDate = formatDateISO(new Date(year, month, 1));
+    const lastDate = formatDateISO(new Date(year, month + 1, 0));
     setTempRange({ start: firstDate, end: lastDate });
   };
 
@@ -119,7 +119,7 @@ export default function DateDrawer({
               <button
                 onClick={() => {
                   setCalendarDate(new Date());
-                  onSelectDate?.(formatDateDot(new Date()));
+                  onSelectDate?.(formatDateISO(new Date()));
                   onClose();
                 }}
                 className="text-xs font-bold text-itta-point active:scale-95 transition-transform mb-1"
@@ -164,7 +164,7 @@ export default function DateDrawer({
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const d = i + 1;
-              const dateStr = formatDateDot(new Date(year, month, d));
+              const dateStr = formatDateISO(new Date(year, month, d));
 
               // 스타일 계산 로직
               const isSelectedSingle =

@@ -16,7 +16,13 @@ export default function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const minimalPaths = ['/add', '/search', '/search/media', '/profile/edit'];
+  const minimalPaths = [
+    '/add',
+    '/search',
+    '/search/media',
+    '/profile/edit',
+    '/location-picker',
+  ];
   const isDetail =
     pathname.includes('/record/') ||
     pathname.includes('/detail/') ||

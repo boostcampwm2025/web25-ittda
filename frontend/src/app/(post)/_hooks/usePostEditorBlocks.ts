@@ -2,11 +2,15 @@ import { useState, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { FieldType } from '@/lib/types/record';
-import { PostBlock, BlockValue } from '@/lib/types/recordField';
+import { RecordBlock, BlockValue, PhotoValue } from '@/lib/types/recordField';
 import { TemplateRecord } from '@/lib/types/template';
 
 import { FIELD_META } from '@/lib/constants/record';
-import { getDefaultValue, normalizeLayout } from '../_utils/recordLayoutHelper';
+import {
+  getDefaultValue,
+  isRecordBlockEmpty,
+  normalizeLayout,
+} from '../_utils/recordLayoutHelper';
 
 // 개수 제한
 const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
@@ -18,7 +22,7 @@ const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
 
 export function usePostEditorBlocks() {
   // 전체 블록 상태
-  const [blocks, setBlocks] = useState<PostBlock[]>([]);
+  const [blocks, setBlocks] = useState<RecordBlock[]>([]);
 
   const [activeDrawer, setActiveDrawer] = useState<{
     type: FieldType | 'layout' | 'saveLayout';
@@ -30,15 +34,8 @@ export function usePostEditorBlocks() {
   //필드 값 업데이트 및 삭제
   const updateFieldValue = useCallback(
     (value: BlockValue, id?: string, type?: FieldType) => {
-      const isEmpty = (val: BlockValue) =>
-        Array.isArray(val)
-          ? val.length === 0
-          : typeof val === 'string'
-            ? !val.trim()
-            : val == null;
-
       // 기존 블록인데 값이 비었으면 삭제
-      if (id && isEmpty(value)) {
+      if (id && isRecordBlockEmpty(value)) {
         setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
         setActiveDrawer(null);
         return undefined;
@@ -50,8 +47,8 @@ export function usePostEditorBlocks() {
         if (exists) {
           return prev.map((b) =>
             b.id === id ? { ...b, value } : b,
-          ) as PostBlock[];
-        } else if (type && !isEmpty(value)) {
+          ) as RecordBlock[];
+        } else if (type && !isRecordBlockEmpty(value)) {
           return normalizeLayout([
             ...prev,
             {
@@ -59,7 +56,7 @@ export function usePostEditorBlocks() {
               type,
               value,
               layout: { row: 0, col: 0, span: 2 },
-            } as PostBlock,
+            } as RecordBlock,
           ]);
         }
         return prev;
@@ -116,10 +113,19 @@ export function usePostEditorBlocks() {
     const files = e.target.files;
     if (!files || activeDrawer?.type !== 'photos') return;
 
-    const existingPhotos =
-      (blocks.find((b) => b.id === activeDrawer.id)?.value as string[]) || [];
-    const available =
-      (MULTI_INSTANCE_LIMITS['photos'] || 10) - existingPhotos.length;
+    const existingPhotos = blocks.find(
+      (b) => b.id === activeDrawer.id && b.type === 'photos',
+    ) as Extract<RecordBlock, { type: 'photos' }> | undefined;
+    const currentPhotoValue: PhotoValue = existingPhotos?.value || {
+      mediaIds: [],
+      tempUrls: [],
+    };
+
+    const currentCount =
+      (currentPhotoValue.mediaIds?.length || 0) +
+      (currentPhotoValue.tempUrls?.length || 0);
+    const limit = MULTI_INSTANCE_LIMITS['photos'] || 10;
+    const available = limit - currentCount;
 
     //TODO: 추후 toast 도입
     if (available <= 0) return alert('최대 개수를 초과했습니다.');
@@ -136,7 +142,12 @@ export function usePostEditorBlocks() {
 
     try {
       const newImages = await Promise.all(promises);
-      handleDone([...existingPhotos, ...newImages], false);
+      const updatedPhotoValue: PhotoValue = {
+        ...currentPhotoValue,
+        tempUrls: [...(currentPhotoValue.tempUrls || []), ...newImages],
+      };
+
+      handleDone(updatedPhotoValue, false);
     } finally {
       e.target.value = '';
     }
@@ -152,7 +163,7 @@ export function usePostEditorBlocks() {
       type: tBlock.type as FieldType,
       value: getDefaultValue(tBlock.type as FieldType),
       layout: { ...tBlock.layout },
-    })) as PostBlock[];
+    })) as RecordBlock[];
 
     setBlocks(normalizeLayout(newBlocks));
     setActiveDrawer(null);
