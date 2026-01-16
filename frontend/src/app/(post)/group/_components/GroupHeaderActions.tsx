@@ -36,7 +36,6 @@ import {
   Edit3,
   Eye,
 } from 'lucide-react';
-import { headers } from 'next/headers';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
