@@ -30,9 +30,9 @@ export class FeedCardResponseDto {
   @ApiPropertyOptional()
   location: BlockValueMap[typeof PostBlockType.LOCATION] | null;
   @ApiPropertyOptional()
-  tags: BlockValueMap[typeof PostBlockType.TAG] | null;
+  tags: string[] | null;
   @ApiPropertyOptional()
-  rating: BlockValueMap[typeof PostBlockType.RATING] | null;
+  rating: number | null;
   constructor(init: FeedCardResponseDto) {
     Object.assign(this, init);
   }

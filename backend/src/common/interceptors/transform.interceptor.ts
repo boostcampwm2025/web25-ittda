@@ -15,6 +15,17 @@ export interface ApiResponse<T> {
   error: null;
 } // 서버의 모든 응답 형식을 일관된 구조로 변환(Transform)
 
+const isApiResponse = (value: unknown): value is ApiResponse<unknown> => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as ApiResponse<unknown>;
+  return (
+    candidate.success === true &&
+    'data' in candidate &&
+    'meta' in candidate &&
+    'error' in candidate
+  );
+};
+
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor<
   T,
@@ -31,6 +42,9 @@ export class TransformInterceptor<T> implements NestInterceptor<
       map((data) => {
         if (response.headersSent || response.statusCode === 204) {
           return data as T;
+        }
+        if (isApiResponse(data)) {
+          return data as ApiResponse<T>;
         }
 
         return {
