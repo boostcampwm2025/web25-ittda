@@ -12,7 +12,7 @@ import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { UpdateUserDto, UpdateSettingsDto } from './dto/update-user.dto';
 
 import type { User } from './user.entity';
-import type { TagCount, EmotionCount, UserStats } from './user.interface';
+import type { TagCount } from './user.interface';
 import { User as UserDecorator } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../auth/auth.type';
 
@@ -24,19 +24,19 @@ import type { MyJwtPayload } from '../auth/auth.type';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get()
-  async getMyProfile(
-    @UserDecorator() userPayload: MyJwtPayload,
-  ): Promise<User & { stats: UserStats }> {
-    const userId = userPayload.sub;
-    const user = await this.userService.findOne(userId);
-    const stats = await this.userService.getUserStats(userId);
+  // @Get()
+  // async getMyProfile(
+  //   @UserDecorator() userPayload: MyJwtPayload,
+  // ): Promise<User & { stats: UserStats }> {
+  //   const userId = userPayload.sub;
+  //   const user = await this.userService.findOne(userId);
+  //   const stats = await this.userService.getUserStats(userId);
 
-    return {
-      ...user,
-      stats,
-    };
-  }
+  //   return {
+  //     ...user,
+  //     stats,
+  //   };
+  // }
 
   @Patch()
   updateProfile(
@@ -78,14 +78,14 @@ export class UserController {
     return this.userService.getTags(userId, sort);
   }
 
-  @Get('emotions')
-  async getMyEmotions(
-    @UserDecorator() user: MyJwtPayload,
-    @Query('sort') sort: 'recent' | 'frequent' = 'recent',
-  ): Promise<EmotionCount[] | string[]> {
-    const userId = user.sub;
-    return this.userService.getEmotions(userId, sort);
-  }
+  // @Get('emotions')
+  // async getMyEmotions(
+  //   @UserDecorator() user: MyJwtPayload,
+  //   @Query('sort') sort: 'recent' | 'frequent' = 'recent',
+  // ): Promise<EmotionCount[] | string[]> {
+  //   const userId = user.sub;
+  //   return this.userService.getEmotions(userId, sort);
+  // }
 
   @Delete()
   async withdraw(@UserDecorator() user: MyJwtPayload): Promise<void> {

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -11,13 +12,13 @@ import { Post } from '../src/modules/post/entity/post.entity';
 import { User } from '../src/modules/user/user.entity';
 import { GoogleStrategy } from '../src/modules/auth/strategies/google.strategy';
 import { KakaoStrategy } from '../src/modules/auth/strategies/kakao.strategy';
-import { JwtStrategy } from '../src/modules/auth/jwt/jwt.strategy';
 
 describe('PostController (e2e)', () => {
   let app: INestApplication<App>;
   let userRepository: Repository<User>;
   let postRepository: Repository<Post>;
   let owner: User;
+  let accessToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -26,8 +27,6 @@ describe('PostController (e2e)', () => {
       .overrideProvider(GoogleStrategy)
       .useValue({})
       .overrideProvider(KakaoStrategy)
-      .useValue({})
-      .overrideProvider(JwtStrategy)
       .useValue({})
       .compile();
 
@@ -43,6 +42,7 @@ describe('PostController (e2e)', () => {
 
     userRepository = app.get(getRepositoryToken(User));
     postRepository = app.get(getRepositoryToken(Post));
+    const jwtService = app.get(JwtService);
 
     owner = userRepository.create({
       email: 'test-post-owner@example.com',
@@ -51,6 +51,7 @@ describe('PostController (e2e)', () => {
       providerId: `test-${Date.now()}`,
     });
     owner = await userRepository.save(owner);
+    accessToken = jwtService.sign({ sub: owner.id });
   });
 
   afterAll(async () => {
@@ -105,7 +106,7 @@ describe('PostController (e2e)', () => {
 
     const createRes = await request(app.getHttpServer())
       .post('/posts')
-      .set('x-user-id', owner.id)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send(payload)
       .expect(201);
 
@@ -130,6 +131,7 @@ describe('PostController (e2e)', () => {
 
     const getRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
     const fetched = getRes.body as {
@@ -172,7 +174,7 @@ describe('PostController (e2e)', () => {
 
     const createRes = await request(app.getHttpServer())
       .post('/posts')
-      .set('x-user-id', owner.id)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send(payload)
       .expect(201);
 
@@ -180,10 +182,13 @@ describe('PostController (e2e)', () => {
 
     await request(app.getHttpServer())
       .delete(`/posts/${created.id}`)
-      .set('x-user-id', owner.id)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(204);
 
-    await request(app.getHttpServer()).get(`/posts/${created.id}`).expect(404);
+    await request(app.getHttpServer())
+      .get(`/posts/${created.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(404);
   });
 
   it('POST /posts should return 400 when TEXT block is missing', async () => {
@@ -206,7 +211,7 @@ describe('PostController (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/posts')
-      .set('x-user-id', owner.id)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send(payload)
       .expect(400);
   });
