@@ -5,22 +5,18 @@ import {
   Delete,
   Body,
   UseGuards,
-  Req,
   Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { UpdateUserDto, UpdateSettingsDto } from './dto/update-user.dto';
 
-import type { Request } from 'express';
-import type { MyJwtPayload } from '../auth/auth.type';
 import type { User } from './user.entity';
 import type { TagCount, EmotionCount, UserStats } from './user.interface';
+import { User as UserDecorator } from '@/common/decorators/user.decorator';
+import type { MyJwtPayload } from '../auth/auth.type';
 
-interface RequestWithUser extends Request {
-  user: MyJwtPayload;
-}
-
+@UseGuards(JwtAuthGuard)
 @Controller({
   path: 'me',
   version: '1',
@@ -28,12 +24,11 @@ interface RequestWithUser extends Request {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   async getMyProfile(
-    @Req() req: RequestWithUser,
+    @UserDecorator() userPayload: MyJwtPayload,
   ): Promise<User & { stats: UserStats }> {
-    const userId = req.user.sub;
+    const userId = userPayload.sub;
     const user = await this.userService.findOne(userId);
     const stats = await this.userService.getUserStats(userId);
 
@@ -43,13 +38,12 @@ export class UserController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch()
   updateProfile(
-    @Req() req: RequestWithUser,
+    @UserDecorator() user: MyJwtPayload,
     @Body() dto: UpdateUserDto,
   ): Promise<User> {
-    const userId = req.user.sub;
+    const userId = user.sub;
     return this.userService.updateProfile(
       userId,
       dto.nickname,
@@ -57,50 +51,45 @@ export class UserController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('settings')
   async getMySettings(
-    @Req() req: RequestWithUser,
+    @UserDecorator() userPayload: MyJwtPayload,
   ): Promise<Record<string, unknown>> {
-    const userId = req.user.sub;
+    const userId = userPayload.sub;
     const user = await this.userService.findOne(userId);
     return user.settings as Record<string, unknown>;
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch('settings')
   async updateSettings(
-    @Req() req: RequestWithUser,
+    @UserDecorator() user: MyJwtPayload,
     @Body() dto: UpdateSettingsDto,
   ): Promise<User> {
-    const userId = req.user.sub;
+    const userId = user.sub;
     return this.userService.updateSettings(userId, dto.settings);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('tags')
   async getMyTags(
-    @Req() req: RequestWithUser,
+    @UserDecorator() user: MyJwtPayload,
     @Query('sort') sort: 'recent' | 'frequent' = 'recent',
   ): Promise<TagCount[] | string[]> {
-    const userId = req.user.sub;
+    const userId = user.sub;
     return this.userService.getTags(userId, sort);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('emotions')
   async getMyEmotions(
-    @Req() req: RequestWithUser,
+    @UserDecorator() user: MyJwtPayload,
     @Query('sort') sort: 'recent' | 'frequent' = 'recent',
   ): Promise<EmotionCount[] | string[]> {
-    const userId = req.user.sub;
+    const userId = user.sub;
     return this.userService.getEmotions(userId, sort);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete()
-  async withdraw(@Req() req: RequestWithUser): Promise<void> {
-    const userId = req.user.sub;
+  async withdraw(@UserDecorator() user: MyJwtPayload): Promise<void> {
+    const userId = user.sub;
     await this.userService.softDeleteUser(userId);
   }
 }

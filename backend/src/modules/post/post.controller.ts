@@ -6,82 +6,56 @@ import {
   Param,
   Post as HttpPost,
   Body,
-  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiHeader, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
+import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
+import { User } from '@/common/decorators/user.decorator';
 import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
 } from '@/common/swagger/api-wrapped-response.decorator';
-import { type AuthedRequest } from '@/common/types/auth-request.type';
+import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
+import type { MyJwtPayload } from '../auth/auth.type';
 
 @ApiTags('posts')
+@UseGuards(JwtAuthGuard)
 @Controller({ path: 'posts', version: '1' })
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  @ApiHeader({
-    name: 'x-user-id',
-    description: '임시 사용자 ID (AuthGuard 적용 전)',
-    required: false,
-  })
   @Get(':id')
   @ApiWrappedOkResponse({ type: PostDetailDto })
   getOne(@Param('id') id: string): Promise<PostDetailDto> {
+    // TODO: 이 유저가 해당 postId를 볼 권한이 있는지 확인하는 로직 추가
     return this.postService.findOne(id);
   }
 
-  // TODO: 나중에 AuthGuard 붙이기
   @HttpPost()
   @ApiWrappedCreatedResponse({ type: PostDetailDto })
-  @ApiHeader({
-    name: 'x-user-id',
-    description: '임시 사용자 ID (AuthGuard 적용 전)',
-    required: false,
-  })
   create(
-    @Req() req: AuthedRequest,
+    @User() user: MyJwtPayload,
     @Body() dto: CreatePostDto,
   ): Promise<PostDetailDto> {
-    // 임시: authorId를 헤더로 받거나, 테스트용 고정
-    // TODO: 실제론 JWT payload에서 userId를 뽑아야 함
-    const headerUserId = req.header('x-user-id');
-    const ownerId =
-      req.user?.id ??
-      (typeof headerUserId === 'string' ? headerUserId : undefined);
+    const ownerId = user?.sub;
     if (!ownerId) {
-      // 개발 단계에서만 허용: 테스트용
-      throw new Error(
-        'ownerId is missing. Provide req.user.id or x-user-id header.',
-      );
+      throw new Error('ownerId is missing. Provide a valid access token.');
     }
     return this.postService.createPost(ownerId, dto);
   }
 
-  // TODO: 나중에 AuthGuard 붙이기
   @Delete(':id')
   @HttpCode(204)
   @ApiNoContentResponse()
-  @ApiHeader({
-    name: 'x-user-id',
-    description: '임시 사용자 ID (AuthGuard 적용 전)',
-    required: false,
-  })
   async deleteOne(
-    @Req() req: AuthedRequest,
+    @User() user: MyJwtPayload,
     @Param('id') id: string,
   ): Promise<void> {
-    const headerUserId = req.header('x-user-id');
-    const requesterId =
-      req.user?.id ??
-      (typeof headerUserId === 'string' ? headerUserId : undefined);
+    const requesterId = user?.sub;
     if (!requesterId) {
-      throw new Error(
-        'requesterId is missing. Provide req.user.id or x-user-id header.',
-      );
+      throw new Error('requesterId is missing. Provide a valid access token.');
     }
     await this.postService.deletePost(id, requesterId);
   }

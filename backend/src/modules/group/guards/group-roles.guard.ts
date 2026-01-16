@@ -3,8 +3,10 @@ import { Reflector } from '@nestjs/core';
 import { GROUP_ROLE_KEY } from './group-roles.decorator';
 import { GroupService } from '../group.service';
 
-import type { RequestWithUser } from '../group.type';
+import type { Request } from 'express';
 import type { MyJwtPayload } from '../../auth/auth.type';
+
+type RequestWithUser = Request & { user?: MyJwtPayload };
 
 @Injectable()
 export class GroupRoleGuard implements CanActivate {
@@ -21,10 +23,8 @@ export class GroupRoleGuard implements CanActivate {
 
     if (!requiredRoles) return true;
 
-    const request: RequestWithUser = context
-      .switchToHttp()
-      .getRequest<RequestWithUser>();
-    const user = request.user as unknown as MyJwtPayload;
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const user = request.user;
 
     if (!user || typeof user !== 'object') {
       return false;
