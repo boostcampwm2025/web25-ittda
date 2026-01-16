@@ -7,7 +7,6 @@ import {
   Post as HttpPost,
   Body,
   Req,
-  NotImplementedException,
 } from '@nestjs/common';
 import { ApiHeader, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { PostService } from './post.service';
@@ -23,18 +22,6 @@ import { type AuthedRequest } from '@/common/types/auth-request.type';
 @Controller({ path: 'posts', version: '1' })
 export class PostController {
   constructor(private readonly postService: PostService) {}
-
-  @ApiHeader({
-    name: 'x-user-id',
-    description: '임시 사용자 ID (AuthGuard 적용 전)',
-    required: false,
-  })
-  @Get('list')
-  getPostList() {
-    throw new NotImplementedException(
-      'PostController.getPostList is not ready',
-    );
-  }
 
   @ApiHeader({
     name: 'x-user-id',
