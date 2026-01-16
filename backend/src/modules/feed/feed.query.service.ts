@@ -1,12 +1,15 @@
 // src/modules/feed/feed.query.service.ts
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, LessThanOrEqual, Repository } from 'typeorm';
 import { DateTime } from 'luxon';
 
 import { Post } from '../post/entity/post.entity';
 import { GetFeedQueryDto } from './dto/get-feed.query.dto';
-import { FeedCardResponseDto } from './dto/feed-card.response.dto';
+import {
+  FeedBlockDto,
+  FeedCardResponseDto,
+} from './dto/feed-card.response.dto';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
@@ -113,7 +116,47 @@ export class FeedQueryService {
       locationByPostId.set(b.postId, b.value);
     }
 
-    // 3) 응답 매핑
+    // 3) 미리보기 블록 (row 7까지)
+    type blockRow = {
+      postId: string;
+      type: PostBlockType;
+      value: BlockValueMap[PostBlockType];
+      layoutRow: number;
+      layoutCol: number;
+      layoutSpan: number;
+    };
+
+    const blocks: blockRow[] = postIds.length
+      ? ((await this.postBlockRepo.find({
+          where: { postId: In(postIds), layoutRow: LessThanOrEqual(7) },
+          select: {
+            postId: true,
+            type: true,
+            value: true,
+            layoutRow: true,
+            layoutCol: true,
+            layoutSpan: true,
+          },
+          order: { layoutRow: 'ASC', layoutCol: 'ASC' },
+        })) as blockRow[])
+      : [];
+
+    const blockByPostId = new Map<string, FeedBlockDto[]>();
+    for (const block of blocks) {
+      const list = blockByPostId.get(block.postId) ?? [];
+      list.push({
+        type: block.type,
+        value: block.value,
+        layout: {
+          row: block.layoutRow,
+          col: block.layoutCol,
+          span: block.layoutSpan,
+        },
+      });
+      blockByPostId.set(block.postId, list);
+    }
+
+    // 4) 응답 매핑
     const cards: FeedCardResponseDto[] = [];
     const warnings: FeedWarning[] = [];
     const addWarning = (warning: FeedWarning) => warnings.push(warning);
@@ -151,6 +194,7 @@ export class FeedQueryService {
                 placeName: loc.placeName,
               }
             : null,
+          blocks: blockByPostId.get(p.id) ?? [],
           tags: p.tags ?? null,
           rating: p.rating ?? null,
         }),

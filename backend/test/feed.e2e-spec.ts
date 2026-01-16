@@ -154,6 +154,10 @@ describe('FeedController (e2e)', () => {
         postId: string;
         title: string;
         location: { lat: number; lng: number } | null;
+        blocks: Array<{
+          type: string;
+          layout: { row: number; col: number; span: number };
+        }>;
       }>;
       meta: { warnings: unknown[] };
     };
@@ -166,6 +170,12 @@ describe('FeedController (e2e)', () => {
     const ownedCard = body.data.find((item) => item.postId === ownedPost.id);
     expect(ownedCard?.title).toBe('Owned post');
     expect(ownedCard?.location?.lat).toBe(37.5665);
+    expect(ownedCard?.blocks.length).toBeGreaterThan(0);
+
+    const contributedCard = body.data.find(
+      (item) => item.postId === contributedPost.id,
+    );
+    expect(contributedCard?.blocks.length).toBe(0);
   });
 
   it('GET /feed should return 400 without date', async () => {
