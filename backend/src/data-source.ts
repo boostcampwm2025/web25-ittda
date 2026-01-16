@@ -27,5 +27,5 @@ export default new DataSource({
   logging:
     nodeEnv === 'production'
       ? ['error', 'warn']
-      : ['error', 'warn', 'migration'],
+      : ['error', 'warn', 'migration', 'info', 'log'],
 });

@@ -9,6 +9,7 @@ import { PostModule } from './modules/post/post.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GroupModule } from './modules/group/group.module';
+import { GuestModule } from './modules/guest/guest.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { GroupModule } from './modules/group/group.module';
     UserModule,
     AuthModule,
     GroupModule,
+    GuestModule,
   ],
   controllers: [AppController],
   providers: [AppService],

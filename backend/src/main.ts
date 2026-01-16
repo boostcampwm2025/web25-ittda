@@ -5,11 +5,14 @@ import { AppModule } from './app.module';
 import { AllHttpExceptionFilter } from '@/common/exception_filters/AllHttpExceptionFilter';
 import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
 import { TransformInterceptor } from '@/common/interceptors/transform.interceptor';
+import cookieParser from 'cookie-parser';
 
 import 'reflect-metadata';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(cookieParser());
 
   app.enableVersioning({
     type: VersioningType.URI,
@@ -24,34 +27,28 @@ async function bootstrap() {
   );
 
   // 전역 예외 필터를 HTTP, WS에 대해 분리
-  // HTTP 전역 예외 필터 설정
-  app.useGlobalFilters(new AllHttpExceptionFilter());
-
-  // WS 전역 예외 필터 설정
-  app.useGlobalFilters(new AllWsExceptionFilter());
+  // ✅ 모든 필터를 한 번에 등록
+  app.useGlobalFilters(
+    new AllHttpExceptionFilter(),
+    new AllWsExceptionFilter(),
+  );
 
   // ✅ 전역 응답 인터셉터 등록 (성공 응답 통일)
   app.useGlobalInterceptors(new TransformInterceptor());
 
   // CORS 설정
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://211.188.48.38'], // FE 주소(TODO: 도메인으로 변경)
+    origin: [process.env.FRONTEND_URL], // FE 주소(TODO: 도메인으로 변경)
     credentials: true, // 쿠키/세션 허용
+    exposedHeaders: ['Authorization'], // Access Token을 헤더로 보낼 경우 필수
   });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // DTO에 없는 필드 자동 제거
-      forbidNonWhitelisted: true, // DTO에 없는 필드 오면 400
-      transform: true, // payload를 DTO 인스턴스로 변환
-    }),
-  );
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('ITTDA API')
     .setDescription('ITTDA backend API docs')
     .setVersion('1.0')
     .build();
+
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, swaggerDocument);
 

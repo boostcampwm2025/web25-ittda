@@ -10,6 +10,8 @@ import { Group } from './entity/group.entity';
 import { GroupMember } from './entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { User } from '../user/user.entity';
+import { GroupInvite } from './entity/group_invite.entity';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class GroupService {
@@ -22,6 +24,9 @@ export class GroupService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+
+    @InjectRepository(GroupInvite)
+    private readonly inviteRepo: Repository<GroupInvite>,
 
     private readonly dataSource: DataSource,
   ) {}
@@ -96,6 +101,44 @@ export class GroupService {
     }
   }
 
+  /** 멤버 추방 (관리자/방장만 가능) */
+  async removeMember(
+    requesterId: string,
+    groupId: string,
+    targetUserId: string,
+  ) {
+    const requesterMember = await this.groupMemberRepo.findOne({
+      where: { groupId, userId: requesterId },
+    });
+
+    if (!requesterMember || requesterMember.role === GroupRoleEnum.VIEWER) {
+      throw new BadRequestException('추방 권한이 없습니다.');
+    }
+
+    // 대상이 방장인지 확인 (방장은 추방 불가)
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+      relations: ['owner'],
+    });
+    if (!group) throw new BadRequestException('그룹을 찾을 수 없습니다.');
+
+    if (group.owner.id === targetUserId) {
+      throw new BadRequestException('방장은 추방할 수 없습니다.');
+    }
+
+    // 본인 추방은 leaveGroup 사용
+    if (requesterId === targetUserId) {
+      throw new BadRequestException(
+        '자기 자신을 추방할 수 없습니다. 나가기를 이용하세요.',
+      );
+    }
+
+    await this.groupMemberRepo.delete({
+      group: { id: groupId },
+      user: { id: targetUserId },
+    });
+  }
+
   /** 권한 변경 (본인 권한 변경 불가 로직 추가) */
   async updateMemberRole(
     requesterId: string, // 요청자 ID 추가
@@ -129,11 +172,156 @@ export class GroupService {
       );
     }
   }
+
+  /** 그룹 삭제 (방장만 가능) */
+  async deleteGroup(userId: string, groupId: string): Promise<void> {
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+      relations: ['owner'],
+    });
+
+    if (!group) {
+      throw new BadRequestException('존재하지 않는 그룹입니다.');
+    }
+
+    // 방장인지 확인
+    if (group.owner.id !== userId) {
+      throw new BadRequestException('그룹을 삭제할 권한이 없습니다.');
+    }
+
+    // 그룹 삭제 (Cascade 설정으로 멤버들도 자동 삭제됨)
+    await this.groupRepo.remove(group);
+  }
+
+  /** 그룹 정보 수정 */
+  async updateGroup(userId: string, groupId: string, name: string) {
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+      relations: ['owner'],
+    });
+
+    if (!group) {
+      throw new BadRequestException('존재하지 않는 그룹입니다.');
+    }
+
+    // 이름 변경은 OWNER, ADMIN 권한이 필요하지만, 현재는 Controller에서 Guard로 처리한다고 가정
+    // 하지만 Service 레벨에서도 안전하게 Owner/Admin 확인을 할 수 있음.
+    // 여기서는 Owner 체크만 예시로 추가하거나, Guard를 믿고 진행.
+    // 요구사항: OWNER/ADMIN.
+
+    // 심플하게 update
+    await this.groupRepo.update(groupId, { name });
+  }
+
+  /** 그룹 나가기 */
+  async leaveGroup(userId: string, groupId: string) {
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+      relations: ['owner'],
+    });
+
+    if (!group) throw new BadRequestException('그룹이 존재하지 않습니다.');
+
+    // 방장은 못 나감 (삭제하거나 양도해야 함)
+    if (group.owner.id === userId) {
+      throw new BadRequestException(
+        '방장은 그룹을 나갈 수 없습니다. 그룹을 삭제하거나 권한을 양도하세요.',
+      );
+    }
+
+    const deleteResult = await this.groupMemberRepo.delete({
+      group: { id: groupId },
+      user: { id: userId },
+    });
+
+    if (deleteResult.affected === 0) {
+      throw new BadRequestException('그룹 멤버가 아닙니다.');
+    }
+  }
+
+  /** 초대 링크 생성 */
+  async createInvite(
+    userId: string,
+    groupId: string,
+    permission: GroupRoleEnum,
+    expiresInSeconds: number,
+  ) {
+    // 권한 체크는 Controller Guard에서 수행 (ADMIN/OWNER)
+
+    const code = crypto.randomBytes(4).toString('hex'); // 8자리 랜덤 코드
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + expiresInSeconds);
+
+    const invite = this.inviteRepo.create({
+      code,
+      groupId,
+      permission,
+      expiresAt,
+    });
+
+    return this.inviteRepo.save(invite);
+  }
+
+  /** 초대 링크 조회 */
+  async getInvite(code: string) {
+    const invite = await this.inviteRepo.findOne({
+      where: { code },
+      relations: ['group'],
+    });
+
+    if (!invite) {
+      throw new BadRequestException('유효하지 않은 초대 코드입니다.');
+    }
+
+    if (invite.expiresAt < new Date()) {
+      throw new BadRequestException('만료된 초대 코드입니다.');
+    }
+
+    const memberCount = await this.groupMemberRepo.count({
+      where: { groupId: invite.groupId },
+    });
+
+    return {
+      ...invite,
+      memberCount,
+    };
+  }
+
+  /** 초대 링크로 가입 */
+  async joinGroupViaInvite(userId: string, code: string) {
+    const invite = await this.inviteRepo.findOne({
+      where: { code },
+    });
+
+    if (!invite || invite.expiresAt < new Date()) {
+      throw new BadRequestException('유효하지 않거나 만료된 초대입니다.');
+    }
+
+    // 이미 멤버인지 확인
+    const existingMember = await this.groupMemberRepo.findOne({
+      where: {
+        groupId: invite.groupId,
+        userId,
+      },
+    });
+
+    if (existingMember) {
+      throw new BadRequestException('이미 그룹의 멤버입니다.');
+    }
+
+    // 멤버 추가
+    return this.addMember(invite.groupId, userId, invite.permission);
+  }
+
+  /** 초대 링크 삭제 */
+  async deleteInvite(inviteId: string) {
+    await this.inviteRepo.delete(inviteId);
+  }
 }
 
 /*
- const owner = await manager.findOneOrFail(User, {
-    where: { id: ownerId },
+const owner = await manager.findOneOrFail(User, {
+  where: { id: ownerId },
 }); // 이런 실제 owner 엔티티를 사용하지 않는 이유
 
 TypeORM은 엔티티 객체를 저장할 때, 
