@@ -18,6 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "cross-env NODE_ENV=test jest --config ./test/jest-e2e.json",
+    "seed": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./src/seed/seed.ts",
+    "seed:reset": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./src/seed/seed-reset.ts",
     "db:mig:gen": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations -d ./src/data-source.ts",
     "db:mig:create": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
     "db:mig:run": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
