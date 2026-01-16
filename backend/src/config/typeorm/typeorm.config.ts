@@ -14,5 +14,5 @@ export const getTypeOrmConfig = (
   logging:
     configService.get<string>('NODE_ENV') === 'production'
       ? ['error', 'warn']
-      : ['error', 'warn', 'migration', 'info', 'log'],
+      : ['error', 'warn', 'migration', 'query', 'info', 'log'],
 });
