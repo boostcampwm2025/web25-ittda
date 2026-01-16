@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MousePointer2, Keyboard } from 'lucide-react';
 import {
   Drawer,
@@ -9,10 +9,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { convertTo12Hour, convertTo24Hour } from '@/lib/utils/time';
+import { TimeValue } from '@/lib/types/recordField';
 
 interface TimePickerDrawerProps {
   onClose: () => void;
-  currentTime: string;
+  currentTime: TimeValue;
   onSave: (time: string) => void;
 }
 
@@ -24,8 +26,9 @@ export default function TimePickerDrawer({
   const ITEM_HEIGHT = 48;
   const PICKER_HEIGHT = 192;
   const SPACER_HEIGHT = (PICKER_HEIGHT - ITEM_HEIGHT) / 2;
-
-  const timeMatch = currentTime.match(/(오전|오후)\s(\d+):(\d+)/);
+  const time = currentTime.time;
+  const initial12Hour = useMemo(() => convertTo12Hour(time), [time]);
+  const timeMatch = initial12Hour.match(/(오전|오후)\s(\d+):(\d+)/);
   const [tempPeriod, setTempPeriod] = useState(
     timeMatch ? timeMatch[1] : '오후',
   );
@@ -67,9 +70,11 @@ export default function TimePickerDrawer({
   }, [isDirectInput]);
 
   const handleApply = () => {
-    onSave(
-      `${tempPeriod} ${tempHour}:${tempMinute.toString().padStart(2, '0')}`,
-    );
+    const formattedMinute = tempMinute.toString().padStart(2, '0');
+    const time12String = `${tempPeriod} ${tempHour}:${formattedMinute}`;
+    const time24String = convertTo24Hour(time12String);
+
+    onSave(time24String);
     onClose();
   };
 

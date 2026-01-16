@@ -28,6 +28,16 @@ export default function ProfileInfo({
     }
   };
 
+  // 닉네임 유효성 검사
+  const getNicknameError = () => {
+    if (nickname.length === 0) return null;
+    if (nickname.length < 2) return '닉네임은 최소 2자 이상이어야 합니다.';
+    if (nickname.length > 10) return '닉네임은 최대 10자까지 입력 가능합니다.';
+    return null;
+  };
+
+  const nicknameError = getNicknameError();
+
   return (
     <>
       <div className="py-8 flex flex-col gap-10">
@@ -68,7 +78,11 @@ export default function ProfileInfo({
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className="w-full border-b-2 bg-transparent px-1 py-4 text-sm font-semibold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white dark:placeholder-gray-700 border-gray-100 focus:border-[#10B981] text-itta-black placeholder-gray-300"
+                className={`w-full border-b-2 bg-transparent px-1 py-4 text-sm font-semibold transition-all outline-none dark:text-white dark:placeholder-gray-700 text-itta-black placeholder-gray-300 ${
+                  nicknameError
+                    ? 'border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500'
+                    : 'dark:border-white/5 dark:focus:border-[#10B981] border-gray-100 focus:border-[#10B981]'
+                }`}
                 placeholder="사용할 닉네임을 입력해 주세요"
               />
               {nickname && (
@@ -80,9 +94,15 @@ export default function ProfileInfo({
                 </button>
               )}
             </div>
-            <p className="text-[10px] text-gray-400 px-1">
-              기억하고 싶은 이름으로 나를 표현해 보세요.
-            </p>
+            {nicknameError ? (
+              <p className="text-[10px] text-red-500 px-1 font-medium">
+                {nicknameError}
+              </p>
+            ) : (
+              <p className="text-[10px] text-gray-400 px-1">
+                기억하고 싶은 이름으로 나를 표현해 보세요.
+              </p>
+            )}
           </div>
 
           {showEmail && email && (

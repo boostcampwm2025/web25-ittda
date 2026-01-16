@@ -6,19 +6,22 @@ import {
   FieldDefaultButtonLabel,
 } from '@/app/(post)/_components/editor/core/FieldDefaultButton';
 import { FieldDeleteButton } from '@/app/(post)/_components/editor/core/FieldDeleteButton';
+import { LocationValue } from '@/lib/types/recordField';
 import { MapPin } from 'lucide-react';
 
 interface LocationFieldProps {
-  address?: string;
+  location?: LocationValue;
   onClick: () => void;
   onRemove: () => void;
 }
 
 export function LocationField({
-  address,
+  location,
   onClick,
   onRemove,
 }: LocationFieldProps) {
+  const address = location?.address;
+  const placeName = location?.placeName;
   return (
     <div className="flex items-center gap-2 w-full py-1 group">
       {!address ? (
@@ -33,7 +36,7 @@ export function LocationField({
         >
           <MapPin className="w-3.5 h-3.5 text-itta-point flex-shrink-0" />
           <span className="font-bold text-xs text-itta-black dark:text-white truncate">
-            {address}
+            {placeName || address}
           </span>
         </div>
       )}

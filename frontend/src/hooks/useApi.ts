@@ -73,6 +73,7 @@ export function useApiPost<
   endpoint: string,
   options?: UseApiMutationOptions<TData, TVariables>,
   sendCookie?: boolean,
+  headers?: Record<string, string>,
 ) {
   const queryClient = useQueryClient();
 
@@ -81,7 +82,7 @@ export function useApiPost<
       const response = await post<TData>(
         endpoint,
         variables as Record<string, unknown>,
-        undefined,
+        { headers },
         sendCookie,
       );
 

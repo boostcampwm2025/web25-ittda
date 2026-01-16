@@ -101,12 +101,12 @@ export function formatDateDot(date: Date = new Date()): string {
 }
 
 /**
- * 로그용 날짜 정보를 객체로 반환
- * @param date - 포맷팅할 날짜
- * @returns { date: "2025.12.11", time: "18:46", weekday: "수요일" }
+ * 날짜 객체를 데이터 처리에 용이한 각 부분별 문자열 객체로 변환합니다.
+ * @param date - 변환할 날짜 객체 (기본값: 현재 시간)
+ * @returns { date: "2026-01-14", time: "23:30", weekday: "수요일" }
  */
-export function formatLogDate(date: Date = new Date()) {
-  const dateStr = formatDateDot(date);
+export function getDateMetadata(date: Date = new Date()) {
+  const dateStr = formatDateISO(date);
 
   // 24시간 형식 시간
   const hours = String(date.getHours()).padStart(2, '0');

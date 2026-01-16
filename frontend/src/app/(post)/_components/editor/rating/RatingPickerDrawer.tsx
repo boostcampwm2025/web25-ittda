@@ -1,24 +1,19 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { cn } from '@/lib/utils';
-
-interface Rating {
-  value: number;
-  max: number;
-}
+import { RatingValue } from '@/lib/types/recordField';
 
 interface RatingDrawerProps {
   onClose: () => void;
-  rating: Rating;
-  onUpdateRating: (val: Rating) => void;
+  rating: RatingValue;
+  onUpdateRating: (val: RatingValue) => void;
 }
 
 export default function RatingDrawer({
@@ -26,8 +21,51 @@ export default function RatingDrawer({
   rating,
   onUpdateRating,
 }: RatingDrawerProps) {
-  // TODO: 별점의 최대값에 따라 변경
-  const currentMax = rating.max || 5;
+  const [localValue, setLocalValue] = useState(rating.rating);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const currentMax = 5;
+
+  // 소수점 지원을 위해 좌표로 점수 계산
+  const calculateScore = (clientX: number) => {
+    if (!containerRef.current) return;
+
+    const { left, width } = containerRef.current.getBoundingClientRect();
+    const x = clientX - left;
+
+    // 0에서 Max 사이로 계산 -> 0.1 단위 반올림
+    let rawScore = (x / width) * currentMax;
+    rawScore = Math.max(0, Math.min(currentMax, rawScore));
+    setLocalValue(Math.round(rawScore * 10) / 10);
+  };
+
+  // PC용 마우스 이벤트 핸들러
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    calculateScore(e.clientX);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    calculateScore(e.clientX);
+  };
+
+  // 모바일용 터치 이벤트 핸들러
+  const handleTouchMove = (e: React.TouchEvent) => {
+    calculateScore(e.touches[0].clientX);
+  };
+
+  // 드래그 종료
+  useEffect(() => {
+    const handleMouseUp = () => setIsDragging(false);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, []);
+
+  const handleConfirm = () => {
+    onUpdateRating({ rating: localValue });
+    onClose();
+  };
 
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
@@ -41,45 +79,55 @@ export default function RatingDrawer({
 
           <div className="flex flex-col items-center gap-8 my-4">
             <div
-              className={cn(
-                'flex flex-wrap justify-center gap-2',
-                currentMax > 5 ? 'max-w-[280px]' : 'w-full',
-              )}
+              ref={containerRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onTouchStart={() => setIsDragging(true)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={() => setIsDragging(false)}
+              className="relative cursor-pointer touch-none select-none py-4"
             >
-              {[...Array(currentMax)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => onUpdateRating({ ...rating, value: i + 1 })}
-                  className="transition-transform active:scale-125 group"
-                >
+              <div className="flex gap-1">
+                {[...Array(currentMax)].map((_, i) => (
                   <Star
-                    className={cn(
-                      'transition-colors',
-                      // max 수치에 따른 크기 최적화
-                      currentMax > 5 ? 'w-8 h-8' : 'w-10 h-10',
-                      i < rating.value
-                        ? 'fill-[#FACC15] text-[#FACC15]'
-                        : 'text-gray-200 dark:text-white/10',
-                    )}
+                    key={i}
+                    className="w-12 h-12 text-gray-200 dark:text-white/10 fill-transparent"
                   />
-                </button>
-              ))}
+                ))}
+              </div>
+
+              <div
+                className="absolute top-4 left-0 flex gap-1 overflow-hidden pointer-events-none transition-all duration-75 ease-out"
+                style={{ width: `${(localValue / currentMax) * 100}%` }}
+              >
+                {[...Array(currentMax)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className="w-12 h-12 fill-[#FACC15] text-[#FACC15] flex-shrink-0"
+                  />
+                ))}
+              </div>
             </div>
 
             {/* 수치 표시 영역 */}
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-black text-[#10B981]">
-                {rating.value}
-              </span>
-              <span className="text-xl font-bold text-gray-300">
-                / {currentMax}
-              </span>
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-baseline gap-1">
+                <span className="text-6xl font-black text-[#10B981] tabular-nums">
+                  {localValue.toFixed(1)}
+                </span>
+                <span className="text-xl font-bold text-gray-300">
+                  / {currentMax}
+                </span>
+              </div>
             </div>
           </div>
 
-          <DrawerClose className="mt-8 flex w-full py-4 rounded-2xl text-sm font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 items-center justify-center gap-2">
+          <button
+            onClick={handleConfirm}
+            className="mt-8 flex w-full py-4 rounded-2xl text-sm font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 items-center justify-center"
+          >
             확인
-          </DrawerClose>
+          </button>
         </div>
       </DrawerContent>
     </Drawer>

@@ -8,12 +8,15 @@ import {
   Map,
   useMap,
   useMapsLibrary,
+  ColorScheme,
 } from '@vis.gl/react-google-maps';
 import { Button } from '@/components/ui/button';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationValue } from '@/lib/types/recordField';
+import { useTheme } from 'next-themes';
 import { MapSearchBar } from './MapSearchBar';
 import { searchPlacesByKeyword } from '@/lib/utils/googleMaps';
+import { cn } from '@/lib/utils';
 
 export type LocationMode = 'search' | 'post';
 
@@ -21,19 +24,23 @@ export interface LocationPickerProps {
   mode: LocationMode;
   onSelect: (data: LocationValue) => void;
   initialCenter?: { lat: number; lng: number };
+  className?: string;
 }
 
 export function LocationPicker({
   mode,
   onSelect,
   initialCenter,
+  className,
 }: LocationPickerProps) {
+  const { theme } = useTheme();
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string;
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(
     null,
   );
+  const isSelectedFromSearch = useRef(false);
 
   const { latitude: geoLat, longitude: geoLng } = useGeolocation({
     reverseGeocode: false,
@@ -47,6 +54,7 @@ export function LocationPicker({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [centerAddress, setCenterAddress] = useState<string>('');
+  const [centerPlaceName, setCenterPlaceName] = useState<string>('');
   const [isAddressLoading, setIsAddressLoading] = useState(false);
 
   useEffect(() => {
@@ -63,7 +71,6 @@ export function LocationPicker({
   }, [geoLat, geoLng]);
 
   const handleSearch = async (keyword: string) => {
-    debugger;
     if (!keyword.trim() || !mapRef.current) return;
     if (!placesServiceRef.current) {
       placesServiceRef.current = new google.maps.places.PlacesService(
@@ -104,6 +111,11 @@ export function LocationPicker({
    */
   const handleMapIdle = async () => {
     if (!mapRef.current) return;
+    if (isSelectedFromSearch.current) {
+      isSelectedFromSearch.current = false;
+      return;
+    }
+
     const center = mapRef.current.getCenter();
     if (!center) return;
 
@@ -111,6 +123,7 @@ export function LocationPicker({
     try {
       const addr = await reverseGeocode(center.lat(), center.lng());
       setCenterAddress(addr);
+      setCenterPlaceName('');
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       setCenterAddress('주소를 불러올 수 없습니다.');
@@ -123,6 +136,11 @@ export function LocationPicker({
     if (!mapRef.current || !place.geometry?.location) return;
 
     const location = place.geometry.location;
+
+    isSelectedFromSearch.current = true;
+
+    setCenterPlaceName(place.name || '');
+    setCenterAddress(place.formatted_address || '');
 
     // 지도를 해당 위치로 이동
     mapRef.current.panTo({
@@ -143,6 +161,7 @@ export function LocationPicker({
         lat: center.lat(),
         lng: center.lng(),
         address: centerAddress,
+        placeName: centerPlaceName || undefined,
       };
 
       if (mode === 'search') {
@@ -164,7 +183,12 @@ export function LocationPicker({
   };
 
   return (
-    <div className="w-full h-[500px] md:h-[600px] flex flex-col relative overflow-hidden bg-white">
+    <div
+      className={cn(
+        'w-full h-[500px] md:h-[600px] flex flex-col relative overflow-hidden bg-white',
+        className,
+      )}
+    >
       {/* 검색 바 */}
       <div className="absolute top-4 w-full px-4 z-50 max-w-md left-1/2 -translate-x-1/2">
         <MapSearchBar
@@ -180,6 +204,10 @@ export function LocationPicker({
       <div className="flex-1 relative z-10">
         <APIProvider apiKey={apiKey}>
           <Map
+            colorScheme={
+              theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT
+            }
+            mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
             defaultCenter={initialCenter || { lat: 37.5665, lng: 126.978 }}
             defaultZoom={15}
             disableDefaultUI
@@ -205,7 +233,7 @@ export function LocationPicker({
               <Loader2 className="w-3 h-3 animate-spin text-primary" />
             ) : (
               <span className="text-[12px] font-semibold text-gray-700 dark:text-gray-200 truncate">
-                {centerAddress || '위치 확인 중...'}
+                {centerPlaceName || centerAddress || '위치 확인 중...'}
               </span>
             )}
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white/90 dark:bg-gray-800/90 rotate-45 border-b border-r border-gray-100 dark:border-gray-700" />

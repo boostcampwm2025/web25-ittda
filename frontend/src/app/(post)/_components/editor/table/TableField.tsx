@@ -1,32 +1,43 @@
 'use client';
 
+import { TableValue } from '@/lib/types/recordField';
 import { Plus, MinusCircle, X } from 'lucide-react';
 
 interface TableFieldProps {
-  data: string[][] | null;
-  onUpdate: (newData: string[][] | null) => void;
+  data: TableValue | null;
+  onUpdate: (newData: TableValue | null) => void;
 }
 
 export const TableField = ({ data, onUpdate }: TableFieldProps) => {
   if (!data) return null;
 
-  const rowCount = data.length;
-  const colCount = data[0]?.length || 0;
+  const { rows: rowCount, cols: colCount, cells } = data;
 
   const updateCell = (rIdx: number, cIdx: number, value: string) => {
-    const newData = data.map((row, i) =>
+    const newCells = cells.map((row, i) =>
       i === rIdx ? row.map((cell, j) => (j === cIdx ? value : cell)) : row,
     );
-    onUpdate(newData);
+    onUpdate({
+      ...data,
+      cells: newCells,
+    });
   };
 
   const addRow = () => {
     const newRow = new Array(colCount).fill('');
-    onUpdate([...data, newRow]);
+    onUpdate({
+      rows: rowCount + 1,
+      cols: colCount,
+      cells: [...cells, newRow],
+    });
   };
 
   const addColumn = () => {
-    onUpdate(data.map((row) => [...row, '']));
+    onUpdate({
+      rows: rowCount,
+      cols: colCount + 1,
+      cells: cells.map((row) => [...row, '']),
+    });
   };
 
   const removeRow = (rIdx: number) => {
@@ -34,7 +45,11 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
       removeTable();
       return;
     }
-    onUpdate(data.filter((_, i) => i !== rIdx));
+    onUpdate({
+      rows: rowCount - 1,
+      cols: colCount,
+      cells: cells.filter((_, i) => i !== rIdx),
+    });
   };
 
   const removeColumn = (cIdx: number) => {
@@ -42,7 +57,11 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
       removeTable();
       return;
     }
-    onUpdate(data.map((row) => row.filter((_, j) => j !== cIdx)));
+    onUpdate({
+      rows: rowCount,
+      cols: colCount - 1,
+      cells: cells.map((row) => row.filter((_, j) => j !== cIdx)),
+    });
   };
 
   const removeTable = () => {
@@ -56,7 +75,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                {data[0].map((_, cIdx) => (
+                {cells[0]?.map((_, cIdx) => (
                   <th
                     key={`col-del-${cIdx}`}
                     className="p-1 bg-gray-50/50 dark:bg-white/5 border-r border-gray-100/50 dark:border-white/5 last:border-none"
@@ -73,7 +92,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
               </tr>
             </thead>
             <tbody>
-              {data.map((row, rIdx) => (
+              {cells.map((row, rIdx) => (
                 <tr
                   key={rIdx}
                   className="group/row border-b border-gray-100/50 dark:border-white/5 last:border-none"

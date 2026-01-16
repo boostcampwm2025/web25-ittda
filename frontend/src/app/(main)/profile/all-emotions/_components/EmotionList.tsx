@@ -7,10 +7,11 @@ import { useState } from 'react';
 
 interface EmotionListProps {
   emotions: ProfileEmotion;
+  defaultTab?: 'recent' | 'frequent';
 }
 
-export default function EmotionList({ emotions }: EmotionListProps) {
-  const [emotionTab, setEmotionTab] = useState<'recent' | 'frequent'>('recent');
+export default function EmotionList({ emotions, defaultTab = 'recent' }: EmotionListProps) {
+  const [emotionTab, setEmotionTab] = useState<'recent' | 'frequent'>(defaultTab);
   const router = useRouter();
 
   const handleSingleTagSearch = (tagName: string) => {
@@ -41,26 +42,34 @@ export default function EmotionList({ emotions }: EmotionListProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto hide-scrollbar">
-        {emotions[emotionTab].map((emotion) => (
-          <button
-            key={emotion.name}
-            onClick={() => handleSingleTagSearch(emotion.name)}
-            className="cursor-pointer w-full flex items-center justify-between px-6 py-5 border-b transition-colors active:bg-gray-50 dark:active:bg-white/5 dark:border-white/5 border-gray-50"
-          >
-            <div className="flex items-center gap-1.5">
-              <span className="text-[15px]">{emotion.emoji}</span>
-              <span className="text-[15px] font-medium dark:text-gray-200 text-itta-black">
-                {emotion.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] font-medium dark:text-gray-400 text-gray-600">
-                {emotion.count}
-              </span>
-              <ChevronRight className="w-4 h-4 text-gray-300" />
-            </div>
-          </button>
-        ))}
+        {emotions[emotionTab].length === 0 ? (
+          <div className="flex px-3 py-10 items-center justify-center h-full">
+            <p className="text-sm font-medium text-gray-400">
+              사용된 감정이 없습니다.
+            </p>
+          </div>
+        ) : (
+          emotions[emotionTab].map((emotion) => (
+            <button
+              key={emotion.name}
+              onClick={() => handleSingleTagSearch(emotion.name)}
+              className="cursor-pointer w-full flex items-center justify-between px-6 py-5 border-b transition-colors active:bg-gray-50 dark:active:bg-white/5 dark:border-white/5 border-gray-50"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[15px]">{emotion.emoji}</span>
+                <span className="text-[15px] font-medium dark:text-gray-200 text-itta-black">
+                  {emotion.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[14px] font-medium dark:text-gray-400 text-gray-600">
+                  {emotion.count}
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-300" />
+              </div>
+            </button>
+          ))
+        )}
       </div>
     </>
   );

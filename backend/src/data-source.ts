@@ -21,7 +21,7 @@ export default new DataSource({
   // migration 위치
   migrations: [path.join(__dirname, '/../migrations/*{.ts,.js}')],
 
-  synchronize: process.env.NODE_ENV === 'development' ? true : false,
+  synchronize: false,
   migrationsRun: false,
 
   logging:

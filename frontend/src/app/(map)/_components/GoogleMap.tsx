@@ -7,9 +7,11 @@ import {
   Pin,
   useMap,
   useMapsLibrary,
+  ColorScheme,
 } from '@vis.gl/react-google-maps';
 import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
+import { useTheme } from 'next-themes';
 
 interface GoogleMapProps {
   posts: MapPostItem[];
@@ -55,6 +57,7 @@ export default function GoogleMap({
   placesServiceRef,
   searchedLocation,
 }: GoogleMapProps) {
+  const { theme } = useTheme();
   const placesLib = useMapsLibrary('places');
   const selectedPost = useMemo(() => {
     if (typeof selectedPostId === 'string') {
@@ -77,7 +80,8 @@ export default function GoogleMap({
   return (
     <div className="bg-yellow-50 w-full h-full relative">
       <Map
-        mapId="MAP_ID"
+        colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
+        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
         defaultCenter={{ lat: 37.5665, lng: 126.978 }}
         defaultZoom={12}
         gestureHandling="greedy"
