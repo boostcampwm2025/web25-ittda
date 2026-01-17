@@ -1,5 +1,11 @@
 // src/modules/feed/feed.controller.ts
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { FeedQueryService } from './feed.query.service';
 import { GetFeedQueryDto } from './dto/get-feed.query.dto';
 import { ApiTags } from '@nestjs/swagger';
@@ -26,7 +32,7 @@ export class FeedController {
   }> {
     const userId = user?.sub;
     if (!userId) {
-      throw new Error('userId is missing. Provide a valid access token.');
+      throw new UnauthorizedException('Access token is required.');
     }
     const { cards, warnings } = await this.feedQuery.getFeedForUser(
       userId,
