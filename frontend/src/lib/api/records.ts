@@ -8,7 +8,7 @@ export const recordDetailOptions = (recordId: string) =>
     queryKey: ['record', recordId],
     queryFn: async () => {
       const response = await get<RecordDetailResponse>(
-        `/api/posts/eb044c86-4bbc-4888-8aea-dc75b1152bff`,
+        `/api/posts/${recordId}`,
       );
 
       if (!response.success) {
