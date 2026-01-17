@@ -109,7 +109,7 @@ describe('PostController (e2e)', () => {
         },
         {
           type: 'RATING',
-          value: { rating: 4 },
+          value: { rating: 4.1 },
           layout: { row: 4, col: 1, span: 1 },
         },
         {
@@ -167,6 +167,9 @@ describe('PostController (e2e)', () => {
     expect(
       created.blocks.find((b) => b.type === 'LOCATION')?.value?.address,
     ).toBe('Seoul');
+    expect(created.blocks.find((b) => b.type === 'RATING')?.value?.rating).toBe(
+      4.1,
+    );
 
     const getRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
@@ -188,6 +191,7 @@ describe('PostController (e2e)', () => {
     expect(fetched.contributors[0]?.userId).toBe(owner.id);
     expect(fetched.blocks.find((b) => b.type === 'MOOD')).toBeDefined();
     expect(fetched.blocks.find((b) => b.type === 'LOCATION')).toBeDefined();
+    expect(fetched.blocks.find((b) => b.type === 'RATING')).toBeDefined();
   });
 
   it('DELETE /posts/:id should soft-delete and return 404 on fetch', async () => {
@@ -452,6 +456,56 @@ describe('PostController (e2e)', () => {
     expect(Array.isArray(badBody.message)).toBe(true);
     expect(badBody.message.join(' ')).toContain(
       'location must include lat, lng, address with valid types',
+    );
+  });
+
+  it('POST /posts should return 400 when RATING value has too many decimals', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '별점 오류',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '별점 오류 테스트' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+        {
+          type: 'RATING',
+          value: { rating: 4.11 },
+          layout: { row: 3, col: 1, span: 1 },
+        },
+      ],
+    };
+
+    const badRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(400);
+
+    const badBody = badRes.body as {
+      statusCode: number;
+      error: string;
+      message: string[];
+    };
+
+    expect(badBody).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+    });
+    expect(Array.isArray(badBody.message)).toBe(true);
+    expect(badBody.message.join(' ')).toContain(
+      'rating must be a number with at most one decimal place',
     );
   });
 });

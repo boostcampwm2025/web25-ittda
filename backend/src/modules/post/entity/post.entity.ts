@@ -54,7 +54,7 @@ export class Post {
   @Column({ type: 'text', array: true, nullable: true })
   tags?: string[] | null;
 
-  @Column({ type: 'smallint', nullable: true })
+  @Column({ type: 'real', nullable: true })
   rating?: number | null;
 
   @Index()

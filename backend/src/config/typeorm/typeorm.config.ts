@@ -10,7 +10,7 @@ export const getTypeOrmConfig = (
   entities: [join(__dirname, '../../**/*.entity.{ts,js}')],
   migrations: [join(__dirname, '../../../migrations/*.{ts,js}')],
   synchronize: process.env.NODE_ENV === 'development' ? true : false,
-  migrationsRun: false,
+  migrationsRun: configService.get<string>('NODE_ENV') === 'test',
   logging:
     configService.get<string>('NODE_ENV') === 'production'
       ? ['error', 'warn']

@@ -40,6 +40,11 @@ export class LocationValueDto {
   placeName?: string;
 }
 
+export class RatingValueDto {
+  @ApiProperty({ description: 'Allows one decimal place.' })
+  rating: number;
+}
+
 @ValidatorConstraint({ name: 'MoodValueConstraint', async: false })
 class MoodValueConstraint implements ValidatorConstraintInterface {
   validate(value: unknown, args?: ValidationArguments): boolean {
@@ -86,7 +91,23 @@ class LocationValueConstraint implements ValidatorConstraintInterface {
   }
 }
 
-@ApiExtraModels(MoodValueDto, LocationValueDto)
+@ValidatorConstraint({ name: 'RatingValueConstraint', async: false })
+class RatingValueConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown, args?: ValidationArguments): boolean {
+    const target = args?.object as PostBlockDto | undefined;
+    if (!target || target.type !== PostBlockType.RATING) return true;
+    if (typeof value !== 'object' || value === null) return false;
+    const rating = (value as { rating?: unknown }).rating;
+    if (typeof rating !== 'number' || !Number.isFinite(rating)) return false;
+    return Math.round(rating * 10) === rating * 10;
+  }
+
+  defaultMessage(): string {
+    return 'rating must be a number with at most one decimal place';
+  }
+}
+
+@ApiExtraModels(MoodValueDto, LocationValueDto, RatingValueDto)
 export class PostBlockDto {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
@@ -100,13 +121,15 @@ export class PostBlockDto {
   @IsObject()
   @Validate(MoodValueConstraint)
   @Validate(LocationValueConstraint)
+  @Validate(RatingValueConstraint)
   @ApiProperty({
     description:
-      'Block value. When type=MOOD or LOCATION, value shape is enforced.',
+      'Block value. When type=MOOD, LOCATION, or RATING, value shape is enforced.',
     oneOf: [
       { type: 'object', additionalProperties: true },
       { $ref: getSchemaPath(MoodValueDto) },
       { $ref: getSchemaPath(LocationValueDto) },
+      { $ref: getSchemaPath(RatingValueDto) },
     ],
   })
   value: BlockValueMap[PostBlockType];

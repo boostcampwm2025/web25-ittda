@@ -9,10 +9,20 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiExtraModels,
+  ApiNoContentResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
+import {
+  LocationValueDto,
+  MoodValueDto,
+  RatingValueDto,
+} from './dto/post-block.dto';
 import { User } from '@/common/decorators/user.decorator';
 import {
   ApiWrappedCreatedResponse,
@@ -22,6 +32,7 @@ import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import type { MyJwtPayload } from '../auth/auth.type';
 
 @ApiTags('posts')
+@ApiExtraModels(MoodValueDto, LocationValueDto, RatingValueDto)
 @UseGuards(JwtAuthGuard)
 @Controller({ path: 'posts', version: '1' })
 export class PostController {
@@ -45,7 +56,9 @@ export class PostController {
   @ApiBody({
     type: CreatePostDto,
     description:
-      'MOOD 블록의 value.mood는 [행복, 슬픔, 설렘, 좋음, 놀람] 중 하나여야 하고, LOCATION 블록은 lat/lng/address가 필요하며 placeName은 선택입니다.',
+      'MOOD 블록의 value.mood는 [행복, 슬픔, 설렘, 좋음, 놀람] 중 하나여야 합니다.<br/>' +
+      'LOCATION 블록은 lat/lng/address가 필요하며 placeName은 선택입니다.<br/>' +
+      'RATING 블록의 value.rating은 소수점 한 자리까지 허용됩니다.',
   })
   @ApiWrappedCreatedResponse({ type: PostDetailDto })
   create(
