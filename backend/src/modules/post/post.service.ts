@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
@@ -50,7 +51,7 @@ export class PostService {
     const owner = await this.userRepository.findOne({
       where: { id: ownerUserId },
     });
-    if (!owner) throw new BadRequestException('Owner not found');
+    if (!owner) throw new UnauthorizedException('Owner not found');
 
     if (dto.scope === PostScope.GROUP && !dto.groupId) {
       throw new BadRequestException('groupId is required when scope=GROUP');
