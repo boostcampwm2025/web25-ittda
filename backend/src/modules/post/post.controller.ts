@@ -1,11 +1,12 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   HttpCode,
   Param,
   Post as HttpPost,
-  Body,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
@@ -32,11 +33,11 @@ export class PostController {
     @User() user: MyJwtPayload,
     @Param('id') id: string,
   ): Promise<PostDetailDto> {
-    const userId = user?.sub;
-    if (!userId) {
-      throw new Error('userId is missing. Provide a valid access token.');
+    const requesterId = user?.sub;
+    if (!requesterId) {
+      throw new UnauthorizedException('Access token is required.');
     }
-    await this.postService.ensureCanViewPost(id, userId);
+    await this.postService.ensureCanViewPost(id, requesterId);
     return this.postService.findOne(id);
   }
 
@@ -48,7 +49,7 @@ export class PostController {
   ): Promise<PostDetailDto> {
     const ownerId = user?.sub;
     if (!ownerId) {
-      throw new Error('ownerId is missing. Provide a valid access token.');
+      throw new UnauthorizedException('Access token is required.');
     }
     return this.postService.createPost(ownerId, dto);
   }
@@ -62,7 +63,7 @@ export class PostController {
   ): Promise<void> {
     const requesterId = user?.sub;
     if (!requesterId) {
-      throw new Error('requesterId is missing. Provide a valid access token.');
+      throw new UnauthorizedException('Access token is required.');
     }
     await this.postService.deletePost(id, requesterId);
   }
