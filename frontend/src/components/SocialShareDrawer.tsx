@@ -19,6 +19,14 @@ import {
   XIcon,
   TwitterShareButton,
 } from 'react-share';
+import Image from 'next/image';
+
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Kakao: any;
+  }
+}
 
 interface SocialShareDrawerProps {
   title: string;
@@ -41,6 +49,10 @@ export default function SocialShareDrawer({
   open,
   onOpenChange,
 }: SocialShareDrawerProps) {
+  const shareKakao = () => {
+    // TODO: 주디 카톡 공유 마무리되면 가져오기
+  };
+
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
@@ -58,6 +70,23 @@ export default function SocialShareDrawer({
 
           <div className="overflow-x-auto scrollbar-hide pb-4 scroll-smooth touch-pan-x overscroll-x-contain">
             <ul className="flex justify-start gap-6 min-w-max">
+              <li className="flex flex-col items-center shrink-0">
+                <button
+                  onClick={shareKakao}
+                  className="flex flex-col items-center"
+                  aria-label="카카오톡으로 공유하기"
+                >
+                  <div className="w-15 h-15 relative">
+                    <Image
+                      src="/kakao_logo.png"
+                      alt="카카오톡 로고"
+                      fill
+                      className="rounded-full"
+                    />
+                  </div>
+                  <SocialName name="Kakao" />
+                </button>
+              </li>
               <li className="flex flex-col items-center shrink-0">
                 <FacebookShareButton
                   url={path}
