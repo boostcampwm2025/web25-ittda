@@ -176,6 +176,23 @@ export class PostService {
     return dto;
   }
 
+  async ensureCanViewPost(postId: string, userId: string): Promise<void> {
+    const post = await this.postRepository.findOne({
+      where: { id: postId, deletedAt: IsNull() },
+      select: { id: true, ownerUserId: true },
+    });
+    if (!post) throw new NotFoundException('Post not found');
+    if (post.ownerUserId === userId) return;
+
+    const contributor = await this.postContributorRepository.findOne({
+      where: { postId, userId },
+      select: { userId: true },
+    });
+    if (!contributor) {
+      throw new ForbiddenException('You do not have access to this post');
+    }
+  }
+
   /**
    * 게시글 삭제: 작성자만 삭제 가능, soft delete 처리.
    */

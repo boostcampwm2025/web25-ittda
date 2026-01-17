@@ -28,8 +28,15 @@ export class PostController {
 
   @Get(':id')
   @ApiWrappedOkResponse({ type: PostDetailDto })
-  getOne(@Param('id') id: string): Promise<PostDetailDto> {
-    // TODO: 이 유저가 해당 postId를 볼 권한이 있는지 확인하는 로직 추가
+  async getOne(
+    @User() user: MyJwtPayload,
+    @Param('id') id: string,
+  ): Promise<PostDetailDto> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new Error('userId is missing. Provide a valid access token.');
+    }
+    await this.postService.ensureCanViewPost(id, userId);
     return this.postService.findOne(id);
   }
 
