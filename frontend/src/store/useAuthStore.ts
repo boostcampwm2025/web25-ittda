@@ -1,6 +1,6 @@
 'use client';
 
-import { clearTokens, setAccessToken } from '@/lib/api/auth';
+import { clearTokens } from '@/lib/api/auth';
 import { GuestInfo, UserType } from '@/lib/types/profile';
 import { UserLoginResponse } from '@/lib/types/response';
 import Cookies from 'js-cookie';
@@ -17,6 +17,7 @@ interface State {
 
 interface Action {
   setLogin: (socialUser: UserLoginResponse) => void;
+  setSocialLogin: () => void; // 프로필 조회 실패 시 로그인 상태만 설정
   setGuestInfo: (guest: GuestInfo) => void;
   switchGuestToSocial: (user: UserLoginResponse) => void;
   logout: () => void;
@@ -45,11 +46,18 @@ export const useAuthStore = create<State & Action>()(
       setLogin: (socialUser) => {
         set({
           userType: 'social',
-          userId: socialUser.user.id,
+          userId: socialUser.id,
           isLoggedIn: true,
         });
-        setAccessToken(socialUser.accessToken);
         // 소셜 로그인 시에는 게스트 쿠키 삭제
+        Cookies.remove(guestCookieKey);
+      },
+
+      setSocialLogin: () => {
+        set({
+          userType: 'social',
+          isLoggedIn: true,
+        });
         Cookies.remove(guestCookieKey);
       },
 
@@ -58,6 +66,7 @@ export const useAuthStore = create<State & Action>()(
           guestSessionId: guest.guestSessionId,
           guestSessionExpiresAt: guest.guestSessionId,
           userType: 'guest',
+          isLoggedIn: true,
         });
 
         setGuestCookie(guest.guestSessionId);
@@ -66,12 +75,11 @@ export const useAuthStore = create<State & Action>()(
       switchGuestToSocial: (socialUser) => {
         set({
           userType: 'social',
-          userId: socialUser.user.id,
+          userId: socialUser.id,
           isLoggedIn: true,
           guestSessionId: null,
           guestSessionExpiresAt: null,
         });
-        setAccessToken(socialUser.accessToken);
         // 전환 시 쿠키 삭제
         Cookies.remove(guestCookieKey);
       },

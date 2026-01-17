@@ -6,12 +6,6 @@ export interface ProfileTag {
   all: Tag[];
 }
 
-export interface Profile {
-  image: string;
-  nickname: string;
-  email: string;
-}
-
 export interface Emotion {
   name: string;
   emoji: string;
@@ -30,6 +24,7 @@ export interface UserProfile {
   nickname: string | null;
   provider: string;
   createdAt: string;
+  profileImage: string;
 }
 
 export interface GuestInfo {
