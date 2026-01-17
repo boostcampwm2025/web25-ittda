@@ -12,7 +12,9 @@ interface RecordDetailProps {
 }
 
 export default function RecordDetail({ recordId }: RecordDetailProps) {
-  const { data: record } = useSuspenseQuery(recordDetailOptions(recordId));
+  const { data: record } = useSuspenseQuery(
+    recordDetailOptions('225f4bd7-3bbc-4a71-8747-fe6a43dc3d6c'),
+  );
 
   // 블록을 row별로 그룹화
   const rowMap = new Map<number, Block[]>();
