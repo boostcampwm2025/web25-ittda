@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
@@ -42,6 +42,11 @@ export class PostController {
   }
 
   @HttpPost()
+  @ApiBody({
+    type: CreatePostDto,
+    description:
+      'MOOD 블록의 value.mood는 [행복, 슬픔, 설렘, 좋음, 놀람] 중 하나여야 합니다.',
+  })
   @ApiWrappedCreatedResponse({ type: PostDetailDto })
   create(
     @User() user: MyJwtPayload,

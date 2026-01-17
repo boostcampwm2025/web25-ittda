@@ -98,14 +98,19 @@ describe('PostController (e2e)', () => {
           layout: { row: 2, col: 1, span: 2 },
         },
         {
+          type: 'MOOD',
+          value: { mood: '행복' },
+          layout: { row: 3, col: 1, span: 1 },
+        },
+        {
           type: 'TAG',
           value: { tags: ['tag1', 'tag2'] },
-          layout: { row: 3, col: 1, span: 1 },
+          layout: { row: 3, col: 2, span: 1 },
         },
         {
           type: 'RATING',
           value: { rating: 4 },
-          layout: { row: 3, col: 2, span: 1 },
+          layout: { row: 4, col: 1, span: 1 },
         },
         {
           type: 'IMAGE',
@@ -114,7 +119,7 @@ describe('PostController (e2e)', () => {
               'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=800',
             ],
           },
-          layout: { row: 4, col: 1, span: 2 },
+          layout: { row: 5, col: 1, span: 2 },
         },
       ],
     };
@@ -143,6 +148,9 @@ describe('PostController (e2e)', () => {
     expect(
       created.blocks.find((b) => b.type === 'IMAGE')?.value?.tempUrls?.length,
     ).toBeGreaterThan(0);
+    expect(created.blocks.find((b) => b.type === 'MOOD')?.value?.mood).toBe(
+      '행복',
+    );
 
     const getRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
@@ -162,6 +170,7 @@ describe('PostController (e2e)', () => {
     expect(fetched.ownerUserId).toBe(owner.id);
     expect(fetched.blocks.length).toBeGreaterThan(0);
     expect(fetched.contributors[0]?.userId).toBe(owner.id);
+    expect(fetched.blocks.find((b) => b.type === 'MOOD')).toBeDefined();
   });
 
   it('DELETE /posts/:id should soft-delete and return 404 on fetch', async () => {
@@ -327,5 +336,55 @@ describe('PostController (e2e)', () => {
       message: 'TEXT block must exist at least once',
       error: 'Bad Request',
     });
+  });
+
+  it('POST /posts should return 400 when MOOD value is invalid', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '감정 오류',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '감정 오류 테스트' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '분노' },
+          layout: { row: 3, col: 1, span: 1 },
+        },
+      ],
+    };
+
+    const badRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(400);
+
+    const badBody = badRes.body as {
+      statusCode: number;
+      error: string;
+      message: string[];
+    };
+
+    expect(badBody).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+    });
+    expect(Array.isArray(badBody.message)).toBe(true);
+    expect(badBody.message.join(' ')).toContain(
+      'mood must be one of: 행복, 슬픔, 설렘, 좋음, 놀람',
+    );
   });
 });
