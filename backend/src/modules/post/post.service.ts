@@ -13,6 +13,7 @@ import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
 import { User } from '@/modules/user/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
+import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
 import { PostScope } from '@/enums/post-scope.enum';
@@ -34,6 +35,8 @@ export class PostService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(GroupMember)
+    private readonly groupMemberRepository: Repository<GroupMember>,
   ) {}
 
   /**
@@ -177,13 +180,24 @@ export class PostService {
   }
 
   async ensureCanViewPost(postId: string, userId: string): Promise<void> {
+    // 본인 글이면 통과
     const post = await this.postRepository.findOne({
       where: { id: postId, deletedAt: IsNull() },
-      select: { id: true, ownerUserId: true },
+      select: { id: true, ownerUserId: true, groupId: true, scope: true },
     });
     if (!post) throw new NotFoundException('Post not found');
     if (post.ownerUserId === userId) return;
 
+    // 내 그룹 글이면 통과
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId },
+        select: { userId: true },
+      });
+      if (member) return;
+    }
+
+    // 기여자면 통과
     const contributor = await this.postContributorRepository.findOne({
       where: { postId, userId },
       select: { userId: true },
