@@ -25,6 +25,8 @@ import { useState, useEffect } from 'react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useApiDelete, useApiPost } from '@/hooks/useApi';
+import { toast } from 'sonner';
 
 export default function Setting() {
   const router = useRouter();
@@ -34,6 +36,24 @@ export default function Setting() {
   const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
     usePWAInstall();
   const [showInstructions, setShowInstructions] = useState(false);
+
+  const { mutate: logout } = useApiPost('/api/auth/logout', {
+    onSuccess: () => {
+      toast.success('로그아웃 되었습니다. 잠시후 로그인 페이지로 이동합니다.');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1000);
+    },
+  });
+
+  const { mutate: withdrawal } = useApiDelete('/api/me', {
+    onSuccess: () => {
+      toast.success('탈퇴되었습니다. 잠시후 로그인 페이지로 이동합니다.');
+      setTimeout(() => {
+        router.push('/');
+      }, 1000);
+    },
+  });
 
   useEffect(() => {
     // React 19의 cascading renders 에러 방지를 위한 지연 처리
@@ -49,11 +69,12 @@ export default function Setting() {
   }
 
   const handleWithdrawal = () => {
-    // TODO: 서버로 탈퇴 요청
-    router.push('/');
+    withdrawal({});
   };
 
-  const handleLogout = () => {};
+  const handleLogout = () => {
+    logout({});
+  };
 
   const handleLogin = () => {
     router.push('/login');
