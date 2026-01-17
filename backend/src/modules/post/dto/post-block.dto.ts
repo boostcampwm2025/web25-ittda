@@ -26,6 +26,20 @@ export class MoodValueDto {
   mood: PostMood;
 }
 
+export class LocationValueDto {
+  @ApiProperty()
+  lat: number;
+
+  @ApiProperty()
+  lng: number;
+
+  @ApiProperty()
+  address: string;
+
+  @ApiPropertyOptional()
+  placeName?: string;
+}
+
 @ValidatorConstraint({ name: 'MoodValueConstraint', async: false })
 class MoodValueConstraint implements ValidatorConstraintInterface {
   validate(value: unknown, args?: ValidationArguments): boolean {
@@ -44,7 +58,35 @@ class MoodValueConstraint implements ValidatorConstraintInterface {
   }
 }
 
-@ApiExtraModels(MoodValueDto)
+@ValidatorConstraint({ name: 'LocationValueConstraint', async: false })
+class LocationValueConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown, args?: ValidationArguments): boolean {
+    const target = args?.object as PostBlockDto | undefined;
+    if (!target || target.type !== PostBlockType.LOCATION) return true;
+    if (!value || typeof value !== 'object') return false;
+    const candidate = value as {
+      lat?: unknown;
+      lng?: unknown;
+      address?: unknown;
+      placeName?: unknown;
+    };
+    const hasLat =
+      typeof candidate.lat === 'number' && Number.isFinite(candidate.lat);
+    const hasLng =
+      typeof candidate.lng === 'number' && Number.isFinite(candidate.lng);
+    const hasAddress = typeof candidate.address === 'string';
+    const hasValidPlaceName =
+      candidate.placeName === undefined ||
+      typeof candidate.placeName === 'string';
+    return hasLat && hasLng && hasAddress && hasValidPlaceName;
+  }
+
+  defaultMessage(): string {
+    return 'location must include lat, lng, address with valid types';
+  }
+}
+
+@ApiExtraModels(MoodValueDto, LocationValueDto)
 export class PostBlockDto {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
@@ -57,11 +99,14 @@ export class PostBlockDto {
 
   @IsObject()
   @Validate(MoodValueConstraint)
+  @Validate(LocationValueConstraint)
   @ApiProperty({
-    description: 'Block value. When type=MOOD, mood enum is enforced.',
+    description:
+      'Block value. When type=MOOD or LOCATION, value shape is enforced.',
     oneOf: [
       { type: 'object', additionalProperties: true },
       { $ref: getSchemaPath(MoodValueDto) },
+      { $ref: getSchemaPath(LocationValueDto) },
     ],
   })
   value: BlockValueMap[PostBlockType];

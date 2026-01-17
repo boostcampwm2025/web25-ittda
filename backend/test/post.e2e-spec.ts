@@ -113,6 +113,16 @@ describe('PostController (e2e)', () => {
           layout: { row: 4, col: 1, span: 1 },
         },
         {
+          type: 'LOCATION',
+          value: {
+            lat: 37.5665,
+            lng: 126.978,
+            address: 'Seoul',
+            placeName: 'City Hall',
+          },
+          layout: { row: 4, col: 2, span: 1 },
+        },
+        {
           type: 'IMAGE',
           value: {
             tempUrls: [
@@ -135,7 +145,10 @@ describe('PostController (e2e)', () => {
       title: string;
       scope: PostScope;
       ownerUserId: string;
-      blocks: Array<{ type: string; value?: { tempUrls?: string[] } }>;
+      blocks: Array<{
+        type: string;
+        value?: { tempUrls?: string[]; mood?: string; address?: string };
+      }>;
       contributors: Array<{ userId: string; role: string }>;
     };
 
@@ -151,6 +164,9 @@ describe('PostController (e2e)', () => {
     expect(created.blocks.find((b) => b.type === 'MOOD')?.value?.mood).toBe(
       '행복',
     );
+    expect(
+      created.blocks.find((b) => b.type === 'LOCATION')?.value?.address,
+    ).toBe('Seoul');
 
     const getRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
@@ -171,6 +187,7 @@ describe('PostController (e2e)', () => {
     expect(fetched.blocks.length).toBeGreaterThan(0);
     expect(fetched.contributors[0]?.userId).toBe(owner.id);
     expect(fetched.blocks.find((b) => b.type === 'MOOD')).toBeDefined();
+    expect(fetched.blocks.find((b) => b.type === 'LOCATION')).toBeDefined();
   });
 
   it('DELETE /posts/:id should soft-delete and return 404 on fetch', async () => {
@@ -385,6 +402,56 @@ describe('PostController (e2e)', () => {
     expect(Array.isArray(badBody.message)).toBe(true);
     expect(badBody.message.join(' ')).toContain(
       'mood must be one of: 행복, 슬픔, 설렘, 좋음, 놀람',
+    );
+  });
+
+  it('POST /posts should return 400 when LOCATION value is invalid', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '위치 오류',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '위치 오류 테스트' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+        {
+          type: 'LOCATION',
+          value: { lat: '37.5665', lng: 126.978, address: 'Seoul' },
+          layout: { row: 3, col: 1, span: 1 },
+        },
+      ],
+    };
+
+    const badRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(400);
+
+    const badBody = badRes.body as {
+      statusCode: number;
+      error: string;
+      message: string[];
+    };
+
+    expect(badBody).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+    });
+    expect(Array.isArray(badBody.message)).toBe(true);
+    expect(badBody.message.join(' ')).toContain(
+      'location must include lat, lng, address with valid types',
     );
   });
 });

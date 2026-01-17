@@ -45,7 +45,7 @@ export class PostController {
   @ApiBody({
     type: CreatePostDto,
     description:
-      'MOOD 블록의 value.mood는 [행복, 슬픔, 설렘, 좋음, 놀람] 중 하나여야 합니다.',
+      'MOOD 블록의 value.mood는 [행복, 슬픔, 설렘, 좋음, 놀람] 중 하나여야 하고, LOCATION 블록은 lat/lng/address가 필요하며 placeName은 선택입니다.',
   })
   @ApiWrappedCreatedResponse({ type: PostDetailDto })
   create(
