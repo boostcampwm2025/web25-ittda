@@ -46,7 +46,7 @@ export default function SocialShareDrawer({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="w-full px-8 py-4">
           <DrawerHeader className="mb-0 pb-0 mx-0 px-0">
-            <div className="flex justify-between items-center mb-6 w-full">
+            <div className="flex justify-between items-center mb-10 w-full">
               <DrawerTitle className="text-lg font-bold dark:text-white text-itta-black">
                 sns로 공유하기
               </DrawerTitle>
@@ -57,14 +57,14 @@ export default function SocialShareDrawer({
           </DrawerHeader>
 
           <div className="overflow-x-auto scrollbar-hide pb-4 scroll-smooth touch-pan-x overscroll-x-contain">
-            <ul className="flex justify-center gap-6 min-w-max">
+            <ul className="flex justify-start gap-6 min-w-max">
               <li className="flex flex-col items-center shrink-0">
                 <FacebookShareButton
                   url={path}
                   aria-label="페이스북으로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <FacebookIcon size={50} round />
+                  <FacebookIcon size={60} round />
                   <SocialName name="Facebook" />
                 </FacebookShareButton>
               </li>
@@ -75,7 +75,7 @@ export default function SocialShareDrawer({
                   aria-label="페이스북 메신저로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <FacebookMessengerIcon size={50} round />
+                  <FacebookMessengerIcon size={60} round />
                   <SocialName name="Messanger" />
                 </FacebookMessengerShareButton>
               </li>
@@ -86,7 +86,7 @@ export default function SocialShareDrawer({
                   aria-label="트위터로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <XIcon size={50} round />
+                  <XIcon size={60} round />
                   <SocialName name="X" />
                 </TwitterShareButton>
               </li>
@@ -98,7 +98,7 @@ export default function SocialShareDrawer({
                   aria-label="이메일로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <EmailIcon size={50} round />
+                  <EmailIcon size={60} round />
                   <SocialName name="Email" />
                 </EmailShareButton>
               </li>
@@ -109,7 +109,7 @@ export default function SocialShareDrawer({
                   aria-label="라인으로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <LineIcon size={50} round />
+                  <LineIcon size={60} round />
                   <SocialName name="Line" />
                 </LineShareButton>
               </li>
