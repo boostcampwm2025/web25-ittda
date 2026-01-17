@@ -18,7 +18,9 @@ describe('PostController (e2e)', () => {
   let userRepository: Repository<User>;
   let postRepository: Repository<Post>;
   let owner: User;
+  let otherUser: User;
   let accessToken: string;
+  let otherAccessToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -52,12 +54,25 @@ describe('PostController (e2e)', () => {
     });
     owner = await userRepository.save(owner);
     accessToken = jwtService.sign({ sub: owner.id });
+
+    otherUser = await userRepository.save(
+      userRepository.create({
+        email: 'test-post-other@example.com',
+        nickname: 'post-other',
+        provider: 'kakao',
+        providerId: `test-other-${Date.now()}`,
+      }),
+    );
+    otherAccessToken = jwtService.sign({ sub: otherUser.id });
   });
 
   afterAll(async () => {
     if (owner?.id) {
       await postRepository.delete({ ownerUserId: owner.id });
       await userRepository.delete({ id: owner.id });
+    }
+    if (otherUser?.id) {
+      await userRepository.delete({ id: otherUser.id });
     }
     await app.close();
   });
@@ -185,10 +200,102 @@ describe('PostController (e2e)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(204);
 
-    await request(app.getHttpServer())
+    const notFoundRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(404);
+
+    expect(notFoundRes.body).toMatchObject({
+      statusCode: 404,
+      message: 'Post not found',
+      error: 'Not Found',
+    });
+  });
+
+  it('GET /posts/:id should return 403 for non-owner', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '권한 테스트',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '권한 테스트 본문' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
+    };
+
+    const createRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(201);
+
+    const created = createRes.body as { id: string };
+
+    const forbiddenRes = await request(app.getHttpServer())
+      .get(`/posts/${created.id}`)
+      .set('Authorization', `Bearer ${otherAccessToken}`)
+      .expect(403);
+
+    expect(forbiddenRes.body).toMatchObject({
+      statusCode: 403,
+      message: 'You do not have access to this post',
+      error: 'Forbidden',
+    });
+  });
+
+  it('DELETE /posts/:id should return 403 for non-owner', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '삭제 권한 테스트',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '삭제 권한 테스트 본문' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
+    };
+
+    const createRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(201);
+
+    const created = createRes.body as { id: string };
+
+    const forbiddenRes = await request(app.getHttpServer())
+      .delete(`/posts/${created.id}`)
+      .set('Authorization', `Bearer ${otherAccessToken}`)
+      .expect(403);
+
+    expect(forbiddenRes.body).toMatchObject({
+      statusCode: 403,
+      message: 'Only the owner can delete this post',
+      error: 'Forbidden',
+    });
   });
 
   it('POST /posts should return 400 when TEXT block is missing', async () => {
@@ -209,10 +316,16 @@ describe('PostController (e2e)', () => {
       ],
     };
 
-    await request(app.getHttpServer())
+    const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
       .send(payload)
       .expect(400);
+
+    expect(badRes.body).toMatchObject({
+      statusCode: 400,
+      message: 'TEXT block must exist at least once',
+      error: 'Bad Request',
+    });
   });
 });
