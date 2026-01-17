@@ -45,7 +45,7 @@ export function extractMetaFromBlocks(blocks: PostBlockDto[]): ExtractedMeta {
   let date: string | undefined;
   let time: string | undefined;
   let location: LocationValue | undefined;
-  let emotion: string | undefined;
+  let emotion: PostMood | undefined;
   let rating: number | undefined;
   let tags: string[] | undefined;
 
