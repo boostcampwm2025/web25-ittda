@@ -12,6 +12,7 @@ import {
   AlertCircle,
   ChevronRight,
   Download,
+  LogIn,
   LogOut,
   Moon,
   Sun,
@@ -23,10 +24,12 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from '@/components/PWAInstallModal';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function Setting() {
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
+  const { guestSessionId, userId } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
     usePWAInstall();
@@ -51,6 +54,10 @@ export default function Setting() {
   };
 
   const handleLogout = () => {};
+
+  const handleLogin = () => {
+    router.push('/login');
+  };
 
   const toggleDarkMode = () => {
     const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
@@ -135,16 +142,30 @@ export default function Setting() {
               <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
             </button>
           )}
-          <button
-            onClick={handleLogout}
-            className="cursor-pointer w-full flex items-center justify-between py-2 group"
-          >
-            <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
-              <LogOut className="w-4 h-4 text-gray-400" />
-              로그아웃
-            </span>
-            <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
-          </button>
+          {guestSessionId && (
+            <button
+              onClick={handleLogin}
+              className="cursor-pointer w-full flex items-center justify-between py-2 group"
+            >
+              <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
+                <LogIn className="w-4 h-4 text-gray-400" />
+                로그인
+              </span>
+              <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+            </button>
+          )}
+          {!guestSessionId && userId && (
+            <button
+              onClick={handleLogout}
+              className="cursor-pointer w-full flex items-center justify-between py-2 group"
+            >
+              <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
+                <LogOut className="w-4 h-4 text-gray-400" />
+                로그아웃
+              </span>
+              <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+            </button>
+          )}
           <Drawer>
             <DrawerTrigger className="cursor-pointer w-full flex items-center justify-between py-2 group text-red-400">
               <span className="text-sm font-bold flex items-center gap-2">
