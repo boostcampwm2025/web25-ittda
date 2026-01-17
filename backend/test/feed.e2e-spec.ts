@@ -159,13 +159,14 @@ describe('FeedController (e2e)', () => {
           layout: { row: number; col: number; span: number };
         }>;
       }>;
-      meta: { warnings: unknown[] };
+      meta: { warnings: unknown[]; feedLength: number };
     };
 
     expect(body.data.map((item) => item.postId).sort()).toEqual(
       [ownedPost.id, contributedPost.id].sort(),
     );
     expect(Array.isArray(body.meta.warnings)).toBe(true);
+    expect(body.meta.feedLength).toBe(body.data.length);
 
     const ownedCard = body.data.find((item) => item.postId === ownedPost.id);
     expect(ownedCard?.title).toBe('Owned post');

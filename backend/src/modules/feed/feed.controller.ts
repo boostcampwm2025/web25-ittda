@@ -25,7 +25,10 @@ export class FeedController {
   async getFeed(
     @Req() req: AuthedRequest,
     @Query() query: GetFeedQueryDto,
-  ): Promise<{ data: FeedCardResponseDto[]; meta: { warnings: unknown[] } }> {
+  ): Promise<{
+    data: FeedCardResponseDto[];
+    meta: { warnings: unknown[]; feedLength: number };
+  }> {
     const tempUserId = req.header('x-user-id');
     const userId =
       req.user?.id ?? (typeof tempUserId === 'string' ? tempUserId : undefined);
@@ -39,6 +42,6 @@ export class FeedController {
       userId,
       query,
     );
-    return { data: cards, meta: { warnings } };
+    return { data: cards, meta: { warnings, feedLength: cards.length } };
   }
 }
