@@ -1,5 +1,6 @@
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
+import { PostMood } from '@/enums/post-mood.enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BlockLayoutDto } from '@/modules/post/dto/block-layout.dto';
 
@@ -41,6 +42,8 @@ export class FeedCardResponseDto {
   location: BlockValueMap[typeof PostBlockType.LOCATION] | null;
   @ApiPropertyOptional()
   tags: string[] | null;
+  @ApiPropertyOptional({ enum: PostMood })
+  emotion: PostMood | null;
   @ApiPropertyOptional()
   rating: number | null;
   @ApiProperty({ type: () => [FeedBlockDto] })

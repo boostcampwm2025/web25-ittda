@@ -101,6 +101,7 @@ export class FeedQueryService {
       // meta 컬럼들
       'p.title',
       'p.tags',
+      'p.emotion',
       'p.rating',
     ]);
 
@@ -207,6 +208,7 @@ export class FeedQueryService {
             : null,
           blocks: blockByPostId.get(p.id) ?? [],
           tags: p.tags ?? null,
+          emotion: p.emotion ?? null,
           rating: p.rating ?? null,
         }),
       );

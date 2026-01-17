@@ -97,6 +97,7 @@ export class PostService {
           location: location ?? undefined,
           eventAt,
           tags: meta.tags ?? null,
+          emotion: meta.emotion ?? null,
           rating: meta.rating ?? null,
         });
 
