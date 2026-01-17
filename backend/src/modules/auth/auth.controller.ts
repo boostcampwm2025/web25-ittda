@@ -6,6 +6,8 @@ import {
   UseGuards,
   Res,
   UnauthorizedException,
+  ForbiddenException,
+  NotFoundException,
   Body,
   Headers,
 } from '@nestjs/common';
@@ -16,6 +18,7 @@ import { JwtAuthGuard } from './jwt/jwt.guard';
 
 import type { Request, Response } from 'express';
 import type { OAuthUserType } from './auth.type';
+import { DevTokenRequestDto } from './dto/dev-token.dto';
 
 interface AuthenticatedRequest extends Request {
   user: { sub: string; email?: string };
@@ -168,6 +171,44 @@ export class AuthController {
     });
 
     return;
+  }
+
+  @Post('dev/token')
+  async issueDevToken(
+    @Body() dto: DevTokenRequestDto,
+    @Headers('x-dev-key') devKey?: string,
+  ) {
+    const nodeEnv = this.configService.get<string>('NODE_ENV');
+    const allowed =
+      nodeEnv === 'development' || nodeEnv === 'test' || nodeEnv === 'local';
+    const configuredKey = this.configService.get<string>('DEV_AUTH_KEY');
+
+    if (!allowed || !configuredKey) {
+      throw new NotFoundException();
+    }
+    if (!devKey || devKey !== configuredKey) {
+      throw new ForbiddenException('Invalid dev key');
+    }
+
+    const provider = dto.provider ?? 'kakao';
+    const providerId = dto.providerId ?? `dev-${Date.now()}`;
+    const nickname = dto.nickname ?? `dev-user-${providerId.slice(-6)}`;
+    const oauthUser: OAuthUserType = {
+      provider,
+      providerId,
+      nickname,
+      email: dto.email,
+    };
+
+    const { user, accessToken, refreshToken, expiresAt } =
+      await this.authService.oauthLogin(oauthUser);
+
+    return {
+      userId: user.id,
+      accessToken,
+      refreshToken,
+      expiresAt,
+    };
   }
 }
 
