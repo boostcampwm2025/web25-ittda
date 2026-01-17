@@ -1,16 +1,36 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useApiPost } from '@/hooks/useApi';
 import { GuestInfo } from '@/lib/types/profile';
 import { getRedirectUri } from '@/lib/utils/getRedirectUri';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid_callback: '잘못된 로그인 요청입니다.',
+  token_not_found: '인증 토큰을 받지 못했습니다.',
+  login_failed: '로그인에 실패했습니다. 다시 시도해주세요.',
+};
 
 export default function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setGuestInfo } = useAuthStore();
   const { mutateAsync, isPending } = useApiPost<GuestInfo>('/api/auth/guest');
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error) {
+      const message = ERROR_MESSAGES[error] || '로그인 중 오류가 발생했습니다.';
+      toast.error(message);
+
+      // URL에서 error 파라미터 제거
+      router.replace('/login');
+    }
+  }, [searchParams, router]);
 
   const handleLoginGuest = async () => {
     const response = await mutateAsync({});

@@ -18,13 +18,11 @@ export interface ErrorResponse {
 export type ApiResponse<T> = SuccessResponse<T> | ErrorResponse;
 
 export interface UserLoginResponse {
-  user: {
-    id: string;
-    nickname: string;
-    profileImageUrl: string;
-    updatedAt: string;
-  };
-  accessToken: string;
+  id: string;
+  email: string;
+  nickname: string;
+  profileImageUrl: string;
+  createdAt: string;
 }
 
 export interface GuestLoginResponse {
