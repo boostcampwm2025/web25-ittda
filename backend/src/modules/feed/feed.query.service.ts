@@ -26,8 +26,11 @@ type FeedWarning = {
 };
 
 function dayRange(day: string, tz: string): DayRange {
+  const dateOnly = DateTime.fromISO(day, { zone: 'UTC' });
+  if (!dateOnly.isValid) throw new BadRequestException('Invalid date');
+
   const from = DateTime.fromISO(day, { zone: tz }).startOf('day');
-  if (!from.isValid) throw new Error('Invalid day or tz');
+  if (!from.isValid) throw new BadRequestException('Invalid day or tz');
 
   const to = from.plus({ days: 1 });
 
