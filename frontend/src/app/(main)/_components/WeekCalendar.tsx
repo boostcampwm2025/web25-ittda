@@ -1,37 +1,33 @@
 'use client';
 
-import { getStartOfWeek, getWeekDays } from '@/lib/date';
+import { formatDateISO, getStartOfWeek, getWeekDays } from '@/lib/date';
 import { cn } from '@/lib/utils';
-import { useWeekCalendar } from '@/store/useWeekCalendar';
 import { ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { flushSync } from 'react-dom';
 
 export default function WeekCalendar() {
   const router = useRouter();
-  const [currentWeekStart, setCurrentWeekStart] = useState(
-    getStartOfWeek(new Date()),
+  const searchParams = useSearchParams();
+
+  // URL에서 date 파라미터 읽기, 없으면 오늘 날짜
+  const selectedDateStr = searchParams.get('date') || formatDateISO();
+
+  const [currentWeekStart, setCurrentWeekStart] = useState(() =>
+    getStartOfWeek(new Date(selectedDateStr)),
   );
   const [direction, setDirection] = useState(0); // -1: 이전, 1: 다음
   const [displayYearMonth, setDisplayYearMonth] = useState(() => {
-    const d = new Date();
+    const d = new Date(selectedDateStr);
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const { selectedDateStr, setSelectedDateStr } = useWeekCalendar(); // 스토어 훅 사용 방식 확인 필요
 
   // 연월 표시용 계산 (중앙 주차 기준)
   const calculateYearMonth = useCallback(
     (dateStr?: string) => {
-      console.log('dateStr', dateStr, 'currentWeekStart', currentWeekStart);
       const d = dateStr ? new Date(dateStr) : currentWeekStart;
       setDisplayYearMonth(
-        `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`,
-      );
-      console.log(
-        'd',
-        d,
         `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`,
       );
     },
@@ -97,7 +93,8 @@ export default function WeekCalendar() {
       return;
     }
 
-    setSelectedDateStr(dateStr);
+    // URL 쿼리 파라미터로 날짜 설정
+    router.push(`/?date=${dateStr}`);
     calculateYearMonth(dateStr);
   };
 
