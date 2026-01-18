@@ -1,7 +1,13 @@
 // src/modules/feed/feed.query.service.ts
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, LessThanOrEqual, Repository } from 'typeorm';
+import {
+  Brackets,
+  In,
+  LessThanOrEqual,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { DateTime } from 'luxon';
 
 import { Post } from '../post/entity/post.entity';
@@ -63,20 +69,24 @@ export class FeedQueryService {
     // 정책 : "내 개인글 + 내가 작성한 그룹 글"
     const postsQb = this.postRepo.createQueryBuilder('p');
 
-    postsQb.where('p.ownerUserId = :userId', { userId }).orWhere(
-      (subQb) => {
-        const sub = subQb
-          .subQuery()
-          .select('1')
-          .from(PostContributor, 'pc')
-          .where('pc.postId = p.id')
-          .andWhere('pc.userId = :userId')
-          .andWhere('pc.role IN (:...roles)')
-          .getQuery();
+    postsQb.where(
+      new Brackets((qb: SelectQueryBuilder<Post>) => {
+        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
 
-        return `EXISTS ${sub}`;
-      },
-      { userId, roles: ['AUTHOR', 'EDITOR'] },
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
     );
     if (from && to) {
       postsQb.andWhere('p.eventAt >= :from AND p.eventAt < :to', { from, to });
