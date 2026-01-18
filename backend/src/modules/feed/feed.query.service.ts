@@ -29,8 +29,10 @@ function dayRange(day: string, tz: string): DayRange {
   const dateOnly = DateTime.fromISO(day, { zone: 'UTC' });
   if (!dateOnly.isValid) throw new BadRequestException('Invalid date');
 
-  const from = DateTime.fromISO(day, { zone: tz }).startOf('day');
-  if (!from.isValid) throw new BadRequestException('Invalid day or tz');
+  const zoned = DateTime.fromISO(day, { zone: tz });
+  if (!zoned.isValid) throw new BadRequestException('Invalid tz');
+
+  const from = zoned.startOf('day');
 
   const to = from.plus({ days: 1 });
 
