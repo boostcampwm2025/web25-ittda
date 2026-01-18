@@ -36,5 +36,5 @@ export interface RecordPreview {
   location: LocationValue | null;
   tags: TagValue['tags'] | null;
   rating: RatingValue['rating'] | null;
-  block: Block[];
+  blocks: Block[];
 }

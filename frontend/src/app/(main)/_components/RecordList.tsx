@@ -48,7 +48,7 @@ export default function RecordList() {
               {(() => {
                 // 블록을 row별로 그룹화
                 const rowMap = new Map<number, Block[]>();
-                record.block.forEach((block) => {
+                record.blocks.forEach((block) => {
                   const row = block.layout.row;
                   if (!rowMap.has(row)) {
                     rowMap.set(row, []);

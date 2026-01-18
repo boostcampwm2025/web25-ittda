@@ -23,7 +23,7 @@ const createMockRecordPreviews = (date: string): RecordPreview[] => [
     },
     tags: ['popup', 'seongsu', 'weekend'],
     rating: 4,
-    block: [
+    blocks: [
       {
         id: 'image-block-1',
         type: 'IMAGE',
@@ -85,7 +85,7 @@ const createMockRecordPreviews = (date: string): RecordPreview[] => [
     },
     tags: ['brunch', 'hannam', 'cafe'],
     rating: 5,
-    block: [
+    blocks: [
       {
         id: 'rating-block-2',
         type: 'RATING',
@@ -141,7 +141,7 @@ const createMockRecordPreviews = (date: string): RecordPreview[] => [
     },
     tags: ['busking', 'hongdae', 'music', 'nightlife'],
     rating: 4,
-    block: [
+    blocks: [
       {
         id: 'text-block-3',
         type: 'TEXT',
@@ -287,11 +287,36 @@ export const handlers = [
     const today = new Date().toISOString().split('T')[0];
     const mockRecords = createMockRecordPreviews(today);
 
-    console.log('mock', mockRecords);
-    console.log('id', id);
     const found = mockRecords.find((p) => p.postId === id);
 
     if (!found) return new HttpResponse(null, { status: 404 });
-    return HttpResponse.json(found, { status: 200 });
+
+    // RecordDetail 형식으로 변환
+    const recordDetail = {
+      id: found.postId,
+      scope: found.scope,
+      ownerUserId: 'user-001',
+      groupId: found.groupId,
+      title: found.title,
+      createdAt: found.createdAt,
+      updatedAt: found.updatedAt,
+      blocks: found.blocks,
+      contributors: [
+        {
+          userId: 'user-001',
+          role: 'AUTHOR' as const,
+          nickname: '도비',
+        },
+      ],
+    };
+
+    return HttpResponse.json(
+      {
+        success: true,
+        data: recordDetail,
+        error: null,
+      },
+      { status: 200 },
+    );
   }),
 ];
