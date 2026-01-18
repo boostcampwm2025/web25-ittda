@@ -28,6 +28,7 @@ describe('FeedController (e2e)', () => {
   let otherUser: User;
   let ownedPost: Post;
   let contributedPost: Post;
+  let otherDatePost: Post;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -76,6 +77,7 @@ describe('FeedController (e2e)', () => {
 
     const eventAt = new Date('2026-01-16T09:10:00+09:00');
     const eventAtLater = new Date('2026-01-16T12:20:00+09:00');
+    const eventAtOtherDay = new Date('2026-01-17T09:00:00+09:00');
 
     ownedPost = await postRepository.save(
       postRepository.create({
@@ -94,6 +96,15 @@ describe('FeedController (e2e)', () => {
         ownerUserId: otherUser.id,
         title: 'Contributed post',
         eventAt: eventAtLater,
+      }),
+    );
+
+    otherDatePost = await postRepository.save(
+      postRepository.create({
+        scope: PostScope.PERSONAL,
+        ownerUserId: owner.id,
+        title: 'Other date post',
+        eventAt: eventAtOtherDay,
       }),
     );
 
@@ -123,10 +134,12 @@ describe('FeedController (e2e)', () => {
   });
 
   afterAll(async () => {
-    if (ownedPost?.id || contributedPost?.id) {
-      const postIds = [ownedPost?.id, contributedPost?.id].filter(
-        (id): id is string => Boolean(id),
-      );
+    if (ownedPost?.id || contributedPost?.id || otherDatePost?.id) {
+      const postIds = [
+        ownedPost?.id,
+        contributedPost?.id,
+        otherDatePost?.id,
+      ].filter((id): id is string => Boolean(id));
       if (postIds.length > 0) {
         await postBlockRepository.delete({ postId: In(postIds) });
         await contributorRepository.delete({ postId: In(postIds) });
@@ -165,6 +178,10 @@ describe('FeedController (e2e)', () => {
     expect(body.data.map((item) => item.postId).sort()).toEqual(
       [ownedPost.id, contributedPost.id].sort(),
     );
+    expect(body.data.find((item) => item.postId === otherDatePost.id)).toBe(
+      undefined,
+    );
+    expect(body.meta.feedLength).toBe(2);
     expect(Array.isArray(body.meta.warnings)).toBe(true);
     expect(body.meta.feedLength).toBe(body.data.length);
 
