@@ -18,10 +18,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
-import { QueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface RecordDetailHeaderActionsProps {
@@ -32,6 +32,7 @@ export default function RecordDetailHeaderActions({
   record,
 }: RecordDetailHeaderActionsProps) {
   const router = useRouter();
+  const [currentUrl, setCurrentUrl] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const { userId } = useAuthStore();
@@ -40,14 +41,21 @@ export default function RecordDetailHeaderActions({
   const content =
     textBlock && 'text' in textBlock.value ? textBlock.value.text : '';
 
+  // 마운트 시점에 window 주소 가져오기
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      setCurrentUrl(window.location.href);
+    });
+  }, []);
+
   // TEXT 타입 블록에서 내용 추출
   const shareData = {
     title: record.title,
     text: content,
-    url: window.location.href,
+    url: currentUrl,
   };
 
-  const queryClient = new QueryClient();
+  const queryClient = useQueryClient();
   const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.id}`, {
     onSuccess: () => {
       toast.success('기록이 삭제되었습니다.');
