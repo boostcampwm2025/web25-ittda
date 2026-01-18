@@ -12,7 +12,6 @@ export default function OAuthCallbackPage() {
   useEffect(() => {
     const handleOAuthCallback = async () => {
       const code = searchParams.get('code');
-      const state = searchParams.get('state');
 
       // OAuth 인증 코드가 없으면 로그인 페이지로
       if (!code) {
@@ -21,18 +20,14 @@ export default function OAuthCallbackPage() {
       }
 
       try {
-        // state에서 provider 정보 추출 (예: "google" 또는 "kakao")
-        const provider = state?.split('-')[0] || 'google';
-
         // 1. 백엔드로 인증 코드 전송하여 access token 발급
-        const response = await fetch(`/api/v1/auth/${provider}/callback`, {
+        const response = await fetch(`/api/auth/exchange`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             code,
-            state,
           }),
           credentials: 'include', // 쿠키 포함
         });
@@ -42,6 +37,7 @@ export default function OAuthCallbackPage() {
         }
 
         const data = await response.json();
+        // TODO: 유저 프로필 조회
 
         // 2. 로그인 성공 - 홈으로 리디렉션
         router.push('/');
