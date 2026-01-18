@@ -12,9 +12,7 @@ interface RecordDetailProps {
 }
 
 export default function RecordDetail({ recordId }: RecordDetailProps) {
-  const { data: record } = useSuspenseQuery(
-    recordDetailOptions('225f4bd7-3bbc-4a71-8747-fe6a43dc3d6c'),
-  );
+  const { data: record } = useSuspenseQuery(recordDetailOptions(recordId));
 
   // 블록을 row별로 그룹화
   const rowMap = new Map<number, Block[]>();
@@ -68,16 +66,19 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
               return (
                 <div
                   key={rowNumber}
-                  className="grid grid-cols-2 gap-3 justify-between"
+                  className="flex justify-between items-center gap-3 w-full overflow-hidden"
                 >
                   {sortedBlocks.map((block) => (
                     <div
                       key={block.id}
                       className={cn(
-                        block.layout.col === 2 && 'flex justify-end',
+                        'min-w-0, shrink',
+                        block.layout.col === 2 ? 'text-right' : 'text-left',
                       )}
                     >
-                      <BlockContent block={block} />
+                      <div className="truncate whitespace-nowrap overflow-hidden">
+                        <BlockContent block={block} />
+                      </div>
                     </div>
                   ))}
                 </div>
