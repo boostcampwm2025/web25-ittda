@@ -18,9 +18,7 @@ export default async function RecordPage({ params }: RecordPageProps) {
   const queryClient = new QueryClient();
 
   try {
-    await queryClient.prefetchQuery(
-      recordDetailOptions('eb044c86-4bbc-4888-8aea-dc75b1152bff'),
-    );
+    await queryClient.prefetchQuery(recordDetailOptions(recordId));
   } catch (error) {
     // 404 에러는 notFound 페이지로
     const apiError = error as ApiError;
