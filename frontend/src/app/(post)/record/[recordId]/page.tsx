@@ -17,14 +17,18 @@ export default async function RecordPage({ params }: RecordPageProps) {
 
   const queryClient = new QueryClient();
 
-  try {
-    await queryClient.prefetchQuery(recordDetailOptions(recordId));
-  } catch (error) {
-    // 404 에러는 notFound 페이지로
-    const apiError = error as ApiError;
-    if (apiError.code === 'NOT_FOUND' || apiError.message?.includes('404')) {
-      notFound();
-      return;
+  // Mock 모드에서는 서버 prefetch 스킵
+  const isMockMode = process.env.NEXT_PUBLIC_MOCK === 'true';
+
+  if (!isMockMode) {
+    try {
+      await queryClient.prefetchQuery(recordDetailOptions(recordId));
+    } catch (error) {
+      // 404 에러는 notFound 페이지로
+      const apiError = error as ApiError;
+      if (apiError.code === 'NOT_FOUND' || apiError.message?.includes('404')) {
+        notFound();
+      }
     }
   }
 
