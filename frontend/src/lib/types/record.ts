@@ -146,27 +146,66 @@ export interface BlockLayout {
   span: number;
 }
 
+export interface TextValue {
+  text: string;
+}
+
+export interface MoodValue {
+  mood: string;
+}
+
+export interface TagValue {
+  tags: string[];
+}
+
+export interface RatingValue {
+  rating: number;
+}
+
+export interface DateValue {
+  date: string;
+}
+
+export interface TimeValue {
+  time: string;
+}
+
+export interface LocationValue {
+  lat: number;
+  lng: number;
+  address: string;
+  placeName?: string;
+}
+
+export interface ImageValue {
+  mediaIds?: string[];
+  tempUrls?: string[];
+}
+
+export interface TableValue {
+  rows: number;
+  cols: number;
+  cells: string[][];
+}
+
+export interface MediaInfoValue {
+  title: string;
+  type: string;
+  year?: string;
+  imageUrl?: string;
+}
+
 export type BlockValue =
-  | { text: string }
-  | { mood: string }
-  | { tags: string[] }
-  | { rating: number }
-  | { date: string }
-  | { time: string }
-  | {
-      lat: number;
-      lng: number;
-      address: string;
-      placeName?: string;
-    }
-  | { mediaIds?: string[]; tempUrls?: string[] }
-  | { rows: number; cols: number; cells: string[][] }
-  | {
-      title: string;
-      type: string;
-      year?: string;
-      imageUrl?: string;
-    };
+  | TextValue
+  | MoodValue
+  | TagValue
+  | RatingValue
+  | DateValue
+  | TimeValue
+  | LocationValue
+  | ImageValue
+  | TableValue
+  | MediaInfoValue;
 
 export interface Block {
   id: string;
@@ -183,7 +222,7 @@ export interface RecordContributor {
 
 export interface RecordDetailResponse {
   id: string;
-  scope: PostScope;
+  scope: RecordScope;
   ownerUserId: string;
   groupId: string | null;
   title: string;
