@@ -59,13 +59,16 @@ export function getErrorMessage(error: unknown): string {
  * API 응답에서 에러 객체 생성
  */
 export function createApiError(response: ApiResponse<unknown>): ApiError {
-  if (response.success) {
-    return new Error('Success response cannot create error') as ApiError;
+  if (!response || response.success) {
+    return new Error('알 수 없는 서버 응답입니다.') as ApiError;
   }
 
-  const error = new Error(response.error.message) as ApiError;
-  error.code = response.error.code;
-  error.isAuthError = isAuthError(response.error.code);
+  const errorMessage = response.error?.message || '서버 오류가 발생했습니다.';
+  const errorCode = response.error?.code || 'INTERNAL_SERVER_ERROR';
+
+  const error = new Error(errorMessage) as ApiError;
+  error.code = errorCode;
+  error.isAuthError = isAuthError(errorCode);
 
   return error;
 }
