@@ -185,4 +185,12 @@ describe('FeedController (e2e)', () => {
       .set('x-user-id', owner.id)
       .expect(400);
   });
+
+  it('GET /feed should return 400 for invalid date', async () => {
+    await request(app.getHttpServer())
+      .get('/feed')
+      .query({ date: '2026-02-30', tz: 'Asia/Seoul' })
+      .set('x-user-id', owner.id)
+      .expect(400);
+  });
 });
