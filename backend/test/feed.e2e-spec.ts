@@ -193,4 +193,12 @@ describe('FeedController (e2e)', () => {
       .set('x-user-id', owner.id)
       .expect(400);
   });
+
+  it('GET /feed should return 400 for invalid tz', async () => {
+    await request(app.getHttpServer())
+      .get('/feed')
+      .query({ date: '2026-02-28', tz: 'Not/AZone' })
+      .set('x-user-id', owner.id)
+      .expect(400);
+  });
 });
