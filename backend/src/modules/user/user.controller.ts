@@ -47,7 +47,7 @@ export class UserController {
     return this.userService.updateProfile(
       userId,
       dto.nickname,
-      dto.profileImageUrl,
+      dto.profileImageId,
     );
   }
 

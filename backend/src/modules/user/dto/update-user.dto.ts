@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsObject } from 'class-validator';
+import { IsOptional, IsString, IsObject, IsUUID } from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -6,8 +6,8 @@ export class UpdateUserDto {
   nickname?: string;
 
   @IsOptional()
-  @IsString()
-  profileImageUrl?: string;
+  @IsUUID()
+  profileImageId?: string;
 }
 
 export class UpdateSettingsDto {
