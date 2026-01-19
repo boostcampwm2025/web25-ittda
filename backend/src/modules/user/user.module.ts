@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { TypeOrmModule } from '@nestjs/typeorm'; // 데이터베이스 연동 시
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user.entity';
+import { Post } from '../post/entity/post.entity';
+import { PostBlock } from '../post/entity/post-block.entity';
 
 // User 모듈 정의
 @Module({
-  imports: [TypeOrmModule.forFeature([User])], // User 엔티티를 모듈에서 사용하도록 등록],
+  imports: [TypeOrmModule.forFeature([User, Post, PostBlock])],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

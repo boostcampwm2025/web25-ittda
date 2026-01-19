@@ -4,8 +4,9 @@ import { Repository } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Post } from '../post/entity/post.entity';
 import { TagCount, EmotionCount, UserStats } from './mypage.interface';
+import { PostMood } from '@/enums/post-mood.enum';
 
-// User Service에서 기능 구현
+// Mypage Service에서 기능 구현
 @Injectable()
 export class MyPageService {
   constructor(
@@ -96,7 +97,7 @@ export class MyPageService {
       });
       const validEmotions = res
         .map((r) => r.emotion)
-        .filter((e): e is string => !!e);
+        .filter((e): e is PostMood => !!e);
       return [...new Set(validEmotions)];
     }
   }
