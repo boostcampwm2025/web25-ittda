@@ -14,12 +14,5 @@ export interface TemplateRecord {
   title: string;
   description?: string;
   blocks: TemplateLayout[];
-}
-
-export interface TemplateRecord {
-  id: string;
-  title: string;
-  description?: string;
-  blocks: TemplateLayout[];
   icon?: React.ElementType;
 }
