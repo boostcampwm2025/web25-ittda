@@ -52,6 +52,7 @@ function validateRequiredBlocks(counts: Map<PostBlockType, number>) {
 
 function validateSingleMetaBlocks(counts: Map<PostBlockType, number>) {
   const singles: PostBlockType[] = [
+    PostBlockType.MOOD,
     PostBlockType.LOCATION,
     PostBlockType.TAG,
     PostBlockType.RATING,

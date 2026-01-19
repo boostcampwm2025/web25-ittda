@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { PostBlockType } from '@/enums/post-block-type.enum';
+import { PostMood } from '@/enums/post-mood.enum';
 import { PostBlockDto } from '@/modules/post/dto/post-block.dto';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 
@@ -12,6 +13,7 @@ type LocationValue = {
 
 type ExtractedMeta = {
   tags?: string[];
+  emotion?: PostMood;
   rating?: number;
   location?: LocationValue;
   date: string; // required
@@ -43,6 +45,7 @@ export function extractMetaFromBlocks(blocks: PostBlockDto[]): ExtractedMeta {
   let date: string | undefined;
   let time: string | undefined;
   let location: LocationValue | undefined;
+  let emotion: PostMood | undefined;
   let rating: number | undefined;
   let tags: string[] | undefined;
 
@@ -64,6 +67,10 @@ export function extractMetaFromBlocks(blocks: PostBlockDto[]): ExtractedMeta {
       };
       continue;
     }
+    if (isBlockType(b, PostBlockType.MOOD)) {
+      emotion = b.value.mood;
+      continue;
+    }
     if (isBlockType(b, PostBlockType.RATING)) {
       rating = b.value.rating;
       continue;
@@ -79,5 +86,5 @@ export function extractMetaFromBlocks(blocks: PostBlockDto[]): ExtractedMeta {
   if (!date) throw new BadRequestException('DATE block is required');
   if (!time) throw new BadRequestException('TIME block is required');
 
-  return { date, time, location, rating, tags };
+  return { date, time, location, emotion, rating, tags };
 }

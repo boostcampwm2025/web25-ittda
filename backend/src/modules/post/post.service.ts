@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
@@ -13,6 +14,7 @@ import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
 import { User } from '@/modules/user/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
+import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
 import { PostScope } from '@/enums/post-scope.enum';
@@ -34,6 +36,8 @@ export class PostService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(GroupMember)
+    private readonly groupMemberRepository: Repository<GroupMember>,
   ) {}
 
   /**
@@ -47,7 +51,7 @@ export class PostService {
     const owner = await this.userRepository.findOne({
       where: { id: ownerUserId },
     });
-    if (!owner) throw new BadRequestException('Owner not found');
+    if (!owner) throw new UnauthorizedException('Owner not found');
 
     if (dto.scope === PostScope.GROUP && !dto.groupId) {
       throw new BadRequestException('groupId is required when scope=GROUP');
@@ -63,7 +67,7 @@ export class PostService {
       group = await this.groupRepository.findOne({
         where: { id: dto.groupId },
       });
-      if (!group) throw new BadRequestException('Group not found');
+      if (!group) throw new NotFoundException('Group not found');
     }
 
     const meta = extractMetaFromBlocks(dto.blocks);
@@ -93,6 +97,7 @@ export class PostService {
           location: location ?? undefined,
           eventAt,
           tags: meta.tags ?? null,
+          emotion: meta.emotion ?? null,
           rating: meta.rating ?? null,
         });
 
@@ -174,6 +179,34 @@ export class PostService {
       contributors: contributorDtos,
     };
     return dto;
+  }
+
+  async ensureCanViewPost(postId: string, userId: string): Promise<void> {
+    // 본인 글이면 통과
+    const post = await this.postRepository.findOne({
+      where: { id: postId, deletedAt: IsNull() },
+      select: { id: true, ownerUserId: true, groupId: true, scope: true },
+    });
+    if (!post) throw new NotFoundException('Post not found');
+    if (post.ownerUserId === userId) return;
+
+    // 내 그룹 글이면 통과
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId },
+        select: { userId: true },
+      });
+      if (member) return;
+    }
+
+    // 기여자면 통과
+    const contributor = await this.postContributorRepository.findOne({
+      where: { postId, userId },
+      select: { userId: true },
+    });
+    if (!contributor) {
+      throw new ForbiddenException('You do not have access to this post');
+    }
   }
 
   /**

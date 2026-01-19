@@ -4,7 +4,6 @@ import {
   Post,
   Body,
   UseGuards,
-  Req,
   Param,
   Patch,
   Delete,
@@ -17,7 +16,7 @@ import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { CreateInviteDto } from './dto/create-invite.dto';
 
-import type { RequestWithUser } from './group.type';
+import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../auth/auth.type';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 
@@ -25,20 +24,19 @@ import { GroupRoleEnum } from '@/enums/group-role.enum';
   path: 'groups',
   version: '1',
 })
+@UseGuards(JwtAuthGuard)
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}
 
   /** 그룹 생성 (로그인 유저) */
-  @UseGuards(JwtAuthGuard)
   @Post()
-  createGroup(@Req() req: RequestWithUser, @Body('name') groupName: string) {
-    const user = req.user as MyJwtPayload;
+  createGroup(@User() user: MyJwtPayload, @Body('name') groupName: string) {
     const ownerId = user.sub;
     return this.groupService.createGroup(ownerId, groupName);
   }
 
   /** 멤버 초대 */
-  @UseGuards(JwtAuthGuard, GroupRoleGuard)
+  @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Post(':groupId/members')
   addMember(@Param('groupId') groupId: string, @Body() dto: AddMemberDto) {
@@ -46,17 +44,16 @@ export class GroupController {
   }
 
   /** 멤버 권한 수정 */
-  @UseGuards(JwtAuthGuard, GroupRoleGuard)
+  @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN) // 관리자만 접근 가능
   @Patch(':groupId/members/:userId/role')
   async updateRole(
-    @Req() req: RequestWithUser,
+    @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
     @Param('userId') userId: string,
     @Body('role') newRole: GroupRoleEnum,
   ) {
-    const requester = req.user as MyJwtPayload;
-    const requesterId = requester.sub;
+    const requesterId = user.sub;
 
     return this.groupService.updateMemberRole(
       requesterId,
@@ -67,64 +64,58 @@ export class GroupController {
   }
 
   /** 그룹 삭제 (방장만 가능) */
-  @UseGuards(JwtAuthGuard, GroupRoleGuard)
+  @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Delete(':groupId')
   async deleteGroup(
-    @Req() req: RequestWithUser,
+    @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
   ) {
-    const user = req.user as MyJwtPayload;
     return this.groupService.deleteGroup(user.sub, groupId);
   }
 
   /** 그룹 정보 수정 */
-  @UseGuards(JwtAuthGuard, GroupRoleGuard)
+  @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Patch(':groupId')
   async updateGroup(
-    @Req() req: RequestWithUser,
+    @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
     @Body() dto: UpdateGroupDto,
   ) {
-    const user = req.user as MyJwtPayload;
     return this.groupService.updateGroup(user.sub, groupId, dto.name);
   }
 
   /** 그룹 나가기 (본인) */
-  @UseGuards(JwtAuthGuard)
   @Delete(':groupId/members/me')
   async leaveGroup(
-    @Req() req: RequestWithUser,
+    @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
   ) {
-    const user = req.user as MyJwtPayload;
     return this.groupService.leaveGroup(user.sub, groupId);
   }
 
   /** 멤버 추방 (관리자) */
-  @UseGuards(JwtAuthGuard, GroupRoleGuard)
+  @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Delete(':groupId/members/:memberId')
   async removeMember(
-    @Req() req: RequestWithUser,
+    @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
     @Param('memberId') memberId: string,
   ) {
-    const user = req.user as MyJwtPayload;
     return this.groupService.removeMember(user.sub, groupId, memberId);
   }
 
   /** 초대 링크 생성 */
-  @UseGuards(JwtAuthGuard, GroupRoleGuard)
+  @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Post(':groupId/invites')
   async createInvite(
-    @Req() req: RequestWithUser,
+    @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
     @Body() dto: CreateInviteDto,
   ) {
-    const user = req.user as MyJwtPayload;
     return this.groupService.createInvite(
       user.sub,
       groupId,
@@ -140,13 +131,11 @@ export class GroupController {
   }
 
   /** 초대 링크로 가입 */
-  @UseGuards(JwtAuthGuard)
   @Post('invites/:code/join')
   async joinGroupViaInvite(
-    @Req() req: RequestWithUser,
+    @User() user: MyJwtPayload,
     @Param('code') code: string,
   ) {
-    const user = req.user as MyJwtPayload;
     return this.groupService.joinGroupViaInvite(user.sub, code);
   }
 
@@ -155,7 +144,7 @@ export class GroupController {
    *  여기서는 간단히 구현하거나, :groupId를 URL에 포함시키는 것이 좋음.
    *  요구사항: DELETE /v1/groups/{groupId}/invites/{inviteId}
    */
-  @UseGuards(JwtAuthGuard, GroupRoleGuard)
+  @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Delete(':groupId/invites/:inviteId')
   async deleteInvite(
