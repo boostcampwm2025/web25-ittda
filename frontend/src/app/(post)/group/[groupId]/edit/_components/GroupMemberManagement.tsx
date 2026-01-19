@@ -26,6 +26,7 @@ import { useApiDelete } from '@/hooks/useApi';
 interface GroupMemberManagementProps {
   members: Member[];
   groupId: string;
+  className?: string;
 }
 
 interface Role {
@@ -60,6 +61,7 @@ const ROLE: Role[] = [
 
 export default function GroupMemberManagement({
   groupId,
+  className,
 }: GroupMemberManagementProps) {
   const { members, setMembers } = useGroupEdit();
   const [showDeleteDrawer, setShowDeleteDrawer] = useState(false);
@@ -175,7 +177,7 @@ export default function GroupMemberManagement({
           open={showDeleteDrawer}
           onOpenChange={setShowDeleteDrawer}
         >
-          <DrawerContent className="px-8 pt-4 pb-12">
+          <DrawerContent className={cn('px-8 pt-4 pb-12', className)}>
             <DrawerHeader>
               <div className="flex flex-col items-center text-center space-y-4 mb-10">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
@@ -207,7 +209,7 @@ export default function GroupMemberManagement({
           open={showRoleDrawer && editingMember !== null}
           onOpenChange={setShowRoleDrawer}
         >
-          <DrawerContent className="w-full px-8 pt-4 pb-10">
+          <DrawerContent className={cn('w-full px-8 pt-4 pb-10', className)}>
             <DrawerHeader>
               <div className="flex justify-between items-center mb-8">
                 <div className="flex flex-col justify-center items-start">
