@@ -11,7 +11,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
-import { useGroupInvite } from '@/hooks/useGroupInvite';
+import { useCreateInviteCode } from '@/hooks/useGroupInvite';
 import { GroupInfo, InviteRole, ROLE_MAP } from '@/lib/types/group';
 import { cn } from '@/lib/utils';
 import { useGroupVoice } from '@/store/useGroupVoice';
@@ -40,7 +40,7 @@ import { useState } from 'react';
 interface GroupHeaderActionsProps {
   groupInfo: GroupInfo;
 }
-
+const BASE_COPY_URL = 'http://localhost:3000/invite?inviteCode=';
 export default function GroupHeaderActions({
   groupInfo,
 }: GroupHeaderActionsProps) {
@@ -52,16 +52,13 @@ export default function GroupHeaderActions({
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
   const [selectedInviteRole, setSelectedInviteRole] =
     useState<InviteRole>('editor');
-  const { mutate: createInvite, data: inviteResult } = useGroupInvite(
+  const { data: inviteResult } = useCreateInviteCode(
     groupId || '',
+    ROLE_MAP[selectedInviteRole],
   );
 
   const handleRoleChange = (roleId: InviteRole) => {
     setSelectedInviteRole(roleId);
-    createInvite({
-      permission: ROLE_MAP[roleId],
-      expiresInSeconds: 86400, // 24시간
-    });
   };
 
   const onInviteDrawerOpen = () => {
@@ -91,8 +88,10 @@ export default function GroupHeaderActions({
     },
   ];
 
+  //TODO: 복사할 URL 임시 작업
+  const displayInviteCode = inviteResult?.code || groupInfo.inviteCode || '...';
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(groupInfo.inviteCode);
+    navigator.clipboard.writeText(BASE_COPY_URL + displayInviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -116,8 +115,8 @@ export default function GroupHeaderActions({
         imageUrl:
           'https://substantial-jade-zgft0gga6m.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-01-16%20003841.png',
         link: {
-          mobileWebUrl: groupInfo.inviteCode,
-          webUrl: groupInfo.inviteCode,
+          mobileWebUrl: BASE_COPY_URL + displayInviteCode,
+          webUrl: BASE_COPY_URL + displayInviteCode,
         },
       },
     });
@@ -213,7 +212,7 @@ export default function GroupHeaderActions({
                 <div className="p-6 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 dark:bg-black/20 dark:border-white/10 bg-gray-50 border-gray-100">
                   <div className="flex flex-col items-center">
                     <span className="text-lg font-bold tracking-widest text-[#10B981]">
-                      {groupInfo.inviteCode}
+                      {BASE_COPY_URL + groupInfo.inviteCode}
                     </span>
                     <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
                       {selectedInviteRole} LEVEL
