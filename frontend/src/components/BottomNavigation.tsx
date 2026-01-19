@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import NavItem from './NavItem';
+import GroupSelectDrawer from './GroupSelectDrawer';
 import {
   Book,
   HomeIcon,
@@ -12,9 +14,30 @@ import {
   XCircle,
 } from 'lucide-react';
 
+// TODO: 실제 API에서 그룹 목록을 가져오도록 수정 (tanstack query 캐싱 사용)
+const mockGroups = [
+  {
+    id: 'g1',
+    name: '우리 가족 추억함',
+    members: 4,
+    coverUrl:
+      'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'g2',
+    name: '성수동 맛집 탐방대',
+    members: 3,
+    coverUrl:
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600',
+  },
+];
+
 export default function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const [isGroupSelectOpen, setIsGroupSelectOpen] = useState(false);
+
+  const isSharedPage = pathname === '/shared';
 
   const minimalPaths = [
     '/add',
@@ -29,7 +52,8 @@ export default function BottomNavigation() {
     pathname.includes('/month/') ||
     pathname.includes('/edit');
   const isGroupChat = pathname.includes('/chat');
-  const isLogin = pathname.includes('/login');
+  const isLogin =
+    pathname.includes('/login') || pathname.includes('/oauth/callback');
 
   const showNav =
     !minimalPaths.includes(pathname) && !isDetail && !isGroupChat && !isLogin;
@@ -86,7 +110,13 @@ export default function BottomNavigation() {
             onClick={() => router.push('/my')}
           />
           <button
-            onClick={() => router.push('/add')}
+            onClick={() => {
+              if (isSharedPage) {
+                setIsGroupSelectOpen(true);
+              } else {
+                router.push('/add');
+              }
+            }}
             className="w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white"
           >
             <Plus className="w-7 h-7" strokeWidth={3} />
@@ -103,6 +133,12 @@ export default function BottomNavigation() {
           />
         </>
       )}
+
+      <GroupSelectDrawer
+        open={isGroupSelectOpen}
+        onOpenChange={setIsGroupSelectOpen}
+        groups={mockGroups}
+      />
     </nav>
   );
 }

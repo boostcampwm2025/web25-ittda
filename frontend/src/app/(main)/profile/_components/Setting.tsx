@@ -12,6 +12,7 @@ import {
   AlertCircle,
   ChevronRight,
   Download,
+  LogIn,
   LogOut,
   Moon,
   Sun,
@@ -23,14 +24,36 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from '@/components/PWAInstallModal';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useApiDelete, useApiPost } from '@/hooks/useApi';
+import { toast } from 'sonner';
 
 export default function Setting() {
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
+  const { guestSessionId, userId } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
     usePWAInstall();
   const [showInstructions, setShowInstructions] = useState(false);
+
+  const { mutate: logout } = useApiPost('/api/auth/logout', {
+    onSuccess: () => {
+      toast.success('로그아웃 되었습니다. 잠시후 로그인 페이지로 이동합니다.');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1000);
+    },
+  });
+
+  const { mutate: withdrawal } = useApiDelete('/api/me', {
+    onSuccess: () => {
+      toast.success('탈퇴되었습니다. 잠시후 로그인 페이지로 이동합니다.');
+      setTimeout(() => {
+        router.push('/');
+      }, 1000);
+    },
+  });
 
   useEffect(() => {
     // React 19의 cascading renders 에러 방지를 위한 지연 처리
@@ -46,11 +69,16 @@ export default function Setting() {
   }
 
   const handleWithdrawal = () => {
-    // TODO: 서버로 탈퇴 요청
-    router.push('/');
+    withdrawal({});
   };
 
-  const handleLogout = () => {};
+  const handleLogout = () => {
+    logout({});
+  };
+
+  const handleLogin = () => {
+    router.push('/login');
+  };
 
   const toggleDarkMode = () => {
     const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
@@ -135,16 +163,30 @@ export default function Setting() {
               <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
             </button>
           )}
-          <button
-            onClick={handleLogout}
-            className="cursor-pointer w-full flex items-center justify-between py-2 group"
-          >
-            <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
-              <LogOut className="w-4 h-4 text-gray-400" />
-              로그아웃
-            </span>
-            <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
-          </button>
+          {guestSessionId && (
+            <button
+              onClick={handleLogin}
+              className="cursor-pointer w-full flex items-center justify-between py-2 group"
+            >
+              <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
+                <LogIn className="w-4 h-4 text-gray-400" />
+                로그인
+              </span>
+              <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+            </button>
+          )}
+          {!guestSessionId && userId && (
+            <button
+              onClick={handleLogout}
+              className="cursor-pointer w-full flex items-center justify-between py-2 group"
+            >
+              <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
+                <LogOut className="w-4 h-4 text-gray-400" />
+                로그아웃
+              </span>
+              <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+            </button>
+          )}
           <Drawer>
             <DrawerTrigger className="cursor-pointer w-full flex items-center justify-between py-2 group text-red-400">
               <span className="text-sm font-bold flex items-center gap-2">

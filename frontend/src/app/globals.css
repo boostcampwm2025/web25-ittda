@@ -202,3 +202,24 @@ main {
     scrollbar-width: none;
   }
 }
+
+@keyframes move-line {
+  0% {
+    transform: translateX(-2rem);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(10rem);
+    opacity: 0;
+  }
+}
+
+.animate-move-line {
+  animation: move-line 1.5s ease-in-out infinite;
+}

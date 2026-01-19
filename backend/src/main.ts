@@ -47,9 +47,18 @@ async function bootstrap() {
     .setTitle('ITTDA API')
     .setDescription('ITTDA backend API docs')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+      'bearerAuth',
+    )
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  swaggerDocument.security = [{ bearerAuth: [] }];
   SwaggerModule.setup('docs', app, swaggerDocument);
 
   await app.listen(process.env.PORT ?? 4000); // next랑 3000겹쳐서 4000함

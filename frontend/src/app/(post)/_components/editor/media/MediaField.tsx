@@ -54,9 +54,9 @@ export default function MediaField({
       }`}
     >
       <div className="relative w-14 h-20 rounded-md overflow-hidden flex-shrink-0 bg-gray-100 border border-black/5">
-        {data.image ? (
+        {data.imageUrl ? (
           <Image
-            src={data.image}
+            src={data.imageUrl}
             alt={data.title}
             fill
             sizes="56px"

@@ -8,22 +8,39 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
+import { useApiDelete } from '@/hooks/useApi';
 import { Group } from '@/lib/types/group';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface GroupDangerousZoneProps {
   groupName: Group['groupName'];
+  groupId: string;
 }
 
 export default function GroupDangerousZone({
   groupName,
+  groupId,
 }: GroupDangerousZoneProps) {
   const router = useRouter();
 
+  const queryClient = useQueryClient();
+  const { mutate: deleteGroup } = useApiDelete(`/api/groups/${groupId}`, {
+    onSuccess: () => {
+      toast.success(`${groupName}이 삭제되었습니다.`);
+      queryClient.invalidateQueries({ queryKey: ['share'] });
+
+      setTimeout(() => {
+        router.push('/shared');
+      }, 1000);
+    },
+  });
+
   const handleDeleteGroup = () => {
     // TODO: 그룹 삭제 서버 요청
-    router.push('/shared');
+    deleteGroup({});
   };
 
   return (
