@@ -9,7 +9,7 @@ export const getTypeOrmConfig = (
   url: configService.get<string>('DATABASE_URL'),
   entities: [join(__dirname, '../../**/*.entity.{ts,js}')],
   migrations: [join(__dirname, '../../../migrations/*.{ts,js}')],
-  synchronize: process.env.NODE_ENV === 'development' ? true : false,
+  synchronize: false,
   migrationsRun: false,
   logging:
     configService.get<string>('NODE_ENV') === 'production'
