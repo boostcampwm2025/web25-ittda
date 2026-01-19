@@ -20,7 +20,7 @@ import type { TagCount, EmotionCount, UserStats } from './user.interface';
 interface RequestWithUser extends Request {
   user: MyJwtPayload;
 }
-
+// 유저/마이페이지/설정
 @Controller({
   path: 'me',
   version: '1',

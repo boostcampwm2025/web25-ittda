@@ -4,7 +4,7 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { User } from './user.entity'; // User 엔티티
 import { Post } from '../post/entity/post.entity';
-
+// User 모듈 정의
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Post]), // User 엔티티를 모듈에서 사용하도록 등록

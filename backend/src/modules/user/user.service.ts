@@ -6,7 +6,7 @@ import { Post } from '../post/entity/post.entity';
 import { TagCount, EmotionCount, UserStats } from './user.interface';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
-
+// User Service에서 기능 구현
 @Injectable()
 export class UserService {
   constructor(
