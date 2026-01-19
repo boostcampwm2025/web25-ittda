@@ -10,6 +10,7 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GroupModule } from './modules/group/group.module';
 import { GuestModule } from './modules/guest/guest.module';
+import { MyPageModule } from './modules/mypage/mypage.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { GuestModule } from './modules/guest/guest.module';
     AuthModule,
     GroupModule,
     GuestModule,
+    MyPageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

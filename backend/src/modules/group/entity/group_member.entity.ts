@@ -9,7 +9,7 @@ import {
   Index,
 } from 'typeorm';
 
-import { User } from '../../../modules/user/user.entity';
+import { User } from '../../user/user.entity';
 import { Group } from './group.entity';
 
 import { GroupRoleEnum } from '@/enums/group-role.enum';
