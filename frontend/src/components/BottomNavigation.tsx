@@ -22,6 +22,7 @@ export default function BottomNavigation() {
     '/search/media',
     '/profile/edit',
     '/location-picker',
+    '/invite',
   ];
   const isDetail =
     pathname.includes('/record/') ||
