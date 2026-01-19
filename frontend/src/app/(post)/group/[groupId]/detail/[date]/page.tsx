@@ -56,7 +56,7 @@ const createMockRecordPreviews = (date: string): RecordPreview[] => [
     },
     tags: ['popup', 'seongsu', 'weekend'],
     rating: 4,
-    block: [
+    blocks: [
       {
         id: 'image-block-1',
         type: 'IMAGE',
@@ -118,7 +118,7 @@ const createMockRecordPreviews = (date: string): RecordPreview[] => [
     },
     tags: ['brunch', 'hannam', 'cafe'],
     rating: 5,
-    block: [
+    blocks: [
       {
         id: 'rating-block-2',
         type: 'RATING',
@@ -174,7 +174,7 @@ const createMockRecordPreviews = (date: string): RecordPreview[] => [
     },
     tags: ['busking', 'hongdae', 'music', 'nightlife'],
     rating: 4,
-    block: [
+    blocks: [
       {
         id: 'text-block-3',
         type: 'TEXT',

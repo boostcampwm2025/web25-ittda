@@ -105,7 +105,7 @@ export default function DailyDetailRecordItem({
             {(() => {
               // 1. 블록을 row별로 그룹화 (RecordList 로직 이식)
               const rowMap = new Map<number, Block[]>();
-              record.block.forEach((block) => {
+              record.blocks.forEach((block) => {
                 const row = block.layout.row;
                 if (!rowMap.has(row)) rowMap.set(row, []);
                 rowMap.get(row)!.push(block);

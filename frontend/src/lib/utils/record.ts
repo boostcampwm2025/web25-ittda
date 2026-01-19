@@ -120,6 +120,5 @@ export const getSingleBlockValue = <T>(
   record: RecordPreview,
   type: string,
 ): T | undefined => {
-  console.log('record', record, 'type', type);
-  return record.block.find((b) => b.type === type)?.value as T;
+  return record.blocks.find((b) => b.type === type)?.value as T;
 };

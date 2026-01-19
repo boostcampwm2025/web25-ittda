@@ -1,5 +1,3 @@
-import { RecordBlock } from './recordField';
-
 export type TemplateType =
   | 'diary'
   | 'travel'
@@ -175,6 +173,7 @@ export interface LocationValue {
   lng: number;
   address: string;
   placeName?: string;
+  radius?: number;
 }
 
 export interface ImageValue {
@@ -206,6 +205,34 @@ export type BlockValue =
   | ImageValue
   | TableValue
   | MediaInfoValue;
+
+// recordField.ts에서 통합된 타입들
+export interface Emotion {
+  emoji: string;
+  label: string;
+}
+
+export interface BaseBlock<T = unknown> {
+  id: string;
+  type: FieldType;
+  value: T;
+  layout: BlockLayout;
+}
+
+// RecordBlock 유니온 타입 (FieldType 기반)
+export type RecordBlock =
+  | (BaseBlock<TextValue> & { type: 'content' })
+  | (BaseBlock<MoodValue> & { type: 'emotion' })
+  | (BaseBlock<TagValue> & { type: 'tags' })
+  | (BaseBlock<RatingValue> & { type: 'rating' })
+  | (BaseBlock<DateValue> & { type: 'date' })
+  | (BaseBlock<TimeValue> & { type: 'time' })
+  | (BaseBlock<LocationValue> & { type: 'location' })
+  | (BaseBlock<ImageValue> & { type: 'photos' })
+  | (BaseBlock<TableValue> & { type: 'table' })
+  | (BaseBlock<MediaInfoValue> & { type: 'media' });
+
+export type BaseBlockForLayout<T = unknown> = Omit<BaseBlock<T>, 'value'>;
 
 export interface Block {
   id: string;
