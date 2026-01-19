@@ -41,10 +41,12 @@ import { useState } from 'react';
 
 interface GroupHeaderActionsProps {
   groupInfo: GroupInfo;
+  className?: string;
 }
 
 export default function GroupHeaderActions({
   groupInfo,
+  className,
 }: GroupHeaderActionsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -117,7 +119,7 @@ export default function GroupHeaderActions({
           <DrawerTrigger className="cursor-pointer p-2.5 rounded-xl transition-all active:scale-95 dark:bg-white/5 dark:text-[#10B981] bg-gray-50 text-[#10B981]">
             <UserPlus className="w-5 h-5" />
           </DrawerTrigger>
-          <DrawerContent className="w-full px-8 pt-4 pb-12">
+          <DrawerContent className={cn('w-full px-8 pt-4 pb-12', className)}>
             <DrawerHeader className="px-0">
               <div className="flex justify-between items-center mb-8">
                 <DrawerTitle className="flex flex-col">
@@ -225,6 +227,7 @@ export default function GroupHeaderActions({
         </Drawer>
 
         <DateSelectorDrawer
+          className={className}
           dayRoute={`/group/${groupId}/detail`}
           monthRoute={`/group/${groupId}/month`}
           yearRoute={`/group/${groupId}/year`}
@@ -260,7 +263,7 @@ export default function GroupHeaderActions({
         </Popover>
 
         <Drawer open={showLeaveGroup} onOpenChange={setShowLeaveGroup}>
-          <DrawerContent className="px-8 pt-4 pb-12">
+          <DrawerContent className={cn('px-8 pt-4 pb-12', className)}>
             <DrawerHeader>
               <div className="flex flex-col items-center text-center space-y-4 mb-10">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
