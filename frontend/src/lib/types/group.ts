@@ -23,3 +23,9 @@ export type ActiveMember = Member & {
 };
 
 export type InviteRole = 'admin' | 'editor' | 'viewer';
+
+export const ROLE_MAP = {
+  admin: 'ADMIN',
+  editor: 'EDITOR',
+  viewer: 'VIEWER',
+} as const;

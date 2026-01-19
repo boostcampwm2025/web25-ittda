@@ -11,7 +11,8 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
-import { GroupInfo, InviteRole } from '@/lib/types/group';
+import { useGroupInvite } from '@/hooks/useGroupInvite';
+import { GroupInfo, InviteRole, ROLE_MAP } from '@/lib/types/group';
 import { cn } from '@/lib/utils';
 import { useGroupVoice } from '@/store/useGroupVoice';
 import {
@@ -51,6 +52,23 @@ export default function GroupHeaderActions({
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
   const [selectedInviteRole, setSelectedInviteRole] =
     useState<InviteRole>('editor');
+  const { mutate: createInvite, data: inviteResult } = useGroupInvite(
+    groupId || '',
+  );
+
+  const handleRoleChange = (roleId: InviteRole) => {
+    setSelectedInviteRole(roleId);
+    createInvite({
+      permission: ROLE_MAP[roleId],
+      expiresInSeconds: 86400, // 24시간
+    });
+  };
+
+  const onInviteDrawerOpen = () => {
+    if (!inviteResult) {
+      handleRoleChange(selectedInviteRole);
+    }
+  };
 
   const roles = [
     {
@@ -84,6 +102,27 @@ export default function GroupHeaderActions({
     router.push('/shared');
   };
 
+  // 카카오 공유 로직
+  const handleKakaoShare = () => {
+    if (!window.Kakao?.Share) {
+      return;
+    }
+
+    window.Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: '기억과 맥락을, 잇다-',
+        description: groupInfo.inviteCode + '당신을 그룹에 초대합니다!',
+        imageUrl:
+          'https://substantial-jade-zgft0gga6m.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-01-16%20003841.png',
+        link: {
+          mobileWebUrl: groupInfo.inviteCode,
+          webUrl: groupInfo.inviteCode,
+        },
+      },
+    });
+  };
+
   return (
     <div className="flex items-center justify-between mb-6">
       <Back />
@@ -101,7 +140,10 @@ export default function GroupHeaderActions({
         )}
 
         <Drawer shouldScaleBackground={false}>
-          <DrawerTrigger className="cursor-pointer p-2.5 rounded-xl transition-all active:scale-95 dark:bg-white/5 dark:text-[#10B981] bg-gray-50 text-[#10B981]">
+          <DrawerTrigger
+            onClick={onInviteDrawerOpen}
+            className="cursor-pointer p-2.5 rounded-xl transition-all active:scale-95 dark:bg-white/5 dark:text-[#10B981] bg-gray-50 text-[#10B981]"
+          >
             <UserPlus className="w-5 h-5" />
           </DrawerTrigger>
           <DrawerContent className="w-full px-8 pt-4 pb-12">
@@ -132,9 +174,7 @@ export default function GroupHeaderActions({
                     return (
                       <button
                         key={role.id}
-                        onClick={() =>
-                          setSelectedInviteRole(role.id as InviteRole)
-                        }
+                        onClick={() => handleRoleChange(role.id as InviteRole)}
                         className={cn(
                           'flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all active:scale-95',
                           isSelected
@@ -203,7 +243,10 @@ export default function GroupHeaderActions({
                   닫기
                 </DrawerClose>
                 {/* TODO: 카톡 공유 기능 추가 */}
-                <button className="cursor-pointer flex-2 py-4 rounded-2xl bg-itta-black dark:bg-white text-white dark:text-itta-black text-sm font-bold shadow-xl active:scale-95 transition-all">
+                <button
+                  onClick={handleKakaoShare}
+                  className="cursor-pointer flex-2 py-4 rounded-2xl bg-itta-black dark:bg-white text-white dark:text-itta-black text-sm font-bold shadow-xl active:scale-95 transition-all"
+                >
                   카카오톡으로 공유
                 </button>
               </div>
