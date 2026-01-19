@@ -43,11 +43,16 @@ export class GroupService {
         });
         const savedGroup = await manager.save(group);
 
+        const owner = await manager.findOneOrFail(User, {
+          where: { id: ownerId },
+        });
+
         // 3. 방장을 멤버 테이블에 ADMIN로 등록 (manager 사용 필수)
         const ownerMember = manager.create(GroupMember, {
           group: savedGroup,
           user: { id: ownerId } as User,
           role: GroupRoleEnum.ADMIN,
+          nicknameInGroup: owner.nickname,
         });
         await manager.save(ownerMember);
 
@@ -92,6 +97,7 @@ export class GroupService {
         group,
         user,
         role,
+        nicknameInGroup: user.nickname,
       });
 
       return this.groupMemberRepo.save(member);
@@ -111,7 +117,7 @@ export class GroupService {
       where: { groupId, userId: requesterId },
     });
 
-    if (!requesterMember || requesterMember.role === GroupRoleEnum.VIEWER) {
+    if (!requesterMember || requesterMember.role !== GroupRoleEnum.ADMIN) {
       throw new BadRequestException('추방 권한이 없습니다.');
     }
 
