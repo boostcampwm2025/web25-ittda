@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -16,7 +17,6 @@ import { PostBlock } from '../src/modules/post/entity/post-block.entity';
 import { User } from '../src/modules/user/user.entity';
 import { GoogleStrategy } from '../src/modules/auth/strategies/google.strategy';
 import { KakaoStrategy } from '../src/modules/auth/strategies/kakao.strategy';
-import { JwtStrategy } from '../src/modules/auth/jwt/jwt.strategy';
 
 describe('FeedController (e2e)', () => {
   let app: INestApplication<App>;
@@ -29,6 +29,7 @@ describe('FeedController (e2e)', () => {
   let ownedPost: Post;
   let contributedPost: Post;
   let otherDatePost: Post;
+  let accessToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -37,8 +38,6 @@ describe('FeedController (e2e)', () => {
       .overrideProvider(GoogleStrategy)
       .useValue({})
       .overrideProvider(KakaoStrategy)
-      .useValue({})
-      .overrideProvider(JwtStrategy)
       .useValue({})
       .compile();
 
@@ -56,6 +55,7 @@ describe('FeedController (e2e)', () => {
     postRepository = app.get(getRepositoryToken(Post));
     contributorRepository = app.get(getRepositoryToken(PostContributor));
     postBlockRepository = app.get(getRepositoryToken(PostBlock));
+    const jwtService = app.get(JwtService);
 
     owner = await userRepository.save(
       userRepository.create({
@@ -65,6 +65,7 @@ describe('FeedController (e2e)', () => {
         providerId: `feed-owner-${Date.now()}`,
       }),
     );
+    accessToken = jwtService.sign({ sub: owner.id });
 
     otherUser = await userRepository.save(
       userRepository.create({
@@ -159,7 +160,7 @@ describe('FeedController (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/feed')
       .query({ date: '2026-01-16', tz: 'Asia/Seoul' })
-      .set('x-user-id', owner.id)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
     const body = res.body as {
@@ -199,7 +200,7 @@ describe('FeedController (e2e)', () => {
   it('GET /feed should return 400 without date', async () => {
     await request(app.getHttpServer())
       .get('/feed')
-      .set('x-user-id', owner.id)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(400);
   });
 
@@ -207,7 +208,7 @@ describe('FeedController (e2e)', () => {
     await request(app.getHttpServer())
       .get('/feed')
       .query({ date: '2026-02-30', tz: 'Asia/Seoul' })
-      .set('x-user-id', owner.id)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(400);
   });
 
@@ -215,7 +216,7 @@ describe('FeedController (e2e)', () => {
     await request(app.getHttpServer())
       .get('/feed')
       .query({ date: '2026-02-28', tz: 'Not/AZone' })
-      .set('x-user-id', owner.id)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(400);
   });
 });

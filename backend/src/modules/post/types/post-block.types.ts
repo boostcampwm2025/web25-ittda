@@ -1,8 +1,9 @@
 import { PostBlockType } from '@/enums/post-block-type.enum';
+import { PostMood } from '@/enums/post-mood.enum';
 
 export type BlockValueMap = {
   [PostBlockType.TEXT]: { text: string };
-  [PostBlockType.MOOD]: { mood: string };
+  [PostBlockType.MOOD]: { mood: PostMood };
   [PostBlockType.TAG]: { tags: string[] };
   [PostBlockType.RATING]: { rating: number };
   [PostBlockType.DATE]: { date: string };

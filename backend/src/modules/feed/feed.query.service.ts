@@ -58,10 +58,6 @@ export class FeedQueryService {
   ) {}
 
   async getFeedForUser(userId: string, query: GetFeedQueryDto) {
-    if (!userId) throw new BadRequestException('Unauthorized');
-    if (!query) throw new BadRequestException('query is required');
-    if (!query.date) throw new BadRequestException('date is required');
-
     // 날짜 필터링을 위해 date 파싱
     const { from, to } = dayRange(query.date, query.tz ?? 'Asia/Seoul');
 
@@ -105,6 +101,7 @@ export class FeedQueryService {
       // meta 컬럼들
       'p.title',
       'p.tags',
+      'p.emotion',
       'p.rating',
     ]);
 
@@ -211,6 +208,7 @@ export class FeedQueryService {
             : null,
           blocks: blockByPostId.get(p.id) ?? [],
           tags: p.tags ?? null,
+          emotion: p.emotion ?? null,
           rating: p.rating ?? null,
         }),
       );
