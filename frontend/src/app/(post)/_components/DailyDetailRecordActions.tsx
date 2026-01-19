@@ -1,13 +1,15 @@
 'use client';
 
-import { MemoryRecord } from '@/lib/types/record';
+import SocialShareDrawer from '@/components/SocialShareDrawer';
+import { ContentValue } from '@/lib/types/recordField';
+import { RecordPreview } from '@/lib/types/recordResponse';
+import { getSingleBlockValue } from '@/lib/utils/record';
 import { MoreHorizontal } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface DailyDetailRecordActionsProps {
-  record: MemoryRecord;
-  onDeleteClick: (record: MemoryRecord) => void;
+  record: RecordPreview;
+  onDeleteClick: (record: RecordPreview) => void;
 }
 
 export default function DailyDetailRecordActions({
@@ -15,21 +17,38 @@ export default function DailyDetailRecordActions({
   onDeleteClick,
 }: DailyDetailRecordActionsProps) {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const router = useRouter();
+  const [shareOpen, setShareOpen] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState('');
 
-  const handleShare = async (record: MemoryRecord, e: React.MouseEvent) => {
+  const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
+
+  // 마운트 시점에 window 주소 가져오기
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      setCurrentUrl(window.location.href);
+    });
+  }, []);
+
+  // TEXT 타입 블록에서 내용 추출
+  const shareData = {
+    title: record.title,
+    text: content,
+    url: currentUrl,
+  };
+
+  const handleShare = async (record: RecordPreview, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveMenuId(null);
+
     if (!navigator.share) {
-      // TODO: 공유하기 기능 지원하지 않는다는 toast 필요
-      // alert('공유하기 기능이 지원되지 않는 브라우저입니다.');
+      setShareOpen(true);
       return;
     }
 
     try {
       await navigator.share({
         title: record.title,
-        text: record.data.content,
+        text: content,
         url: window.location.href,
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,7 +57,7 @@ export default function DailyDetailRecordActions({
         try {
           await navigator.share({
             title: record.title,
-            text: record.data.content,
+            text: content,
           });
         } catch (innerErr) {
           console.error('Share failed', innerErr);
@@ -47,7 +66,7 @@ export default function DailyDetailRecordActions({
     }
   };
 
-  const handleEdit = (record: MemoryRecord, e: React.MouseEvent) => {
+  const handleEdit = (record: RecordPreview, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveMenuId(null);
     // router.push('/add', {
@@ -77,14 +96,16 @@ export default function DailyDetailRecordActions({
       <button
         onClick={(e) => {
           e.stopPropagation();
-          setActiveMenuId(activeMenuId === record.id ? null : record.id);
+          setActiveMenuId(
+            activeMenuId === record.postId ? null : record.postId,
+          );
         }}
         className="cursor-pointer p-1 text-gray-400 hover:text-gray-600 transition-colors active:scale-90"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>
 
-      {activeMenuId === record.id && (
+      {activeMenuId === record.postId && (
         <>
           <div
             className="fixed inset-0 z-20"
@@ -113,6 +134,12 @@ export default function DailyDetailRecordActions({
           </div>
         </>
       )}
+      <SocialShareDrawer
+        path={shareData.url}
+        title={shareData.title}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
     </>
   );
 }
