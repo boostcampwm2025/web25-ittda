@@ -1,11 +1,11 @@
 import { useState, useRef } from 'react';
-import { PostBlock } from '@/lib/types/recordField';
+import { RecordBlock } from '@/lib/types/recordField';
 import { FieldType } from '@/lib/types/record';
 import { normalizeLayout } from '../_utils/recordLayoutHelper';
 
 export const useRecordEditorDnD = (
-  blocks: PostBlock[],
-  setBlocks: React.Dispatch<React.SetStateAction<PostBlock[]>>,
+  blocks: RecordBlock[],
+  setBlocks: React.Dispatch<React.SetStateAction<RecordBlock[]>>,
   canBeHalfWidth: (type: FieldType) => boolean,
 ) => {
   const [isDraggingId, setIsDraggingId] = useState<string | null>(null);

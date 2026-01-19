@@ -17,16 +17,12 @@ const imageDomains = [
 // 환경에 따라 백엔드 주소 분기
 const backendHost =
   process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL || 'http://localhost:4000'
+    ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
     : 'http://localhost:4000';
 
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
-      {
-        source: '/api/posts/:path*',
-        destination: `${backendHost}/posts/:path*`,
-      },
       {
         source: '/api/kopis/:path*',
         destination: 'http://www.kopis.or.kr/openApi/restful/:path*',

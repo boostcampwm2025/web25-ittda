@@ -15,6 +15,7 @@ export default function ConditionalHeader() {
     '/profile/edit',
     '/profile/all-tags',
     '/profile/all-emotions',
+    '/location-picker',
   ];
   const isDetail =
     pathname.includes('/record/') ||
@@ -22,7 +23,8 @@ export default function ConditionalHeader() {
     pathname.includes('/month/') ||
     pathname.includes('/edit');
 
-  const isLogin = pathname.includes('/login');
+  const isLogin =
+    pathname.includes('/login') || pathname.includes('/oauth/callback');
   const isProfile = pathname === '/profile';
   const isMap = pathname.includes('/map');
   const showHeader =

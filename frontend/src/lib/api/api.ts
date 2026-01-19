@@ -1,10 +1,30 @@
 import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, clearTokens } from './auth';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_MOCK === 'true'
-    ? ''
-    : '/api';
+/**
+ * API Base URL 결정
+ * - 클라이언트: '' (빈 문자열, Next.js rewrites가 /api/* 처리)
+ * - 서버: 백엔드 절대 URL (fetch는 상대 경로 불가)
+ */
+function getApiBaseUrl() {
+  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
+    return '';
+  }
+
+  // 클라이언트 환경
+  if (typeof window !== 'undefined') {
+    return '';
+  }
+
+  // 서버 환경 - 백엔드 절대 URL
+  const backendUrl =
+    process.env.NODE_ENV === 'production'
+      ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
+      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1';
+  return backendUrl;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;

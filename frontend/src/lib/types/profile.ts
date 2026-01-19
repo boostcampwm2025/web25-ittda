@@ -6,12 +6,6 @@ export interface ProfileTag {
   all: Tag[];
 }
 
-export interface Profile {
-  image: string;
-  nickname: string;
-  email: string;
-}
-
 export interface Emotion {
   name: string;
   emoji: string;
@@ -24,11 +18,15 @@ export interface ProfileEmotion {
   all: Emotion[];
 }
 
-export interface UserProfile {
+export interface BaseUser {
   id: string;
   email: string | null;
   nickname: string | null;
-  provider: string;
+  profileImageUrl: string | null;
+}
+
+export interface UserProfile extends BaseUser {
+  provider: string | null;
   createdAt: string;
 }
 
@@ -36,13 +34,6 @@ export interface GuestInfo {
   guest: boolean;
   guestSessionId: string;
   expiresAt: string;
-}
-
-export interface SocialUser {
-  id: string;
-  nickname: string;
-  profileImageUrl: string;
-  updatedAt: string;
 }
 
 export type UserType = 'social' | 'guest';

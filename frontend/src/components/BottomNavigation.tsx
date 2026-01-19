@@ -16,14 +16,21 @@ export default function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const minimalPaths = ['/add', '/search', '/search/media', '/profile/edit'];
+  const minimalPaths = [
+    '/add',
+    '/search',
+    '/search/media',
+    '/profile/edit',
+    '/location-picker',
+  ];
   const isDetail =
     pathname.includes('/record/') ||
     pathname.includes('/detail/') ||
     pathname.includes('/month/') ||
     pathname.includes('/edit');
   const isGroupChat = pathname.includes('/chat');
-  const isLogin = pathname.includes('/login');
+  const isLogin =
+    pathname.includes('/login') || pathname.includes('/oauth/callback');
 
   const showNav =
     !minimalPaths.includes(pathname) && !isDetail && !isGroupChat && !isLogin;

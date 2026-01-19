@@ -1,22 +1,23 @@
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   Post as HttpPost,
   Body,
   Req,
   NotImplementedException,
 } from '@nestjs/common';
-import {
-  ApiCreatedResponse,
-  ApiHeader,
-  ApiOkResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiHeader, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
 import type { Request } from 'express';
+import {
+  ApiWrappedCreatedResponse,
+  ApiWrappedOkResponse,
+} from '@/common/swagger/api-wrapped-response.decorator';
 
 type AuthedRequest = Request & {
   user?: { id: string };
@@ -45,14 +46,14 @@ export class PostController {
     required: false,
   })
   @Get(':id')
-  @ApiOkResponse({ type: PostDetailDto })
+  @ApiWrappedOkResponse({ type: PostDetailDto })
   getOne(@Param('id') id: string): Promise<PostDetailDto> {
     return this.postService.findOne(id);
   }
 
   // TODO: 나중에 AuthGuard 붙이기
   @HttpPost()
-  @ApiCreatedResponse({ type: PostDetailDto })
+  @ApiWrappedCreatedResponse({ type: PostDetailDto })
   @ApiHeader({
     name: 'x-user-id',
     description: '임시 사용자 ID (AuthGuard 적용 전)',
@@ -75,5 +76,30 @@ export class PostController {
       );
     }
     return this.postService.createPost(ownerId, dto);
+  }
+
+  // TODO: 나중에 AuthGuard 붙이기
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiNoContentResponse()
+  @ApiHeader({
+    name: 'x-user-id',
+    description: '임시 사용자 ID (AuthGuard 적용 전)',
+    required: false,
+  })
+  async deleteOne(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+  ): Promise<void> {
+    const headerUserId = req.header('x-user-id');
+    const requesterId =
+      req.user?.id ??
+      (typeof headerUserId === 'string' ? headerUserId : undefined);
+    if (!requesterId) {
+      throw new Error(
+        'requesterId is missing. Provide req.user.id or x-user-id header.',
+      );
+    }
+    await this.postService.deletePost(id, requesterId);
   }
 }

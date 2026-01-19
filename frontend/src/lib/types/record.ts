@@ -1,4 +1,4 @@
-import { PostBlock } from './recordField';
+import { RecordBlock } from './recordField';
 
 export type TemplateType =
   | 'diary'
@@ -117,13 +117,25 @@ export interface RecordSearchItem {
   tags: string[];
 }
 
-export type PostScope = 'PERSONAL' | 'GROUP';
+export type RecordScope = 'PERSONAL' | 'GROUP';
+export type CreateRecordBlock = Omit<RecordBlock, 'id'>;
 
 export interface CreateRecordRequest {
-  scope: PostScope;
+  scope: RecordScope;
   groupId?: string;
-  templateId?: string;
   title: string;
-  author: string[];
-  blocks: PostBlock[];
+  thumbnailMediaId?: string;
+  blocks: CreateRecordBlock[];
+}
+
+// 지도 리스트 아이템
+export interface MapPostItem {
+  id: string;
+  lat: number;
+  lng: number;
+  title: string;
+  imageUrl: string;
+  createdAt: string;
+  tags: string[];
+  placeName: string;
 }
