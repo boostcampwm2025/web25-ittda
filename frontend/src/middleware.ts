@@ -25,13 +25,14 @@ function hasInviteCode(request: NextRequest): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const forceLogin = request.nextUrl.searchParams.has('force');
 
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
   const isLoggedIn = isAuthenticated(request);
   const isInvited = hasInviteCode(request);
 
   // 로그인 페이지 접근 시 이미 로그인한 유저면 홈으로
-  if (pathname === '/login' && isLoggedIn) {
+  if (pathname === '/login' && isLoggedIn && !forceLogin) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
