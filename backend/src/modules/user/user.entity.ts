@@ -16,16 +16,16 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ nullable: true }) // email은 카카오에서 optional
+  @Column({ name: 'email', nullable: true }) // email은 카카오에서 optional
   email: string;
 
-  @Column()
+  @Column({ name: 'nickname' })
   nickname: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ name: 'provider', type: 'varchar' })
   provider: OAuthProvider;
 
-  @Column()
+  @Column({ name: 'provider_id' })
   providerId: string;
 
   @Column({ name: 'profile_image_id', type: 'uuid', nullable: true })
@@ -35,10 +35,10 @@ export class User {
   @JoinColumn({ name: 'profile_image_id' })
   profileImage?: MediaAsset | null;
 
-  @Column({ type: 'jsonb', default: {} })
+  @Column({ name: 'settings', type: 'jsonb', default: {} })
   settings: Record<string, any>;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at' })

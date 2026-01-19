@@ -16,7 +16,7 @@ export class Group {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'name' })
   name: string;
 
   @ManyToOne(() => User)
@@ -40,7 +40,7 @@ export class Group {
   @Column({ name: 'last_activity_at', type: 'timestamptz', nullable: true })
   lastActivityAt?: Date | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
   //   @DeleteDateColumn()

@@ -64,6 +64,6 @@ export class GroupMember {
   @Column({ name: 'last_read_at', type: 'timestamptz', nullable: true })
   lastReadAt?: Date | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'joined_at', type: 'timestamptz' })
   joinedAt: Date;
 }
