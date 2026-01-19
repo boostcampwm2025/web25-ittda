@@ -64,7 +64,7 @@ export default function OAuthCallbackModal() {
             id: userResponse.data.id,
             email: userResponse.data.email,
             nickname: userResponse.data.nickname,
-            profileImage: userResponse.data.profileImageUrl,
+            profileImageUrl: userResponse.data.profileImageUrl,
             provider: 'kakao',
             createdAt: userResponse.data.createdAt,
           });
