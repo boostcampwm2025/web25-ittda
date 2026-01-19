@@ -47,6 +47,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "logform": "^2.7.0",
+    "luxon": "^3.7.2",
     "nest-winston": "^1.10.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",

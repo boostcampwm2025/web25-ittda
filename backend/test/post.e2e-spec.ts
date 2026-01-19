@@ -162,6 +162,11 @@ describe('PostController (e2e)', () => {
           value: { time: '13:30' },
           layout: { row: 1, col: 2, span: 1 },
         },
+        {
+          type: 'TEXT',
+          value: { text: '삭제 테스트 본문' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
       ],
     };
 
