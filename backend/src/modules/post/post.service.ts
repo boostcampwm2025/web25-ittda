@@ -67,7 +67,7 @@ export class PostService {
       group = await this.groupRepository.findOne({
         where: { id: dto.groupId },
       });
-      if (!group) throw new BadRequestException('Group not found');
+      if (!group) throw new NotFoundException('Group not found');
     }
 
     const meta = extractMetaFromBlocks(dto.blocks);
