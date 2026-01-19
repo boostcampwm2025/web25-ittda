@@ -19,12 +19,14 @@ interface MonthlyDetailHeaderActionsProps {
   month: string;
   title: string;
   onClick?: VoidFunction;
+  className?: string;
 }
 
 export default function MonthlyDetailHeaderActions({
   month,
   title,
   onClick,
+  className,
 }: MonthlyDetailHeaderActionsProps) {
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
@@ -66,13 +68,13 @@ export default function MonthlyDetailHeaderActions({
               'cursor-pointer p-1.5 rounded-lg transition-colors',
               showSortMenu
                 ? 'text-[#10B981] bg-[#10B981]/10'
-                : 'text-gray-300 hover:bg-gray-100',
+                : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-itta-black/80',
             )}
           >
             <ListFilter className="w-5 h-5" />
           </button>
         </DrawerTrigger>
-        <DrawerContent className="w-full px-8 pt-4 pb-10">
+        <DrawerContent className={cn('w-full px-8 pt-4 pb-10', className)}>
           <DrawerHeader>
             <div className="flex justify-between items-center mb-6">
               <DrawerTitle>
