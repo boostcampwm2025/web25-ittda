@@ -381,7 +381,7 @@ describe('PostController (e2e)', () => {
         },
         {
           type: 'MOOD',
-          value: { mood: '분노' },
+          value: { mood: '짜증' },
           layout: { row: 3, col: 1, span: 1 },
         },
       ],
