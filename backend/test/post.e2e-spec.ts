@@ -459,6 +459,56 @@ describe('PostController (e2e)', () => {
     );
   });
 
+  it('POST /posts should return 400 when MEDIA value is invalid', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '미디어 오류',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '미디어 오류 테스트' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+        {
+          type: 'MEDIA',
+          value: { title: '', type: '' },
+          layout: { row: 3, col: 1, span: 2 },
+        },
+      ],
+    };
+
+    const badRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(400);
+
+    const badBody = badRes.body as {
+      statusCode: number;
+      error: string;
+      message: string[];
+    };
+
+    expect(badBody).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+    });
+    expect(Array.isArray(badBody.message)).toBe(true);
+    expect(badBody.message.join(' ')).toContain(
+      'media must include non-empty title and type',
+    );
+  });
+
   it('POST /posts should return 400 when RATING value has too many decimals', async () => {
     const payload = {
       scope: PostScope.PERSONAL,

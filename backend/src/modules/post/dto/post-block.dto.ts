@@ -45,6 +45,26 @@ export class RatingValueDto {
   rating: number;
 }
 
+export class MediaValueDto {
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  type: string;
+
+  @ApiProperty()
+  externalId: string;
+
+  @ApiPropertyOptional()
+  year?: string;
+
+  @ApiPropertyOptional()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  originalTitle?: string | null;
+}
+
 @ValidatorConstraint({ name: 'MoodValueConstraint', async: false })
 class MoodValueConstraint implements ValidatorConstraintInterface {
   validate(value: unknown, args?: ValidationArguments): boolean {
@@ -107,7 +127,49 @@ class RatingValueConstraint implements ValidatorConstraintInterface {
   }
 }
 
-@ApiExtraModels(MoodValueDto, LocationValueDto, RatingValueDto)
+@ValidatorConstraint({ name: 'MediaValueConstraint', async: false })
+class MediaValueConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown, args?: ValidationArguments): boolean {
+    const target = args?.object as PostBlockDto | undefined;
+    if (!target || target.type !== PostBlockType.MEDIA) return true;
+    if (!value || typeof value !== 'object') return false;
+    const media = value as {
+      title?: unknown;
+      type?: unknown;
+      externalId?: unknown;
+      year?: unknown;
+      imageUrl?: unknown;
+      originalTitle?: unknown;
+    };
+    if (typeof media.title !== 'string' || media.title.trim().length === 0) {
+      return false;
+    }
+    if (typeof media.type !== 'string' || media.type.trim().length === 0) {
+      return false;
+    }
+    if (
+      typeof media.externalId !== 'string' ||
+      media.externalId.trim().length === 0
+    ) {
+      return false;
+    }
+    const hasValidYear =
+      media.year === undefined || typeof media.year === 'string';
+    const hasValidImageUrl =
+      media.imageUrl === undefined || typeof media.imageUrl === 'string';
+    const hasValidOriginalTitle =
+      media.originalTitle === undefined ||
+      media.originalTitle === null ||
+      typeof media.originalTitle === 'string';
+    return hasValidYear && hasValidImageUrl && hasValidOriginalTitle;
+  }
+
+  defaultMessage(): string {
+    return 'media must include non-empty title, type, and externalId';
+  }
+}
+
+@ApiExtraModels(MoodValueDto, LocationValueDto, RatingValueDto, MediaValueDto)
 export class PostBlockDto {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
@@ -122,14 +184,16 @@ export class PostBlockDto {
   @Validate(MoodValueConstraint)
   @Validate(LocationValueConstraint)
   @Validate(RatingValueConstraint)
+  @Validate(MediaValueConstraint)
   @ApiProperty({
     description:
-      'Block value. When type=MOOD, LOCATION, or RATING, value shape is enforced.',
+      'Block value. When type=MOOD, LOCATION, RATING, or MEDIA, value shape is enforced.',
     oneOf: [
       { type: 'object', additionalProperties: true },
       { $ref: getSchemaPath(MoodValueDto) },
       { $ref: getSchemaPath(LocationValueDto) },
       { $ref: getSchemaPath(RatingValueDto) },
+      { $ref: getSchemaPath(MediaValueDto) },
     ],
   })
   value: BlockValueMap[PostBlockType];
