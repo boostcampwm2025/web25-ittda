@@ -86,6 +86,7 @@ export class PostService {
         const postRepo = manager.getRepository(Post);
         const blockRepo = manager.getRepository(PostBlock);
         const contributorRepo = manager.getRepository(PostContributor);
+        const groupRepo = manager.getRepository(Group);
 
         const post = postRepo.create({
           scope: dto.scope,
@@ -102,6 +103,10 @@ export class PostService {
         });
 
         const saved = await postRepo.save(post);
+
+        if (saved.groupId) {
+          await groupRepo.update(saved.groupId, { lastActivityAt: new Date() });
+        }
 
         const contributor = contributorRepo.create({
           postId: saved.id,
@@ -221,5 +226,16 @@ export class PostService {
       throw new ForbiddenException('Only the owner can delete this post');
     }
     await this.postRepository.softDelete(postId);
+
+    if (post.groupId) {
+      const latest = await this.postRepository.findOne({
+        where: { groupId: post.groupId, deletedAt: IsNull() },
+        order: { createdAt: 'DESC' },
+        select: { createdAt: true },
+      });
+      await this.groupRepository.update(post.groupId, {
+        lastActivityAt: latest?.createdAt ?? null,
+      });
+    }
   }
 }
