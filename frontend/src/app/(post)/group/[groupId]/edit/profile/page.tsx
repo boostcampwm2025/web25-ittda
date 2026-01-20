@@ -1,24 +1,32 @@
+import { groupMyProfileOptions } from '@/lib/api/group';
 import GroupProfileEditClient from './_components/GroupProfileEditClient';
-
-// TODO: 서버에서 그룹 프로필 데이터 가져오기
-const getGroupProfile = async (groupId: string) => {
-  return {
-    nickname: '도비',
-    image: '/profile-ex.jpeg',
-  };
-};
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 
 export default async function GroupProfileEditPage({
   params,
 }: {
-  params: { groupId: string };
+  params: Promise<{ groupId: string }>;
 }) {
-  const groupProfile = await getGroupProfile(params.groupId);
+  const { groupId } = await params;
+  const queryClient = new QueryClient();
+
+  // 서버에서 프리패칭 수행
+  const profileData = await queryClient.fetchQuery(
+    groupMyProfileOptions(groupId),
+  );
+  const groupProfile = {
+    id: profileData.userId,
+    nickname: profileData.nicknameInGroup,
+    profileImageUrl: profileData.cover?.assetId || '', // TODO: 이미지 추후 별도 로직 추가
+  };
 
   return (
-    <GroupProfileEditClient
-      groupId={params.groupId}
-      groupProfile={groupProfile}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <GroupProfileEditClient groupId={groupId} groupProfile={groupProfile} />
+    </HydrationBoundary>
   );
 }
