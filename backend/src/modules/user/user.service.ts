@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -7,12 +7,13 @@ import { TagCount } from './user.interface';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
 
-// User Service에서 기능 구현
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Post)
+    private readonly postRepo: Repository<Post>,
   ) {}
 
   async findOrCreateOAuthUser(params: OAuthUserType): Promise<User> {

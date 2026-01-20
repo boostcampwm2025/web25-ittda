@@ -1,4 +1,3 @@
-// User 관련 인터페이스
 export interface TagCount {
   tag: string;
   count: number;
