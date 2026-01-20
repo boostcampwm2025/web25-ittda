@@ -22,6 +22,20 @@ export type ActiveMember = Member & {
   recordId: string;
 };
 
+export interface LatestPost {
+  postId: string;
+  title: string;
+  eventAt: string;
+  placeName: string | null;
+}
+
+export interface GroupCover {
+  assetId: string;
+  width: number;
+  height: number;
+  mimeType: string;
+}
+
 export type GroupRoleType = 'ADMIN' | 'EDITOR' | 'VIEWER';
 
 export const ROLE_MAP = {
