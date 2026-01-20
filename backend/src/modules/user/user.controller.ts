@@ -13,7 +13,7 @@ import { UserService } from './user.service';
 import { ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { User } from '@/common/decorators/user.decorator';
-import type { MyJwtPayload } from '../auth/auth.type';
+
 import { GetMonthlyArchiveQueryDto } from './dto/get-monthly-archive.query.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { MonthRecordResponseDto } from './dto/month-record.response.dto';
@@ -21,6 +21,8 @@ import { GetMonthImagesResponseDto } from './dto/get-month-images.response.dto';
 import { UpdateMonthCoverBodyDto } from './dto/update-month-cover.body.dto';
 import { GetDailyArchiveQueryDto } from './dto/get-daily-archive.query.dto';
 import { DayRecordResponseDto } from './dto/day-record.response.dto';
+
+import type { MyJwtPayload } from '../auth/auth.type';
 
 // 내 기록함 포함 사용자 관련 api
 @ApiTags('user')
