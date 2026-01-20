@@ -230,10 +230,20 @@ export default function DateSelectorDrawer({
                         }}
                         className={cn(
                           'cursor-pointer relative aspect-square flex flex-col items-center justify-center rounded-xl transition-all',
+                          'disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent',
                           isToday
                             ? 'dark:bg-white dark:text-black bg-itta-black text-white'
                             : 'dark:hover:bg-white/5 dark:text-gray-300 hover:bg-gray-50 text-gray-600',
                         )}
+                        disabled={(() => {
+                          const date = new Date(dateStr);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          date.setHours(0, 0, 0, 0);
+
+                          // 미래 날짜는 선택 불가
+                          return date > today;
+                        })()}
                       >
                         <span className="text-xs font-bold">
                           {date.getDate()}

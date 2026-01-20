@@ -14,6 +14,7 @@ import type { Point } from 'geojson';
 import { User } from '@/modules/user/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { PostScope } from '@/enums/post-scope.enum';
+import { PostMood } from '@/enums/post-mood.enum';
 
 @Entity('posts')
 @Index('IDX_posts_location_gist', ['location'], { spatial: true })
@@ -43,12 +44,6 @@ export class Post {
   @Column({ type: 'varchar', length: 200 })
   title: string;
 
-  @Column({ type: 'text', array: true, nullable: true })
-  images?: string[] | null;
-
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  emotion?: string | null;
-
   @Column({
     type: 'geometry',
     spatialFeatureType: 'Point',
@@ -60,7 +55,10 @@ export class Post {
   @Column({ type: 'text', array: true, nullable: true })
   tags?: string[] | null;
 
-  @Column({ type: 'smallint', nullable: true })
+  @Column({ type: 'varchar', length: 5, nullable: true })
+  emotion?: PostMood | null;
+
+  @Column({ type: 'real', nullable: true })
   rating?: number | null;
 
   @Index()
