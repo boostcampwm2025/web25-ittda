@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { MyPageService } from './mypage.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
-import { UpdateMeDto, UpdateSettingsDto } from './dto/update-mypage.dto.ts';
+import { UpdateMeDto, UpdateSettingsDto } from './dto/update-mypage.dto';
 
 import type { Request } from 'express';
 import type { MyJwtPayload } from '../auth/auth.type';
