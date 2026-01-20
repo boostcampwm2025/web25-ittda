@@ -15,6 +15,7 @@ export const createMockRecordPreviews = (date: string): RecordPreview[] => [
     eventAt: `${date}T13:30:00Z`,
     createdAt: `${date}T14:00:00Z`,
     updatedAt: `${date}T14:00:00Z`,
+    emotion: ['행복'],
     location: {
       lat: 37.5445,
       lng: 127.0567,
@@ -66,6 +67,12 @@ export const createMockRecordPreviews = (date: string): RecordPreview[] => [
         value: { time: '13:30' },
         layout: { row: 4, col: 2, span: 1 },
       },
+      {
+        id: 'emotion-block-4',
+        type: 'MOOD',
+        value: { mood: '행복' },
+        layout: { row: 5, col: 1, span: 1 },
+      },
     ],
   },
   // 기록 2: 평점만 전체 너비, 위치, 이미지 2장
@@ -77,6 +84,7 @@ export const createMockRecordPreviews = (date: string): RecordPreview[] => [
     eventAt: `${date}T11:00:00Z`,
     createdAt: `${date}T12:30:00Z`,
     updatedAt: `${date}T12:30:00Z`,
+    emotion: [],
     location: {
       lat: 37.5347,
       lng: 127.0008,
@@ -133,6 +141,7 @@ export const createMockRecordPreviews = (date: string): RecordPreview[] => [
     eventAt: `${date}T19:00:00Z`,
     createdAt: `${date}T21:00:00Z`,
     updatedAt: `${date}T21:00:00Z`,
+    emotion: ['재미'],
     location: {
       lat: 37.5563,
       lng: 126.9236,
@@ -184,6 +193,12 @@ export const createMockRecordPreviews = (date: string): RecordPreview[] => [
         type: 'TIME',
         value: { time: '19:00' },
         layout: { row: 4, col: 2, span: 1 },
+      },
+      {
+        id: 'emotion-block-4',
+        type: 'MOOD',
+        value: { mood: '재미' },
+        layout: { row: 5, col: 1, span: 1 },
       },
     ],
   },
