@@ -1,11 +1,27 @@
 import { http, HttpResponse } from 'msw';
 import { makeFakePosts, filterByBbox } from '../fake/fakePosts';
-import { createMockGroupList, createMockRecordPreviews } from './mock';
+import {
+  createMockGroupCoverList,
+  createMockGroupList,
+  createMockRecordPreviews,
+} from './mock';
 
 const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/groups/:groupId/cover-candidates', ({ params, request }) => {
+    const id = String(params.groupId);
+    const url = new URL(request.url);
+    const cursor = url.searchParams.get('cursor');
+
+    const mockImgs = createMockGroupCoverList(id, cursor);
+    return HttpResponse.json({
+      success: true,
+      data: mockImgs,
+      error: null,
+    });
+  }),
   http.get('/api/groups', () => {
     const mockGroups = createMockGroupList();
     return HttpResponse.json(
