@@ -592,9 +592,7 @@ describe('PostController (e2e)', () => {
       error: 'Bad Request',
     });
     expect(Array.isArray(badBody.message)).toBe(true);
-    expect(badBody.message.join(' ')).toContain(
-      'media must include non-empty title, type, and externalId',
-    );
+    expect(badBody.message.join(' ')).toContain('media.title is required');
   });
 
   it('POST /posts should return 400 when RATING value has too many decimals', async () => {

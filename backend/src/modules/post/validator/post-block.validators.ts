@@ -9,6 +9,7 @@ import { PostMood } from '@/enums/post-mood.enum';
 type BlockWithType = {
   type?: PostBlockType;
   value?: unknown;
+  __mediaValidationMessage?: string;
 };
 
 @ValidatorConstraint({ name: 'MoodValueConstraint', async: false })
@@ -88,29 +89,49 @@ export class MediaValueConstraint implements ValidatorConstraintInterface {
       originalTitle?: unknown;
     };
     if (typeof media.title !== 'string' || media.title.trim().length === 0) {
+      target.__mediaValidationMessage = 'media.title is required';
       return false;
     }
     if (typeof media.type !== 'string' || media.type.trim().length === 0) {
+      target.__mediaValidationMessage = 'media.type is required';
       return false;
     }
     if (
       typeof media.externalId !== 'string' ||
       media.externalId.trim().length === 0
     ) {
+      target.__mediaValidationMessage = 'media.externalId is required';
       return false;
     }
     const hasValidYear =
-      media.year === undefined || typeof media.year === 'string';
+      media.year === undefined ||
+      (typeof media.year === 'string' && /^\d{4}$/.test(media.year));
     const hasValidImageUrl =
       media.imageUrl === undefined || typeof media.imageUrl === 'string';
     const hasValidOriginalTitle =
       media.originalTitle === undefined ||
       media.originalTitle === null ||
       typeof media.originalTitle === 'string';
-    return hasValidYear && hasValidImageUrl && hasValidOriginalTitle;
+    if (!hasValidYear) {
+      target.__mediaValidationMessage = 'media.year must be YYYY when provided';
+      return false;
+    }
+    if (!hasValidImageUrl) {
+      target.__mediaValidationMessage =
+        'media.imageUrl must be a string when provided';
+      return false;
+    }
+    if (!hasValidOriginalTitle) {
+      target.__mediaValidationMessage =
+        'media.originalTitle must be a string when provided';
+      return false;
+    }
+    delete target.__mediaValidationMessage;
+    return true;
   }
 
-  defaultMessage(): string {
-    return 'media must include non-empty title, type, and externalId';
+  defaultMessage(args?: ValidationArguments): string {
+    const target = args?.object as BlockWithType | undefined;
+    return target?.__mediaValidationMessage || 'media value is invalid';
   }
 }
