@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 
 import type { OAuthProvider } from '../auth/auth.type';
-// User 엔티티 정의
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')

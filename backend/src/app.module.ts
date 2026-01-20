@@ -10,7 +10,6 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GroupModule } from './modules/group/group.module';
 import { GuestModule } from './modules/guest/guest.module';
-import { MyPageModule } from './modules/mypage/mypage.module';
 import { FeedModule } from './modules/feed/feed.module';
 
 @Module({
@@ -31,7 +30,6 @@ import { FeedModule } from './modules/feed/feed.module';
     AuthModule,
     GroupModule,
     GuestModule,
-    MyPageModule,
     FeedModule,
   ],
   controllers: [AppController],
