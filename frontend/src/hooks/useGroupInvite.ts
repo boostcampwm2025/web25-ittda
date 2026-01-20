@@ -1,11 +1,11 @@
-import { InviteRole } from '@/lib/types/group';
+import { GroupRoleType } from '@/lib/types/group';
 import { useApiPost } from './useApi';
 import { useQuery } from '@tanstack/react-query';
 import { post } from '@/lib/api/api';
 import { createApiError } from '@/lib/utils/errorHandler';
 
 export interface InviteRequest {
-  permission: InviteRole;
+  permission: GroupRoleType;
   expiresInSeconds: number;
 }
 

@@ -19,7 +19,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { useCreateInviteCode } from '@/hooks/useGroupInvite';
-import { GroupInfo, InviteRole, ROLE_MAP } from '@/lib/types/group';
+import { GroupInfo, GroupRoleType } from '@/lib/types/group';
 import { cn } from '@/lib/utils';
 
 interface GroupInviteDrawerProps {
@@ -36,36 +36,36 @@ export default function GroupInviteDrawer({
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedInviteRole, setSelectedInviteRole] =
-    useState<InviteRole>('editor');
+    useState<GroupRoleType>('EDITOR');
 
   const { data: inviteResult } = useCreateInviteCode(
     groupId,
-    ROLE_MAP[selectedInviteRole],
+    selectedInviteRole,
     isOpen,
   );
 
   const roles = [
     {
-      id: 'admin',
+      id: 'ADMIN',
       label: '관리자',
       desc: '모든 관리 및 기록 권한',
       icon: <ShieldCheck className="w-4 h-4" />,
     },
     {
-      id: 'editor',
+      id: 'EDITOR',
       label: '에디터',
       desc: '기록 생성 및 수정 권한',
       icon: <Edit3 className="w-4 h-4" />,
     },
     {
-      id: 'viewer',
+      id: 'VIEWER',
       label: '뷰어',
       desc: '기록 열람만 가능한 권한',
       icon: <Eye className="w-4 h-4" />,
     },
   ];
 
-  const handleRoleChange = (roleId: InviteRole) => {
+  const handleRoleChange = (roleId: GroupRoleType) => {
     setSelectedInviteRole(roleId);
   };
 
@@ -134,7 +134,7 @@ export default function GroupInviteDrawer({
                 return (
                   <button
                     key={role.id}
-                    onClick={() => handleRoleChange(role.id as InviteRole)}
+                    onClick={() => handleRoleChange(role.id as GroupRoleType)}
                     className={cn(
                       'flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all active:scale-95',
                       isSelected

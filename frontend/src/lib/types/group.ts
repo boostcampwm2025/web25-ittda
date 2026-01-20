@@ -22,7 +22,7 @@ export type ActiveMember = Member & {
   recordId: string;
 };
 
-export type InviteRole = 'admin' | 'editor' | 'viewer';
+export type GroupRoleType = 'ADMIN' | 'EDITOR' | 'VIEWER';
 
 export const ROLE_MAP = {
   admin: 'ADMIN',
