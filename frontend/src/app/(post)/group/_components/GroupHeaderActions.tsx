@@ -55,14 +55,19 @@ export default function GroupHeaderActions({
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
   const [selectedInviteRole, setSelectedInviteRole] =
     useState<InviteRole>('editor');
+  const [inviteCode, setInviteCode] = useState('');
   const { data: inviteResult } = useCreateInviteCode(
     groupId || '',
     ROLE_MAP[selectedInviteRole],
   );
 
   const handleRoleChange = (roleId: InviteRole) => {
-    console.log('역시', inviteResult);
     setSelectedInviteRole(roleId);
+    if (!inviteResult || !inviteResult.code) {
+      throw new Error('다시 시도해주세요');
+      return;
+    }
+    setInviteCode(inviteResult?.code);
   };
 
   const onInviteDrawerOpen = () => {
@@ -100,10 +105,8 @@ export default function GroupHeaderActions({
     },
   ];
 
-  //TODO: 복사할 URL 임시 작업
-  const displayInviteCode = inviteResult?.code || groupInfo.inviteCode || '...';
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(BASE_COPY_URL + displayInviteCode);
+    navigator.clipboard.writeText(BASE_COPY_URL + inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -125,12 +128,12 @@ export default function GroupHeaderActions({
       objectType: 'feed',
       content: {
         title: '기억과 맥락을, 잇다-',
-        description: groupInfo.inviteCode + '당신을 그룹에 초대합니다!',
+        description: '당신을 그룹에 초대합니다!',
         imageUrl:
           'https://substantial-jade-zgft0gga6m.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-01-16%20003841.png',
         link: {
-          mobileWebUrl: BASE_COPY_URL + displayInviteCode,
-          webUrl: BASE_COPY_URL + displayInviteCode,
+          mobileWebUrl: BASE_COPY_URL + inviteCode,
+          webUrl: BASE_COPY_URL + inviteCode,
         },
       },
     });
@@ -151,7 +154,6 @@ export default function GroupHeaderActions({
             보이스 연결
           </button>
         )}
-
         <Drawer shouldScaleBackground={false}>
           <DrawerTrigger
             onClick={onInviteDrawerOpen}
@@ -226,7 +228,7 @@ export default function GroupHeaderActions({
                 <div className="p-6 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 dark:bg-black/20 dark:border-white/10 bg-gray-50 border-gray-100">
                   <div className="flex flex-col items-center">
                     <span className="text-lg font-bold tracking-widest text-[#10B981]">
-                      {BASE_COPY_URL + groupInfo.inviteCode}
+                      {BASE_COPY_URL + inviteCode}
                     </span>
                     <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
                       {selectedInviteRole} LEVEL
@@ -246,7 +248,7 @@ export default function GroupHeaderActions({
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
-                    {copied ? '복사 완료' : '코드 복사하기'}
+                    {copied ? '복사 완료' : '복사하기'}
                   </button>
                 </div>
               </div>
