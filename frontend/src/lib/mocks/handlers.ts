@@ -10,6 +10,24 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.post('/api/groups', async ({ request }) => {
+    const body = (await request.json()) as { name: string };
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        groupId: `${body.name}-uuid`,
+        name: body.name,
+        cover: null,
+        memberCount: 1,
+        recordCount: 0,
+        createdAt: new Date().toISOString(),
+        lastActivityAt: new Date().toISOString(),
+        latestPost: null,
+      },
+      error: null,
+    });
+  }),
   http.get('/api/groups/:groupId/cover-candidates', ({ params, request }) => {
     const id = String(params.groupId);
     const url = new URL(request.url);
