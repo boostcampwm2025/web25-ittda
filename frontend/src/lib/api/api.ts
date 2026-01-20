@@ -67,7 +67,6 @@ async function fetchWithRetry<T>(
   maxRetries: number,
   retryDelay: number,
   skipAuth: boolean,
-  hasRetriedAuth = false,
 ) {
   try {
     const response = await fetch(url, fetchOptions);
@@ -113,46 +112,7 @@ async function fetchWithRetry<T>(
         maxRetries,
         retryDelay,
         skipAuth,
-        true,
       );
-    }
-
-    // 인증 실패(401) 시 로그인 페이지로
-    if (response.status === 401 && !skipAuth && !hasRetriedAuth) {
-      const newToken = await refreshAccessToken();
-      if (newToken) {
-        const newHeaders = {
-          ...fetchOptions.headers,
-          Authorization: `Bearer ${newToken}`,
-        } as HeadersInit;
-        return fetchWithRetry<T>(
-          url,
-          { ...fetchOptions, headers: newHeaders },
-          attempt,
-          maxRetries,
-          retryDelay,
-          skipAuth,
-          true,
-        );
-      }
-    }
-
-    if (response.status === 401 && !skipAuth) {
-      clearTokens();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login?force=true';
-      }
-      return {
-        success: false,
-        data: null,
-        error: {
-          code: 'UNAUTHORIZED',
-          message:
-            data?.message ??
-            '인증이 필요합니다. 로그인 후 다시 시도해주세요.',
-          details: {},
-        },
-      };
     }
 
     return data;
@@ -199,7 +159,6 @@ async function fetchWithRetry<T>(
       maxRetries,
       retryDelay,
       skipAuth,
-      hasRetriedAuth,
     );
   }
 }
@@ -263,7 +222,6 @@ export async function fetchApi<T>(
     maxRetries,
     retryDelay,
     skipAuth,
-    false,
   );
 }
 
