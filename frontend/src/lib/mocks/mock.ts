@@ -1,4 +1,8 @@
-import { GroupListResponse, RecordPreview } from '../types/recordResponse';
+import {
+  GroupCoverListResponse,
+  GroupListResponse,
+  RecordPreview,
+} from '../types/recordResponse';
 
 // 요청된 날짜에 맞는 mock 데이터를 생성하는 함수
 export const createMockRecordPreviews = (date: string): RecordPreview[] => [
@@ -191,7 +195,7 @@ export const createMockGroupList = (): GroupListResponse => ({
       groupId: 'group-1',
       name: '우리들의 행복한 기록함',
       cover: {
-        assetId: 'asset-01',
+        assetId: '/profile-ex.jpeg',
         width: 1080,
         height: 1350,
         mimeType: 'image/jpeg',
@@ -211,7 +215,7 @@ export const createMockGroupList = (): GroupListResponse => ({
       groupId: 'group-2',
       name: '제주도 여행 한 달 살기',
       cover: {
-        assetId: 'asset-02',
+        assetId: '/base.png',
         width: 1080,
         height: 1350,
         mimeType: 'image/jpeg',
@@ -231,7 +235,7 @@ export const createMockGroupList = (): GroupListResponse => ({
       groupId: 'group-3',
       name: '아주 길어서 말줄임표가 생길 것 같은 테스트용 그룹 이름입니다',
       cover: {
-        assetId: 'asset-03',
+        assetId: '/profile-ex.jpeg',
         width: 1080,
         height: 1350,
         mimeType: 'image/jpeg',
@@ -249,3 +253,110 @@ export const createMockGroupList = (): GroupListResponse => ({
     },
   ],
 });
+
+// 전체 mock 데이터 (페이지네이션 테스트용)
+const allCoverSections = [
+  {
+    date: '2026-01-14',
+    items: [
+      {
+        mediaId: 'media-1',
+        assetId: '/profile-ex.jpeg',
+        postId: 'uuid1',
+        postTitle: '부산 여행 1일차',
+        eventAt: '2026-01-14T18:30:00Z',
+        width: 1080,
+        height: 1350,
+        mimeType: 'image/jpeg',
+      },
+      {
+        mediaId: 'media-2',
+        assetId: '/base.png',
+        postId: 'uuid2',
+        postTitle: '부산 여행 2일차',
+        eventAt: '2026-01-14T10:00:00Z',
+        width: 1280,
+        height: 720,
+        mimeType: 'image/png',
+      },
+    ],
+  },
+  {
+    date: '2026-01-10',
+    items: [
+      {
+        mediaId: 'media-3',
+        assetId: '/profile-ex.jpeg',
+        postId: 'uuid3',
+        postTitle: '서울 카페 투어',
+        eventAt: '2026-01-10T09:00:00Z',
+        width: 1280,
+        height: 720,
+        mimeType: 'image/png',
+      },
+    ],
+  },
+  {
+    date: '2026-01-08',
+    items: [
+      {
+        mediaId: 'media-4',
+        assetId: '/base.png',
+        postId: 'uuid4',
+        postTitle: '한강 피크닉',
+        eventAt: '2026-01-08T14:00:00Z',
+        width: 1080,
+        height: 1350,
+        mimeType: 'image/jpeg',
+      },
+      {
+        mediaId: 'media-5',
+        assetId: '/profile-ex.jpeg',
+        postId: 'uuid5',
+        postTitle: '한강 야경',
+        eventAt: '2026-01-08T20:00:00Z',
+        width: 1920,
+        height: 1080,
+        mimeType: 'image/jpeg',
+      },
+    ],
+  },
+  {
+    date: '2026-01-05',
+    items: [
+      {
+        mediaId: 'media-6',
+        assetId: '/base.png',
+        postId: 'uuid6',
+        postTitle: '북촌 한옥마을',
+        eventAt: '2026-01-05T11:00:00Z',
+        width: 1080,
+        height: 1350,
+        mimeType: 'image/jpeg',
+      },
+    ],
+  },
+];
+
+const PAGE_SIZE = 2; // 페이지당 section 수
+
+export const createMockGroupCoverList = (
+  groupId: string,
+  cursor: string | null,
+): GroupCoverListResponse => {
+  // cursor는 시작 인덱스를 나타냄
+  const startIndex = cursor ? parseInt(cursor, 10) : 0;
+  const endIndex = startIndex + PAGE_SIZE;
+
+  const sections = allCoverSections.slice(startIndex, endIndex);
+  const hasNext = endIndex < allCoverSections.length;
+
+  return {
+    groupId,
+    sections,
+    pageInfo: {
+      hasNext,
+      nextCursor: hasNext ? String(endIndex) : null,
+    },
+  };
+};
