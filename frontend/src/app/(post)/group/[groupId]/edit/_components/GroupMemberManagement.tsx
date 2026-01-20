@@ -21,9 +21,11 @@ import Image from 'next/image';
 import { ReactNode, useState } from 'react';
 import { useGroupEdit } from './GroupEditContext';
 import { cn } from '@/lib/utils';
+import { useApiDelete } from '@/hooks/useApi';
 
 interface GroupMemberManagementProps {
   members: Member[];
+  groupId: string;
 }
 
 interface Role {
@@ -56,7 +58,9 @@ const ROLE: Role[] = [
   },
 ];
 
-export default function GroupMemberManagement({}: GroupMemberManagementProps) {
+export default function GroupMemberManagement({
+  groupId,
+}: GroupMemberManagementProps) {
   const { members, setMembers } = useGroupEdit();
   const [showDeleteDrawer, setShowDeleteDrawer] = useState(false);
   const [showRoleDrawer, setShowRoleDrawer] = useState(false);
@@ -66,6 +70,16 @@ export default function GroupMemberManagement({}: GroupMemberManagementProps) {
   } | null>(null);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
 
+  const { mutate: removeMember } = useApiDelete(
+    `/api/${groupId}/members/${deleteMember?.id}`,
+    {
+      onSuccess: () => {
+        setMembers(members.filter((m) => m.id !== deleteMember?.id));
+        setDeleteMember(null);
+      },
+    },
+  );
+
   const confirmRemoveMember = (id: number, name: string) => {
     setShowDeleteDrawer(true);
     setDeleteMember({ id, name });
@@ -73,7 +87,7 @@ export default function GroupMemberManagement({}: GroupMemberManagementProps) {
 
   const handleRemoveMember = () => {
     if (deleteMember) {
-      setMembers(members.filter((m) => m.id !== deleteMember.id));
+      removeMember({});
     }
   };
 

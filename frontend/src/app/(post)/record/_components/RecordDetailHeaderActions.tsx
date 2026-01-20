@@ -1,6 +1,7 @@
 'use client';
 
 import Back from '@/components/Back';
+import SocialShareDrawer from '@/components/SocialShareDrawer';
 import {
   Drawer,
   DrawerClose,
@@ -9,25 +10,62 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
-import { MemoryRecord } from '@/lib/types/record';
+import { useApiDelete } from '@/hooks/useApi';
+import { RecordDetailResponse } from '@/lib/types/record';
+import { useAuthStore } from '@/store/useAuthStore';
 import {
   PopoverClose,
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface RecordDetailHeaderActionsProps {
-  record: MemoryRecord;
+  record: RecordDetailResponse;
 }
 
 export default function RecordDetailHeaderActions({
   record,
 }: RecordDetailHeaderActionsProps) {
   const router = useRouter();
+  const [currentUrl, setCurrentUrl] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const { userId } = useAuthStore();
+
+  const textBlock = record.blocks.find((block) => block.type === 'TEXT');
+  const content =
+    textBlock && 'text' in textBlock.value ? textBlock.value.text : '';
+
+  // 마운트 시점에 window 주소 가져오기
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      setCurrentUrl(window.location.href);
+    });
+  }, []);
+
+  // TEXT 타입 블록에서 내용 추출
+  const shareData = {
+    title: record.title,
+    text: content,
+    url: currentUrl,
+  };
+
+  const queryClient = useQueryClient();
+  const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.id}`, {
+    onSuccess: () => {
+      toast.success('기록이 삭제되었습니다.');
+      queryClient.invalidateQueries({ queryKey: ['records'] });
+
+      setTimeout(() => {
+        router.back();
+      }, 1000);
+    },
+  });
 
   const handleEdit = () => {
     // router.push('/add', {
@@ -48,15 +86,9 @@ export default function RecordDetailHeaderActions({
 
   const handleShare = async () => {
     if (!navigator.share) {
-      alert('공유하기 기능이 지원되지 않는 브라우저입니다.');
+      setShareOpen(true);
       return;
     }
-
-    const shareData = {
-      title: record.title,
-      text: record.data.content,
-      url: window.location.href,
-    };
 
     try {
       await navigator.share(shareData);
@@ -69,7 +101,7 @@ export default function RecordDetailHeaderActions({
         try {
           await navigator.share({
             title: record.title,
-            text: record.data.content,
+            text: content,
           });
         } catch (innerErr) {
           console.error('Share failed even without URL:', innerErr);
@@ -81,9 +113,7 @@ export default function RecordDetailHeaderActions({
   };
 
   const handleDelete = () => {
-    // alert('기록이 삭제되었습니다.');
-    // TODO: 서버로 데이터 삭제 요청
-    router.back();
+    deleteRecord(userId ? { userId } : {});
   };
 
   return (
@@ -159,6 +189,13 @@ export default function RecordDetailHeaderActions({
           </DrawerContent>
         </Drawer>
       </div>
+
+      <SocialShareDrawer
+        path={shareData.url}
+        title={shareData.title}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
     </>
   );
 }

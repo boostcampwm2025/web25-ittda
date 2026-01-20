@@ -75,7 +75,7 @@ async function fetchWithRetry<T>(
     // 토큰 만료 에러 처리 (인터셉터 역할)
     if (
       !data.success &&
-      data.error?.code === 'TOKEN_EXPIRED' &&
+      data.error?.code === 'UNAUTHORIZED' &&
       !skipAuth &&
       !url.includes('/auth/reissue') // 재발급 API는 제외
     ) {
@@ -182,8 +182,20 @@ export async function fetchApi<T>(
     ...fetchOptions
   } = options;
 
-  const url = buildUrl(`${API_BASE_URL}${endpoint}`, params);
+  const currentBaseUrl = getApiBaseUrl();
+  // 서버 환경에서는 /api -> /v1로 변환 (rewrites 규칙 반영)
+  const finalEndpoint =
+    typeof window === 'undefined' ? endpoint.replace(/^\/api/, '') : endpoint;
 
+  let fullUrl = `${currentBaseUrl}${finalEndpoint}`;
+  // 서버 환경인데 여전히 상대경로라면 강제로 도메인을 붙여줌 (방어 코드)
+  if (typeof window === 'undefined' && !fullUrl.startsWith('http')) {
+    const fallback =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1';
+    fullUrl = `${fallback}${finalEndpoint.replace(/^\/api/, '')}`;
+  }
+
+  const url = buildUrl(fullUrl, params);
   // 인증 헤더 추가
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',

@@ -33,9 +33,9 @@ export default function GroupEditClient({
           nickname={groupInfo.nicknameInGroup}
         />
 
-        <GroupMemberManagement members={groupInfo.members} />
+        <GroupMemberManagement members={groupInfo.members} groupId={groupId} />
 
-        <GroupDangerousZone groupName={groupInfo.groupName} />
+        <GroupDangerousZone groupName={groupInfo.groupName} groupId={groupId} />
       </div>
     </GroupEditProvider>
   );

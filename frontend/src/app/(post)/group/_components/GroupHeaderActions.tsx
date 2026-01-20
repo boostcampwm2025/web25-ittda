@@ -11,15 +11,18 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
+import { useApiDelete } from '@/hooks/useApi';
 import { useCreateInviteCode } from '@/hooks/useGroupInvite';
 import { GroupInfo, InviteRole, ROLE_MAP } from '@/lib/types/group';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useGroupVoice } from '@/store/useGroupVoice';
 import {
   PopoverClose,
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   LogOut,
   Mic,
@@ -58,6 +61,7 @@ export default function GroupHeaderActions({
   );
 
   const handleRoleChange = (roleId: InviteRole) => {
+    console.log('역시', inviteResult);
     setSelectedInviteRole(roleId);
   };
 
@@ -66,6 +70,14 @@ export default function GroupHeaderActions({
       handleRoleChange(selectedInviteRole);
     }
   };
+
+  const queryClient = useQueryClient();
+  const { mutate: leaveGroup } = useApiDelete(`/api/${groupId}/members/me`, {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['share'] });
+      router.push('/shared');
+    },
+  });
 
   const roles = [
     {
@@ -97,8 +109,10 @@ export default function GroupHeaderActions({
   };
 
   const handleLeaveGroup = () => {
-    // TODO: 서버에게 그룹 나가기 요청
-    router.push('/shared');
+    const { userId } = useAuthStore.getState();
+    if (userId) {
+      leaveGroup({ userId: userId });
+    }
   };
 
   // 카카오 공유 로직

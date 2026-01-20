@@ -31,6 +31,7 @@
     "react": "19.2.1",
     "react-day-picker": "^9.12.0",
     "react-dom": "19.2.1",
+    "react-share": "^5.2.2",
     "recharts": "^3.6.0",
     "sharp": "^0.34.5",
     "sonner": "^2.0.7",
