@@ -75,7 +75,7 @@ async function fetchWithRetry<T>(
     // 토큰 만료 에러 처리 (인터셉터 역할)
     if (
       !data.success &&
-      data.error?.code === 'TOKEN_EXPIRED' &&
+      data.error?.code === 'UNAUTHORIZED' &&
       !skipAuth &&
       !url.includes('/auth/reissue') // 재발급 API는 제외
     ) {
