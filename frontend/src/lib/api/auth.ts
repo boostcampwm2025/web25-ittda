@@ -51,23 +51,27 @@ export async function refreshAccessToken(): Promise<string | null> {
   isRefreshing = true;
 
   try {
-    const response = await post<ReissueResponse>(
-      '/api/auth/refresh',
-      undefined,
-      undefined,
-      true, // sendCookie = true (refresh token 전송)
-    );
+    const response = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+    });
 
-    if (response.success) {
-      const newAccessToken = response.data.accessToken;
-      setAccessToken(newAccessToken);
-      onTokenRefreshed(newAccessToken);
-      return newAccessToken;
+    if (!response.ok) {
+      setAccessToken(null);
+      return null;
     }
 
-    // 재발급 실패 (refresh token도 만료됨)
-    setAccessToken(null);
-    return null;
+    const authHeader = response.headers.get('Authorization');
+    const newAccessToken = authHeader?.replace('Bearer ', '') ?? null;
+
+    if (!newAccessToken) {
+      setAccessToken(null);
+      return null;
+    }
+
+    setAccessToken(newAccessToken);
+    onTokenRefreshed(newAccessToken);
+    return newAccessToken;
   } catch {
     setAccessToken(null);
     return null;

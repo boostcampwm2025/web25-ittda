@@ -70,6 +70,7 @@ export default function GroupInfo({
           <input
             type="text"
             value={groupName}
+            placeholder="그룹명을 작성해주세요."
             onChange={(e) => setGroupName(e.target.value)}
             className="w-full border-b-2 bg-transparent px-1 py-3 text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
           />

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import LoginContent from '../../login/_components/LoginContent';
+import { setAccessToken } from '@/lib/api/auth';
 
 export default function OAuthCallbackPage() {
   const router = useRouter();
@@ -34,6 +35,14 @@ export default function OAuthCallbackPage() {
 
         if (!response.ok) {
           throw new Error('OAuth callback failed');
+        }
+
+        const token = response.headers
+          .get('Authorization')
+          ?.replace('Bearer ', '');
+
+        if (token) {
+          setAccessToken(token);
         }
 
         const data = await response.json();
