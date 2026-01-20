@@ -136,26 +136,32 @@ export class AuthController {
       throw new UnauthorizedException('No refresh token');
     }
 
-    const { accessToken, refreshToken } =
-      await this.authService.refreshAccessToken(oldToken);
+    try {
+      const { accessToken, refreshToken } =
+        await this.authService.refreshAccessToken(oldToken);
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 1000 * 60 * 60 * 24 * 14,
-    });
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 1000 * 60 * 60 * 24 * 14,
+      });
 
-    // 응답 헤더에 Access Token 설정
-    // 표준적인 방법은 Authorization 헤더에 Bearer 스키마를 사용하는 것입니다.
-    res.set('Authorization', `Bearer ${accessToken}`);
+      // 응답 헤더에 Access Token 설정
+      // 표준적인 방법은 Authorization 헤더에 Bearer 스키마를 사용하는 것입니다.
+      res.set('Authorization', `Bearer ${accessToken}`);
 
-    // 만약 클라이언트(브라우저)에서 이 헤더에 접근해야 한다면 Access-Control-Expose-Headers 설정이 필요할 수 있습니다.
-    res.set('Access-Control-Expose-Headers', 'Authorization');
+      // 만약 클라이언트(브라우저)에서 이 헤더에 접근해야 한다면 Access-Control-Expose-Headers 설정이 필요할 수 있습니다.
+      res.set('Access-Control-Expose-Headers', 'Authorization');
 
-    // Body는 비워서 보냅니다.
-    return;
+      // Body는 비워서 보냅니다.
+      return;
+    } catch (error) {
+      // 재발급 실패시 refreshToken 쿠키 삭제
+      res.clearCookie('refreshToken', { path: '/' });
+      throw error;
+    }
   }
 
   @Post('logout')
