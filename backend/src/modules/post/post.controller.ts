@@ -60,7 +60,7 @@ export class PostController {
       'MOOD 블록의 value.mood는 [행복, 슬픔, 설렘, 좋음, 놀람] 중 하나여야 합니다.<br/>' +
       'LOCATION 블록은 lat/lng/address가 필요하며 placeName은 선택입니다.<br/>' +
       'RATING 블록의 value.rating은 소수점 한 자리까지 허용됩니다.<br/>' +
-      'MEDIA 블록의 value에는 title, type이 필수이며 year/imageUrl은 선택입니다.',
+      'MEDIA 블록의 value에는 title, type, externalId가 필수이며 year/imageUrl/originalTitle은 선택입니다.',
   })
   @ApiWrappedCreatedResponse({ type: PostDetailDto })
   create(
