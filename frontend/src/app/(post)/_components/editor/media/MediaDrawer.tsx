@@ -77,6 +77,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
 
   const handleManualSubmit = () => {
     if (!manualTitle.trim()) return;
+    // TODO: externalId/originalTitle 필드 추가 필요
     onSelect({ title: manualTitle, type: manualType, year: manualYear });
     onClose();
   };
@@ -162,6 +163,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                           key={`${item.title}-${idx}`}
                           data={item}
                           onClick={() => {
+                            // TODO: externalId/originalTitle 필드 추가 필요
                             onSelect(item);
                             onClose();
                           }}

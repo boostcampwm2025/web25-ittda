@@ -12,7 +12,7 @@ const RecordFieldtypeMap: Record<string, RecordBlockType> = {
   time: RecordBlockType.TIME,
   location: RecordBlockType.LOCATION,
   photos: RecordBlockType.IMAGE,
-  media: RecordBlockType.IMAGE,
+  media: RecordBlockType.MEDIA,
   table: RecordBlockType.TABLE,
 };
 

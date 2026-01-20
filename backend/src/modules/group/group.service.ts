@@ -13,6 +13,8 @@ import { User } from '../user/user.entity';
 import { GroupInvite } from './entity/group_invite.entity';
 import * as crypto from 'crypto';
 
+const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
+
 @Injectable()
 export class GroupService {
   constructor(
@@ -43,11 +45,16 @@ export class GroupService {
         });
         const savedGroup = await manager.save(group);
 
+        const owner = await manager.findOneOrFail(User, {
+          where: { id: ownerId },
+        });
+
         // 3. 방장을 멤버 테이블에 ADMIN로 등록 (manager 사용 필수)
         const ownerMember = manager.create(GroupMember, {
           group: savedGroup,
           user: { id: ownerId } as User,
           role: GroupRoleEnum.ADMIN,
+          nicknameInGroup: this.validateGroupNickname(owner.nickname),
         });
         await manager.save(ownerMember);
 
@@ -92,6 +99,7 @@ export class GroupService {
         group,
         user,
         role,
+        nicknameInGroup: this.validateGroupNickname(user.nickname),
       });
 
       return this.groupMemberRepo.save(member);
@@ -111,7 +119,7 @@ export class GroupService {
       where: { groupId, userId: requesterId },
     });
 
-    if (!requesterMember || requesterMember.role === GroupRoleEnum.VIEWER) {
+    if (!requesterMember || requesterMember.role !== GroupRoleEnum.ADMIN) {
       throw new BadRequestException('추방 권한이 없습니다.');
     }
 
@@ -316,6 +324,21 @@ export class GroupService {
   /** 초대 링크 삭제 */
   async deleteInvite(inviteId: string) {
     await this.inviteRepo.delete(inviteId);
+  }
+
+  private validateGroupNickname(nickname: string): string {
+    const trimmed = nickname.trim();
+    if (trimmed.length < 2 || trimmed.length > 50) {
+      throw new BadRequestException(
+        '닉네임은 2자 이상 50자 이하이어야 합니다.',
+      );
+    }
+    if (!GROUP_NICKNAME_REGEX.test(trimmed)) {
+      throw new BadRequestException(
+        '닉네임은 한글, 영문, 숫자, 공백만 허용됩니다.',
+      );
+    }
+    return trimmed;
   }
 }
 

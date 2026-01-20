@@ -22,6 +22,7 @@ import {
   LocationValueDto,
   MoodValueDto,
   RatingValueDto,
+  MediaValueDto,
 } from './dto/post-block.dto';
 import { User } from '@/common/decorators/user.decorator';
 import {
@@ -32,7 +33,7 @@ import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import type { MyJwtPayload } from '../auth/auth.type';
 
 @ApiTags('posts')
-@ApiExtraModels(MoodValueDto, LocationValueDto, RatingValueDto)
+@ApiExtraModels(MoodValueDto, LocationValueDto, RatingValueDto, MediaValueDto)
 @UseGuards(JwtAuthGuard)
 @Controller({ path: 'posts', version: '1' })
 export class PostController {
@@ -58,7 +59,8 @@ export class PostController {
     description:
       'MOOD 블록의 value.mood는 [행복, 슬픔, 설렘, 좋음, 놀람] 중 하나여야 합니다.<br/>' +
       'LOCATION 블록은 lat/lng/address가 필요하며 placeName은 선택입니다.<br/>' +
-      'RATING 블록의 value.rating은 소수점 한 자리까지 허용됩니다.',
+      'RATING 블록의 value.rating은 소수점 한 자리까지 허용됩니다.<br/>' +
+      'MEDIA 블록의 value에는 title, type, externalId가 필수이며 year/imageUrl/originalTitle은 선택입니다.',
   })
   @ApiWrappedCreatedResponse({ type: PostDetailDto })
   create(
