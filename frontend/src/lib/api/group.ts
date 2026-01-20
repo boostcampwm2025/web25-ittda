@@ -1,6 +1,9 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
-import { GroupListResponse } from '../types/recordResponse';
+import {
+  GroupCoverListResponse,
+  GroupListResponse,
+} from '../types/recordResponse';
 import {
   GroupEditResponse,
   GroupMemberProfileResponse,
@@ -128,4 +131,25 @@ export const groupDetailOptions = (groupId: string) =>
         };
       }
     },
+  });
+
+export const groupRecordCoverOptions = (groupId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['cover', groupId],
+    queryFn: async ({ pageParam }) => {
+      const url = pageParam
+        ? `/api/groups/${groupId}/cover-candidates?cursor=${pageParam}`
+        : `/api/groups/${groupId}/cover-candidates`;
+
+      const response = await get<GroupCoverListResponse>(url);
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    retry: false,
   });
