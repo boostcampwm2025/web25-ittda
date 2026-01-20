@@ -10,6 +10,7 @@ import { AppModule } from '../src/app.module';
 import { PostScope } from '../src/enums/post-scope.enum';
 import { Post } from '../src/modules/post/entity/post.entity';
 import { User } from '../src/modules/user/user.entity';
+import { Group } from '../src/modules/group/entity/group.entity';
 import { GoogleStrategy } from '../src/modules/auth/strategies/google.strategy';
 import { KakaoStrategy } from '../src/modules/auth/strategies/kakao.strategy';
 
@@ -17,6 +18,7 @@ describe('PostController (e2e)', () => {
   let app: INestApplication<App>;
   let userRepository: Repository<User>;
   let postRepository: Repository<Post>;
+  let groupRepository: Repository<Group>;
   let owner: User;
   let otherUser: User;
   let accessToken: string;
@@ -44,6 +46,7 @@ describe('PostController (e2e)', () => {
 
     userRepository = app.get(getRepositoryToken(User));
     postRepository = app.get(getRepositoryToken(Post));
+    groupRepository = app.get(getRepositoryToken(Group));
     const jwtService = app.get(JwtService);
 
     owner = userRepository.create({
@@ -69,6 +72,7 @@ describe('PostController (e2e)', () => {
   afterAll(async () => {
     if (owner?.id) {
       await postRepository.delete({ ownerUserId: owner.id });
+      await groupRepository.delete({ owner: { id: owner.id } });
       await userRepository.delete({ id: owner.id });
     }
     if (otherUser?.id) {
@@ -147,7 +151,12 @@ describe('PostController (e2e)', () => {
       ownerUserId: string;
       blocks: Array<{
         type: string;
-        value?: { tempUrls?: string[]; mood?: string; address?: string };
+        value?: {
+          tempUrls?: string[];
+          mood?: string;
+          address?: string;
+          rating?: number;
+        };
       }>;
       contributors: Array<{ userId: string; role: string }>;
     };
@@ -240,6 +249,85 @@ describe('PostController (e2e)', () => {
       message: 'Post not found',
       error: 'Not Found',
     });
+  });
+
+  it('POST /posts should update group last_activity_at and recalc on delete', async () => {
+    const group = await groupRepository.save(
+      groupRepository.create({
+        name: '활동 그룹',
+        owner: { id: owner.id } as User,
+      }),
+    );
+
+    const payload = {
+      scope: PostScope.GROUP,
+      groupId: group.id,
+      title: '그룹 게시글',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '본문 테스트' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
+    };
+
+    const firstRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(201);
+
+    const firstPostId = (firstRes.body as { id: string }).id;
+    const firstPost = await postRepository.findOne({
+      where: { id: firstPostId },
+    });
+    expect(firstPost?.createdAt).toBeDefined();
+
+    const secondRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ ...payload, title: '그룹 게시글 2' })
+      .expect(201);
+
+    const secondPostId = (secondRes.body as { id: string }).id;
+    const secondPost = await postRepository.findOne({
+      where: { id: secondPostId },
+    });
+    expect(secondPost?.createdAt).toBeDefined();
+
+    const groupAfterCreate = await groupRepository.findOne({
+      where: { id: group.id },
+    });
+    expect(groupAfterCreate?.lastActivityAt).toBeDefined();
+    expect(
+      (groupAfterCreate!.lastActivityAt as Date).getTime(),
+    ).toBeGreaterThanOrEqual(secondPost!.createdAt.getTime());
+
+    await request(app.getHttpServer())
+      .delete(`/posts/${secondPostId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(204);
+
+    const groupAfterDelete = await groupRepository.findOne({
+      where: { id: group.id },
+    });
+    expect(groupAfterDelete?.lastActivityAt?.toISOString()).toBe(
+      firstPost!.createdAt.toISOString(),
+    );
+
+    await postRepository.delete({ groupId: group.id });
+    await groupRepository.delete({ id: group.id });
   });
 
   it('GET /posts/:id should return 403 for non-owner', async () => {
@@ -505,7 +593,7 @@ describe('PostController (e2e)', () => {
     });
     expect(Array.isArray(badBody.message)).toBe(true);
     expect(badBody.message.join(' ')).toContain(
-      'media must include non-empty title and type',
+      'media must include non-empty title, type, and externalId',
     );
   });
 
