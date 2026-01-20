@@ -50,7 +50,7 @@ Storybook은 `http://localhost:6006`에서 실행됩니다.
 - **필터링**: 선택된 날짜의 기록만 표시
 - **클릭**: 기록 클릭 시 `/record/:id` 페이지로 이동
 - **빈 상태**: 기록이 없을 때 "기록 추가하기" 버튼 표시
-- **동적 렌더링**: CompactFieldRenderer로 각 필드 타입 렌더링
+- **동적 렌더링**: BlockContent 각 필드 타입 렌더링
 
 ## 📦 의존성
 
@@ -64,5 +64,5 @@ Storybook은 `http://localhost:6006`에서 실행됩니다.
 - `page.tsx`: 홈 페이지 메인 컴포넌트
 - `RecordList.tsx`: 기록 목록 컴포넌트
 - `WeekCalendar.tsx`: 주간 캘린더 컴포넌트
-- `CompactFieldRenderer.tsx`: 필드 렌더러
+- `BlockContent.tsx`: 필드 렌더러
 - `useWeekCalendar.ts`: 캘린더 상태 관리 훅
