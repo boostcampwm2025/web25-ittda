@@ -84,3 +84,12 @@ export interface GroupCoverListResponse {
     nextCursor: string | null;
   };
 }
+
+export interface GroupCoverUpdateResponse {
+  groupId: string;
+  cover: {
+    assetId: string;
+    sourcePostId: string;
+  };
+  updatedAt: string;
+}
