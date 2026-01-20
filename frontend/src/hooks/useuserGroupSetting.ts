@@ -1,4 +1,4 @@
-import { useApiQuery, useApiPatch } from '@/hooks/useApi';
+import { useApiPatch } from '@/hooks/useApi';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -8,14 +8,6 @@ export interface UpdateGroupMeParams {
   nicknameInGroup?: string;
   profileMediaId?: string;
 }
-
-/**
- * 특정 그룹의 기본 정보 조회
- */
-export const useGroupInfo = (groupId: string) =>
-  useApiQuery(['group', groupId, 'info'], `/api/groups/${groupId}`, {
-    enabled: !!groupId,
-  });
 
 /**
  * 그룹 내 내 프로필 정보 수정
