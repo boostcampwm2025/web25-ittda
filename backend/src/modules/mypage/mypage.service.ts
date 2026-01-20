@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../user/user.entity';
+import { User } from '../user/entity/user.entity';
 import { Post } from '../post/entity/post.entity';
 import { TagCount, EmotionCount, UserStats } from './mypage.interface';
 import { PostMood } from '@/enums/post-mood.enum';

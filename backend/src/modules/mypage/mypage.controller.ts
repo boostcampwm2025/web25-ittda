@@ -14,7 +14,7 @@ import { UpdateMeDto, UpdateSettingsDto } from './dto/update-mypage.dto';
 
 import type { Request } from 'express';
 import type { MyJwtPayload } from '../auth/auth.type';
-import type { User } from '../user/user.entity';
+import type { User } from '../user/entity/user.entity';
 import type { TagCount, EmotionCount, UserStats } from './mypage.interface';
 
 interface RequestWithUser extends Request {

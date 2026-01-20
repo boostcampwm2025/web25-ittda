@@ -9,7 +9,7 @@ import type { Repository } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { PostScope } from '../src/enums/post-scope.enum';
 import { Post } from '../src/modules/post/entity/post.entity';
-import { User } from '../src/modules/user/user.entity';
+import { User } from '../src/modules/user/entity/user.entity';
 import { GoogleStrategy } from '../src/modules/auth/strategies/google.strategy';
 import { KakaoStrategy } from '../src/modules/auth/strategies/kakao.strategy';
 

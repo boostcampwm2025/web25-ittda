@@ -1,6 +1,10 @@
 import {
+  Body,
+  BadRequestException,
   Controller,
   Get,
+  Patch,
+  Param,
   Query,
   UnauthorizedException,
   UseGuards,
@@ -13,8 +17,10 @@ import type { MyJwtPayload } from '../auth/auth.type';
 import { GetMonthlyArchiveQueryDto } from './dto/get-monthly-archive.query.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { MonthRecordResponseDto } from './dto/month-record.response.dto';
+import { GetMonthImagesResponseDto } from './dto/get-month-images.response.dto';
+import { UpdateMonthCoverBodyDto } from './dto/update-month-cover.body.dto';
 
-// 마이페이지/설정
+// 내 기록함 포함 사용자 관련 api
 @ApiTags('user')
 @UseGuards(JwtAuthGuard)
 @Controller({
@@ -37,9 +43,56 @@ export class UserController {
 
     const data = await this.userService.getMonthlyArchive(
       userId,
-      query.year ?? new Date().getFullYear(),
+      query.year ?? new Date().getFullYear(), // 기본값: 올해
     );
 
     return { data };
+  }
+
+  @Get('archives/months/:yyyy_mm/images')
+  @ApiWrappedOkResponse({ type: GetMonthImagesResponseDto })
+  async getMonthImages(
+    @User() user: MyJwtPayload,
+    @Param('yyyy_mm') yyyy_mm: string,
+  ): Promise<{ data: GetMonthImagesResponseDto }> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    const { year, month } = this.parseYearMonth(yyyy_mm);
+
+    const images = await this.userService.getMonthImages(userId, year, month);
+    return { data: { images } };
+  }
+
+  @Patch('archives/months/:yyyy_mm/cover')
+  async updateMonthCover(
+    @User() user: MyJwtPayload,
+    @Param('yyyy_mm') yyyy_mm: string,
+    @Body() body: UpdateMonthCoverBodyDto,
+  ) {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    const { year, month } = this.parseYearMonth(yyyy_mm);
+
+    await this.userService.updateMonthCover(userId, year, month, body.coverUrl);
+
+    return { data: { coverUrl: body.coverUrl } };
+  }
+
+  private parseYearMonth(yyyy_mm: string) {
+    const [yearStr, monthStr] = yyyy_mm.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+
+    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM.');
+    }
+
+    return { year, month };
   }
 }

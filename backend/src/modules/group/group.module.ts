@@ -5,7 +5,7 @@ import { Group } from './entity/group.entity';
 import { GroupMember } from './entity/group_member.entity';
 import { GroupService } from './group.service';
 import { GroupController } from './group.controller';
-import { User } from '../user/user.entity';
+import { User } from '../user/entity/user.entity';
 
 import { GroupInvite } from './entity/group_invite.entity';
 import { AuthModule } from '../auth/auth.module';

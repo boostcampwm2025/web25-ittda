@@ -169,6 +169,9 @@ export class AuthController {
     res.clearCookie('refreshToken', {
       path: '/',
     });
+    // res.clearCookie를 할 때,
+    // 쿠키를 생성했을 때와 동일한 domain, path 옵션을 주어야
+    // 브라우저에서 정상적으로 삭제
 
     return;
   }

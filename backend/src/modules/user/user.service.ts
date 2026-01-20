@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
-import { User } from './user.entity';
+import { User } from './entity/user.entity';
 import { Post } from '../post/entity/post.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
 import { MonthRecordResponseDto } from './dto/month-record.response.dto';
@@ -11,6 +11,8 @@ import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
+
+import { UserMonthCover } from './entity/user-month-cover.entity';
 
 // User Service에서 기능 구현
 @Injectable()
@@ -22,6 +24,8 @@ export class UserService {
     private readonly postRepo: Repository<Post>,
     @InjectRepository(PostBlock)
     private readonly postBlockRepo: Repository<PostBlock>,
+    @InjectRepository(UserMonthCover)
+    private readonly userMonthCoverRepo: Repository<UserMonthCover>,
   ) {}
 
   async findOrCreateOAuthUser(params: OAuthUserType): Promise<User> {
@@ -38,6 +42,13 @@ export class UserService {
     }
 
     return user;
+  }
+
+  /**
+   * ID로 유저 단건 조회 (기본)
+   */
+  async findById(id: string): Promise<User | null> {
+    return this.userRepo.findOne({ where: { id } });
   }
 
   /**
@@ -111,6 +122,16 @@ export class UserService {
       postsByMonth.set(monthKey, list);
     }
 
+    // 3.5 커버 이미지 매핑 조회 (UserMonthCover)
+    const customCovers = await this.userMonthCoverRepo.find({
+      where: { userId, year },
+    });
+    const customCoverMap = new Map<string, string>(); // "yyyy-MM" -> url
+    for (const c of customCovers) {
+      const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
+      customCoverMap.set(key, c.coverUrl);
+    }
+
     // 4. 각 월별 "대표(최신) 포스트 ID" 추출
     const monthKeys = Array.from(postsByMonth.keys()).sort().reverse(); // 최신 달부터
     const representativePostIds: string[] = [];
@@ -162,19 +183,23 @@ export class UserService {
       const { postCount, latestPost } = resultFromMonth.get(mKey)!;
       const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
 
-      // 6-1. 커버 이미지 찾기 (IMAGE 블록 중 첫번째 or 특정 로직)
-      const imageBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.IMAGE,
-      );
+      // 6-1. 커버 이미지 찾기
+      // 우선순위: 1. UserSelected 2. Latest Post Image
       let coverUrl: string | null = null;
-      if (imageBlock) {
-        const val =
-          imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
-        // tempUrls or mediaIds... usually we want a usable URL.
-        // Assuming tempUrls has valid URLs or we need to process mediaIds.
-        // For simplicity, take first of tempUrls if available.
-        if (val.tempUrls && val.tempUrls.length > 0) {
-          coverUrl = val.tempUrls[0];
+
+      const customUrl = customCoverMap.get(mKey);
+      if (customUrl) {
+        coverUrl = customUrl;
+      } else {
+        const imageBlock = relatedBlocks.find(
+          (b) => b.type === PostBlockType.IMAGE,
+        );
+        if (imageBlock) {
+          const val =
+            imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
+          if (val.tempUrls && val.tempUrls.length > 0) {
+            coverUrl = val.tempUrls[0];
+          }
         }
       }
 
@@ -199,5 +224,102 @@ export class UserService {
     }
 
     return results;
+  }
+
+  /**
+   * 해당 월의 모든 이미지 조회
+   */
+  async getMonthImages(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<string[]> {
+    const from = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const to = from.endOf('month');
+
+    // 해당 기간, 내 글(owner)에서 나온 IMAGE 블록 조회
+    // Contributor 글의 이미지도 내 앨범에 넣을지는 정책 결정 필요.
+    // "내 기록함" 맥락이므로 내가 포함된 글의 이미지는 쓸 수 있다고 가정.
+    // 여기서는 QueryBuilder로 Join하여 한 번에 가져옴.
+
+    const fromDate = from.toJSDate();
+    const toDate = to.toJSDate();
+
+    // Post p JOIN PostBlock b ON p.id = b.postId
+    // WHERE ... AND b.type = 'IMAGE'
+    const qb = this.postBlockRepo.createQueryBuilder('b');
+    qb.innerJoin('b.post', 'p');
+
+    // Auth Check Logic reuse needed?
+    // Simply check owner for now (Optimization) OR reuse complicated logic if needed.
+    // Scenario implies "My Archive", so owner + contributor.
+
+    qb.where('b.type = :type', { type: PostBlockType.IMAGE });
+    qb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+
+    qb.andWhere(
+      new Brackets((sub) => {
+        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub2 = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .getQuery();
+            return `EXISTS ${sub2}`;
+          },
+          { userId },
+        );
+      }),
+    );
+
+    // 최신순
+    qb.orderBy('p.eventAt', 'DESC');
+
+    const blocks = await qb.getMany();
+
+    // Extract URLs
+    const urls: string[] = [];
+    for (const b of blocks) {
+      const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
+      if (val.tempUrls) {
+        urls.push(...val.tempUrls);
+      }
+    }
+
+    return urls;
+  }
+
+  /**
+   * 월별 커버 이미지 변경
+   */
+  async updateMonthCover(
+    userId: string,
+    year: number,
+    month: number,
+    coverUrl: string,
+  ) {
+    // Upsert
+    const exist = await this.userMonthCoverRepo.findOne({
+      where: { userId, year, month },
+    });
+
+    if (exist) {
+      exist.coverUrl = coverUrl;
+      await this.userMonthCoverRepo.save(exist);
+    } else {
+      const newCover = this.userMonthCoverRepo.create({
+        userId,
+        year,
+        month,
+        coverUrl,
+      });
+      await this.userMonthCoverRepo.save(newCover);
+    }
   }
 }

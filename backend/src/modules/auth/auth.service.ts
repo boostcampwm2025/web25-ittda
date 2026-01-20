@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { randomUUID } from 'crypto';
@@ -35,7 +39,7 @@ export class AuthService {
       { sub: userId },
       { expiresIn: '15m' },
     );
-    const refreshToken = randomUUID();
+    const refreshToken = randomUUID(); // TODO: 메모리 -> redis 등 영속성 고려
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14);
     return { accessToken, refreshToken, expiresAt };
   }
@@ -130,6 +134,25 @@ export class AuthService {
   }
 
   async logout(userId: string) {
+    // 1. 유저 존재 여부 확인 (UserService 활용)
+    const user = await this.userService.findById(userId); // userService에 findById 구현 가정
+    if (!user) {
+      throw new NotFoundException('해당 사용자를 찾을 수 없습니다.');
+    }
+
+    // 2. 해당 유저의 Refresh Token 존재 여부 확인
+    const refreshToken = await this.refreshTokenRepo.findOne({
+      where: { userId },
+    });
+
+    // 3. 이미 로그아웃된 상태 (토큰이 없음) 처리
+    if (!refreshToken) {
+      throw new UnauthorizedException(
+        '이미 로그아웃되었거나 유효하지 않은 세션입니다.',
+      );
+    }
+
+    // 4. 정상 삭제 처리
     await this.refreshTokenRepo.delete({ userId });
   }
 

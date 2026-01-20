@@ -4,7 +4,7 @@ import dataSource from '../data-source';
 import { Post } from '../modules/post/entity/post.entity';
 import { PostBlock } from '../modules/post/entity/post-block.entity';
 import { PostContributor } from '../modules/post/entity/post-contributor.entity';
-import { User } from '../modules/user/user.entity';
+import { User } from '../modules/user/entity/user.entity';
 import { PostBlockType } from '../enums/post-block-type.enum';
 import { PostScope } from '../enums/post-scope.enum';
 import { PostContributorRole } from '../enums/post-contributor-role.enum';

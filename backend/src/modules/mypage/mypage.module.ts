@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm'; // 데이터베이스 연동 시
 import { MyPageController } from './mypage.controller';
 import { MyPageService } from './mypage.service';
-import { User } from '../user/user.entity'; // User 엔티티
+import { User } from '../user/entity/user.entity'; // User 엔티티
 import { Post } from '../post/entity/post.entity';
 
 // Mypage 모듈 정의

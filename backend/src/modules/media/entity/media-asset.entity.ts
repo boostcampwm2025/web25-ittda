@@ -8,7 +8,7 @@ import {
   Index,
   JoinColumn,
 } from 'typeorm';
-import { User } from '@/modules/user/user.entity';
+import { User } from '@/modules/user/entity/user.entity';
 
 @Entity('media_assets')
 @Index(['ownerUserId'])

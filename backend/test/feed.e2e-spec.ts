@@ -14,7 +14,7 @@ import { PostBlockType } from '../src/enums/post-block-type.enum';
 import { Post } from '../src/modules/post/entity/post.entity';
 import { PostContributor } from '../src/modules/post/entity/post-contributor.entity';
 import { PostBlock } from '../src/modules/post/entity/post-block.entity';
-import { User } from '../src/modules/user/user.entity';
+import { User } from '../src/modules/user/entity/user.entity';
 import { GoogleStrategy } from '../src/modules/auth/strategies/google.strategy';
 import { KakaoStrategy } from '../src/modules/auth/strategies/kakao.strategy';
 

@@ -4,12 +4,14 @@ import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
+  Unique,
 } from 'typeorm';
 
-import type { OAuthProvider } from '../auth/auth.type';
+import type { OAuthProvider } from '../../auth/auth.type';
 
 // User 엔티티 정의
 @Entity('users')
+@Unique(['provider', 'providerId']) // 동일 플랫폼 내 중복 가입 방지
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -17,7 +19,7 @@ export class User {
   @Column({ nullable: true }) // email은 카카오에서 optional
   email: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 50, nullable: true })
   nickname: string;
 
   @Column({ type: 'varchar' })

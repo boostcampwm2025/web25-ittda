@@ -9,7 +9,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Group } from './entity/group.entity';
 import { GroupMember } from './entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
-import { User } from '../user/user.entity';
+import { User } from '../user/entity/user.entity';
 import { GroupInvite } from './entity/group_invite.entity';
 import * as crypto from 'crypto';
 

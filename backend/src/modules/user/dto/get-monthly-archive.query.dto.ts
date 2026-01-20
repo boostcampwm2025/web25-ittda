@@ -4,7 +4,7 @@ import { IsInt, IsOptional, Max, Min } from 'class-validator';
 export class GetMonthlyArchiveQueryDto {
   @Type(() => Number)
   @IsInt()
-  @Min(2000)
+  @Min(1500)
   @Max(3000)
   @IsOptional()
   year?: number;
