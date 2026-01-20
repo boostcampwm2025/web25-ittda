@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
@@ -12,8 +12,10 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { X } from 'lucide-react';
-import { SharedRecord } from '@/lib/types/record';
 import { formatDateISO } from '@/lib/date';
+import { useQuery } from '@tanstack/react-query';
+import { groupListOptions } from '@/lib/api/group';
+import { GroupSummary } from '@/lib/types/recordResponse';
 
 // 사진 데이터
 const recordPhotosData = [
@@ -32,23 +34,27 @@ const recordPhotosData = [
   'https://images.unsplash.com/photo-1516715094483-75da7dee9758?auto=format&fit=crop&q=80&w=400',
 ];
 
-interface SharedRecordsProps {
-  sharedRecords: SharedRecord[];
-}
+export default function SharedRecords() {
+  const { data: sharedRecords = [] } = useQuery(groupListOptions());
 
-export default function SharedRecords({ sharedRecords }: SharedRecordsProps) {
   const router = useRouter();
-  const [groups, setGroups] = useState(sharedRecords);
-  const [activeMonthId, setActiveMonthId] = useState<string | null>(null);
+  const [groups, setGroups] = useState<GroupSummary[]>(sharedRecords);
+  const [activeMonthId, setActiveMonthId] = useState<string | undefined>(
+    undefined,
+  );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const openGallery = (monthId: string) => {
-    setActiveMonthId(monthId);
+  useEffect(() => {
+    setGroups(sharedRecords);
+  }, [sharedRecords]);
+
+  const openGallery = (assetId: string | undefined) => {
+    setActiveMonthId(assetId);
     setIsDrawerOpen(true);
   };
 
   // 현재 선택된 월의 사진들 가져오기
-  const activeGroup = groups.find((m) => m.id === activeMonthId);
+  const activeGroup = groups.find((m) => m.groupId === activeMonthId);
   // TODO: 서버로부터 사진 목록 받아오기(activeMonth를 키 값으로 가져오기)
   const recordPhotos = recordPhotosData || [];
 
@@ -57,17 +63,19 @@ export default function SharedRecords({ sharedRecords }: SharedRecordsProps) {
       <div className="grid grid-cols-2 gap-4">
         {groups.map((g) => (
           <RecordCard
-            key={g.id}
-            id={g.id}
+            key={g.groupId}
+            id={g.groupId}
             name={g.name}
-            count={`${g.members}명 • ${g.count}기록`}
-            latestTitle={g.latestTitle}
-            latestLocation={g.latestLocation}
-            hasNotification={g.hasNotification}
-            coverUrl={g.coverUrl}
-            onClick={() => router.push(`/group/${g.id}`)}
-            onChangeCover={openGallery}
-            createdAt={formatDateISO(new Date(g.updatedAt))}
+            count={`${g.memberCount}명 • ${g.recordCount}기록`}
+            latestTitle={g.latestPost?.title || '최신 기록이 없어요'}
+            latestLocation={
+              g.latestPost?.placeName || '최신 기록 위치값이 없어요'
+            }
+            hasNotification={false}
+            cover={g.cover}
+            onClick={() => router.push(`/group/${g.groupId}`)}
+            onChangeCover={() => openGallery(g.cover?.assetId)}
+            createdAt={formatDateISO(new Date(g.createdAt))}
           />
         ))}
       </div>

@@ -3,6 +3,7 @@
 import { Clock, MapPin } from 'lucide-react';
 import { PostCard } from './PostCard';
 import { useRouter } from 'next/navigation';
+import { GroupCover } from '@/lib/types/group';
 
 /**
  * MonthRecordCard - 월별 기록 카드
@@ -14,9 +15,10 @@ export interface RecordCardProps {
   count: number | string;
   latestTitle: string;
   latestLocation: string;
-  coverUrl?: string | null;
+  cover?: GroupCover | null;
   hasNotification?: boolean;
   createdAt?: string;
+  height?: string;
   onClick?: () => void;
   onChangeCover?: (id: string) => void;
 }
@@ -27,14 +29,21 @@ export function RecordCard({
   count,
   latestTitle,
   latestLocation,
-  coverUrl,
+  cover,
   hasNotification,
   onClick,
   onChangeCover,
   createdAt,
+  height,
 }: RecordCardProps) {
+  /* TODO: image를 서버로부터 받아서 url 넣기 */
   return (
-    <PostCard imageUrl={coverUrl} imageAlt={name} onClick={onClick}>
+    <PostCard
+      height={height}
+      imageUrl={'/base.png'}
+      imageAlt={name}
+      onClick={onClick}
+    >
       {/* 커버 변경 버튼 */}
       {onChangeCover && (
         <PostCard.Action

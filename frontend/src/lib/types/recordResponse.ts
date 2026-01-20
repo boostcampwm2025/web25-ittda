@@ -1,3 +1,4 @@
+import { GroupCover, LatestPost } from './group';
 import { Block, RecordScope, TagValue } from './record';
 import { LocationValue, RatingValue, RecordBlock } from './recordField';
 
@@ -37,4 +38,26 @@ export interface RecordPreview {
   tags: TagValue['tags'] | null;
   rating: RatingValue['rating'] | null;
   blocks: Block[];
+}
+
+export interface GroupSummary {
+  groupId: string;
+  name: string;
+  cover: GroupCover | null;
+  memberCount: number;
+  recordCount: number;
+  createdAt: string;
+  lastActivityAt: string;
+  latestPost: LatestPost | null;
+}
+
+export interface Unread {
+  hasUnread: boolean;
+  unreadCount: number;
+  lastReadAt: string;
+}
+
+export interface GroupListResponse {
+  items: GroupSummary[];
+  unread?: Unread | null;
 }
