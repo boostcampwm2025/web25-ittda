@@ -24,7 +24,6 @@ export default function GroupDangerousZone({
   const { mutate: deleteGroup } = useDeleteGroup(groupId, groupName);
 
   const handleDeleteGroup = () => {
-    // TODO: 그룹 삭제 서버 요청
     deleteGroup();
   };
 

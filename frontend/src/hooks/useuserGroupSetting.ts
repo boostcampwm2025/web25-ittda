@@ -1,4 +1,5 @@
 import { useApiPatch } from '@/hooks/useApi';
+import { createApiError } from '@/lib/utils/errorHandler';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -18,14 +19,11 @@ export const useUpdateGroupProfile = (groupId: string) => {
   const updateMutation = useApiPatch<UpdateGroupMeParams>(
     `/api/groups/${groupId}/members/me`,
     {
-      onSuccess: () => {
+      onSuccess: (res) => {
+        if (!res.success) createApiError(res);
         toast.success('프로필 정보가 수정되었습니다.');
 
         router.replace(`/group/${groupId}/edit`);
-      },
-      onError: (error) => {
-        toast.error('수정에 실패했습니다. 다시 시도해 주세요.');
-        console.error('Update Error:', error);
       },
     },
   );
