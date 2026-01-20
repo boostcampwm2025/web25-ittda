@@ -105,7 +105,9 @@ export class PostService {
         const saved = await postRepo.save(post);
 
         if (saved.groupId) {
-          await groupRepo.update(saved.groupId, { lastActivityAt: new Date() });
+          await groupRepo.update(saved.groupId, {
+            lastActivityAt: saved.updatedAt,
+          });
         }
 
         const contributor = contributorRepo.create({
@@ -230,11 +232,11 @@ export class PostService {
     if (post.groupId) {
       const latest = await this.postRepository.findOne({
         where: { groupId: post.groupId, deletedAt: IsNull() },
-        order: { createdAt: 'DESC' },
-        select: { createdAt: true },
+        order: { updatedAt: 'DESC' },
+        select: { updatedAt: true },
       });
       await this.groupRepository.update(post.groupId, {
-        lastActivityAt: latest?.createdAt ?? null,
+        lastActivityAt: latest?.updatedAt ?? null,
       });
     }
   }
