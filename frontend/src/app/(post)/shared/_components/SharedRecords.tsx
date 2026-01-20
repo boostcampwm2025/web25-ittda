@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
@@ -16,10 +16,42 @@ import { formatDateISO } from '@/lib/date';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { groupListOptions } from '@/lib/api/group';
 import { GroupSummary } from '@/lib/types/recordResponse';
+import { GroupSortOption } from './SharedHeaderActions';
+
+const sortGroups = (
+  groups: GroupSummary[],
+  sortBy: GroupSortOption,
+): GroupSummary[] => {
+  const sorted = [...groups];
+  switch (sortBy) {
+    case 'latest':
+      return sorted.sort(
+        (a, b) =>
+          new Date(b.lastActivityAt).getTime() -
+          new Date(a.lastActivityAt).getTime(),
+      );
+    case 'count':
+      return sorted.sort((a, b) => b.recordCount - a.recordCount);
+    case 'members':
+      return sorted.sort((a, b) => b.memberCount - a.memberCount);
+    case 'name':
+      return sorted.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    default:
+      return sorted;
+  }
+};
 
 export default function SharedRecords() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const sortBy = (searchParams.get('sort') as GroupSortOption) || 'latest';
+
   const { data: groups = [] } = useQuery(groupListOptions());
+
+  const sortedGroups = useMemo(
+    () => sortGroups(groups, sortBy),
+    [groups, sortBy],
+  );
 
   const router = useRouter();
   const [activeGroupId, setActiveGroupId] = useState<string | undefined>(
@@ -55,7 +87,7 @@ export default function SharedRecords() {
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
-        {groups.map((g) => (
+        {sortedGroups.map((g) => (
           <RecordCard
             key={g.groupId}
             id={g.groupId}

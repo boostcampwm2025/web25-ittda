@@ -24,11 +24,20 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-type GroupSortOption = 'latest' | 'count' | 'members' | 'name';
+export type GroupSortOption = 'latest' | 'count' | 'members' | 'name';
 
 export default function SharedHeaderActions() {
-  const [sortBy, setSortBy] = useState<GroupSortOption>('latest');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const sortBy = (searchParams.get('sort') as GroupSortOption) || 'latest';
+
+  const setSortBy = (sort: GroupSortOption) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sort', sort);
+    router.replace(`?${params.toString()}`);
+  };
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
