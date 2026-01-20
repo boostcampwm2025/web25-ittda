@@ -10,6 +10,26 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.patch('/api/groups/:groupId/cover', async ({ request, params }) => {
+    const id = String(params.groupId);
+    const body = (await request.json()) as {
+      assetId: string;
+      sourcePostId: string;
+    };
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        groupId: id,
+        cover: {
+          assetId: body.assetId,
+          sourcePostId: body.sourcePostId,
+        },
+        updatedAt: new Date().toISOString(),
+      },
+      error: null,
+    });
+  }),
   http.post('/api/groups', async ({ request }) => {
     const body = (await request.json()) as { name: string };
 
