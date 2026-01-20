@@ -40,7 +40,7 @@ export function RecordCard({
   return (
     <PostCard
       height={height}
-      imageUrl={'/base.png'}
+      imageUrl={cover?.assetId || '/base.png'}
       imageAlt={name}
       onClick={onClick}
     >
