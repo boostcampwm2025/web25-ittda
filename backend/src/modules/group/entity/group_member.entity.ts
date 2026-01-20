@@ -11,7 +11,6 @@ import {
 
 import { User } from '../../user/entity/user.entity';
 import { Group } from './group.entity';
-
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 
 @Entity('group_members')

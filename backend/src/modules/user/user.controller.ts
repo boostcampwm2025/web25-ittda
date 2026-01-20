@@ -28,7 +28,7 @@ import type { MyJwtPayload } from '../auth/auth.type';
 @ApiTags('user')
 @UseGuards(JwtAuthGuard)
 @Controller({
-  path: 'user',
+  path: 'me',
   version: '1',
 })
 export class UserController {
