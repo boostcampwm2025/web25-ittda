@@ -61,3 +61,26 @@ export interface GroupListResponse {
   items: GroupSummary[];
   unread?: Unread | null;
 }
+
+export interface CoverSection {
+  date: string;
+  items: {
+    mediaId: string;
+    assetId: string;
+    postId: string;
+    postTitle: string;
+    eventAt: string;
+    width: number;
+    height: number;
+    mimeType: string;
+  }[];
+}
+
+export interface GroupCoverListResponse {
+  groupId: string;
+  sections: CoverSection[];
+  pageInfo: {
+    hasNext: boolean;
+    nextCursor: string | null;
+  };
+}
