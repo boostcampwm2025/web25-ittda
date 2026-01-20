@@ -20,7 +20,11 @@ export interface InviteResponse {
  * @param groupId
  * @returns
  */
-export const useCreateInviteCode = (groupId: string, role: string) => {
+export const useCreateInviteCode = (
+  groupId: string,
+  role: string,
+  isOpen: boolean,
+) => {
   const requestBody = {
     permission: role,
     expiresInSeconds: 86400, // 24시간
@@ -41,7 +45,7 @@ export const useCreateInviteCode = (groupId: string, role: string) => {
     },
     staleTime: 1000 * 60 * 60 * 24, // 24시간 유지 (권한 안 바뀌면 계속)
     gcTime: 1000 * 60 * 60 * 24, // 24시간 유지
-    enabled: !!groupId,
+    enabled: !!groupId && !!isOpen,
   });
 };
 
