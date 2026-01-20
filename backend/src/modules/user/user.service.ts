@@ -14,6 +14,8 @@ import type { OAuthUserType } from '@/modules/auth/auth.type';
 
 import { UserMonthCover } from './entity/user-month-cover.entity';
 
+import { DayRecordResponseDto } from './dto/day-record.response.dto';
+
 // User Service에서 기능 구현
 @Injectable()
 export class UserService {
@@ -321,5 +323,146 @@ export class UserService {
       });
       await this.userMonthCoverRepo.save(newCover);
     }
+  }
+
+  /**
+   * 일별 기록(아카이브) 조회 - 달력용
+   */
+  async getDailyArchive(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<DayRecordResponseDto[]> {
+    const start = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const end = start.endOf('month');
+
+    const fromDate = start.toJSDate();
+    const toDate = end.toJSDate();
+
+    // 1. 해당 월의 모든 포스트 조회 (내 글 + 기여)
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.select(['p.id', 'p.eventAt', 'p.title']);
+
+    postsQb.where(
+      new Brackets((qb) => {
+        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+
+    postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+    postsQb.orderBy('p.eventAt', 'DESC');
+
+    const posts = await postsQb.getMany();
+    if (posts.length === 0) {
+      return [];
+    }
+
+    // 2. 일별 그룹핑 (YYYY-MM-DD)
+    const postsByDay = new Map<string, Post[]>();
+    for (const p of posts) {
+      if (!p.eventAt) continue;
+      // KST(Asia/Seoul) 가정
+      const dt = DateTime.fromJSDate(p.eventAt).setZone('Asia/Seoul');
+      const dayKey = dt.toFormat('yyyy-MM-dd');
+
+      const list = postsByDay.get(dayKey) ?? [];
+      list.push(p);
+      postsByDay.set(dayKey, list);
+    }
+
+    // 3. 각 일별 대표 포스트(최신) 추출
+    const dayKeys = Array.from(postsByDay.keys()).sort(); // 날짜 오름차순
+    const representativePostIds: string[] = [];
+    const resultFromDay = new Map<
+      string,
+      {
+        postCount: number;
+        latestPost: Post;
+      }
+    >();
+
+    for (const dKey of dayKeys) {
+      const dayPosts = postsByDay.get(dKey)!;
+      // 쿼리에서 eventAt DESC 였으므로 첫번째가 최신
+      const latestPost = dayPosts[0];
+      resultFromDay.set(dKey, {
+        postCount: dayPosts.length,
+        latestPost,
+      });
+      representativePostIds.push(latestPost.id);
+    }
+
+    // 4. 대표 포스트 메타데이터(이미지, 위치) Batch 조회
+    const blocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+      },
+    });
+
+    const blocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of blocks) {
+      const list = blocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      blocksByPostId.set(b.postId, list);
+    }
+
+    // 5. DTO 조립
+    const results: DayRecordResponseDto[] = [];
+    for (const dKey of dayKeys) {
+      const { postCount, latestPost } = resultFromDay.get(dKey)!;
+      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
+
+      // 커버 이미지
+      let coverThumbnailUrl: string | null = null;
+      const imageBlock = relatedBlocks.find(
+        (b) => b.type === PostBlockType.IMAGE,
+      );
+      if (imageBlock) {
+        const val =
+          imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
+        if (val.tempUrls && val.tempUrls.length > 0) {
+          coverThumbnailUrl = val.tempUrls[0];
+        }
+      }
+
+      // 위치 이름
+      let latestPlaceName: string | null = null;
+      const locationBlock = relatedBlocks.find(
+        (b) => b.type === PostBlockType.LOCATION,
+      );
+      if (locationBlock) {
+        const val =
+          locationBlock.value as BlockValueMap[typeof PostBlockType.LOCATION];
+        latestPlaceName = val.placeName || val.address || null;
+      }
+
+      results.push({
+        date: dKey,
+        postCount,
+        coverThumbnailUrl,
+        latestPostTitle: latestPost.title,
+        latestPlaceName,
+      });
+    }
+
+    // 날짜 오름차순 정렬되어 있음
+    return results;
   }
 }

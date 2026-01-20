@@ -19,6 +19,8 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
 import { MonthRecordResponseDto } from './dto/month-record.response.dto';
 import { GetMonthImagesResponseDto } from './dto/get-month-images.response.dto';
 import { UpdateMonthCoverBodyDto } from './dto/update-month-cover.body.dto';
+import { GetDailyArchiveQueryDto } from './dto/get-daily-archive.query.dto';
+import { DayRecordResponseDto } from './dto/day-record.response.dto';
 
 // 내 기록함 포함 사용자 관련 api
 @ApiTags('user')
@@ -94,5 +96,22 @@ export class UserController {
     }
 
     return { year, month };
+  }
+
+  @Get('archives/days')
+  @ApiWrappedOkResponse({ type: DayRecordResponseDto, isArray: true })
+  async getDailyArchive(
+    @User() user: MyJwtPayload,
+    @Query() query: GetDailyArchiveQueryDto,
+  ): Promise<{ data: DayRecordResponseDto[] }> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    const { year, month } = this.parseYearMonth(query.month);
+
+    const data = await this.userService.getDailyArchive(userId, year, month);
+    return { data };
   }
 }
