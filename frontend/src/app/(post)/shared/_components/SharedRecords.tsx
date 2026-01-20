@@ -15,8 +15,12 @@ import { X } from 'lucide-react';
 import { formatDateISO } from '@/lib/date';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { groupListOptions } from '@/lib/api/group';
-import { GroupSummary } from '@/lib/types/recordResponse';
+import {
+  GroupCoverUpdateResponse,
+  GroupSummary,
+} from '@/lib/types/recordResponse';
 import { GroupSortOption } from './SharedHeaderActions';
+import { useApiPatch } from '@/hooks/useApi';
 
 const sortGroups = (
   groups: GroupSummary[],
@@ -59,12 +63,51 @@ export default function SharedRecords() {
   );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  const { mutate: updateGroupCover } = useApiPatch<GroupCoverUpdateResponse>(
+    `/api/groups/${activeGroupId}/cover`,
+    {
+      onSuccess: (response) => {
+        if (!response.data) return;
+        const coverInfo = response.data;
+        // 서버 응답 데이터를 캐시에 즉시 수정
+        queryClient.setQueryData<GroupSummary[]>(['shared'], (old) => {
+          if (!old) return [];
+
+          return old.map((group) => {
+            if (group.groupId === coverInfo.groupId) {
+              const newCover = group.cover
+                ? {
+                    ...group.cover,
+                    assetId: coverInfo.cover.assetId,
+                  }
+                : {
+                    assetId: coverInfo.cover.assetId,
+                    width: 500,
+                    height: 500,
+                    mimeType: 'image/jpeg',
+                  };
+              return {
+                ...group,
+                cover: newCover,
+              };
+            }
+            return group;
+          });
+        });
+      },
+      onSettled: () => {
+        // 백그라운드에서 서버와 동기화
+        queryClient.invalidateQueries({ queryKey: ['shared'] });
+      },
+    },
+  );
+
   const openGallery = (groupId: string) => {
     setActiveGroupId(groupId);
     setIsDrawerOpen(true);
   };
 
-  const handleCoverSelect = (assetId: string) => {
+  const handleCoverSelect = (assetId: string, recordId: string) => {
     if (!activeGroupId) return;
 
     // 낙관적 업데이트: 캐시 직접 수정
@@ -80,8 +123,7 @@ export default function SharedRecords() {
       );
     });
 
-    // TODO: 서버로 커버 변경 요청 보내기
-    // 실패 시 queryClient.invalidateQueries(['shared'])로 롤백
+    updateGroupCover({ assetId: assetId, sourcePostId: recordId });
   };
 
   return (

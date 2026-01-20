@@ -10,7 +10,7 @@ import { groupRecordCoverOptions } from '@/lib/api/group';
 interface GalleryDrawerProps {
   groupId?: string;
   currentAssetId?: string;
-  onSelect: (assetId: string) => void;
+  onSelect: (assetId: string, recordId: string) => void;
 }
 
 export default function GalleryDrawer({
@@ -82,7 +82,7 @@ export default function GalleryDrawer({
               >
                 <DrawerClose asChild>
                   <button
-                    onClick={() => onSelect(item.assetId)}
+                    onClick={() => onSelect(item.assetId, item.postId)}
                     className={cn(
                       'absolute inset-0 w-full h-full cursor-pointer rounded-xl overflow-hidden transition-all active:scale-95 border-2',
                       isCurrent ? 'border-[#10B981]' : 'border-transparent',
