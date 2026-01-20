@@ -18,8 +18,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const queryClient = new QueryClient();
 
-  await queryClient.prefetchQuery(recordPreviewListOptions(selectedDate));
-
+  if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
+    await queryClient.prefetchQuery(recordPreviewListOptions(selectedDate));
+  }
   return (
     <>
       <WeekCalendar />
