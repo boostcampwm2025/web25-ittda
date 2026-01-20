@@ -1,35 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { User } from '../user/user.entity';
 import { Post } from '../post/entity/post.entity';
-import { TagCount } from './user.interface';
-
-import type { OAuthUserType } from '@/modules/auth/auth.type';
+import { TagCount, EmotionCount, UserStats } from './mypage.interface';
 
 // User Service에서 기능 구현
 @Injectable()
-export class UserService {
+export class MyPageService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Post)
+    private readonly postRepo: Repository<Post>,
   ) {}
-
-  async findOrCreateOAuthUser(params: OAuthUserType): Promise<User> {
-    const { provider, providerId } = params;
-
-    let user = await this.userRepo.findOne({
-      where: { provider, providerId },
-    });
-
-    if (!user) {
-      user = this.userRepo.create(params);
-
-      await this.userRepo.save(user);
-    }
-
-    return user;
-  }
 
   async findOne(userId: string): Promise<User> {
     return this.userRepo.findOneByOrFail({ id: userId });
@@ -85,73 +69,73 @@ export class UserService {
     }
   }
 
-  // async getEmotions(
-  //   userId: string,
-  //   sort: 'recent' | 'frequent',
-  // ): Promise<EmotionCount[] | string[]> {
-  //   if (sort === 'frequent') {
-  //     const result = await this.postRepo
-  //       .createQueryBuilder('post')
-  //       .select('post.emotion', 'emotion')
-  //       .addSelect('COUNT(*)', 'count')
-  //       .where('post.ownerUserId = :userId', { userId })
-  //       .andWhere('post.emotion IS NOT NULL')
-  //       .groupBy('post.emotion')
-  //       .orderBy('count', 'DESC')
-  //       .getRawMany<{ emotion: string; count: string }>(); // Raw 결과 타입 지정
+  async getEmotions(
+    userId: string,
+    sort: 'recent' | 'frequent',
+  ): Promise<EmotionCount[] | string[]> {
+    if (sort === 'frequent') {
+      const result = await this.postRepo
+        .createQueryBuilder('post')
+        .select('post.emotion', 'emotion')
+        .addSelect('COUNT(*)', 'count')
+        .where('post.ownerUserId = :userId', { userId })
+        .andWhere('post.emotion IS NOT NULL')
+        .groupBy('post.emotion')
+        .orderBy('count', 'DESC')
+        .getRawMany<{ emotion: string; count: string }>(); // Raw 결과 타입 지정
 
-  //     return result.map((r) => ({
-  //       emotion: r.emotion,
-  //       count: parseInt(r.count, 10),
-  //     }));
-  //   } else {
-  //     const res = await this.postRepo.find({
-  //       where: { ownerUserId: userId },
-  //       order: { createdAt: 'DESC' },
-  //       select: ['emotion'],
-  //     });
-  //     const validEmotions = res
-  //       .map((r) => r.emotion)
-  //       .filter((e): e is string => !!e);
-  //     return [...new Set(validEmotions)];
-  //   }
-  // }
+      return result.map((r) => ({
+        emotion: r.emotion,
+        count: parseInt(r.count, 10),
+      }));
+    } else {
+      const res = await this.postRepo.find({
+        where: { ownerUserId: userId },
+        order: { createdAt: 'DESC' },
+        select: ['emotion'],
+      });
+      const validEmotions = res
+        .map((r) => r.emotion)
+        .filter((e): e is string => !!e);
+      return [...new Set(validEmotions)];
+    }
+  }
 
-  // async getUserStats(userId: string): Promise<UserStats> {
-  //   const frequentTagsResult = await this.getTags(userId, 'frequent');
-  //   const recentTagsResult = await this.getTags(userId, 'recent');
-  //   const frequentEmotionsResult = await this.getEmotions(userId, 'frequent');
-  //   const recentEmotionsResult = await this.getEmotions(userId, 'recent');
+  async getUserStats(userId: string): Promise<UserStats> {
+    const frequentTagsResult = await this.getTags(userId, 'frequent');
+    const recentTagsResult = await this.getTags(userId, 'recent');
+    const frequentEmotionsResult = await this.getEmotions(userId, 'frequent');
+    const recentEmotionsResult = await this.getEmotions(userId, 'recent');
 
-  //   // Type Guard를 통해 확실하게 추론 유도
-  //   const frequentTags =
-  //     Array.isArray(frequentTagsResult) &&
-  //     typeof frequentTagsResult[0] === 'object'
-  //       ? (frequentTagsResult as TagCount[])
-  //       : [];
-  //   const recentTags =
-  //     Array.isArray(recentTagsResult) && typeof recentTagsResult[0] === 'string'
-  //       ? (recentTagsResult as string[])
-  //       : [];
+    // Type Guard를 통해 확실하게 추론 유도
+    const frequentTags =
+      Array.isArray(frequentTagsResult) &&
+      typeof frequentTagsResult[0] === 'object'
+        ? (frequentTagsResult as TagCount[])
+        : [];
+    const recentTags =
+      Array.isArray(recentTagsResult) && typeof recentTagsResult[0] === 'string'
+        ? (recentTagsResult as string[])
+        : [];
 
-  //   const frequentEmotions =
-  //     Array.isArray(frequentEmotionsResult) &&
-  //     typeof frequentEmotionsResult[0] === 'object'
-  //       ? (frequentEmotionsResult as EmotionCount[])
-  //       : [];
-  //   const recentEmotions =
-  //     Array.isArray(recentEmotionsResult) &&
-  //     typeof recentEmotionsResult[0] === 'string'
-  //       ? (recentEmotionsResult as string[])
-  //       : [];
+    const frequentEmotions =
+      Array.isArray(frequentEmotionsResult) &&
+      typeof frequentEmotionsResult[0] === 'object'
+        ? (frequentEmotionsResult as EmotionCount[])
+        : [];
+    const recentEmotions =
+      Array.isArray(recentEmotionsResult) &&
+      typeof recentEmotionsResult[0] === 'string'
+        ? (recentEmotionsResult as string[])
+        : [];
 
-  //   return {
-  //     recentTags: recentTags.slice(0, 10),
-  //     frequentTags: frequentTags.slice(0, 10).map((t) => t.tag),
-  //     recentEmotions: recentEmotions.slice(0, 10),
-  //     frequentEmotions: frequentEmotions.slice(0, 10).map((e) => e.emotion),
-  //   };
-  // }
+    return {
+      recentTags: recentTags.slice(0, 10),
+      frequentTags: frequentTags.slice(0, 10).map((t) => t.tag),
+      recentEmotions: recentEmotions.slice(0, 10),
+      frequentEmotions: frequentEmotions.slice(0, 10).map((e) => e.emotion),
+    };
+  }
 
   /** 내 프로필 수정 (닉네임, 프로필 이미지) */
   async updateProfile(
