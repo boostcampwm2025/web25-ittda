@@ -71,7 +71,9 @@ export function useApiPost<
   TVariables = Record<string, unknown>,
 >(
   endpoint: string,
-  options?: UseApiMutationOptions<TData, TVariables>,
+  options?: UseApiMutationOptions<TData, TVariables> & {
+    invalidateKeys?: QueryKey[];
+  },
   sendCookie?: boolean,
   headers?: Record<string, string>,
 ) {
@@ -94,7 +96,11 @@ export function useApiPost<
       return response;
     },
     onSuccess: (data, variables, context, mutationContext) => {
-      queryClient.invalidateQueries();
+      if (options?.invalidateKeys) {
+        options.invalidateKeys.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: key });
+        });
+      }
       options?.onSuccess?.(data, variables, context, mutationContext);
     },
     ...options,
@@ -110,7 +116,12 @@ export function useApiPost<
 export function useApiPut<
   TData = unknown,
   TVariables = Record<string, unknown>,
->(endpoint: string, options?: UseApiMutationOptions<TData, TVariables>) {
+>(
+  endpoint: string,
+  options?: UseApiMutationOptions<TData, TVariables> & {
+    invalidateKeys?: QueryKey[];
+  },
+) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -128,7 +139,11 @@ export function useApiPut<
       return response;
     },
     onSuccess: (data, variables, context, mutationContext) => {
-      queryClient.invalidateQueries();
+      if (options?.invalidateKeys) {
+        options.invalidateKeys.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: key });
+        });
+      }
       options?.onSuccess?.(data, variables, context, mutationContext);
     },
     ...options,
@@ -143,7 +158,9 @@ export function useApiPut<
  */
 export function useApiDelete<TData = unknown, TVariables = unknown>(
   endpoint: string | ((variables: TVariables) => string),
-  options?: UseApiMutationOptions<TData, TVariables>,
+  options?: UseApiMutationOptions<TData, TVariables> & {
+    invalidateKeys?: QueryKey[];
+  },
 ) {
   const queryClient = useQueryClient();
 
@@ -161,7 +178,11 @@ export function useApiDelete<TData = unknown, TVariables = unknown>(
       return response;
     },
     onSuccess: (data, variables, context, mutationContext) => {
-      queryClient.invalidateQueries();
+      if (options?.invalidateKeys) {
+        options.invalidateKeys.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: key });
+        });
+      }
       options?.onSuccess?.(data, variables, context, mutationContext);
     },
     ...options,
@@ -177,7 +198,12 @@ export function useApiDelete<TData = unknown, TVariables = unknown>(
 export function useApiPatch<
   TData = unknown,
   TVariables = Record<string, unknown>,
->(endpoint: string, options?: UseApiMutationOptions<TData, TVariables>) {
+>(
+  endpoint: string,
+  options?: UseApiMutationOptions<TData, TVariables> & {
+    invalidateKeys?: QueryKey[];
+  },
+) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -195,7 +221,11 @@ export function useApiPatch<
       return response;
     },
     onSuccess: (data, variables, context, mutationContext) => {
-      queryClient.invalidateQueries();
+      if (options?.invalidateKeys) {
+        options.invalidateKeys.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: key });
+        });
+      }
       options?.onSuccess?.(data, variables, context, mutationContext);
     },
     ...options,
