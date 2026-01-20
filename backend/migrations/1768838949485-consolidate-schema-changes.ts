@@ -14,10 +14,28 @@ export class ConsolidateSchemaChanges1768838949485 implements MigrationInterface
 
     // Users: rename columns, swap profile image column
     await queryRunner.query(
-      `ALTER TABLE "users" RENAME COLUMN "providerId" TO "provider_id"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'users'
+            AND column_name = 'providerId'
+        ) THEN
+          ALTER TABLE "users" RENAME COLUMN "providerId" TO "provider_id";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
-      `ALTER TABLE "users" RENAME COLUMN "createdAt" TO "created_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'users'
+            AND column_name = 'createdAt'
+        ) THEN
+          ALTER TABLE "users" RENAME COLUMN "createdAt" TO "created_at";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
       `ALTER TABLE "users" DROP COLUMN IF EXISTS "profile_image_url"`,
@@ -37,15 +55,42 @@ export class ConsolidateSchemaChanges1768838949485 implements MigrationInterface
       `ALTER TABLE "groups" ADD COLUMN IF NOT EXISTS "last_activity_at" TIMESTAMPTZ`,
     );
     await queryRunner.query(
-      `ALTER TABLE "groups" RENAME COLUMN "createdAt" TO "created_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'groups'
+            AND column_name = 'createdAt'
+        ) THEN
+          ALTER TABLE "groups" RENAME COLUMN "createdAt" TO "created_at";
+        END IF;
+      END $$;`,
     );
 
     // Guest sessions: normalize timestamp column names/types
     await queryRunner.query(
-      `ALTER TABLE "guest_sessions" RENAME COLUMN "expiresAt" TO "expires_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'guest_sessions'
+            AND column_name = 'expiresAt'
+        ) THEN
+          ALTER TABLE "guest_sessions" RENAME COLUMN "expiresAt" TO "expires_at";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
-      `ALTER TABLE "guest_sessions" RENAME COLUMN "createdAt" TO "created_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'guest_sessions'
+            AND column_name = 'createdAt'
+        ) THEN
+          ALTER TABLE "guest_sessions" RENAME COLUMN "createdAt" TO "created_at";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
       `ALTER TABLE "guest_sessions" ALTER COLUMN "expires_at" TYPE TIMESTAMPTZ USING "expires_at"::timestamptz`,
@@ -56,7 +101,16 @@ export class ConsolidateSchemaChanges1768838949485 implements MigrationInterface
 
     // Group members: rename joinedAt, add profile/nickname/read tracking
     await queryRunner.query(
-      `ALTER TABLE "group_members" RENAME COLUMN "joinedAt" TO "joined_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'group_members'
+            AND column_name = 'joinedAt'
+        ) THEN
+          ALTER TABLE "group_members" RENAME COLUMN "joinedAt" TO "joined_at";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
       `ALTER TABLE "group_members" ADD COLUMN IF NOT EXISTS "nickname_in_group" character varying(50)`,
@@ -73,10 +127,28 @@ export class ConsolidateSchemaChanges1768838949485 implements MigrationInterface
 
     // Group invites: normalize timestamp column names/types
     await queryRunner.query(
-      `ALTER TABLE "group_invites" RENAME COLUMN "expiresAt" TO "expires_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'group_invites'
+            AND column_name = 'expiresAt'
+        ) THEN
+          ALTER TABLE "group_invites" RENAME COLUMN "expiresAt" TO "expires_at";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
-      `ALTER TABLE "group_invites" RENAME COLUMN "createdAt" TO "created_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'group_invites'
+            AND column_name = 'createdAt'
+        ) THEN
+          ALTER TABLE "group_invites" RENAME COLUMN "createdAt" TO "created_at";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
       `ALTER TABLE "group_invites" ALTER COLUMN "expires_at" TYPE TIMESTAMPTZ USING "expires_at"::timestamptz`,
@@ -87,13 +159,40 @@ export class ConsolidateSchemaChanges1768838949485 implements MigrationInterface
 
     // Refresh tokens: normalize timestamp column names/types
     await queryRunner.query(
-      `ALTER TABLE "refresh_tokens" RENAME COLUMN "userId" TO "user_id"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'refresh_tokens'
+            AND column_name = 'userId'
+        ) THEN
+          ALTER TABLE "refresh_tokens" RENAME COLUMN "userId" TO "user_id";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
-      `ALTER TABLE "refresh_tokens" RENAME COLUMN "expiresAt" TO "expires_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'refresh_tokens'
+            AND column_name = 'expiresAt'
+        ) THEN
+          ALTER TABLE "refresh_tokens" RENAME COLUMN "expiresAt" TO "expires_at";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
-      `ALTER TABLE "refresh_tokens" RENAME COLUMN "createdAt" TO "created_at"`,
+      `DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'refresh_tokens'
+            AND column_name = 'createdAt'
+        ) THEN
+          ALTER TABLE "refresh_tokens" RENAME COLUMN "createdAt" TO "created_at";
+        END IF;
+      END $$;`,
     );
     await queryRunner.query(
       `ALTER TABLE "refresh_tokens" ALTER COLUMN "expires_at" TYPE TIMESTAMPTZ USING "expires_at"::timestamptz`,
