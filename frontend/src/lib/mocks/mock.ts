@@ -1,3 +1,4 @@
+import { TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
   GroupListResponse,
@@ -375,3 +376,50 @@ export const createMockGroupCoverList = (
     },
   };
 };
+
+export const createMockTagStats = (): TagStatSummary => ({
+  recentTop: [
+    {
+      tag: '아침',
+      count: 3,
+    },
+    {
+      tag: '커피',
+      count: 7,
+    },
+    {
+      tag: '점심',
+      count: 5,
+    },
+    {
+      tag: '팀프로젝트',
+      count: 12,
+    },
+    {
+      tag: '팀 잇다',
+      count: 1,
+    },
+  ],
+  allTimeTop: [
+    {
+      tag: '팀프로젝트',
+      count: 12,
+    },
+    {
+      tag: '커피',
+      count: 7,
+    },
+    {
+      tag: '점심',
+      count: 5,
+    },
+    {
+      tag: '아침',
+      count: 3,
+    },
+    {
+      tag: '팀 잇다',
+      count: 1,
+    },
+  ],
+});
