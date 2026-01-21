@@ -1,6 +1,9 @@
 import { queryOptions } from '@tanstack/react-query';
 import { TagStatSummary } from '../types/profile';
-import { UserProfileResponse } from '../types/profileResponse';
+import {
+  RecordPatternResponse,
+  UserProfileResponse,
+} from '../types/profileResponse';
 import { createApiError } from '../utils/errorHandler';
 import { get } from './api';
 
@@ -38,6 +41,22 @@ export const userProfileEmotionSummaryOptions = () =>
     queryFn: async () => {
       const response = await get<TagStatSummary>(
         '/api/me/emotions/stats?limit=7',
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    retry: false,
+  });
+
+export const userRecordPatternOptions = (date: string) =>
+  queryOptions({
+    queryKey: ['pattern'],
+    queryFn: async () => {
+      const response = await get<RecordPatternResponse>(
+        `/api/me/stats/summary?date=${date}`,
       );
 
       if (!response.success) {

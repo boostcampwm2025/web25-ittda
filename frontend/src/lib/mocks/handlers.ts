@@ -12,6 +12,30 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/me/stats/summary', ({ request }) => {
+    const url = new URL(request.url);
+    const date = url.searchParams.get('date') || new Date().toISOString();
+
+    const parts = date.split('-').map((s) => parseInt(s, 10));
+
+    if (parts.length === 2) {
+      return HttpResponse.json({
+        success: true,
+        data: {
+          count: 2,
+        },
+        error: null,
+      });
+    } else {
+      return HttpResponse.json({
+        success: true,
+        data: {
+          count: 16,
+        },
+        error: null,
+      });
+    }
+  }),
   http.get('/api/me/emotions/summary', ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit');

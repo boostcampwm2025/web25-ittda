@@ -20,3 +20,7 @@ export interface UserProfileResponse {
     frequentEmotions: string[];
   };
 }
+
+export interface RecordPatternResponse {
+  count: number;
+}
