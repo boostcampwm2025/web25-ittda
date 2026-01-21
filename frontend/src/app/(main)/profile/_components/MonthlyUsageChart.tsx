@@ -21,7 +21,7 @@ export default function MonthlyUsageChart() {
     isLoading,
     isError,
   } = useApiQuery<MyMonthlyRecordListResponse[]>(
-    ['my', 'records', 'year', year],
+    ['my', 'records', 'month', year],
     `/api/user/archives/months?year=${year}`,
   );
 

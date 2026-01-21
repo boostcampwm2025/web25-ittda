@@ -25,7 +25,12 @@ export interface MonthRecord {
   count: number;
   latestTitle: string;
   latestLocation: string;
-  coverUrl: string | null;
+  cover: {
+    assetId: string;
+    width: number;
+    height: number;
+    mimeType: string;
+  } | null;
 }
 
 export interface SharedRecord {

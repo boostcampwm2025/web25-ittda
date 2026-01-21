@@ -90,7 +90,7 @@ export default function MonthRecords({
             count={m.count}
             latestTitle={m.latestTitle}
             latestLocation={m.latestLocation}
-            coverUrl={m.coverUrl}
+            cover={m.cover}
             onClick={() => router.push(`${cardRoute}/${m.id}`)}
             onChangeCover={openGallery}
           />
