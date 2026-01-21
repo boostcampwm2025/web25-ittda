@@ -1,4 +1,5 @@
 import MonthRecords from '@/app/(post)/_components/MonthRecords';
+import SocketManager from '@/components/SocketManager';
 
 const GroupMonthRecordsMock = [
   {
@@ -46,6 +47,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
   return (
     <>
+      <SocketManager />
       {groupId && (
         <MonthRecords
           monthRecords={GroupMonthRecordsMock}
