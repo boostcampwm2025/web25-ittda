@@ -43,8 +43,7 @@ export const useLocationPermissionStore = create<State & Action>()(
         const { lastToastShownAt } = get();
         if (!lastToastShownAt) return true;
 
-        const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-        return Date.now() - lastToastShownAt >= TWENTY_FOUR_HOURS;
+        return Date.now() - lastToastShownAt >= 24 * 60 * 60 * 1000; // 24시간이 지났다면 표시
       },
 
       checkPermission: async () => {
