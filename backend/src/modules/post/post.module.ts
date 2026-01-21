@@ -5,10 +5,12 @@ import { PostDraftController } from './post-draft.controller';
 import { PostDraftService } from './post-draft.service';
 import { PostDraftGateway } from './post-draft.gateway';
 import { PostService } from './post.service';
+import { PostDraftService } from './post-draft.service';
 
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
+import { PostDraft } from './entity/post-draft.entity';
 import { User } from '../user/user.entity';
 import { Group } from '../group/entity/group.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
@@ -21,6 +23,7 @@ import { AuthModule } from '../auth/auth.module';
       Post,
       PostBlock,
       PostContributor,
+      PostDraft,
       PostDraft,
       User,
       Group,

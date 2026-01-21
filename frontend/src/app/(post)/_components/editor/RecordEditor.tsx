@@ -47,18 +47,32 @@ import { useCreateRecord } from '@/hooks/useCreateRecord';
 import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
 import { useRouter } from 'next/navigation';
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
+import Image from 'next/image';
+import { useQuery } from '@tanstack/react-query';
+import { groupDraftOptions } from '@/lib/api/groupRecord';
 
 export default function PostEditor({
   mode,
   initialPost,
+  groupId,
+  draftId,
 }: {
   mode: 'add' | 'edit';
   initialPost?: { title: string; blocks: RecordBlock[] };
+  groupId?: string;
+  draftId?: string;
 }) {
   const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const { mutate: createRecord } = useCreateRecord();
+  const [isActive, setIsActive] = useState(false);
+
+  //TODO: 임시 클라이언트 호출
+  const { data: remoteData, isLoading } = useQuery({
+    ...groupDraftOptions(groupId ?? '', draftId ?? ''),
+    enabled: !!groupId && !!draftId,
+  });
 
   const {
     blocks,
@@ -84,9 +98,14 @@ export default function PostEditor({
   } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
 
   // 페이지 초기화/복구 및 위치 데이터 받기
-  // TODO: 이후 키 형태로 변경
+  // TODO: 이후 키 형태/서버 패칭으로 변경
+  const resolvedInitialPost = remoteData
+    ? { title: remoteData.snapshot.title, blocks: remoteData.snapshot.blocks }
+    : initialPost;
+
+  // 에디터 초기화
   usePostEditorInitializer({
-    initialPost,
+    initialPost: resolvedInitialPost,
     onInitialized: ({ title, blocks }) => {
       setTitle(title);
       setBlocks(blocks);
@@ -365,7 +384,19 @@ export default function PostEditor({
               <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
                 <GripVertical className="w-4 h-4 text-gray-500" />
               </div>
-              <div className="w-full">{renderField(block)}</div>
+
+              <div className="w-full flex flex-row gap-2 items-center">
+                {isActive && (
+                  <Image
+                    src="/profile-ex.jpeg"
+                    className="w-6 h-6 rounded-full"
+                    width={8}
+                    height={8}
+                    alt="현재 유저 프로필"
+                  />
+                )}
+                {renderField(block)}
+              </div>
             </div>
           ))}
         </div>

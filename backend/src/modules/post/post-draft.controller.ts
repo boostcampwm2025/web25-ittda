@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Param,
-  Redirect,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -18,7 +17,6 @@ export class PostDraftController {
   constructor(private readonly postDraftService: PostDraftService) {}
 
   @Get('posts/new')
-  @Redirect('', 302)
   async enterGroupDraft(
     @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
@@ -31,7 +29,9 @@ export class PostDraftController {
       groupId,
       requesterId,
     );
-    return { url: `/groups/${groupId}/posts/${draft.id}/edit` };
+    return {
+      redirectUrl: `/add?groupId=${groupId}&draftId=${draft.id}`,
+    };
   }
 
   @Get('drafts/:draftId')
