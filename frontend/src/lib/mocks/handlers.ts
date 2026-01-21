@@ -4,12 +4,23 @@ import {
   createMockGroupCoverList,
   createMockGroupList,
   createMockRecordPreviews,
+  createMockTagStats,
 } from './mock';
 
 const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/me/tags/stats', ({ request }) => {
+    const url = new URL(request.url);
+    const limit = url.searchParams.get('limit');
+
+    return HttpResponse.json({
+      success: true,
+      data: { createMockTagStats },
+      error: null
+    });
+  }),
   http.get('/api/me', () => {
     return HttpResponse.json({
       success: true,
