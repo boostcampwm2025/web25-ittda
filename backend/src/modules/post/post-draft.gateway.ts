@@ -16,43 +16,17 @@ import type { Server, Socket } from 'socket.io';
 import { isUUID } from 'class-validator';
 
 import { WsJwtGuard } from '@/modules/auth/ws/ws-jwt.guard';
-import type { MyJwtPayload } from '@/modules/auth/auth.type';
 import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/user.entity';
-
-type PresenceMember = {
-  sessionId: string;
-  displayName: string;
-  profileImageId: string | null;
-  permissionRole: string;
-  lastSeenAt: string;
-};
-
-type LockEntry = {
-  lockKey: string;
-  ownerActorId: string;
-  ownerSessionId: string;
-  expiresAt: number;
-  timeoutId: NodeJS.Timeout;
-};
-
-type JoinDraftPayload = {
-  draftId: string;
-};
-
-type LockPayload = {
-  lockKey: string;
-};
-
-type DraftSocketData = {
-  user?: MyJwtPayload;
-  sessionId?: string;
-  actorId?: string;
-  displayName?: string;
-  role?: string;
-  draftId?: string;
-};
+import { PresenceService } from './collab/presence.service';
+import { LockService } from './collab/lock.service';
+import type {
+  DraftSocketData,
+  JoinDraftPayload,
+  LockPayload,
+  PresenceMember,
+} from './collab/types';
 
 @WebSocketGateway({
   cors: {
@@ -73,22 +47,12 @@ export class PostDraftGateway
     private readonly groupMemberRepository: Repository<GroupMember>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly presenceService: PresenceService,
+    private readonly lockService: LockService,
   ) {}
 
   @WebSocketServer()
   private readonly server: Server;
-
-  private readonly presenceByDraft = new Map<
-    string,
-    Map<string, PresenceMember>
-  >();
-  private readonly sessionActorMap = new Map<string, string>();
-  private readonly replacedSessionsByDraft = new Map<string, Set<string>>();
-  private readonly locksByDraft = new Map<string, Map<string, LockEntry>>();
-  private readonly locksBySession = new Map<string, Set<string>>();
-  private readonly socketIdByActor = new Map<string, string>();
-
-  private static readonly LOCK_TTL_MS = 30_000;
 
   @SubscribeMessage('JOIN_DRAFT')
   async handleJoinDraft(
@@ -125,15 +89,14 @@ export class PostDraftGateway
     socketData.displayName = displayName;
     socketData.role = role;
     socketData.draftId = draftId;
-    this.sessionActorMap.set(sessionId, actorId);
+    this.presenceService.setSessionActor(sessionId, actorId);
 
     const room = this.getDraftRoom(draftId);
     void socket.join(room);
 
-    const membersMap = this.getOrCreateDraftMembers(draftId);
-    const previous = membersMap.get(actorId);
+    const previous = this.presenceService.getMemberByActor(draftId, actorId);
     if (previous) {
-      this.getOrCreateReplacedSessions(draftId).add(previous.sessionId);
+      this.presenceService.markReplaced(draftId, previous.sessionId);
       this.releaseLocksForSessionId(draftId, previous.sessionId);
       this.notifySessionReplaced(actorId, socket.id);
       this.disconnectPreviousSession(actorId, socket.id);
@@ -143,13 +106,13 @@ export class PostDraftGateway
         displayName: member.displayName,
       });
     }
-    membersMap.set(actorId, member);
-    this.socketIdByActor.set(actorId, socket.id);
+    this.presenceService.addMember(draftId, actorId, member);
+    this.presenceService.setSocketId(actorId, socket.id);
 
     socket.emit('PRESENCE_SNAPSHOT', {
       sessionId,
-      members: Array.from(membersMap.values()),
-      locks: this.listLocks(draftId),
+      members: this.presenceService.getMembersArray(draftId),
+      locks: this.lockService.getLocks(draftId),
       version: 0,
     });
 
@@ -167,34 +130,29 @@ export class PostDraftGateway
       throw new WsException('lockKey is invalid.');
     }
 
-    const locks = this.getOrCreateDraftLocks(draftId);
-    const existing = locks.get(lockKey);
-    if (existing && existing.expiresAt > Date.now()) {
+    const result = this.lockService.acquireLock(
+      draftId,
+      lockKey,
+      actorId,
+      sessionId,
+      (entry) => {
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_EXPIRED', {
+          lockKey: entry.lockKey,
+          ownerSessionId: entry.ownerSessionId,
+        });
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
+          lockKey: entry.lockKey,
+          ownerSessionId: null,
+        });
+      },
+    );
+    if (!result.ok) {
       socket.emit('LOCK_DENIED', {
         lockKey,
-        ownerSessionId: existing.ownerSessionId,
+        ownerSessionId: result.ownerSessionId,
       });
       return;
     }
-
-    if (existing) {
-      this.clearLockTimeout(existing);
-      locks.delete(lockKey);
-    }
-
-    const timeoutId = setTimeout(() => {
-      this.expireLock(draftId, lockKey);
-    }, PostDraftGateway.LOCK_TTL_MS);
-
-    const entry: LockEntry = {
-      lockKey,
-      ownerActorId: actorId,
-      ownerSessionId: sessionId,
-      expiresAt: Date.now() + PostDraftGateway.LOCK_TTL_MS,
-      timeoutId,
-    };
-    locks.set(lockKey, entry);
-    this.addSessionLock(sessionId, lockKey);
 
     socket.emit('LOCK_GRANTED', { lockKey, ownerSessionId: sessionId });
     this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
@@ -214,23 +172,19 @@ export class PostDraftGateway
       throw new WsException('lockKey is invalid.');
     }
 
-    const locks = this.getOrCreateDraftLocks(draftId);
-    const existing = locks.get(lockKey);
-    if (!existing) return;
-    if (
-      existing.ownerActorId !== actorId ||
-      existing.ownerSessionId !== sessionId
-    ) {
+    const result = this.lockService.releaseLock(
+      draftId,
+      lockKey,
+      actorId,
+      sessionId,
+    );
+    if (!result.ok) {
       socket.emit('LOCK_DENIED', {
         lockKey,
-        ownerSessionId: existing.ownerSessionId,
+        ownerSessionId: result.ownerSessionId,
       });
       return;
     }
-
-    this.clearLockTimeout(existing);
-    locks.delete(lockKey);
-    this.removeSessionLock(sessionId, lockKey);
     this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
       lockKey,
       ownerSessionId: null,
@@ -248,28 +202,28 @@ export class PostDraftGateway
       throw new WsException('lockKey is invalid.');
     }
 
-    const locks = this.getOrCreateDraftLocks(draftId);
-    const existing = locks.get(lockKey);
-    if (!existing) {
-      socket.emit('LOCK_DENIED', { lockKey, ownerSessionId: null });
-      return;
-    }
-    if (
-      existing.ownerActorId !== actorId ||
-      existing.ownerSessionId !== sessionId
-    ) {
+    const result = this.lockService.heartbeat(
+      draftId,
+      lockKey,
+      actorId,
+      sessionId,
+      (entry) => {
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_EXPIRED', {
+          lockKey: entry.lockKey,
+          ownerSessionId: entry.ownerSessionId,
+        });
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
+          lockKey: entry.lockKey,
+          ownerSessionId: null,
+        });
+      },
+    );
+    if (!result.ok) {
       socket.emit('LOCK_DENIED', {
         lockKey,
-        ownerSessionId: existing.ownerSessionId,
+        ownerSessionId: result.ownerSessionId,
       });
-      return;
     }
-
-    this.clearLockTimeout(existing);
-    existing.expiresAt = Date.now() + PostDraftGateway.LOCK_TTL_MS;
-    existing.timeoutId = setTimeout(() => {
-      this.expireLock(draftId, lockKey);
-    }, PostDraftGateway.LOCK_TTL_MS);
   }
 
   handleDisconnect(socket: Socket) {
@@ -284,64 +238,30 @@ export class PostDraftGateway
     return `draft:${draftId}`;
   }
 
-  private getOrCreateDraftMembers(draftId: string) {
-    const existing = this.presenceByDraft.get(draftId);
-    if (existing) return existing;
-    const created = new Map<string, PresenceMember>();
-    this.presenceByDraft.set(draftId, created);
-    return created;
-  }
-
-  private getOrCreateReplacedSessions(draftId: string) {
-    const existing = this.replacedSessionsByDraft.get(draftId);
-    if (existing) return existing;
-    const created = new Set<string>();
-    this.replacedSessionsByDraft.set(draftId, created);
-    return created;
-  }
-
   private leaveCurrentDraft(socket: Socket) {
-    this.releaseLocksForSession(socket);
     const socketData = this.getSocketData(socket);
     const draftId = socketData.draftId;
     const sessionId = socketData.sessionId;
     if (!draftId || !sessionId) return;
 
-    const membersMap = this.presenceByDraft.get(draftId);
-    const replacedSessions = this.replacedSessionsByDraft.get(draftId);
-    const isReplaced = replacedSessions?.has(sessionId) ?? false;
-    const member = Array.from(membersMap?.values() ?? []).find(
-      (value) => value.sessionId === sessionId,
-    );
-    if (member && !isReplaced) {
-      const actorId = this.sessionActorMap.get(sessionId);
-      if (actorId) {
-        membersMap?.delete(actorId);
-      }
-    }
-    if (membersMap && membersMap.size === 0) {
-      this.presenceByDraft.delete(draftId);
-    }
+    this.releaseLocksForSessionId(draftId, sessionId);
+
+    const isReplaced = this.presenceService.isReplaced(draftId, sessionId);
+    const removed = isReplaced
+      ? { member: null, actorId: null }
+      : this.presenceService.removeMemberBySession(draftId, sessionId);
 
     void socket.leave(this.getDraftRoom(draftId));
-    if (replacedSessions?.size) {
-      replacedSessions.delete(sessionId);
-      if (replacedSessions.size === 0) {
-        this.replacedSessionsByDraft.delete(draftId);
-      }
-    }
-    if (member && !isReplaced) {
+    this.presenceService.clearReplaced(draftId, sessionId);
+    if (removed.member && !isReplaced) {
       this.server.to(this.getDraftRoom(draftId)).emit('PRESENCE_LEFT', {
         sessionId,
       });
     }
     socketData.draftId = undefined;
-    this.sessionActorMap.delete(sessionId);
-    if (
-      socketData.actorId &&
-      this.socketIdByActor.get(socketData.actorId) === socket.id
-    ) {
-      this.socketIdByActor.delete(socketData.actorId);
+    this.presenceService.clearSessionActor(sessionId);
+    if (socketData.actorId) {
+      this.presenceService.clearSocketIdIfMatch(socketData.actorId, socket.id);
     }
   }
 
@@ -419,104 +339,24 @@ export class PostDraftGateway
     return { draftId, sessionId, actorId };
   }
 
-  private getOrCreateDraftLocks(draftId: string) {
-    const existing = this.locksByDraft.get(draftId);
-    if (existing) return existing;
-    const created = new Map<string, LockEntry>();
-    this.locksByDraft.set(draftId, created);
-    return created;
-  }
-
-  private listLocks(draftId: string) {
-    const locks = this.locksByDraft.get(draftId);
-    if (!locks) return [];
-    return Array.from(locks.values())
-      .filter((lock) => lock.expiresAt > Date.now())
-      .map((lock) => ({
-        lockKey: lock.lockKey,
-        ownerSessionId: lock.ownerSessionId,
-      }));
-  }
-
-  private clearLockTimeout(lock: LockEntry) {
-    clearTimeout(lock.timeoutId);
-  }
-
-  private expireLock(draftId: string, lockKey: string) {
-    const locks = this.locksByDraft.get(draftId);
-    if (!locks) return;
-    const existing = locks.get(lockKey);
-    if (!existing) return;
-    locks.delete(lockKey);
-    this.removeSessionLock(existing.ownerSessionId, lockKey);
-    this.server.to(this.getDraftRoom(draftId)).emit('LOCK_EXPIRED', {
-      lockKey,
-      ownerSessionId: existing.ownerSessionId,
-    });
-    this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
-      lockKey,
-      ownerSessionId: null,
-    });
-  }
-
-  private addSessionLock(sessionId: string, lockKey: string) {
-    const existing = this.locksBySession.get(sessionId);
-    if (existing) {
-      existing.add(lockKey);
-      return;
-    }
-    this.locksBySession.set(sessionId, new Set([lockKey]));
-  }
-
-  private removeSessionLock(sessionId: string, lockKey: string) {
-    const existing = this.locksBySession.get(sessionId);
-    if (!existing) return;
-    existing.delete(lockKey);
-    if (existing.size === 0) {
-      this.locksBySession.delete(sessionId);
-    }
-  }
-
-  private releaseLocksForSession(socket: Socket) {
-    const socketData = this.getSocketData(socket);
-    const draftId = socketData.draftId;
-    const sessionId = socketData.sessionId;
-    if (!draftId || !sessionId) return;
-    this.releaseLocksForSessionId(draftId, sessionId);
-  }
-
   private releaseLocksForSessionId(draftId: string, sessionId: string) {
-    const locks = this.locksByDraft.get(draftId);
-    const sessionLocks = this.locksBySession.get(sessionId);
-    if (!locks || !sessionLocks) return;
-
-    sessionLocks.forEach((lockKey) => {
-      const existing = locks.get(lockKey);
-      if (!existing) return;
-      if (existing.ownerSessionId !== sessionId) return;
-      this.clearLockTimeout(existing);
-      locks.delete(lockKey);
+    this.lockService.releaseLocksForSessionId(draftId, sessionId, (lockKey) => {
       this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
         lockKey,
         ownerSessionId: null,
       });
     });
-
-    this.locksBySession.delete(sessionId);
-    if (locks.size === 0) {
-      this.locksByDraft.delete(draftId);
-    }
   }
 
   private disconnectPreviousSession(actorId: string, currentSocketId: string) {
-    const previousSocketId = this.socketIdByActor.get(actorId);
+    const previousSocketId = this.presenceService.getSocketId(actorId);
     if (!previousSocketId || previousSocketId === currentSocketId) return;
     const previousSocket = this.server.sockets.sockets.get(previousSocketId);
     previousSocket?.disconnect(true);
   }
 
   private notifySessionReplaced(actorId: string, currentSocketId: string) {
-    const previousSocketId = this.socketIdByActor.get(actorId);
+    const previousSocketId = this.presenceService.getSocketId(actorId);
     if (!previousSocketId || previousSocketId === currentSocketId) return;
     const previousSocket = this.server.sockets.sockets.get(previousSocketId);
     // TODO: Include device info (user agent / deviceId) in SESSION_REPLACED payload.
