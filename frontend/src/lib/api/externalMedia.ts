@@ -46,7 +46,6 @@ export const searchKopis = async (
     const parser = new DOMParser();
     const xml = parser.parseFromString(str, 'text/xml');
     const dbElements = xml.getElementsByTagName('db');
-    console.log('dbElements', dbElements);
 
     return Array.from(dbElements).map((db) => ({
       title: db.getElementsByTagName('prfnm')[0]?.textContent || '',
