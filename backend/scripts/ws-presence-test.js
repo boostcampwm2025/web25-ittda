@@ -21,7 +21,12 @@ const socket = io(serverUrl, {
 
 socket.on('connect', () => {
   console.log('[connect]', socket.id);
+  console.log('[emit] JOIN_DRAFT', draftId);
   socket.emit('JOIN_DRAFT', { draftId });
+});
+
+socket.onAny((event, ...args) => {
+  console.log('[event]', event, JSON.stringify(args, null, 2));
 });
 
 socket.on('connect_error', (err) => {
@@ -41,22 +46,6 @@ setTimeout(() => {
     console.log('[timeout] connection not established after 5s');
   }
 }, 5000);
-
-socket.on('PRESENCE_SNAPSHOT', (payload) => {
-  console.log('[PRESENCE_SNAPSHOT]', JSON.stringify(payload, null, 2));
-});
-
-socket.on('PRESENCE_JOINED', (payload) => {
-  console.log('[PRESENCE_JOINED]', JSON.stringify(payload, null, 2));
-});
-
-socket.on('PRESENCE_REPLACED', (payload) => {
-  console.log('[PRESENCE_REPLACED]', JSON.stringify(payload, null, 2));
-});
-
-socket.on('PRESENCE_LEFT', (payload) => {
-  console.log('[PRESENCE_LEFT]', JSON.stringify(payload, null, 2));
-});
 
 socket.on('error', (payload) => {
   console.log('[WS_ERROR]', JSON.stringify(payload, null, 2));
