@@ -22,8 +22,22 @@ export const userProfileTagSummaryOptions = () =>
   queryOptions({
     queryKey: ['tag', 'summary'],
     queryFn: async () => {
+      const response = await get<TagStatSummary>('/api/me/tags/stats?limit=10');
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    retry: false,
+  });
+
+export const userProfileEmotionSummaryOptions = () =>
+  queryOptions({
+    queryKey: ['emotion', 'summary'],
+    queryFn: async () => {
       const response = await get<TagStatSummary>(
-        '/api/me/tags/stats?limit=10',
+        '/api/me/emotions/stats?limit=7',
       );
 
       if (!response.success) {
