@@ -28,12 +28,6 @@ const sortGroups = (
 ): GroupSummary[] => {
   const sorted = [...groups];
   switch (sortBy) {
-    case 'latest':
-      return sorted.sort(
-        (a, b) =>
-          new Date(b.lastActivityAt).getTime() -
-          new Date(a.lastActivityAt).getTime(),
-      );
     case 'count':
       return sorted.sort((a, b) => b.recordCount - a.recordCount);
     case 'members':
@@ -52,10 +46,10 @@ export default function SharedRecords() {
 
   const { data: groups = [] } = useQuery(groupListOptions());
 
-  const sortedGroups = useMemo(
-    () => sortGroups(groups, sortBy),
-    [groups, sortBy],
-  );
+  const sortedGroups = useMemo(() => {
+    if (sortBy === 'latest') return groups;
+    return sortGroups(groups, sortBy);
+  }, [groups, sortBy]);
 
   const router = useRouter();
   const [activeGroupId, setActiveGroupId] = useState<string | undefined>(
