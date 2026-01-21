@@ -54,7 +54,7 @@ export default function GroupInfo({ groupId, nickname }: GroupInfoProps) {
                 alt="그룹 썸네일"
               />
             ) : (
-              <Users className="w-1/2 h-1/2 text-gray-400" />
+              <Users className="w-1/3 h-1/3 text-gray-400" />
             )}
           </div>
           <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
