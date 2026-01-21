@@ -4,7 +4,9 @@ import dataSource from '../data-source';
 import { Post } from '../modules/post/entity/post.entity';
 import { PostBlock } from '../modules/post/entity/post-block.entity';
 import { PostContributor } from '../modules/post/entity/post-contributor.entity';
+import { PostDraft } from '../modules/post/entity/post-draft.entity';
 import { User } from '../modules/user/user.entity';
+import { Group } from '../modules/group/entity/group.entity';
 import { PostBlockType } from '../enums/post-block-type.enum';
 import { PostScope } from '../enums/post-scope.enum';
 import { PostContributorRole } from '../enums/post-contributor-role.enum';
@@ -165,6 +167,40 @@ async function upsertSeedOwner() {
   return userRepository.save(owner);
 }
 
+async function upsertSeedGroup(owner: User) {
+  const groupRepository = dataSource.getRepository(Group);
+  const existing = await groupRepository.findOne({
+    where: { name: 'seed-group', owner: { id: owner.id } },
+  });
+  if (existing) return existing;
+
+  const group = groupRepository.create({
+    name: 'seed-group',
+    owner,
+  });
+  return groupRepository.save(group);
+}
+
+async function upsertSeedDraft(owner: User, group: Group) {
+  const draftRepository = dataSource.getRepository(PostDraft);
+  const existing = await draftRepository.findOne({
+    where: { groupId: group.id, isActive: true },
+  });
+  if (existing) return existing;
+
+  const draft = draftRepository.create({
+    groupId: group.id,
+    ownerActorId: owner.id,
+    snapshot: {
+      scope: PostScope.GROUP,
+      groupId: group.id,
+      title: '',
+      blocks: [],
+    },
+  });
+  return draftRepository.save(draft);
+}
+
 async function createSeedPost(owner: User, seed: SeedPost) {
   return dataSource.manager.transaction(async (manager) => {
     const postRepo = manager.getRepository(Post);
@@ -226,6 +262,8 @@ async function run() {
 
   try {
     const owner = await upsertSeedOwner();
+    const group = await upsertSeedGroup(owner);
+    await upsertSeedDraft(owner, group);
     const seeds = makeSeedPosts();
 
     for (const seed of seeds) {
