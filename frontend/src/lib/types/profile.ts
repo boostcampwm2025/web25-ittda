@@ -6,6 +6,16 @@ export interface ProfileTag {
   all: Tag[];
 }
 
+export interface TagStatSummary {
+  recentTags: string[];
+  frequentTags: string[];
+}
+
+export interface EmotionStatSummary {
+  recentEmotions: string[];
+  frequentEmotions: string[];
+}
+
 export interface Emotion {
   name: string;
   emoji: string;
