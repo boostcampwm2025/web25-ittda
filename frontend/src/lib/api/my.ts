@@ -3,9 +3,11 @@ import { get } from './api';
 import { createApiError } from '../utils/errorHandler';
 import { MyMonthlyRecordListResponse } from '../types/recordResponse';
 
-export const myMonthlyRecordListOptions = (year: string) =>
+export const myMonthlyRecordListOptions = (year?: string) =>
   queryOptions({
-    queryKey: ['my', 'records', 'year', year],
+    queryKey: year
+      ? ['my', 'records', 'month', year]
+      : ['my', 'records', 'month'],
     queryFn: async () => {
       const response = await get<MyMonthlyRecordListResponse[]>(
         `/api/user/archives/months?year=${year}`,
