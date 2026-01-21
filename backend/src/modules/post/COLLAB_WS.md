@@ -8,6 +8,7 @@
 - 인증은 access token 기반이며, 클라이언트는 userId를 직접 알 수 없음
 - 클라이언트 식별은 sessionId 기준으로 동작
 - 락 키는 `block:{uuid}` 형식만 허용 (table은 `table:{uuid}`)
+  - 현재는
 - lock TTL: 30초, heartbeat 권장 주기: 10초
 - 초기 스냅샷으로 전체 동기화 후, 이후에는 delta 이벤트로 상태 갱신
 
