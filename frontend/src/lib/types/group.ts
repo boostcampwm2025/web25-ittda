@@ -22,10 +22,4 @@ export type ActiveMember = Member & {
   recordId: string;
 };
 
-export type GroupRoleType = 'ADMIN' | 'EDITOR' | 'VIEWER';
-
-export const ROLE_MAP = {
-  admin: 'ADMIN',
-  editor: 'EDITOR',
-  viewer: 'VIEWER',
-} as const;
+export type InviteRole = 'admin' | 'editor' | 'viewer';

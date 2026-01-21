@@ -33,11 +33,6 @@ export default function ProfileInfo({
     if (nickname.length === 0) return null;
     if (nickname.length < 2) return '닉네임은 최소 2자 이상이어야 합니다.';
     if (nickname.length > 10) return '닉네임은 최대 10자까지 입력 가능합니다.';
-    const nicknameRegex = /^[가-힣a-zA-Z0-9\s]+$/;
-
-    if (!nicknameRegex.test(nickname)) {
-      return '특수문자는 사용할 수 없습니다. (한글, 영문, 숫자, 공백만 가능)';
-    }
     return null;
   };
 
@@ -105,7 +100,7 @@ export default function ProfileInfo({
               </p>
             ) : (
               <p className="text-[10px] text-gray-400 px-1">
-                * 닉네임은 한글/영문/숫자/공백만 사용이 가능합니다.
+                기억하고 싶은 이름으로 나를 표현해 보세요.
               </p>
             )}
           </div>

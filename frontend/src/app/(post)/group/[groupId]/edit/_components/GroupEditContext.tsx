@@ -1,21 +1,18 @@
 'use client';
 
-import { Group } from '@/lib/types/group';
-import { GroupMember } from '@/lib/types/groupResponse';
+import { Group, Member } from '@/lib/types/group';
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface GroupEditData {
   groupName: string;
   groupThumbnail: File | null;
-  members: GroupMember[];
+  members: Member[];
 }
 
 type GroupEditContextType = GroupEditData & {
   setGroupName: (name: string) => void;
   setGroupThumbnail: (file: File | null) => void;
-  setMembers: (
-    members: GroupMember[] | ((prev: GroupMember[]) => GroupMember[]),
-  ) => void;
+  setMembers: (members: Member[] | ((prev: Member[]) => Member[])) => void;
   getEditData: () => GroupEditData;
 };
 
@@ -33,7 +30,7 @@ interface GroupEditProviderProps {
   children: ReactNode;
   initialName: Group['groupName'];
   initialThumbnail: Group['groupThumnail'];
-  initialMembers: GroupMember[];
+  initialMembers: Member[];
 }
 
 export function GroupEditProvider({
@@ -43,7 +40,7 @@ export function GroupEditProvider({
 }: GroupEditProviderProps) {
   const [groupName, setGroupName] = useState(initialName);
   const [groupThumbnail, setGroupThumbnail] = useState<File | null>(null);
-  const [members, setMembers] = useState<GroupMember[]>(initialMembers);
+  const [members, setMembers] = useState<Member[]>(initialMembers);
 
   const getEditData = (): GroupEditData => ({
     groupName,

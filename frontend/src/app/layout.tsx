@@ -9,7 +9,6 @@ import ConditionalHeader from '@/components/ConditionalHeader';
 import { ThemeProvider } from 'next-themes';
 import ThemeColorSetter from '@/components/ThemeColorSetter';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
-import KakaoScript from '@/lib/services/kakaoScript';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -84,7 +83,6 @@ export default function RootLayout({
           src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
           strategy="beforeInteractive"
         />
-        <KakaoScript />
         <Providers>
           <MswLoader />
           <ThemeProvider
