@@ -2,13 +2,14 @@ import { randomUUID } from 'crypto';
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
-import { UseGuards } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 import type { Server, Socket } from 'socket.io';
 import { isUUID } from 'class-validator';
 
@@ -43,7 +44,10 @@ type DraftSocketData = {
   },
 })
 @UseGuards(WsJwtGuard)
-export class PostDraftGateway implements OnGatewayDisconnect {
+export class PostDraftGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
+  private readonly logger = new Logger(PostDraftGateway.name);
   @WebSocketServer()
   private readonly server: Server;
 
@@ -51,12 +55,16 @@ export class PostDraftGateway implements OnGatewayDisconnect {
     string,
     Map<string, PresenceMember>
   >();
+  private readonly replacedSessionsByDraft = new Map<string, Set<string>>();
 
   @SubscribeMessage('JOIN_DRAFT')
   handleJoinDraft(
     @MessageBody() payload: JoinDraftPayload,
     @ConnectedSocket() socket: Socket,
   ) {
+    this.logger.log(
+      `JOIN_DRAFT payload=${JSON.stringify(payload)} user=${this.getSocketData(socket).user?.sub ?? 'unknown'}`,
+    );
     const draftId = payload?.draftId;
     if (!draftId || !isUUID(draftId)) {
       throw new WsException('draftId must be a UUID.');
@@ -74,12 +82,12 @@ export class PostDraftGateway implements OnGatewayDisconnect {
 
     this.leaveCurrentDraft(socket);
 
-    const data = this.getSocketData(socket);
-    data.sessionId = sessionId;
-    data.actorId = actorId;
-    data.displayName = displayName;
-    data.role = role;
-    data.draftId = draftId;
+    const socketData = this.getSocketData(socket);
+    socketData.sessionId = sessionId;
+    socketData.actorId = actorId;
+    socketData.displayName = displayName;
+    socketData.role = role;
+    socketData.draftId = draftId;
 
     const room = this.getDraftRoom(draftId);
     void socket.join(room);
@@ -87,8 +95,10 @@ export class PostDraftGateway implements OnGatewayDisconnect {
     const membersMap = this.getOrCreateDraftMembers(draftId);
     const previous = membersMap.get(actorId);
     if (previous) {
-      this.server.to(room).emit('PRESENCE_LEFT', {
-        sessionId: previous.sessionId,
+      this.getOrCreateReplacedSessions(draftId).add(previous.sessionId);
+      this.server.to(room).emit('PRESENCE_REPLACED', {
+        previousSessionId: previous.sessionId,
+        sessionId,
         actorId,
       });
     }
@@ -107,6 +117,10 @@ export class PostDraftGateway implements OnGatewayDisconnect {
     this.leaveCurrentDraft(socket);
   }
 
+  handleConnection(socket: Socket) {
+    this.logger.log(`WS_CONNECT socketId=${socket.id}`);
+  }
+
   private getDraftRoom(draftId: string) {
     return `draft:${draftId}`;
   }
@@ -119,10 +133,18 @@ export class PostDraftGateway implements OnGatewayDisconnect {
     return created;
   }
 
+  private getOrCreateReplacedSessions(draftId: string) {
+    const existing = this.replacedSessionsByDraft.get(draftId);
+    if (existing) return existing;
+    const created = new Set<string>();
+    this.replacedSessionsByDraft.set(draftId, created);
+    return created;
+  }
+
   private leaveCurrentDraft(socket: Socket) {
-    const data = this.getSocketData(socket);
-    const draftId = data.draftId;
-    const sessionId = data.sessionId;
+    const socketData = this.getSocketData(socket);
+    const draftId = socketData.draftId;
+    const sessionId = socketData.sessionId;
     if (!draftId || !sessionId) return;
 
     const membersMap = this.presenceByDraft.get(draftId);
@@ -137,14 +159,21 @@ export class PostDraftGateway implements OnGatewayDisconnect {
     }
 
     void socket.leave(this.getDraftRoom(draftId));
-    if (member) {
+    const replacedSessions = this.replacedSessionsByDraft.get(draftId);
+    const isReplaced = replacedSessions?.has(sessionId) ?? false;
+    if (replacedSessions?.size) {
+      replacedSessions.delete(sessionId);
+      if (replacedSessions.size === 0) {
+        this.replacedSessionsByDraft.delete(draftId);
+      }
+    }
+    if (member && !isReplaced) {
       this.server.to(this.getDraftRoom(draftId)).emit('PRESENCE_LEFT', {
         sessionId,
         actorId: member.actorId,
       });
     }
-    const data = this.getSocketData(socket);
-    data.draftId = undefined;
+    socketData.draftId = undefined;
   }
 
   private resolveIdentity(socket: Socket) {
@@ -152,8 +181,8 @@ export class PostDraftGateway implements OnGatewayDisconnect {
       displayName?: string;
       role?: string;
     };
-    const data = this.getSocketData(socket);
-    const actorId = data.user?.sub;
+    const socketData = this.getSocketData(socket);
+    const actorId = socketData.user?.sub;
     if (!actorId || !isUUID(actorId)) {
       throw new WsException('actorId is invalid.');
     }
