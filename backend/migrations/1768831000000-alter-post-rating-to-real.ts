@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AlterPostRatingToReal1768940000000 implements MigrationInterface {
-  name = 'AlterPostRatingToReal1768940000000';
+export class AlterPostRatingToReal1768831000000 implements MigrationInterface {
+  name = 'AlterPostRatingToReal1768831000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
