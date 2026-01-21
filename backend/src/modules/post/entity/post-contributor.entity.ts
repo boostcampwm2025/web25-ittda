@@ -28,7 +28,7 @@ export class PostContributor {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ type: 'enum', enum: PostContributorRole })
+  @Column({ name: 'role', type: 'enum', enum: PostContributorRole })
   role: PostContributorRole;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

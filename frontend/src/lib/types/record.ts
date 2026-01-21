@@ -190,8 +190,10 @@ export interface TableValue {
 export interface MediaInfoValue {
   title: string;
   type: string;
+  externalId: string;
   year?: string;
   imageUrl?: string;
+  originalTitle?: string | null;
 }
 
 export type BlockValue =

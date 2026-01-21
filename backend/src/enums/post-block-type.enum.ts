@@ -8,6 +8,7 @@ export const PostBlockType = {
   LOCATION: 'LOCATION',
   IMAGE: 'IMAGE',
   TABLE: 'TABLE',
+  MEDIA: 'MEDIA',
 } as const;
 
 export type PostBlockType = (typeof PostBlockType)[keyof typeof PostBlockType];
