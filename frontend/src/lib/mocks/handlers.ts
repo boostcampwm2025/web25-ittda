@@ -4,6 +4,7 @@ import {
   createMockEmotionStats,
   createMockGroupCoverList,
   createMockGroupList,
+  createMockMonthlyRecord,
   createMockRecordPreviews,
   createMockTagStats,
 } from './mock';
@@ -12,6 +13,16 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/user/archives/months', ({ request }) => {
+    const url = new URL(request.url);
+    const year = url.searchParams.get('year');
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockMonthlyRecord(),
+      error: null,
+    });
+  }),
   http.get('/api/me/stats/summary', ({ request }) => {
     const url = new URL(request.url);
     const date = url.searchParams.get('date') || new Date().toISOString();

@@ -2,6 +2,7 @@ import { EmotionStatSummary, TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
   GroupListResponse,
+  MyMonthlyRecordListResponse,
   RecordPreview,
 } from '../types/recordResponse';
 
@@ -433,4 +434,35 @@ export const createMockEmotionStats = (): EmotionStatSummary => [
   { emotion: '피곤', count: 1 },
   { emotion: '놀람', count: 2 },
   { emotion: '화남', count: 4 },
+];
+
+export const createMockMonthlyRecord = (): MyMonthlyRecordListResponse[] => [
+  {
+    month: '2025-12',
+    count: 52,
+    coverAssetId: '/base.png',
+    latestTitle: '도쿄 여행',
+    latestLocation: '일본 도쿄',
+  },
+  {
+    month: '2025-11',
+    count: 39,
+    coverAssetId: '/base.png',
+    latestTitle: '절거운 학교생활',
+    latestLocation: '광주 북구',
+  },
+  {
+    month: '2025-10',
+    count: 61,
+    coverAssetId: '/base.png',
+    latestTitle: '귀요미들',
+    latestLocation: '전주',
+  },
+  {
+    month: '2025-09',
+    count: 28,
+    coverAssetId: '/base.png',
+    latestTitle: '프로젝트',
+    latestLocation: '서울 판교 아지트',
+  },
 ];
