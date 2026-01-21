@@ -7,15 +7,20 @@ import GroupDangerousZone from './GroupDangerousZone';
 import GroupEditHeaderActions from './GroupEditHeaderActions';
 import { groupDetailOptions } from '@/lib/api/group';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 
 interface GroupEditClientProps {
   groupId: string;
 }
 
 export default function GroupEditClient({ groupId }: GroupEditClientProps) {
+  const router = useRouter();
   const { data } = useQuery(groupDetailOptions(groupId));
 
-  if (!data) return null;
+  if (!data) {
+    router.replace('/shared');
+    return;
+  }
 
   const { group, me, members } = data;
   return (

@@ -42,9 +42,15 @@ export const groupDetailOptions = (groupId: string) =>
     queryKey: ['group', groupId, 'edit'],
     queryFn: async () => {
       try {
-        const res = await get<GroupEditResponse>(`/api/groups/${groupId}`);
+        const res = await get<GroupEditResponse>(
+          `/api/groups/${groupId}/settings`,
+        );
 
         if (!res.success) {
+          const status = res.error?.code; // 서버 응답의 에러 코드
+          if (status === 'FORBIDDEN' || status === 'NOT_FOUND') {
+            throw res.error;
+          }
           throw createApiError(res);
         }
 
