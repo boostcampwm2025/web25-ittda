@@ -15,6 +15,7 @@ import { GroupRoles } from './guards/group-roles.decorator';
 import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { CreateInviteDto } from './dto/create-invite.dto';
+import { GetGroupMembersResponseDto } from './dto/get-group-members.dto';
 
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../auth/auth.type';
@@ -154,5 +155,13 @@ export class GroupController {
     // GroupRoleGuard가 groupId로 권한 체크를 해줌
     await this.groupService.deleteInvite(inviteId);
     return;
+  }
+
+  /** 그룹 멤버 조회 */
+  @Get(':groupId/current-members')
+  async getGroupMembers(
+    @Param('groupId') groupId: string,
+  ): Promise<GetGroupMembersResponseDto> {
+    return this.groupService.getGroupMembers(groupId);
   }
 }
