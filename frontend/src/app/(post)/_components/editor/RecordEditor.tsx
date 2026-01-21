@@ -364,7 +364,7 @@ export default function PostEditor({
   };
   return (
     <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
-      <RecordEditorHeader mode={mode} onSave={handleSave} />
+      <RecordEditorHeader mode={mode} onSave={handleSave} draftId={draftId} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput value={title} onChange={setTitle} />
         <div

@@ -30,7 +30,7 @@ export class PostDraftController {
       requesterId,
     );
     return {
-      redirectUrl: `/add?groupId=${groupId}&draftId=${draft.id}`,
+      redirectUrl: `/group/${groupId}/post/${draft.id}`,
     };
   }
 
