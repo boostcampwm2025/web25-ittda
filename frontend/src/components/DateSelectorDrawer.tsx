@@ -24,12 +24,14 @@ interface DateSelectorDrawerProps {
   dayRoute: string;
   monthRoute: string;
   yearRoute: string;
+  className?: string;
 }
 
 export default function DateSelectorDrawer({
   dayRoute,
   monthRoute,
   yearRoute,
+  className,
 }: DateSelectorDrawerProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -83,7 +85,7 @@ export default function DateSelectorDrawer({
             <CalendarDays className="w-5 h-5" strokeWidth={2.2} />
           </button>
         </DrawerTrigger>
-        <DrawerContent>
+        <DrawerContent className={className}>
           <div className="w-full px-8 pt-4 pb-8 overflow-y-auto scrollbar-hide">
             <DrawerHeader className="mb-0 pb-0 mx-0 px-0">
               <div className="flex justify-between items-center mb-6 w-full">

@@ -31,6 +31,7 @@ export const RecordBlockType = {
   LOCATION: 'LOCATION',
   IMAGE: 'IMAGE',
   TABLE: 'TABLE',
+  MEDIA: 'MEDIA',
 } as const;
 
 export type RecordBlockType =
