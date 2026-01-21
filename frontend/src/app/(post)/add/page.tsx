@@ -33,8 +33,8 @@ export default async function AddPostPage({ searchParams }: AddPostPageProps) {
   return (
     <PostEditor
       mode="add"
-      // groupId={groupId}
-      // draftId={draftId}
+      groupId={groupId}
+      draftId={draftId}
       initialPost={initialPost}
     />
   );

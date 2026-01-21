@@ -48,19 +48,31 @@ import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
 import { useRouter } from 'next/navigation';
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
 import Image from 'next/image';
+import { useQuery } from '@tanstack/react-query';
+import { groupDraftOptions } from '@/lib/api/groupRecord';
 
 export default function PostEditor({
   mode,
   initialPost,
+  groupId,
+  draftId,
 }: {
   mode: 'add' | 'edit';
   initialPost?: { title: string; blocks: RecordBlock[] };
+  groupId?: string;
+  draftId?: string;
 }) {
   const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const { mutate: createRecord } = useCreateRecord();
   const [isActive, setIsActive] = useState(false);
+
+  //TODO: 임시 클라이언트 호출
+  const { data: remoteData, isLoading } = useQuery({
+    ...groupDraftOptions(groupId ?? '', draftId ?? ''),
+    enabled: !!groupId && !!draftId,
+  });
 
   const {
     blocks,
@@ -86,9 +98,14 @@ export default function PostEditor({
   } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
 
   // 페이지 초기화/복구 및 위치 데이터 받기
-  // TODO: 이후 키 형태로 변경
+  // TODO: 이후 키 형태/서버 패칭으로 변경
+  const resolvedInitialPost = remoteData
+    ? { title: remoteData.snapshot.title, blocks: remoteData.snapshot.blocks }
+    : initialPost;
+
+  // 에디터 초기화
   usePostEditorInitializer({
-    initialPost,
+    initialPost: resolvedInitialPost,
     onInitialized: ({ title, blocks }) => {
       setTitle(title);
       setBlocks(blocks);
