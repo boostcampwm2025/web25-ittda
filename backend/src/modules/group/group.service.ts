@@ -328,6 +328,34 @@ export class GroupService {
     await this.inviteRepo.delete(inviteId);
   }
 
+  /** 그룹 멤버 조회 */
+  async getGroupMembers(groupId: string) {
+    // 그룹 존재 확인
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    // 그룹 멤버 조회 (user 관계 포함)
+    const members = await this.groupMemberRepo.find({
+      where: { groupId },
+      relations: ['user'],
+    });
+
+    // 응답 형식으로 변환
+    return {
+      groupName: group.name,
+      groupMemberCount: members.length,
+      members: members.map((member) => ({
+        memberId: member.user.id,
+        profileImageId: member.user.profileImageId,
+      })),
+    };
+  }
+
   private validateGroupNickname(nickname: string): string {
     const trimmed = nickname.trim();
     if (trimmed.length < 2 || trimmed.length > 50) {
