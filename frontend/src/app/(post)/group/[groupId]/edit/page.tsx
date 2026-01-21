@@ -15,11 +15,7 @@ export default async function GroupEditPage({ params }: GroupEditPageProps) {
 
   const queryClient = new QueryClient();
 
-  try {
-    await queryClient.fetchQuery(groupDetailOptions(groupId));
-  } catch (error) {
-    throw error;
-  }
+  await queryClient.fetchQuery(groupDetailOptions(groupId));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
