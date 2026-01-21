@@ -11,14 +11,10 @@ export interface TagStatSummary {
   allTimeTop: Tag[];
 }
 
-export interface EmotionStatSummary {
-  recentEmotions: string[];
-  frequentEmotions: string[];
-}
+export type EmotionStatSummary = Emotion[];
 
 export interface Emotion {
-  name: string;
-  emoji: string;
+  emotion: string;
   count: number;
 }
 
