@@ -20,7 +20,7 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
       transports: ['websocket'],
       withCredentials: true,
       auth: {
-        token: `Bearer ${accessToken}`,
+        token: accessToken,
       },
     });
 
