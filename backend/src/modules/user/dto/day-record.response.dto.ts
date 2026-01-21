@@ -8,7 +8,7 @@ export class DayRecordResponseDto {
   postCount: number;
 
   @Expose()
-  coverThumbnailUrl: string | null;
+  coverAssetId: string | null;
 
   @Expose()
   latestPostTitle: string;

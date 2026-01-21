@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUrl } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateMonthCoverBodyDto {
@@ -8,6 +8,7 @@ export class UpdateMonthCoverBodyDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsUrl()
-  coverUrl: string;
+  @IsString()
+  @IsNotEmpty()
+  coverAssetId: string;
 }

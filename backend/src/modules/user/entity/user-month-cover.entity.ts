@@ -9,6 +9,7 @@ import {
   Unique,
 } from 'typeorm';
 import { User } from './user.entity';
+import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
 
 @Entity('user_month_covers')
 @Unique(['userId', 'year', 'month']) // 유저는 연/월당 하나의 커버만 가짐
@@ -29,9 +30,12 @@ export class UserMonthCover {
   @Column({ type: 'int' })
   month: number;
 
-  @Column({ name: 'cover_url', type: 'text' })
-  coverUrl: string;
-  // group처럼 cover_media_id랑 cover_source_post_id 이렇게 두 개 저장하는게 맞다.
+  @ManyToOne(() => MediaAsset, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'cover_media_asset_id' })
+  coverAsset: MediaAsset;
+
+  @Column({ name: 'cover_media_asset_id', type: 'uuid', nullable: true })
+  coverAssetId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

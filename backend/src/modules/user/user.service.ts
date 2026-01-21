@@ -131,7 +131,7 @@ export class UserService {
     const customCoverMap = new Map<string, string>(); // "yyyy-MM" -> url
     for (const c of customCovers) {
       const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
-      customCoverMap.set(key, c.coverUrl);
+      customCoverMap.set(key, c.coverAssetId ?? '');
     }
 
     // 4. 각 월별 "대표(최신) 포스트 ID" 추출
@@ -185,13 +185,13 @@ export class UserService {
       const { postCount, latestPost } = resultFromMonth.get(mKey)!;
       const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
 
-      // 6-1. 커버 이미지 찾기
+      // 6-1. 커버 이미지 찾기 (AssetID 사용)
       // 우선순위: 1. UserSelected 2. Latest Post Image
-      let coverUrl: string | null = null;
+      let coverAssetId: string | null = null;
 
-      const customUrl = customCoverMap.get(mKey);
-      if (customUrl) {
-        coverUrl = customUrl;
+      const customId = customCoverMap.get(mKey);
+      if (customId) {
+        coverAssetId = customId;
       } else {
         const imageBlock = relatedBlocks.find(
           (b) => b.type === PostBlockType.IMAGE,
@@ -199,8 +199,8 @@ export class UserService {
         if (imageBlock) {
           const val =
             imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
-          if (val.tempUrls && val.tempUrls.length > 0) {
-            coverUrl = val.tempUrls[0];
+          if (val.mediaIds && val.mediaIds.length > 0) {
+            coverAssetId = val.mediaIds[0];
           }
         }
       }
@@ -219,7 +219,7 @@ export class UserService {
       results.push({
         month: mKey,
         count: postCount,
-        coverUrl,
+        coverAssetId,
         latestTitle: latestPost.title,
         latestLocation: placeName,
       });
@@ -304,7 +304,7 @@ export class UserService {
     userId: string,
     year: number,
     month: number,
-    coverUrl: string,
+    coverAssetId: string,
   ) {
     // Upsert
     const exist = await this.userMonthCoverRepo.findOne({
@@ -312,14 +312,14 @@ export class UserService {
     });
 
     if (exist) {
-      exist.coverUrl = coverUrl;
+      exist.coverAssetId = coverAssetId;
       await this.userMonthCoverRepo.save(exist);
     } else {
       const newCover = this.userMonthCoverRepo.create({
         userId,
         year,
         month,
-        coverUrl,
+        coverAssetId,
       });
       await this.userMonthCoverRepo.save(newCover);
     }
@@ -430,15 +430,15 @@ export class UserService {
       const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
 
       // 커버 이미지
-      let coverThumbnailUrl: string | null = null;
+      let coverAssetId: string | null = null;
       const imageBlock = relatedBlocks.find(
         (b) => b.type === PostBlockType.IMAGE,
       );
       if (imageBlock) {
         const val =
           imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
-        if (val.tempUrls && val.tempUrls.length > 0) {
-          coverThumbnailUrl = val.tempUrls[0];
+        if (val.mediaIds && val.mediaIds.length > 0) {
+          coverAssetId = val.mediaIds[0];
         }
       }
 
@@ -456,7 +456,7 @@ export class UserService {
       results.push({
         date: dKey,
         postCount,
-        coverThumbnailUrl,
+        coverAssetId,
         latestPostTitle: latestPost.title,
         latestPlaceName,
       });
@@ -525,15 +525,15 @@ export class UserService {
       },
     });
 
-    // 3. tempUrls 추출 평탄화
-    const imageUrls: string[] = [];
+    // 3. mediaIds 추출 평탄화
+    const assetIds: string[] = [];
     for (const b of blocks) {
       const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
-      if (val.tempUrls) {
-        imageUrls.push(...val.tempUrls);
+      if (val.mediaIds) {
+        assetIds.push(...val.mediaIds);
       }
     }
 
-    return imageUrls;
+    return assetIds;
   }
 }

@@ -8,7 +8,7 @@ export class MonthRecordResponseDto {
   count: number;
 
   @Expose()
-  coverUrl: string | null; // TODO: coverUrl 명세 수정
+  coverAssetId: string | null;
 
   @Expose()
   latestTitle: string;
