@@ -8,11 +8,14 @@ type PermissionStatus = 'prompt' | 'granted' | 'denied' | 'unknown';
 interface State {
   permissionStatus: PermissionStatus;
   hasAskedPermission: boolean; // 모달을 통해 이미 물어봤는지 여부
+  lastToastShownAt: number | null; // 마지막 토스트 표시 시간 (timestamp)
 }
 
 interface Action {
   setPermissionStatus: (status: PermissionStatus) => void;
   setHasAskedPermission: (asked: boolean) => void;
+  setLastToastShownAt: (timestamp: number) => void;
+  canShowToast: () => boolean; // 24시간 지났는지 체크
   checkPermission: () => Promise<PermissionStatus>;
   requestPermission: () => Promise<PermissionStatus>;
 }
@@ -22,6 +25,7 @@ export const useLocationPermissionStore = create<State & Action>()(
     (set, get) => ({
       permissionStatus: 'unknown',
       hasAskedPermission: false,
+      lastToastShownAt: null,
 
       setPermissionStatus: (status) => {
         set({ permissionStatus: status });
@@ -29,6 +33,18 @@ export const useLocationPermissionStore = create<State & Action>()(
 
       setHasAskedPermission: (asked) => {
         set({ hasAskedPermission: asked });
+      },
+
+      setLastToastShownAt: (timestamp) => {
+        set({ lastToastShownAt: timestamp });
+      },
+
+      canShowToast: () => {
+        const { lastToastShownAt } = get();
+        if (!lastToastShownAt) return true;
+
+        const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+        return Date.now() - lastToastShownAt >= TWENTY_FOUR_HOURS;
       },
 
       checkPermission: async () => {

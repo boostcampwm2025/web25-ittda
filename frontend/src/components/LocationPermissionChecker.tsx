@@ -17,7 +17,7 @@ export default function LocationPermissionChecker() {
     getServerSnapshot,
   );
 
-  const { hasAskedPermission, checkPermission } = useLocationPermissionStore();
+  const { hasAskedPermission, checkPermission, canShowToast, setLastToastShownAt } = useLocationPermissionStore();
   const [showRequestModal, setShowRequestModal] = useState(false);
 
   useEffect(() => {
@@ -32,12 +32,15 @@ export default function LocationPermissionChecker() {
         return;
       }
 
-      // denied 상태면 토스트로 안내
+      // denied 상태면 토스트로 안내 (24시간에 한 번만)
       if (status === 'denied') {
-        toast.error('위치 권한이 필요해요', {
-          description: '브라우저 설정에서 위치 권한을 허용해주세요',
-          duration: 4000,
-        });
+        if (canShowToast()) {
+          toast.error('위치 권한이 필요해요', {
+            description: '브라우저 설정에서 위치 권한을 허용해주세요',
+            duration: 4000,
+          });
+          setLastToastShownAt(Date.now());
+        }
         return;
       }
 
@@ -51,7 +54,7 @@ export default function LocationPermissionChecker() {
     // 약간의 딜레이 후 체크 (앱 초기 로딩이 완료된 후)
     const timer = setTimeout(checkAndShowModal, 1000);
     return () => clearTimeout(timer);
-  }, [isHydrated, hasAskedPermission, checkPermission]);
+  }, [isHydrated, hasAskedPermission, checkPermission, canShowToast, setLastToastShownAt]);
 
   if (!isHydrated || !showRequestModal) return null;
 
