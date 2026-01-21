@@ -2,6 +2,7 @@ import { EmotionStatSummary, TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
   GroupListResponse,
+  MyDailyRecordListResponse,
   MyMonthlyRecordListResponse,
   RecordPreview,
 } from '../types/recordResponse';
@@ -464,5 +465,29 @@ export const createMockMonthlyRecord = (): MyMonthlyRecordListResponse[] => [
     coverAssetId: '/base.png',
     latestTitle: '프로젝트',
     latestLocation: '서울 판교 아지트',
+  },
+];
+
+export const createMockDailyRecord = (): MyDailyRecordListResponse[] => [
+  {
+    date: '2025-11-21',
+    postCount: 1,
+    coverThumbnailUrl: '/base.png',
+    latestPostTitle: '도쿄 축제',
+    latestPlaceName: '도쿄',
+  },
+  {
+    date: '2025-11-18',
+    postCount: 3,
+    coverThumbnailUrl: '/base.png',
+    latestPostTitle: '사슴을 주의해',
+    latestPlaceName: '도쿄',
+  },
+  {
+    date: '2025-11-10',
+    postCount: 1,
+    coverThumbnailUrl: '/base.png',
+    latestPostTitle: '일본은 굉장히 더워',
+    latestPlaceName: '도쿄',
   },
 ];
