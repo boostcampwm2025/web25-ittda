@@ -536,4 +536,59 @@ export class UserService {
 
     return assetIds;
   }
+
+  /**
+   * 해당 월 중 기록(게시글)이 있는 날짜 조회 (YYYY-MM-DD)
+   */
+  async getRecordedDays(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<string[]> {
+    const start = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const end = start.endOf('month');
+    const fromDate = start.toJSDate();
+    const toDate = end.toJSDate();
+
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.select('p.eventAt');
+
+    postsQb.where(
+      new Brackets((qb) => {
+        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+
+    postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+    postsQb.orderBy('p.eventAt', 'DESC');
+
+    const posts = await postsQb.getMany();
+    const dateSet = new Set<string>();
+
+    for (const p of posts) {
+      if (!p.eventAt) continue;
+      // KST 기준 날짜 추출
+      const dt = DateTime.fromJSDate(p.eventAt).setZone('Asia/Seoul');
+      dateSet.add(dt.toFormat('yyyy-MM-dd'));
+    }
+
+    // 최신순 정렬
+    return Array.from(dateSet).sort().reverse();
+  }
 }

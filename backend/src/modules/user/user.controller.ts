@@ -136,6 +136,23 @@ export class UserController {
     return { data };
   }
 
+  @Get('archives/record-days')
+  @ApiWrappedOkResponse({ type: String, isArray: true })
+  async getRecordedDays(
+    @User() user: MyJwtPayload,
+    @Query() query: GetDailyArchiveQueryDto,
+  ): Promise<{ data: string[] }> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    const { year, month } = this.parseYearMonth(query.month);
+    const data = await this.userService.getRecordedDays(userId, year, month);
+
+    return { data };
+  }
+
   @Get('archives/monthcover')
   @ApiOperation({
     summary: '사용자 월별 커버 후보 이미지 조회',
