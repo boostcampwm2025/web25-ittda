@@ -58,7 +58,7 @@ export default function Header() {
           )}
         >
           <Image
-            src={userProfile?.user.profileImageId || ''}
+            src={userProfile?.user.profileImageId || '/profile-ex.jpeg'}
             alt="프로필"
             className="w-full h-full object-cover"
             // placeholder="blur"
