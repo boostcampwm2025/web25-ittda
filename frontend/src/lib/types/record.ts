@@ -49,7 +49,6 @@ export interface DayRecord {
   date: string;
   dayName: string;
   title: string;
-  author: string;
   count: number;
   coverUrl: string;
 }

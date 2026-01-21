@@ -102,3 +102,11 @@ export interface MyMonthlyRecordListResponse {
   latestTitle: string;
   latestLocation: string | null;
 }
+
+export interface MyDailyRecordListResponse {
+  date: string;
+  postCount: number;
+  coverThumbnailUrl: string | null;
+  latestPostTitle: string;
+  latestPlaceName: string | null;
+}
