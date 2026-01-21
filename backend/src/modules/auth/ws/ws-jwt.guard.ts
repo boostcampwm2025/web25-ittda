@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import type { Socket } from 'socket.io';
@@ -7,6 +12,7 @@ import type { MyJwtPayload } from '../auth.type';
 
 @Injectable()
 export class WsJwtGuard implements CanActivate {
+  private readonly logger = new Logger(WsJwtGuard.name);
   constructor(private readonly jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -14,6 +20,7 @@ export class WsJwtGuard implements CanActivate {
     const token = this.extractToken(client);
 
     if (!token) {
+      this.logger.warn('WS_AUTH missing token');
       throw new WsException('Access token is required.');
     }
 
@@ -21,8 +28,10 @@ export class WsJwtGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<MyJwtPayload>(token);
       const data = client.data as { user?: MyJwtPayload };
       data.user = payload;
+      this.logger.log(`WS_AUTH ok userId=${payload.sub}`);
       return true;
     } catch {
+      this.logger.warn('WS_AUTH invalid token');
       throw new WsException('Invalid access token.');
     }
   }

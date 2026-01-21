@@ -9,6 +9,8 @@ if (!accessToken) {
   process.exit(1);
 }
 
+console.log('[start]', { serverUrl, draftId });
+
 const socket = io(serverUrl, {
   auth: {
     token: accessToken,
@@ -30,12 +32,26 @@ socket.on('reconnect_attempt', (attempt) => {
   console.log('[reconnect_attempt]', attempt);
 });
 
+socket.on('connect_timeout', () => {
+  console.log('[connect_timeout]');
+});
+
+setTimeout(() => {
+  if (!socket.connected) {
+    console.log('[timeout] connection not established after 5s');
+  }
+}, 5000);
+
 socket.on('PRESENCE_SNAPSHOT', (payload) => {
   console.log('[PRESENCE_SNAPSHOT]', JSON.stringify(payload, null, 2));
 });
 
 socket.on('PRESENCE_JOINED', (payload) => {
   console.log('[PRESENCE_JOINED]', JSON.stringify(payload, null, 2));
+});
+
+socket.on('PRESENCE_REPLACED', (payload) => {
+  console.log('[PRESENCE_REPLACED]', JSON.stringify(payload, null, 2));
 });
 
 socket.on('PRESENCE_LEFT', (payload) => {
