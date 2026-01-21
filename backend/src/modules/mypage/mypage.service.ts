@@ -33,24 +33,38 @@ export class MyPageService {
   async getTags(
     userId: string,
     sort: 'recent' | 'frequent',
+    limit?: number,
   ): Promise<TagCount[] | string[]> {
     if (sort === 'frequent') {
-      // query의 반환값에 타입을 명시하여 unsafe-assignment 방지
-      const query = await this.postRepo.query<
-        Array<{ tag: string; count: string }>
-      >(
-        `SELECT unnest(tags) as tag, COUNT(*) as count 
+      let querySql = `SELECT unnest(tags) as tag, COUNT(*) as count 
          FROM posts 
          WHERE owner_user_id = $1 
          GROUP BY tag 
-         ORDER BY count DESC, MAX(created_at) DESC`,
-        [userId],
-      ); // PostgreSQL의 unnest() 함수는 배열(Array)을 행(Row)으로 펼쳐주는(평면화하는) 함수
+         ORDER BY count DESC, MAX(created_at) DESC`;
+
+      const params: any[] = [userId];
+      if (limit) {
+        querySql += ` LIMIT $2`;
+        params.push(limit);
+      }
+
+      // query의 반환값에 타입을 명시하여 unsafe-assignment 방지
+      const query = await this.postRepo.query<
+        Array<{ tag: string; count: string }>
+      >(querySql, params); // PostgreSQL의 unnest() 함수는 배열(Array)을 행(Row)으로 펼쳐주는(평면화하는) 함수
+
       return query.map((r) => ({
         tag: r.tag,
         count: parseInt(r.count, 10),
       }));
     } else {
+      // recent: 최신순 (중복 제거된 태그 목록)
+      // LIMIT 최적화를 하고 싶지만, 중복 제거 로직(Application Layer) 때문에
+      // DB에서 LIMIT을 걸면 중복된 태그만 나올 수 있음.
+      // 따라서 충분히 가져와서 메모리에서 필터링하거나,
+      // DISTINCT UNNEST 쿼리를 짜야 함.
+      // 여기서는 기존 로직 유지하되 결과에서 자름. (limit이 아주 크면 성능 이슈 가능성 있음)
+
       const query = await this.postRepo.query<Array<{ tag: string }>>(
         `SELECT unnest(tags) as tag, created_at
          FROM posts 
@@ -64,6 +78,7 @@ export class MyPageService {
         if (!seen.has(row.tag)) {
           seen.add(row.tag);
           result.push(row.tag);
+          if (limit && result.length >= limit) break;
         }
       }
       return result;
@@ -176,5 +191,76 @@ export class MyPageService {
         '존재하지 않는 사용자이거나 이미 탈퇴 처리되었습니다.',
       );
     }
+  }
+
+  /**
+   * 월별 감정 요약 조회
+   */
+  async getEmotionSummary(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<{ emotion: string; count: number }[]> {
+    const fromDate = new Date(year, month - 1, 1);
+    // month가 12일 경우 year+1, 0월(1월)로 자동 넘어감
+    const toDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    // 2. 쿼리 실행 (group by emotion)
+    const qb = this.postRepo.createQueryBuilder('post');
+    qb.select('post.emotion', 'emotion');
+    qb.addSelect('COUNT(*)', 'count');
+    qb.where('post.owner_user_id = :userId', { userId });
+    qb.andWhere('post.event_at >= :fromDate AND post.event_at <= :toDate', {
+      fromDate,
+      toDate,
+    });
+    qb.andWhere('post.emotion IS NOT NULL');
+    qb.groupBy('post.emotion');
+    qb.orderBy('count', 'DESC');
+
+    const result = await qb.getRawMany<{ emotion: string; count: string }>();
+
+    return result.map((r) => ({
+      emotion: r.emotion,
+      count: parseInt(r.count, 10),
+    }));
+  }
+
+  /**
+   * 통계 요약 조회 (일간/월간)
+   */
+  async getStatsSummary(
+    userId: string,
+    query: { date?: string; month?: string },
+  ): Promise<{ count: number }> {
+    const qb = this.postRepo.createQueryBuilder('post');
+    qb.where('post.owner_user_id = :userId', { userId });
+
+    if (query.date) {
+      // YYYY-MM-DD
+      const parts = query.date.split('-').map((s) => parseInt(s, 10));
+      const start = new Date(parts[0], parts[1] - 1, parts[2]);
+      const end = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
+
+      qb.andWhere('post.event_at >= :start AND post.event_at <= :end', {
+        start,
+        end,
+      });
+    } else if (query.month) {
+      // YYYY-MM
+      const parts = query.month.split('-').map((s) => parseInt(s, 10));
+      const start = new Date(parts[0], parts[1] - 1, 1);
+      const end = new Date(parts[0], parts[1], 0, 23, 59, 59, 999);
+
+      qb.andWhere('post.event_at >= :start AND post.event_at <= :end', {
+        start,
+        end,
+      });
+    } else {
+      throw new BadRequestException('Date or Month query required');
+    }
+
+    const count = await qb.getCount();
+    return { count };
   }
 }
