@@ -146,8 +146,8 @@ export class MyPageController {
     ]);
 
     return {
-      recentTop: recentTop,
-      allTimeTop: allTimeTop,
+      recentTop: recentTop, // 최근 TOP
+      allTimeTop: allTimeTop, // 누적 TOP
     };
   }
 
