@@ -10,11 +10,16 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Logger, UseGuards } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import type { Server, Socket } from 'socket.io';
 import { isUUID } from 'class-validator';
 
 import { WsJwtGuard } from '@/modules/auth/ws/ws-jwt.guard';
 import type { MyJwtPayload } from '@/modules/auth/auth.type';
+import { PostDraft } from '@/modules/post/entity/post-draft.entity';
+import { GroupMember } from '@/modules/group/entity/group_member.entity';
+import { User } from '@/modules/user/user.entity';
 
 type PresenceMember = {
   actorId: string;
@@ -48,6 +53,16 @@ export class PostDraftGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly logger = new Logger(PostDraftGateway.name);
+
+  constructor(
+    @InjectRepository(PostDraft)
+    private readonly postDraftRepository: Repository<PostDraft>,
+    @InjectRepository(GroupMember)
+    private readonly groupMemberRepository: Repository<GroupMember>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
   @WebSocketServer()
   private readonly server: Server;
 
@@ -58,7 +73,7 @@ export class PostDraftGateway
   private readonly replacedSessionsByDraft = new Map<string, Set<string>>();
 
   @SubscribeMessage('JOIN_DRAFT')
-  handleJoinDraft(
+  async handleJoinDraft(
     @MessageBody() payload: JoinDraftPayload,
     @ConnectedSocket() socket: Socket,
   ) {
@@ -71,7 +86,11 @@ export class PostDraftGateway
     }
 
     const sessionId = randomUUID();
-    const { actorId, displayName, role } = this.resolveIdentity(socket);
+    const actorId = this.resolveActorId(socket);
+    const { displayName, role } = await this.resolveMemberInfo(
+      actorId,
+      draftId,
+    );
     const member: PresenceMember = {
       actorId,
       sessionId,
@@ -176,20 +195,44 @@ export class PostDraftGateway
     socketData.draftId = undefined;
   }
 
-  private resolveIdentity(socket: Socket) {
-    const auth = (socket.handshake.auth ?? {}) as {
-      displayName?: string;
-      role?: string;
-    };
+  private resolveActorId(socket: Socket) {
     const socketData = this.getSocketData(socket);
     const actorId = socketData.user?.sub;
     if (!actorId || !isUUID(actorId)) {
       throw new WsException('actorId is invalid.');
     }
+    return actorId;
+  }
+
+  private async resolveMemberInfo(actorId: string, draftId: string) {
+    const draft = await this.postDraftRepository.findOne({
+      where: { id: draftId, isActive: true },
+      select: { id: true, groupId: true },
+    });
+    if (!draft) {
+      throw new WsException('Draft not found.');
+    }
+
+    const member = await this.groupMemberRepository.findOne({
+      where: { groupId: draft.groupId, userId: actorId },
+      select: { role: true, nicknameInGroup: true },
+    });
+    if (!member) {
+      throw new WsException('Not a group member.');
+    }
+
+    let displayName = member.nicknameInGroup ?? null;
+    if (!displayName) {
+      const user = await this.userRepository.findOne({
+        where: { id: actorId },
+        select: { nickname: true },
+      });
+      displayName = user?.nickname ?? 'User';
+    }
+
     return {
-      actorId,
-      displayName: auth.displayName ?? 'User',
-      role: auth.role ?? 'EDITOR',
+      displayName,
+      role: member.role,
     };
   }
 
