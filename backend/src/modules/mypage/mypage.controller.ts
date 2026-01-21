@@ -91,7 +91,7 @@ export class MyPageController {
   async getMyTags(
     @Req() req: RequestWithUser,
     @Query('sort') sort: 'recent' | 'frequent' = 'recent',
-  ): Promise<TagCount[] | string[]> {
+  ): Promise<TagCount[]> {
     const userId = req.user.sub;
     return this.myPageService.getTags(userId, sort);
   }
@@ -145,10 +145,9 @@ export class MyPageController {
       this.myPageService.getTags(userId, 'frequent', limit),
     ]);
 
-    // Type casting because we know the return types based on the 'sort' param
     return {
-      recentTop: recentTop as string[],
-      allTimeTop: allTimeTop as TagCount[],
+      recentTop: recentTop,
+      allTimeTop: allTimeTop,
     };
   }
 

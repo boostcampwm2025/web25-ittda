@@ -89,18 +89,6 @@ export class UserController {
     return { data: { coverUrl: body.coverUrl } };
   }
 
-  private parseYearMonth(yyyy_mm: string) {
-    const [yearStr, monthStr] = yyyy_mm.split('-');
-    const year = parseInt(yearStr, 10);
-    const month = parseInt(monthStr, 10);
-
-    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
-      throw new BadRequestException('Invalid date format. Use YYYY-MM.');
-    }
-
-    return { year, month };
-  }
-
   @Get('archives/days')
   @ApiWrappedOkResponse({ type: DayRecordResponseDto, isArray: true })
   async getDailyArchive(
@@ -131,5 +119,17 @@ export class UserController {
 
     const data = await this.userService.getYearlyImages(userId, query.year);
     return { data };
+  }
+
+  private parseYearMonth(yyyy_mm: string) {
+    const [yearStr, monthStr] = yyyy_mm.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+
+    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM.');
+    }
+
+    return { year, month };
   }
 }

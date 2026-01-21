@@ -31,6 +31,7 @@ export class UserMonthCover {
 
   @Column({ name: 'cover_url', type: 'text' })
   coverUrl: string;
+  // group처럼 cover_media_id랑 cover_source_post_id 이렇게 두 개 저장하는게 맞다.
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

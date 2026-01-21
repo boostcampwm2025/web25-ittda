@@ -34,55 +34,38 @@ export class MyPageService {
     userId: string,
     sort: 'recent' | 'frequent',
     limit?: number,
-  ): Promise<TagCount[] | string[]> {
+  ): Promise<TagCount[]> {
+    // frequent: 많이 쓴 순 (count DESC, latest DESC)
+    // recent: 최신 순 (latest DESC)
+    // 둘 다 GROUP BY tag 필요 (중복 제거 및 count 계산)
+
+    let orderByClause = '';
     if (sort === 'frequent') {
-      let querySql = `SELECT unnest(tags) as tag, COUNT(*) as count 
+      orderByClause = 'ORDER BY count DESC, max_created_at DESC';
+    } else {
+      orderByClause = 'ORDER BY max_created_at DESC';
+    }
+
+    let querySql = `SELECT unnest(tags) as tag, COUNT(*) as count, MAX(created_at) as max_created_at
          FROM posts 
          WHERE owner_user_id = $1 
          GROUP BY tag 
-         ORDER BY count DESC, MAX(created_at) DESC`;
+         ${orderByClause}`;
 
-      const params: any[] = [userId];
-      if (limit) {
-        querySql += ` LIMIT $2`;
-        params.push(limit);
-      }
-
-      // query의 반환값에 타입을 명시하여 unsafe-assignment 방지
-      const query = await this.postRepo.query<
-        Array<{ tag: string; count: string }>
-      >(querySql, params); // PostgreSQL의 unnest() 함수는 배열(Array)을 행(Row)으로 펼쳐주는(평면화하는) 함수
-
-      return query.map((r) => ({
-        tag: r.tag,
-        count: parseInt(r.count, 10),
-      }));
-    } else {
-      // recent: 최신순 (중복 제거된 태그 목록)
-      // LIMIT 최적화를 하고 싶지만, 중복 제거 로직(Application Layer) 때문에
-      // DB에서 LIMIT을 걸면 중복된 태그만 나올 수 있음.
-      // 따라서 충분히 가져와서 메모리에서 필터링하거나,
-      // DISTINCT UNNEST 쿼리를 짜야 함.
-      // 여기서는 기존 로직 유지하되 결과에서 자름. (limit이 아주 크면 성능 이슈 가능성 있음)
-
-      const query = await this.postRepo.query<Array<{ tag: string }>>(
-        `SELECT unnest(tags) as tag, created_at
-         FROM posts 
-         WHERE owner_user_id = $1 
-         ORDER BY created_at DESC`,
-        [userId],
-      );
-      const seen = new Set<string>();
-      const result: string[] = [];
-      for (const row of query) {
-        if (!seen.has(row.tag)) {
-          seen.add(row.tag);
-          result.push(row.tag);
-          if (limit && result.length >= limit) break;
-        }
-      }
-      return result;
+    const params: any[] = [userId];
+    if (limit) {
+      querySql += ` LIMIT $2`;
+      params.push(limit);
     }
+
+    const query = await this.postRepo.query<
+      Array<{ tag: string; count: string; max_created_at: Date }>
+    >(querySql, params);
+
+    return query.map((r) => ({
+      tag: r.tag,
+      count: parseInt(r.count, 10),
+    }));
   }
 
   async getEmotions(
@@ -127,11 +110,11 @@ export class MyPageService {
     const frequentTags =
       Array.isArray(frequentTagsResult) &&
       typeof frequentTagsResult[0] === 'object'
-        ? (frequentTagsResult as TagCount[])
+        ? frequentTagsResult
         : [];
     const recentTags =
-      Array.isArray(recentTagsResult) && typeof recentTagsResult[0] === 'string'
-        ? (recentTagsResult as string[])
+      Array.isArray(recentTagsResult) && typeof recentTagsResult[0] === 'object'
+        ? recentTagsResult
         : [];
 
     const frequentEmotions =
@@ -146,7 +129,7 @@ export class MyPageService {
         : [];
 
     return {
-      recentTags: recentTags.slice(0, 10),
+      recentTags: recentTags.slice(0, 10).map((t) => t.tag),
       frequentTags: frequentTags.slice(0, 10).map((t) => t.tag),
       recentEmotions: recentEmotions.slice(0, 10),
       frequentEmotions: frequentEmotions.slice(0, 10).map((e) => e.emotion),

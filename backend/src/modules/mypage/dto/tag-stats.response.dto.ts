@@ -10,7 +10,8 @@ export class TagCountDto {
 
 export class TagStatsResponseDto {
   @Expose()
-  recentTop: string[];
+  @Type(() => TagCountDto)
+  recentTop: TagCountDto[];
 
   @Expose()
   @Type(() => TagCountDto)
