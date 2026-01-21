@@ -1,7 +1,7 @@
 'use client';
 
 import { Group } from '@/lib/types/group';
-import { Camera, ChevronRight, X } from 'lucide-react';
+import { Camera, ChevronRight, Users, X } from 'lucide-react';
 import Image from 'next/image';
 import React, { useRef } from 'react';
 import { useGroupEdit } from './GroupEditContext';
@@ -12,11 +12,7 @@ type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
   nickname: Group['nicknameInGroup'];
 };
 
-export default function GroupInfo({
-  groupThumnail,
-  groupId,
-  nickname,
-}: GroupInfoProps) {
+export default function GroupInfo({ groupId, nickname }: GroupInfoProps) {
   const { groupName, setGroupName, groupThumbnail, setGroupThumbnail } =
     useGroupEdit();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,16 +41,21 @@ export default function GroupInfo({
               onChange={handleImageChange}
               className="hidden"
             />
-            <Image
-              width={100}
-              height={100}
-              src={
-                (groupThumbnail && URL.createObjectURL(groupThumbnail)) ||
-                groupThumnail
-              }
-              className="w-full h-full object-cover opacity-80"
-              alt=""
-            />
+            {groupThumbnail ? (
+              <Image
+                width={100}
+                height={100}
+                src={
+                  typeof groupThumbnail === 'object' && groupThumbnail !== null
+                    ? URL.createObjectURL(groupThumbnail)
+                    : groupThumbnail
+                }
+                className="w-full h-full object-cover opacity-80"
+                alt="그룹 썸네일"
+              />
+            ) : (
+              <Users className="w-1/3 h-1/3 text-gray-400" />
+            )}
           </div>
           <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
             <Camera className="w-4 h-4" />
