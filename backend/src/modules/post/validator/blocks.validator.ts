@@ -51,15 +51,15 @@ function validateRequiredBlocks(counts: Map<PostBlockType, number>) {
 }
 
 function validateSingleMetaBlocks(counts: Map<PostBlockType, number>) {
-  const singles: PostBlockType[] = [
-    PostBlockType.MOOD,
-    PostBlockType.LOCATION,
-    PostBlockType.TAG,
-    PostBlockType.RATING,
+  const limits: Array<[PostBlockType, number]> = [
+    [PostBlockType.MOOD, 4],
+    [PostBlockType.LOCATION, 1],
+    [PostBlockType.TAG, 1],
+    [PostBlockType.RATING, 1],
   ];
-  for (const t of singles) {
-    if ((counts.get(t) ?? 0) > 1) {
-      throw new BadRequestException(`${t} block must be at most one`);
+  for (const [type, max] of limits) {
+    if ((counts.get(type) ?? 0) > max) {
+      throw new BadRequestException(`${type} block must be at most ${max}`);
     }
   }
 }
