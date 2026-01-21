@@ -21,6 +21,7 @@ import { GetMonthImagesResponseDto } from './dto/get-month-images.response.dto';
 import { UpdateMonthCoverBodyDto } from './dto/update-month-cover.body.dto';
 import { GetDailyArchiveQueryDto } from './dto/get-daily-archive.query.dto';
 import { DayRecordResponseDto } from './dto/day-record.response.dto';
+import { GetArchivesMonthCoverQueryDto } from './dto/get-archives-month-cover.query.dto';
 
 import type { MyJwtPayload } from '../auth/auth.type';
 
@@ -114,6 +115,21 @@ export class UserController {
     const { year, month } = this.parseYearMonth(query.month);
 
     const data = await this.userService.getDailyArchive(userId, year, month);
+    return { data };
+  }
+
+  @Get('archives/monthcover')
+  @ApiWrappedOkResponse({ type: String, isArray: true })
+  async getArchivesMonthCover(
+    @User() user: MyJwtPayload,
+    @Query() query: GetArchivesMonthCoverQueryDto,
+  ): Promise<{ data: string[] }> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    const data = await this.userService.getYearlyImages(userId, query.year);
     return { data };
   }
 }
