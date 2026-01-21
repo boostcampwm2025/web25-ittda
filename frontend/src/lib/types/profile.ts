@@ -7,8 +7,8 @@ export interface ProfileTag {
 }
 
 export interface TagStatSummary {
-  recentTags: string[];
-  frequentTags: string[];
+  recentTop: Tag[];
+  allTimeTop: Tag[];
 }
 
 export interface EmotionStatSummary {

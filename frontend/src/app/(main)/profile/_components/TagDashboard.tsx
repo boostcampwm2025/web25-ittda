@@ -83,12 +83,12 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
         {currentTags.length > 0 ? (
           currentTags.slice(0, 5).map((tag) => (
             <div
-              key={tag.name}
+              key={tag.tag}
               className="flex items-center h-fit gap-1 px-3 py-1.5 border rounded-lg shadow-xs dark:bg-white/5 dark:border-white/5 bg-white border-gray-100"
             >
               <span className="text-[11px] font-medium text-[#10B981]">#</span>
               <span className="text-[11px] font-medium dark:text-gray-200 text-itta-black">
-                {tag.name}
+                {tag.tag}
               </span>
               <span className="text-[10px] font-medium text-[#10B981]/90 ml-0.5">
                 {tag.count}
@@ -128,11 +128,11 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
             <div className="max-h-[80vh] overflow-y-auto hide-scrollbar mb-8">
               <div className="flex flex-wrap gap-3 mb-2">
                 {tags.all.map((tag) => {
-                  const isSelected = selectedTags.includes(tag.name);
+                  const isSelected = selectedTags.includes(tag.tag);
                   return (
                     <button
-                      key={tag.name}
-                      onClick={() => toggleTagSelection(tag.name)}
+                      key={tag.tag}
+                      onClick={() => toggleTagSelection(tag.tag)}
                       className={cn(
                         'cursor-pointer flex items-center gap-0.5 px-4 py-2.5 border rounded-2xl transition-all active:scale-95',
                         isSelected
@@ -148,7 +148,7 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
                       >
                         #
                       </span>
-                      <span className="text-sm font-medium">{tag.name}</span>
+                      <span className="text-sm font-medium">{tag.tag}</span>
                     </button>
                   );
                 })}
