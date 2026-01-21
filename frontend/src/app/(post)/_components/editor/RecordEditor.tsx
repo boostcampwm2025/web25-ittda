@@ -47,6 +47,7 @@ import { useCreateRecord } from '@/hooks/useCreateRecord';
 import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
 import { useRouter } from 'next/navigation';
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
+import Image from 'next/image';
 
 export default function PostEditor({
   mode,
@@ -59,6 +60,7 @@ export default function PostEditor({
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const { mutate: createRecord } = useCreateRecord();
+  const [isActive, setIsActive] = useState(false);
 
   const {
     blocks,
@@ -365,7 +367,19 @@ export default function PostEditor({
               <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
                 <GripVertical className="w-4 h-4 text-gray-500" />
               </div>
-              <div className="w-full">{renderField(block)}</div>
+
+              <div className="w-full flex flex-row gap-2 items-center">
+                {isActive && (
+                  <Image
+                    src="/profile-ex.jpeg"
+                    className="w-6 h-6 rounded-full"
+                    width={8}
+                    height={8}
+                    alt="현재 유저 프로필"
+                  />
+                )}
+                {renderField(block)}
+              </div>
             </div>
           ))}
         </div>
