@@ -285,16 +285,16 @@ export class UserService {
 
     const blocks = await qb.getMany();
 
-    // Extract URLs
-    const urls: string[] = [];
+    // Extract Asset IDs
+    const assetIds: string[] = [];
     for (const b of blocks) {
       const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
-      if (val.tempUrls) {
-        urls.push(...val.tempUrls);
+      if (val.mediaIds) {
+        assetIds.push(...val.mediaIds);
       }
     }
 
-    return urls;
+    return assetIds;
   }
 
   /**

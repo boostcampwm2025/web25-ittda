@@ -121,7 +121,9 @@ export class UserController {
       throw new UnauthorizedException('Access token is required.');
     }
 
-    const data = await this.userService.getYearlyImages(userId, query.year);
+    const { year, month } = this.parseYearMonth(query.year);
+    const data = await this.userService.getMonthImages(userId, year, month);
+
     return { data };
   }
 

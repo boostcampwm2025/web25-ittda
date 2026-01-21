@@ -1,15 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, Min } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class GetArchivesMonthCoverQueryDto {
   @ApiProperty({
-    description: '조회할 연도 (YYYY)',
-    example: 2025,
+    description: '조회할 연도-월 (YYYY-MM)',
+    example: '2025-01',
   })
-  @Type(() => Number)
-  @IsInt()
+  @IsString()
   @IsNotEmpty()
-  @Min(1500)
-  year: number;
+  year: string;
 }
