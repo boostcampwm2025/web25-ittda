@@ -12,7 +12,7 @@ function isAuthenticated(request: NextRequest): boolean {
 
   // 게스트 로그인: x-guest-session-id 쿠키 확인
   const guestSessionId = request.cookies.get('x-guest-session-id');
-  if (guestSessionId?.value) return true;
+  if (guestSessionId?.value) return false;
 
   return false;
 }

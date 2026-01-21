@@ -19,7 +19,6 @@ interface Action {
   setLogin: (socialUser: UserLoginResponse) => void;
   setSocialLogin: () => void; // 프로필 조회 실패 시 로그인 상태만 설정
   setGuestInfo: (guest: GuestInfo) => void;
-  switchGuestToSocial: (user: UserLoginResponse) => void;
   logout: () => void;
 }
 
@@ -36,7 +35,7 @@ const setGuestCookie = (sessionId: string) => {
 
 export const useAuthStore = create<State & Action>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       userType: null,
       userId: null,
       guestSessionId: null,
@@ -44,12 +43,24 @@ export const useAuthStore = create<State & Action>()(
       isLoggedIn: false,
 
       setLogin: (socialUser) => {
-        set({
-          userType: 'social',
-          userId: socialUser.id,
-          isLoggedIn: true,
-        });
-        // 소셜 로그인 시에는 게스트 쿠키 삭제
+        const { guestSessionId } = get();
+
+        if (guestSessionId) {
+          // 게스트 → 소셜 전환
+          set({
+            userType: 'social',
+            userId: socialUser.id,
+            isLoggedIn: true,
+            guestSessionId: null,
+            guestSessionExpiresAt: null,
+          });
+        } else {
+          set({
+            userType: 'social',
+            userId: socialUser.id,
+            isLoggedIn: true,
+          });
+        }
         Cookies.remove(guestCookieKey);
       },
 
@@ -70,18 +81,6 @@ export const useAuthStore = create<State & Action>()(
         });
 
         setGuestCookie(guest.guestSessionId);
-      },
-
-      switchGuestToSocial: (socialUser) => {
-        set({
-          userType: 'social',
-          userId: socialUser.id,
-          isLoggedIn: true,
-          guestSessionId: null,
-          guestSessionExpiresAt: null,
-        });
-        // 전환 시 쿠키 삭제
-        Cookies.remove(guestCookieKey);
       },
 
       logout: () => {
