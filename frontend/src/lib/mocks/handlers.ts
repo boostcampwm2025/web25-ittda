@@ -10,6 +10,34 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/me', () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        userId: 'dobby_is_free',
+        user: {
+          id: 'dobby_is_free',
+          profileImageId: '/profile-ex.jpeg',
+          profileImage: {
+            url: '/profile-ex.jpeg',
+          },
+          provider: 'google',
+          providerId: 'google',
+          email: 'user@example.com',
+          nickname: '도비',
+          settings: {},
+          createdAt: '2024-01-01T00:00:00Z',
+        },
+        stats: {
+          recentTags: ['맛집', '여행'],
+          frequentTags: ['산책', '코딩'],
+          recentEmotions: ['기쁨', '설렘'],
+          frequentEmotions: ['평온'],
+        },
+      },
+      error: null,
+    });
+  }),
   http.patch('/api/groups/:groupId/cover', async ({ request, params }) => {
     const id = String(params.groupId);
     const body = (await request.json()) as {
