@@ -34,12 +34,12 @@ const SEED_IMAGE_URLS = [
   'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&q=80&w=800',
 ];
 
-const DEV_USER = {
-  provider: 'kakao' as const,
-  providerId: 'dev-user-001',
-  nickname: 'dev-user',
-  email: 'dev@example.com',
-};
+// const DEV_USER = {
+//   provider: 'kakao' as const,
+//   providerId: 'dev-user-001',
+//   nickname: 'dev-user',
+//   email: 'dev@example.com',
+// };
 
 function makeSeedPosts(): SeedPost[] {
   return [
@@ -176,21 +176,21 @@ async function upsertSeedOwner() {
   return userRepository.save(owner);
 }
 
-async function upsertDevUser() {
-  const userRepository = dataSource.getRepository(User);
-  const existing = await userRepository.findOne({
-    where: { provider: DEV_USER.provider, providerId: DEV_USER.providerId },
-  });
-  if (existing) return existing;
+// async function upsertDevUser() {
+//   const userRepository = dataSource.getRepository(User);
+//   const existing = await userRepository.findOne({
+//     where: { provider: DEV_USER.provider, providerId: DEV_USER.providerId },
+//   });
+//   if (existing) return existing;
 
-  const user = userRepository.create({
-    email: DEV_USER.email,
-    nickname: DEV_USER.nickname,
-    provider: DEV_USER.provider,
-    providerId: DEV_USER.providerId,
-  });
-  return userRepository.save(user);
-}
+//   const user = userRepository.create({
+//     email: DEV_USER.email,
+//     nickname: DEV_USER.nickname,
+//     provider: DEV_USER.provider,
+//     providerId: DEV_USER.providerId,
+//   });
+//   return userRepository.save(user);
+// }
 
 async function upsertSeedGroup(owner: User) {
   const groupRepository = dataSource.getRepository(Group);
@@ -303,10 +303,10 @@ async function run() {
 
   try {
     const owner = await upsertSeedOwner();
-    const devUser = await upsertDevUser();
+    // const devUser = await upsertDevUser();
     const group = await upsertSeedGroup(owner);
     await ensureGroupMember(group, owner);
-    await ensureGroupMember(group, devUser);
+    // await ensureGroupMember(group, devUser);
     await upsertSeedDraft(owner, group);
     const seeds = makeSeedPosts();
 

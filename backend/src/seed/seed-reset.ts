@@ -42,7 +42,13 @@ async function run() {
       const txMemberRepo = manager.getRepository(GroupMember);
 
       await txContributorRepo.delete({ userId: owner.id });
+      if (devUser) {
+        await txContributorRepo.delete({ userId: devUser.id });
+      }
       await txPostRepo.delete({ ownerUserId: owner.id });
+      if (devUser) {
+        await txPostRepo.delete({ ownerUserId: devUser.id });
+      }
       await txDraftRepo.delete({ ownerActorId: owner.id });
       await txMemberRepo.delete({ userId: owner.id });
       if (devUser) {
