@@ -3,38 +3,49 @@
 import ProfileEditProvider from '@/app/(main)/profile/edit/_components/ProfileEditContext';
 import ProfileEditHeaderActions from '@/components/ProfileEditHeaderActions';
 import ProfileInfo from '@/components/ProfileInfo';
-import { Profile } from '@/lib/types/profile';
-import { useRouter } from 'next/navigation';
+import { useUpdateGroupProfile } from '@/hooks/useUserGroupSetting';
+
+import { BaseUser } from '@/lib/types/profile';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface GroupProfileEditClientProps {
   groupId: string;
-  groupProfile: Omit<Profile, 'email'>;
+  groupProfile: Omit<BaseUser, 'email'>;
 }
 
 export default function GroupProfileEditClient({
   groupId,
   groupProfile,
 }: GroupProfileEditClientProps) {
-  const router = useRouter();
+  const { updateProfile } = useUpdateGroupProfile(groupId);
+  const { userId } = useAuthStore();
 
-  const handleSave = (data: { nickname: string; image: File | null }) => {
-    // FormData를 사용하여 파일과 데이터를 함께 전송
-    const formData = new FormData();
-    formData.append('nickname', data.nickname);
-    if (data.image) {
-      formData.append('profileImage', data.image);
+  const handleSave = async (data: { nickname: string; image: File | null }) => {
+    try {
+      const mediaId = 'mediaId';
+
+      if (data.image) {
+        // TODO: 실제 이미지 업로드 로직이 필요할 경우 여기에 추가
+      }
+
+      updateProfile({
+        groupId: groupId,
+        userId: userId || 'userId',
+        nicknameInGroup: data.nickname,
+        profileMediaId: mediaId || undefined,
+      });
+    } catch (error) {
+      console.error('오류', error);
     }
-
-    // TODO: 그룹 프로필 저장 API 호출
-    // await updateGroupProfile(groupId, formData);
-
-    router.push(`/group/${groupId}/edit`);
   };
+
+  const currentNickname = groupProfile?.nickname || '';
+  const currentImage = groupProfile?.profileImageUrl || '';
 
   return (
     <ProfileEditProvider
-      initialNickname={groupProfile.nickname}
-      initialImage={groupProfile.image}
+      initialNickname={currentNickname}
+      initialImage={currentImage}
     >
       <div className="w-full flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
         <ProfileEditHeaderActions
@@ -42,7 +53,7 @@ export default function GroupProfileEditClient({
           onSave={handleSave}
         />
         <div className="flex p-6 flex-col gap-10">
-          <ProfileInfo profileImage={groupProfile.image} showEmail={false} />
+          <ProfileInfo profileImage={currentImage} showEmail={false} />
         </div>
       </div>
     </ProfileEditProvider>
