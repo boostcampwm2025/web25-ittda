@@ -40,7 +40,7 @@ export default function GroupProfileEditClient({
   };
 
   const currentNickname = groupProfile?.nickname || '';
-  const currentImage = groupProfile?.profileImageUrl || '';
+  const currentImage = groupProfile?.profileImageId || '';
 
   return (
     <ProfileEditProvider

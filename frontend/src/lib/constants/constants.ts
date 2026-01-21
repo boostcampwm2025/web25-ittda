@@ -11,15 +11,17 @@ export const TEMPLATE_LABEL: Record<TemplateType, string> = {
 };
 
 export const EMOTION_MAP: Record<string, string> = {
-  행복: '😊',
-  슬픔: '😢',
-  설렘: '🤩',
-  좋음: '🥰',
-  놀람: '😮',
-  화남: '😡',
+  행복: '🥰',
+  좋음: '😊',
+  만족: '😌',
+  재미: '😆',
+  보통: '😐',
   피곤: '😴',
-  따뜻함: '🥣',
-  차분함: '📖',
+  놀람: '😲',
+  화남: '😡',
+  슬픔: '😢',
+  아픔: '🤒',
+  짜증: '😫',
 } as const;
 
 export const EMOTIONS = Object.entries(EMOTION_MAP).map(([label, emoji]) => ({

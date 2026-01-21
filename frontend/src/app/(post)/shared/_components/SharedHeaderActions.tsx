@@ -11,6 +11,7 @@ import {
 import { useApiPost } from '@/hooks/useApi';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
+import { GroupSummary } from '@/lib/types/recordResponse';
 import {
   BarChart3,
   CalendarDays,
@@ -24,11 +25,20 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-type GroupSortOption = 'latest' | 'count' | 'members' | 'name';
+export type GroupSortOption = 'latest' | 'count' | 'members' | 'name';
 
 export default function SharedHeaderActions() {
-  const [sortBy, setSortBy] = useState<GroupSortOption>('latest');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const sortBy = (searchParams.get('sort') as GroupSortOption) || 'latest';
+
+  const setSortBy = (sort: GroupSortOption) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sort', sort);
+    router.replace(`?${params.toString()}`);
+  };
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -36,20 +46,27 @@ export default function SharedHeaderActions() {
 
   const queryClient = useQueryClient();
 
-  const { mutate } = useApiPost('/api/groups', {
-    onSuccess: () => {
-      // 공유 기록함 리스트 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['share'] });
+  const { mutate } = useApiPost<GroupSummary>('/api/groups', {
+    onSuccess: (response) => {
+      if (!response.data) return;
+      const newGroup = response.data;
+      // 서버 응답 데이터를 캐시에 즉시 추가
+      queryClient.setQueryData<GroupSummary[]>(['shared'], (old) => {
+        if (!old) return [newGroup];
+        return [newGroup, ...old];
+      });
     },
     onSettled: () => {
       setNewGroupName('');
       setShowCreateModal(false);
       setIsCreating(false);
+      // 백그라운드에서 서버와 동기화
+      queryClient.invalidateQueries({ queryKey: ['shared'] });
     },
   });
 
   const handleCreateGroup = () => {
-    const groupNameRegex = /^[a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s]{2,10}$/;
+    const groupNameRegex = /^[a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s]{2,50}$/;
 
     if (!newGroupName.trim()) {
       toast.error('그룹 이름을 입력해주세요.');
@@ -57,7 +74,7 @@ export default function SharedHeaderActions() {
     }
 
     if (!groupNameRegex.test(newGroupName)) {
-      toast.error('이름은 2~10자의 한글, 영문, 숫자, 공백만 가능합니다.');
+      toast.error('이름은 2~50자의 한글, 영문, 숫자, 공백만 가능합니다.');
       return;
     }
 

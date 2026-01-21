@@ -1,11 +1,29 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
+import {
+  GroupCoverListResponse,
+  GroupListResponse,
+} from '../types/recordResponse';
 import {
   GroupEditResponse,
   GroupMemberProfileResponse,
 } from '../types/groupResponse';
 import { createApiError } from '../utils/errorHandler';
 import { ROLE_MAP } from '../types/group';
+
+export const groupListOptions = () =>
+  queryOptions({
+    queryKey: ['shared'],
+    queryFn: async () => {
+      const response = await get<GroupListResponse>('/api/groups');
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data.items;
+    },
+    retry: false,
+  });
 
 export const groupMyProfileOptions = (groupId: string) =>
   queryOptions({
@@ -113,4 +131,25 @@ export const groupDetailOptions = (groupId: string) =>
         };
       }
     },
+  });
+
+export const groupRecordCoverOptions = (groupId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['cover', groupId],
+    queryFn: async ({ pageParam }) => {
+      const url = pageParam
+        ? `/api/groups/${groupId}/cover-candidates?cursor=${pageParam}`
+        : `/api/groups/${groupId}/cover-candidates`;
+
+      const response = await get<GroupCoverListResponse>(url);
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    retry: false,
   });

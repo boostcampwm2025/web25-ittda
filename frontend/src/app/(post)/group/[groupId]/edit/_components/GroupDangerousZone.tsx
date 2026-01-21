@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import { useDeleteGroup } from '@/hooks/useGroupActions';
 import { Group } from '@/lib/types/group';
+import { cn } from '@/lib/utils';
 import { AlertCircle, Trash2 } from 'lucide-react';
 
 interface GroupDangerousZoneProps {

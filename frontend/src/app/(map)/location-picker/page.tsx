@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { LocationValue } from '@/lib/types/recordField';
 import Back from '@/components/Back';
+import LocationPermissionChecker from '@/components/LocationPermissionChecker';
 
 export default function LocationPickerPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function LocationPickerPage() {
 
   return (
     <div className="w-full h-screen flex flex-col bg-white">
+      <LocationPermissionChecker />
       <header className="dark:bg-[#121212]/90 bg-white/90 backdrop-blur-xl transition-all duration-500 sticky top-0 z-50 max-w-4xl w-full px-6 py-4 mx-auto flex items-center justify-between">
         <Back />
         <h1 className="font-semibold">장소 선택</h1>

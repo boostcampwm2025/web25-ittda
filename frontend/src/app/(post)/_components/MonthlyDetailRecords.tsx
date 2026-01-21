@@ -14,7 +14,7 @@ export default function MonthlyDetailRecords({
   viewMapRoutePath,
 }: MonthlyDetailRecordsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 gap-4 xs:grid-cols-3 md:grid-cols-4">
       {dayRecords.map((d) => (
         <DateRecordCard
           key={d.date}

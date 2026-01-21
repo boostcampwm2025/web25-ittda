@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Calendar, Clock, MapPin, Star } from 'lucide-react';
 import Image from 'next/image';
 import ImageCarousel from './ImageCarousel';
+import { EMOTION_MAP } from '@/lib/constants/constants';
 
 export default function BlockContent({ block }: { block: Block }) {
   if (!block.value) return null;
@@ -97,7 +98,10 @@ export default function BlockContent({ block }: { block: Block }) {
       if ('mood' in block.value) {
         return (
           <div className="flex items-center gap-2">
-            <span className="text-2xl leading-none">{block.value.mood}</span>
+            <span className="text-2xl leading-none flex justify-center items-center">
+              {EMOTION_MAP[block.value.mood]}&nbsp;
+              <span className="text-sm ml-2">{block.value.mood}</span>
+            </span>
           </div>
         );
       }

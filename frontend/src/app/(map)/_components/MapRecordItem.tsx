@@ -1,3 +1,4 @@
+import { formatDotDateString } from '@/lib/date';
 import { MapPostItem } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Clock, MapPin } from 'lucide-react';
@@ -56,7 +57,7 @@ export function MapRecordItem({
         </p>
         <p className="text-[11px] text-itta-gray3 flex items-center gap-1.5 font-medium">
           <Clock className="w-3 h-3 text-itta-point" />
-          {new Date(post.createdAt).toLocaleDateString()}
+          {formatDotDateString(post.createdAt)}
         </p>
         <div className="flex flex-wrap gap-1">
           {post.tags.slice(0, 2).map((tag: string) => (

@@ -48,7 +48,7 @@ export interface CardBadgeProps {
  */
 export function PostCard({
   onClick,
-  height = 'h-60',
+  height = 'h-50',
   imageUrl,
   imageAlt = '',
   className = '',

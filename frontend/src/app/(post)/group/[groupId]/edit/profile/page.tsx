@@ -21,7 +21,7 @@ export default async function GroupProfileEditPage({
   const groupProfile = {
     id: profileData.userId,
     nickname: profileData.nicknameInGroup,
-    profileImageUrl: profileData.cover?.assetId || '', // TODO: 이미지 추후 별도 로직 추가
+    profileImageId: profileData.cover?.assetId || '', // TODO: 이미지 추후 별도 로직 추가
   };
 
   return (

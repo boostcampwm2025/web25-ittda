@@ -18,6 +18,7 @@ import {
 } from '@/lib/utils/filterLabels';
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
+import LocationPermissionChecker from '@/components/LocationPermissionChecker';
 
 export const DUMMY_POSTS: MapPostItem[] = [
   {
@@ -304,6 +305,7 @@ export default function RecordMapPage() {
       vaul-drawer-wrapper=""
       className="w-full h-full relative overflow-hidden bg-white"
     >
+      <LocationPermissionChecker />
       <APIProvider apiKey={apiKey!}>
         <div className="absolute inset-0 z-0">
           <GoogleMap

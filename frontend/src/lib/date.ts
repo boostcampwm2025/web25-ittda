@@ -165,3 +165,17 @@ export function getWeekdayFromDotString(dateStr: string): string {
   const date = new Date(y, m - 1, d);
   return new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date); // '월', '화' 등
 }
+
+/**
+ * 날짜 문자열을 YYYY.MM.DD 형식으로 변환(SSR-safe)
+ * @param dateString - "2025-12-20T20:00:00Z" | "2025-12-21"
+ * @returns "2025.12.20"
+ *
+ * @example
+ * formatDotDateString('2025-12-20T20:00:00Z') // "2025.12.20"
+ * formatDotDateString('2025-12-21')           // "2025.12.21"
+ */
+export function formatDotDateString(dateString: string): string {
+  const datePart = dateString.split('T')[0];
+  return datePart.replaceAll('-', '.');
+}

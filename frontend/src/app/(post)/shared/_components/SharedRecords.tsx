@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
@@ -12,62 +12,132 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { X } from 'lucide-react';
-import { SharedRecord } from '@/lib/types/record';
 import { formatDateISO } from '@/lib/date';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { groupListOptions } from '@/lib/api/group';
+import {
+  GroupCoverUpdateResponse,
+  GroupSummary,
+} from '@/lib/types/recordResponse';
+import { GroupSortOption } from './SharedHeaderActions';
+import { useApiPatch } from '@/hooks/useApi';
 
-// 사진 데이터
-const recordPhotosData = [
-  'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1516715094483-75da7dee9758?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1516715094483-75da7dee9758?auto=format&fit=crop&q=80&w=400',
-];
+const sortGroups = (
+  groups: GroupSummary[],
+  sortBy: GroupSortOption,
+): GroupSummary[] => {
+  const sorted = [...groups];
+  switch (sortBy) {
+    case 'count':
+      return sorted.sort((a, b) => b.recordCount - a.recordCount);
+    case 'members':
+      return sorted.sort((a, b) => b.memberCount - a.memberCount);
+    case 'name':
+      return sorted.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    default:
+      return sorted;
+  }
+};
 
-interface SharedRecordsProps {
-  sharedRecords: SharedRecord[];
-}
+export default function SharedRecords() {
+  const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const sortBy = (searchParams.get('sort') as GroupSortOption) || 'latest';
 
-export default function SharedRecords({ sharedRecords }: SharedRecordsProps) {
+  const { data: groups = [] } = useQuery(groupListOptions());
+
+  const sortedGroups = useMemo(() => {
+    if (sortBy === 'latest') return groups;
+    return sortGroups(groups, sortBy);
+  }, [groups, sortBy]);
+
   const router = useRouter();
-  const [groups, setGroups] = useState(sharedRecords);
-  const [activeMonthId, setActiveMonthId] = useState<string | null>(null);
+  const [activeGroupId, setActiveGroupId] = useState<string | undefined>(
+    undefined,
+  );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const openGallery = (monthId: string) => {
-    setActiveMonthId(monthId);
+  const { mutate: updateGroupCover } = useApiPatch<GroupCoverUpdateResponse>(
+    `/api/groups/${activeGroupId}/cover`,
+    {
+      onSuccess: (response) => {
+        if (!response.data) return;
+        const coverInfo = response.data;
+        // 서버 응답 데이터를 캐시에 즉시 수정
+        queryClient.setQueryData<GroupSummary[]>(['shared'], (old) => {
+          if (!old) return [];
+
+          return old.map((group) => {
+            if (group.groupId === coverInfo.groupId) {
+              const newCover = group.cover
+                ? {
+                    ...group.cover,
+                    assetId: coverInfo.cover.assetId,
+                  }
+                : {
+                    assetId: coverInfo.cover.assetId,
+                    width: 500,
+                    height: 500,
+                    mimeType: 'image/jpeg',
+                  };
+              return {
+                ...group,
+                cover: newCover,
+              };
+            }
+            return group;
+          });
+        });
+      },
+      onSettled: () => {
+        // 백그라운드에서 서버와 동기화
+        queryClient.invalidateQueries({ queryKey: ['shared'] });
+      },
+    },
+  );
+
+  const openGallery = (groupId: string) => {
+    setActiveGroupId(groupId);
     setIsDrawerOpen(true);
   };
 
-  // 현재 선택된 월의 사진들 가져오기
-  const activeGroup = groups.find((m) => m.id === activeMonthId);
-  // TODO: 서버로부터 사진 목록 받아오기(activeMonth를 키 값으로 가져오기)
-  const recordPhotos = recordPhotosData || [];
+  const handleCoverSelect = (assetId: string, recordId: string) => {
+    if (!activeGroupId) return;
+
+    // 낙관적 업데이트: 캐시 직접 수정
+    queryClient.setQueryData<GroupSummary[]>(['shared'], (oldData) => {
+      if (!oldData) return oldData;
+      return oldData.map((group) =>
+        group.groupId === activeGroupId
+          ? {
+              ...group,
+              cover: group.cover ? { ...group.cover, assetId } : null,
+            }
+          : group,
+      );
+    });
+
+    updateGroupCover({ assetId: assetId, sourcePostId: recordId });
+  };
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
-        {groups.map((g) => (
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        {sortedGroups.map((g) => (
           <RecordCard
-            key={g.id}
-            id={g.id}
+            key={g.groupId}
+            id={g.groupId}
             name={g.name}
-            count={`${g.members}명 • ${g.count}기록`}
-            latestTitle={g.latestTitle}
-            latestLocation={g.latestLocation}
-            hasNotification={g.hasNotification}
-            coverUrl={g.coverUrl}
-            onClick={() => router.push(`/group/${g.id}`)}
-            onChangeCover={openGallery}
-            createdAt={formatDateISO(new Date(g.updatedAt))}
+            count={`${g.memberCount}명 • ${g.recordCount}기록`}
+            latestTitle={g.latestPost?.title || '최신 기록이 없어요'}
+            latestLocation={
+              g.latestPost?.placeName || '최신 기록 위치값이 없어요'
+            }
+            hasNotification={false}
+            cover={g.cover}
+            onClick={() => router.push(`/group/${g.groupId}`)}
+            onChangeCover={() => openGallery(g.groupId)}
+            createdAt={formatDateISO(new Date(g.createdAt))}
           />
         ))}
       </div>
@@ -96,10 +166,11 @@ export default function SharedRecords({ sharedRecords }: SharedRecordsProps) {
           </DrawerHeader>
 
           <GalleryDrawer
-            recordPhotos={recordPhotos}
-            value={groups}
-            setValue={setGroups}
-            activeId={activeMonthId}
+            groupId={activeGroupId}
+            currentAssetId={
+              groups.find((g) => g.groupId === activeGroupId)?.cover?.assetId
+            }
+            onSelect={handleCoverSelect}
           />
         </DrawerContent>
       </Drawer>

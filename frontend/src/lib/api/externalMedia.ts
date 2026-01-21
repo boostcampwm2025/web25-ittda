@@ -16,7 +16,7 @@ export const searchMovies = async (query: string): Promise<MediaValue[]> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.results.map((item: any) => ({
       title: item.title,
-      image: item.poster_path
+      imageUrl: item.poster_path
         ? `https://image.tmdb.org/t/p/w200${item.poster_path}`
         : undefined,
       year: item.release_date ? item.release_date.split('-')[0] : '-',
@@ -49,7 +49,7 @@ export const searchKopis = async (
 
     return Array.from(dbElements).map((db) => ({
       title: db.getElementsByTagName('prfnm')[0]?.textContent || '',
-      image: db.getElementsByTagName('poster')[0]?.textContent || undefined,
+      imageUrl: db.getElementsByTagName('poster')[0]?.textContent || undefined,
       year: (db.getElementsByTagName('prfpdfrom')[0]?.textContent || '-').split(
         '.',
       )[0],

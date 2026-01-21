@@ -65,9 +65,7 @@ export default function MonthRecords({
           <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
             아직 기록이 없어요
           </p>
-          <p className="text-xs text-gray-400">
-            첫 번째 추억을 남겨보세요
-          </p>
+          <p className="text-xs text-gray-400">첫 번째 추억을 남겨보세요</p>
         </div>
         <button
           type="button"
@@ -83,7 +81,7 @@ export default function MonthRecords({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {months.map((m) => (
           <RecordCard
             key={m.id}
