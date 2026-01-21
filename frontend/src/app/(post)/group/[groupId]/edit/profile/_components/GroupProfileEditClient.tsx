@@ -3,7 +3,8 @@
 import ProfileEditProvider from '@/app/(main)/profile/edit/_components/ProfileEditContext';
 import ProfileEditHeaderActions from '@/components/ProfileEditHeaderActions';
 import ProfileInfo from '@/components/ProfileInfo';
-import { useUpdateGroupProfile } from '@/hooks/useuserGroupSetting';
+import { useUpdateGroupProfile } from '@/hooks/useUserGroupSetting';
+
 import { BaseUser } from '@/lib/types/profile';
 import { useAuthStore } from '@/store/useAuthStore';
 
