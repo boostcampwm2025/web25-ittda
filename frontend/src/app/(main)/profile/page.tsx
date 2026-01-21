@@ -10,6 +10,7 @@ import {
   userProfileTagSummaryOptions,
 } from '@/lib/api/profile';
 import { createMockTagStats } from '@/lib/mocks/mock';
+import { myMonthlyRecordListOptions } from '@/lib/api/my';
 
 export default async function ProfilePage() {
   let tagStats: TagStatSummary;
@@ -20,8 +21,13 @@ export default async function ProfilePage() {
     const queryClient = new QueryClient();
     tagStats = await queryClient.fetchQuery(userProfileTagSummaryOptions());
 
-    // TODO: Promise.all로 월별 사용 그래프, 방문 장소 통계를 같이 호출
-    await queryClient.prefetchQuery(userProfileEmotionSummaryOptions());
+    // TODO: 방문 장소 통계 추가
+    await Promise.all([
+      queryClient.prefetchQuery(userProfileEmotionSummaryOptions()),
+      queryClient.prefetchQuery(
+        myMonthlyRecordListOptions(new Date().getFullYear().toString()),
+      ),
+    ]);
   }
 
   const tags: ProfileTag = {
