@@ -117,6 +117,7 @@ export function DateRecordCard({
 
   return (
     <PostCard
+      height="aspect-square"
       imageUrl={coverUrl}
       imageAlt={title}
       onClick={() => {
