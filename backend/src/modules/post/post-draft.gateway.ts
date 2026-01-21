@@ -25,7 +25,7 @@ type PresenceMember = {
   actorId: string;
   sessionId: string;
   displayName: string;
-  role: string;
+  permissionRole: string;
   lastSeenAt: string;
 };
 
@@ -95,7 +95,7 @@ export class PostDraftGateway
       actorId,
       sessionId,
       displayName,
-      role,
+      permissionRole: role,
       lastSeenAt: new Date().toISOString(),
     };
 
@@ -217,17 +217,22 @@ export class PostDraftGateway
       where: { groupId: draft.groupId, userId: actorId },
       select: { role: true, nicknameInGroup: true },
     });
-    if (!member) {
-      throw new WsException('Not a group member.');
+    const user = await this.userRepository.findOne({
+      where: { id: actorId },
+      select: { nickname: true },
+    });
+    if (!user) {
+      throw new WsException('User not found.');
     }
 
-    let displayName = member.nicknameInGroup ?? null;
-    if (!displayName) {
-      const user = await this.userRepository.findOne({
-        where: { id: actorId },
-        select: { nickname: true },
-      });
-      displayName = user?.nickname ?? 'User';
+    const displayName = member?.nicknameInGroup ?? user.nickname ?? 'User';
+    if (!member) {
+      // TODO: Remove this bypass after invite/guest access rules are finalized.
+      // TODO: Enforce group membership or contributor role (>= EDITOR) before allowing join.
+      return {
+        displayName,
+        role: 'EDITOR',
+      };
     }
 
     return {
