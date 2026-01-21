@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { makeFakePosts, filterByBbox } from '../fake/fakePosts';
 import {
+  createMockDailyRecord,
   createMockEmotionStats,
   createMockGroupCoverList,
   createMockGroupList,
@@ -13,6 +14,16 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/user/archives/days', ({ request }) => {
+    const url = new URL(request.url);
+    const month = url.searchParams.get('month');
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockDailyRecord(),
+      error: null,
+    });
+  }),
   http.get('/api/user/archives/months', ({ request }) => {
     const url = new URL(request.url);
     const year = url.searchParams.get('year');
