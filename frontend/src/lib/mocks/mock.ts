@@ -1,4 +1,4 @@
-import { TagStatSummary } from '../types/profile';
+import { EmotionStatSummary, TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
   GroupListResponse,
@@ -423,3 +423,14 @@ export const createMockTagStats = (): TagStatSummary => ({
     },
   ],
 });
+
+export const createMockEmotionStats = (): EmotionStatSummary => [
+  { emotion: '행복', count: 3 },
+  { emotion: '좋음', count: 2 },
+  { emotion: '만족', count: 10 },
+  { emotion: '재미', count: 4 },
+  { emotion: '보통', count: 12 },
+  { emotion: '피곤', count: 1 },
+  { emotion: '놀람', count: 2 },
+  { emotion: '화남', count: 4 },
+];
