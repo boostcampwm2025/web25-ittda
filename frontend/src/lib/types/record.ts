@@ -50,7 +50,7 @@ export interface DayRecord {
 }
 
 export interface Tag {
-  name: string;
+  tag: string;
   count: number;
 }
 

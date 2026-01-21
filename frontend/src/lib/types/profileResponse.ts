@@ -1,4 +1,4 @@
-import { BaseUser, EmotionStatSummary, TagStatSummary } from './profile';
+import { BaseUser } from './profile';
 
 export interface UserProfileResponse {
   userId: string;
@@ -13,5 +13,10 @@ export interface UserProfileResponse {
     settings: Record<string, unknown>;
     createdAt: string;
   };
-  stat: TagStatSummary & EmotionStatSummary;
+  stat: {
+    recentTags: string[];
+    frequentTags: string[];
+    recentEmotions: string[];
+    frequentEmotions: string[];
+  };
 }
