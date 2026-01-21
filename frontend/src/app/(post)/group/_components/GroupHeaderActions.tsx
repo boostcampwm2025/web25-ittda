@@ -24,6 +24,7 @@ import { LogOut, Mic, MoreVertical, Settings, AlertCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
+import { cn } from '@/lib/utils';
 
 interface GroupHeaderActionsProps {
   groupInfo: GroupInfo;
