@@ -17,7 +17,7 @@ export const groupDraftOptions = (groupId: string, draftId: string) =>
     queryKey: ['group', 'draft', groupId, draftId],
     queryFn: async () => {
       const response = await get<GroupDraftResponse>(
-        `/api/groups/${groupId}/drafts/${draftId}`,
+        `/v1/groups/${groupId}/drafts/${draftId}`,
       );
 
       if (!response.success) {
