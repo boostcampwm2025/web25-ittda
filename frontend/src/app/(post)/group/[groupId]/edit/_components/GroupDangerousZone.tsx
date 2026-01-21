@@ -15,11 +15,13 @@ import { AlertCircle, Trash2 } from 'lucide-react';
 interface GroupDangerousZoneProps {
   groupName: Group['groupName'];
   groupId: string;
+  className?: string;
 }
 
 export default function GroupDangerousZone({
   groupName,
   groupId,
+  className,
 }: GroupDangerousZoneProps) {
   const { mutate: deleteGroup } = useDeleteGroup(groupId, groupName);
 
@@ -39,7 +41,7 @@ export default function GroupDangerousZone({
           <br />
           다른 멤버들도 더 이상 접근할 수 없게 됩니다.
         </p>
-        <DrawerContent className="px-8 pt-4 pb-12">
+        <DrawerContent className={cn('px-8 pt-4 pb-12', className)}>
           <DrawerHeader>
             <div className="flex flex-col items-center text-center space-y-4 mb-10">
               <div className="w-16 h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">

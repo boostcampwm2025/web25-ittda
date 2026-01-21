@@ -22,7 +22,7 @@ export interface BaseUser {
   id: string;
   email: string | null;
   nickname: string | null;
-  profileImageUrl: string | null;
+  profileImageId: string | null;
 }
 
 export interface UserProfile extends BaseUser {

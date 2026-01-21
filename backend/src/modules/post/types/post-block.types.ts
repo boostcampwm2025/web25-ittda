@@ -16,6 +16,14 @@ export type BlockValueMap = {
   };
   [PostBlockType.IMAGE]: { mediaIds?: string[]; tempUrls?: string[] };
   [PostBlockType.TABLE]: { rows: number; cols: number; cells: string[][] };
+  [PostBlockType.MEDIA]: {
+    title: string;
+    type: string;
+    externalId: string;
+    year?: string;
+    imageUrl?: string;
+    originalTitle?: string | null;
+  };
 };
 
 export type PostBlock = {

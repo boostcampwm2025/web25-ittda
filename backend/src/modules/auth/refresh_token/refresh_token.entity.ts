@@ -10,19 +10,19 @@ export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'user_id' })
   userId: string;
 
-  @Column({ unique: true })
+  @Column({ name: 'token', unique: true })
   token: string;
 
-  @Column()
+  @Column({ name: 'expires_at' })
   expiresAt: Date;
 
-  @Column({ default: false })
+  @Column({ name: 'revoked', default: false })
   revoked: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }
 // 성능 요구사항, 선택 논리에 따라 pg -> redis로 변경 고려 가능

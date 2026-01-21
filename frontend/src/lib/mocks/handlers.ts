@@ -5,7 +5,7 @@ import { RecordPreview } from '../types/recordResponse';
 const DB = makeFakePosts(2000);
 
 // 요청된 날짜에 맞는 mock 데이터를 생성하는 함수
-const createMockRecordPreviews = (date: string): RecordPreview[] => [
+export const createMockRecordPreviews = (date: string): RecordPreview[] => [
   // 기록 1: 이미지 먼저, 태그/평점 2열, 텍스트, 날짜/시간 2열
   {
     postId: '225f4bd7-3bbc-4a71-8747-fe6a43dc3d6c',

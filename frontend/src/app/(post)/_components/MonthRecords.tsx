@@ -12,7 +12,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { X } from 'lucide-react';
+import { BookOpen, Plus, X } from 'lucide-react';
 
 // 사진 데이터
 const recordPhotosData = [
@@ -54,6 +54,32 @@ export default function MonthRecords({
   const activeMonth = months.find((m) => m.id === activeMonthId);
   // TODO: 서버로부터 사진 목록 받아오기(activeMonth를 키 값으로 가져오기)
   const recordPhotos = recordPhotosData || [];
+
+  if (months.length === 0) {
+    return (
+      <div className="py-16 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">
+        <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+          <BookOpen className="w-6 h-6 text-[#10B981]" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+            아직 기록이 없어요
+          </p>
+          <p className="text-xs text-gray-400">
+            첫 번째 추억을 남겨보세요
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push('/add')}
+          className="mt-2 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#10B981] shadow-lg shadow-[#10B981]/20 hover:bg-[#0ea472] active:scale-95 transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          기록 추가하기
+        </button>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -14,7 +14,7 @@ export class GroupInvite {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ name: 'code', unique: true })
   code: string;
 
   @Column({ name: 'group_id', type: 'uuid' })
@@ -25,15 +25,16 @@ export class GroupInvite {
   group: Group;
 
   @Column({
+    name: 'permission',
     type: 'enum',
     enum: GroupRoleEnum,
     default: GroupRoleEnum.VIEWER,
   })
   permission: GroupRoleEnum;
 
-  @Column()
+  @Column({ name: 'expires_at' })
   expiresAt: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }
