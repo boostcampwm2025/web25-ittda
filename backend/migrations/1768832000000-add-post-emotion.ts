@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddPostEmotion1768941000000 implements MigrationInterface {
-  name = 'AddPostEmotion1768941000000';
+export class AddPostEmotion1768832000000 implements MigrationInterface {
+  name = 'AddPostEmotion1768832000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
