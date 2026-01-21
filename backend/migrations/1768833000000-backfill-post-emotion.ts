@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class BackfillPostEmotion1769002000000 implements MigrationInterface {
-  name = 'BackfillPostEmotion1769002000000';
+export class BackfillPostEmotion1768833000000 implements MigrationInterface {
+  name = 'BackfillPostEmotion1768833000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
