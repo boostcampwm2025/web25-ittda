@@ -166,6 +166,7 @@ export default function SharedRecords() {
           </DrawerHeader>
 
           <GalleryDrawer
+            type="group"
             groupId={activeGroupId}
             currentAssetId={
               groups.find((g) => g.groupId === activeGroupId)?.cover?.assetId

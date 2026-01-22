@@ -1,7 +1,6 @@
 'use client';
 
-import { MonthRecord } from '@/lib/types/record';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
@@ -13,26 +12,17 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { BookOpen, Plus, X } from 'lucide-react';
-
-// 사진 데이터
-const recordPhotosData = [
-  'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1516715094483-75da7dee9758?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=400',
-  'https://images.unsplash.com/photo-1516715094483-75da7dee9758?auto=format&fit=crop&q=80&w=400',
-];
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  MyCoverUpdateResponse,
+  MyMonthlyRecordListResponse,
+} from '@/lib/types/recordResponse';
+import { useApiPatch } from '@/hooks/useApi';
+import { myMonthlyRecordListOptions } from '@/lib/api/my';
+import { convertMontRecords } from '../_utils/convertMonthRecords';
 
 interface MonthRecordsProps {
-  monthRecords: MonthRecord[];
+  monthRecords: MyMonthlyRecordListResponse[];
   cardRoute: string;
 }
 
@@ -40,20 +30,80 @@ export default function MonthRecords({
   monthRecords,
   cardRoute,
 }: MonthRecordsProps) {
+  const queryClient = useQueryClient();
   const router = useRouter();
-  const [months, setMonths] = useState(monthRecords);
   const [activeMonthId, setActiveMonthId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { groupId, year } = useParams();
+
+  const { data: months = [] } = useQuery({
+    ...myMonthlyRecordListOptions(),
+    initialData: monthRecords,
+    select: (data: MyMonthlyRecordListResponse[]) => convertMontRecords(data),
+  });
 
   const openGallery = (monthId: string) => {
     setActiveMonthId(monthId);
     setIsDrawerOpen(true);
   };
 
-  // 현재 선택된 월의 사진들 가져오기
-  const activeMonth = months.find((m) => m.id === activeMonthId);
-  // TODO: 서버로부터 사진 목록 받아오기(activeMonth를 키 값으로 가져오기)
-  const recordPhotos = recordPhotosData || [];
+  const { mutate: updateGroupCover } = useApiPatch<MyCoverUpdateResponse>(
+    `/api/user/archives/months/${activeMonthId}/cover`,
+    {
+      onSuccess: (response) => {
+        if (!response.data) return;
+        const coverInfo = response.data;
+        // 서버 응답 데이터를 캐시에 즉시 수정
+        queryClient.setQueryData<MyMonthlyRecordListResponse[]>(
+          year
+            ? ['my', 'records', 'month', new Date().getFullYear().toString()]
+            : ['my', 'records', 'month'],
+          (old) => {
+            if (!old) return [];
+            return old.map((my) => {
+              if (my.month === activeMonthId) {
+                return {
+                  ...my,
+                  coverAssetId: coverInfo.coverAssetId,
+                };
+              }
+              return my;
+            });
+          },
+        );
+      },
+      onSettled: () => {
+        // 백그라운드에서 서버와 동기화
+        queryClient.invalidateQueries({
+          queryKey: year
+            ? ['my', 'records', 'month', year]
+            : ['my', 'records', 'month'],
+        });
+      },
+    },
+  );
+
+  const handleCoverSelect = (assetId: string, recordId: string) => {
+    if (!activeMonthId) return;
+
+    // 낙관적 업데이트: 캐시 직접 수정
+    queryClient.setQueryData<MyMonthlyRecordListResponse[]>(
+      year ? ['my', 'records', 'month', year] : ['my', 'records', 'month'],
+      (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map((my) =>
+          my.month === activeMonthId
+            ? {
+                ...my,
+                coverAssetId: assetId,
+              }
+            : my,
+        );
+      },
+    );
+
+    updateGroupCover({ assetId: assetId, sourcePostId: recordId });
+  };
 
   if (months.length === 0) {
     return (
@@ -117,10 +167,11 @@ export default function MonthRecords({
           </DrawerHeader>
 
           <GalleryDrawer
-            recordPhotos={recordPhotos}
-            value={months}
-            setValue={setMonths}
-            activeId={activeMonthId}
+            type={groupId ? 'group' : 'personal'}
+            currentAssetId={
+              months.find((m) => m.id === activeMonthId)?.cover?.assetId
+            }
+            onSelect={handleCoverSelect}
           />
         </DrawerContent>
       </Drawer>
