@@ -21,6 +21,7 @@ import {
   GroupArchiveSortEnum,
 } from './dto/get-group-monthly-archive.query.dto';
 import { GetGroupDailyArchiveQueryDto } from './dto/get-group-daily-archive.query.dto';
+import { GetGroupMonthImagesQueryDto } from './dto/get-group-month-images.query.dto';
 
 @ApiTags('group-records')
 @Controller({
@@ -88,6 +89,46 @@ export class GroupRecordController {
     const { year, month } = this.parseYearMonth(query.month);
 
     const data = await this.groupRecordService.getDailyArchive(
+      groupId,
+      year,
+      month,
+    );
+
+    return { data };
+  }
+
+  /**
+   * 그룹 월별 커버 이미지 조회
+   * GET /v1/groups/:groupId/archives/monthcover
+   */
+  @Get(':groupId/archives/monthcover')
+  async getMonthImages(
+    @Param('groupId') groupId: string,
+    @Query() query: GetGroupMonthImagesQueryDto,
+  ) {
+    const { year, month } = this.parseYearMonth(query.year);
+
+    const data = await this.groupRecordService.getMonthImages(
+      groupId,
+      year,
+      month,
+    );
+
+    return { data };
+  }
+
+  /**
+   * 그룹의 기록이 있는 날짜 조회
+   * GET /v1/groups/:groupId/archives/record-days
+   */
+  @Get(':groupId/archives/record-days')
+  async getRecordedDays(
+    @Param('groupId') groupId: string,
+    @Query() query: GetGroupDailyArchiveQueryDto,
+  ) {
+    const { year, month } = this.parseYearMonth(query.month);
+
+    const data = await this.groupRecordService.getRecordedDays(
       groupId,
       year,
       month,

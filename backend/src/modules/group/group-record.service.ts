@@ -366,4 +366,106 @@ export class GroupRecordService {
     // 날짜 오름차순 정렬되어 있음
     return results;
   }
+
+  /**
+   * 그룹 월별 이미지 조회 (커버 선택용)
+   */
+  async getMonthImages(
+    groupId: string,
+    year: number,
+    month: number,
+  ): Promise<string[]> {
+    // 1. 그룹 존재 확인
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    // 2. 조회 기간 설정
+    const from = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const to = from.endOf('month');
+
+    const fromDate = from.toJSDate();
+    const toDate = to.toJSDate();
+
+    // 3. 해당 월의 IMAGE 블록 조회 (Post와 JOIN)
+    const qb = this.postBlockRepo.createQueryBuilder('b');
+    qb.innerJoin('b.post', 'p');
+
+    qb.where('b.type = :type', { type: PostBlockType.IMAGE });
+    qb.andWhere('p.groupId = :groupId', { groupId });
+    qb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+
+    // 최신순
+    qb.orderBy('p.eventAt', 'DESC');
+
+    const blocks = await qb.getMany();
+
+    // 4. Asset IDs 추출
+    const assetIds: string[] = [];
+    for (const b of blocks) {
+      const val = b.value as { mediaIds?: string[] };
+      if (val.mediaIds) {
+        assetIds.push(...val.mediaIds);
+      }
+    }
+
+    return assetIds;
+  }
+
+  /**
+   * 그룹의 해당 월 중 기록이 있는 날짜 조회
+   */
+  async getRecordedDays(
+    groupId: string,
+    year: number,
+    month: number,
+  ): Promise<string[]> {
+    // 1. 그룹 존재 확인
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    // 2. 조회 기간 설정
+    const start = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const end = start.endOf('month');
+    const fromDate = start.toJSDate();
+    const toDate = end.toJSDate();
+
+    // 3. 해당 월의 포스트 조회
+    const posts = await this.postRepo.find({
+      where: {
+        groupId,
+      },
+      select: ['eventAt'],
+      order: { eventAt: 'DESC' },
+    });
+
+    // eventAt이 해당 월 범위 내에 있는 것만 필터링
+    const filteredPosts = posts.filter(
+      (p) => p.eventAt && p.eventAt >= fromDate && p.eventAt <= toDate,
+    );
+
+    // 4. 날짜 추출 및 중복 제거
+    const dateSet = new Set<string>();
+    for (const p of filteredPosts) {
+      if (!p.eventAt) continue;
+      // KST 기준 날짜 추출
+      const dt = DateTime.fromJSDate(p.eventAt).setZone('Asia/Seoul');
+      dateSet.add(dt.toFormat('yyyy-MM-dd'));
+    }
+
+    // 최신순 정렬
+    return Array.from(dateSet).sort().reverse();
+  }
 }
