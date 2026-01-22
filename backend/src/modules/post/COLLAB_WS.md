@@ -7,7 +7,7 @@
 
 - 인증은 access token 기반이며, 클라이언트는 userId를 직접 알 수 없음
 - 클라이언트 식별은 sessionId 기준으로 동작
-- 락 키는 `block:{uuid}` 형식만 허용 (table은 `table:{uuid}`)
+- 락 키는 `block:{uuid}` 형식만 허용 (table은 `table:{uuid}`, 제목은 `block:title`)
   - 현재는 실제 id가 아니더라도 lock 동작을 확인 가능하도록 구현
 - lock TTL: 30초, heartbeat 권장 주기: 10초
 - 초기 스냅샷으로 전체 동기화 후, 이후에는 delta 이벤트로 상태 갱신
@@ -82,6 +82,7 @@ Stream/Patch/Publish
 - 클라이언트 → 서버 락 획득 요청
 - `lockKey`가 유효하지 않으면 `LOCK_DENIED`
 - 이미 점유 중이면 `LOCK_DENIED`
+- 제목은 `block:title` 락을 사용
 
 ### LOCK_GRANTED
 
@@ -119,6 +120,7 @@ Stream/Patch/Publish
 - 락 소유자만 전송 가능 (block/table lock)
 - 룸에 브로드캐스트되어 다른 클라이언트가 임시 값을 표시
 - payload: `{ blockId, partialValue, sessionId }`
+- 권장 전송 주기: 2~3초
 
 ### STREAM_ABORTED
 
@@ -132,6 +134,7 @@ Stream/Patch/Publish
 - payload: `{ draftId, baseVersion, patch }`
 - patch는 단일 명령 또는 배열 형태
 - 락 소유자만 PATCH 가능
+  - `BLOCK_SET_TITLE`은 `block:title` 락 필요
 - 지원 명령
   - `BLOCK_INSERT { block }`
   - `BLOCK_DELETE { blockId }`

@@ -7,13 +7,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
-import { isUUID } from 'class-validator';
+import { isUUID, validateSync } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 
 import { PostDraft } from './entity/post-draft.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostScope } from '@/enums/post-scope.enum';
 import type { PatchCommand } from './collab/types';
+import { PostBlockDto } from './dto/post-block.dto';
 
 @Injectable()
 export class PostDraftService {
@@ -163,6 +165,7 @@ export class PostDraftService {
           if (exists) {
             throw new ConflictException('blockId already exists.');
           }
+          this.ensureBlockValueValid(block);
           next.blocks.push(block);
           break;
         }
@@ -189,6 +192,10 @@ export class PostDraftService {
           if (!target) {
             throw new NotFoundException('Block not found.');
           }
+          this.ensureBlockValueValid({
+            ...target,
+            layout: command.layout,
+          });
           target.layout = command.layout;
           break;
         }
@@ -202,6 +209,10 @@ export class PostDraftService {
           if (!target) {
             throw new NotFoundException('Block not found.');
           }
+          this.ensureBlockValueValid({
+            ...target,
+            value: command.value,
+          });
           target.value = command.value as typeof target.value;
           break;
         }
@@ -227,5 +238,16 @@ export class PostDraftService {
     if (typeof candidate.title !== 'string') return false;
     if (!Array.isArray(candidate.blocks)) return false;
     return true;
+  }
+
+  private ensureBlockValueValid(block: PostBlockDto) {
+    const candidate = plainToInstance(PostBlockDto, block); // 일반 객체를 DTO 인스턴스로 변환하는 함수
+    const errors = validateSync(candidate, { forbidUnknownValues: false }); // class-validator로 즉시(동기) 검증하는 함수
+    if (errors.length === 0) return;
+    const message =
+      errors
+        .flatMap((error) => Object.values(error.constraints ?? {}))
+        .find((value) => value.length > 0) ?? 'block value is invalid.';
+    throw new BadRequestException(message);
   }
 }

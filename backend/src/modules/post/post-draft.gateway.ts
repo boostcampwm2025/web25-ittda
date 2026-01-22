@@ -276,18 +276,19 @@ export class PostDraftGateway
       : [payload.patch];
 
     for (const command of commands) {
-      const blockId =
-        command.type === 'BLOCK_INSERT'
-          ? command.block?.id
-          : 'blockId' in command
-            ? command.blockId
-            : null;
-      if (blockId) {
-        if (!isUUID(blockId)) {
-          throw new WsException('blockId must be a UUID.');
-        }
-        this.ensureLockOwner(draftId, sessionId, blockId);
+      if (command.type === 'BLOCK_INSERT') {
+        continue;
       }
+      if (command.type === 'BLOCK_SET_TITLE') {
+        this.ensureTitleLockOwner(draftId, sessionId);
+        continue;
+      }
+      const blockId = 'blockId' in command ? command.blockId : null;
+      if (!blockId) continue;
+      if (!isUUID(blockId)) {
+        throw new WsException('blockId must be a UUID.');
+      }
+      this.ensureLockOwner(draftId, sessionId, blockId);
     }
 
     const result = await this.postDraftService.applyPatch(
@@ -410,10 +411,11 @@ export class PostDraftGateway
 
   private normalizeLockKey(lockKey?: string) {
     if (!lockKey) return null;
-    const match = /^(block|table):([0-9a-fA-F-]{36})$/.exec(lockKey);
+    const match = /^(block|table):(title|[0-9a-fA-F-]{36})$/.exec(lockKey);
     if (!match) return null;
     const blockId = match[2];
-    if (!isUUID(blockId)) return null;
+    if (blockId !== 'title' && !isUUID(blockId)) return null;
+    if (blockId === 'title' && match[1] !== 'block') return null;
     // TODO: Validate that the blockId exists in the draft when PATCH/STREAM is implemented.
     return `${match[1]}:${blockId}`;
   }
@@ -480,6 +482,17 @@ export class PostDraftGateway
       `table:${blockId}`,
     );
     if (blockOwner === sessionId || tableOwner === sessionId) {
+      return;
+    }
+    throw new WsException('Lock owner only.');
+  }
+
+  private ensureTitleLockOwner(draftId: string, sessionId: string) {
+    const owner = this.lockService.getActiveLockOwnerSessionId(
+      draftId,
+      'block:title',
+    );
+    if (owner === sessionId) {
       return;
     }
     throw new WsException('Lock owner only.');
