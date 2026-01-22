@@ -2,6 +2,7 @@
 
 import Back from '@/components/Back';
 import { useDraftPresence } from '@/hooks/useDraftPresence';
+import { ROLE_MAP } from '@/lib/types/group';
 import Image from 'next/image';
 
 interface RecordEditorHeaderProps {
@@ -14,22 +15,16 @@ const dummyMembers = [
   {
     sessionId: 's1',
     actorId: 'user-1',
-    nickname: '나',
+    displayName: '나',
+    permissionRole: ROLE_MAP['admin'],
+    lastSeenAt: new Date().toISOString(),
   },
   {
-    sessionId: 's2',
+    sessionId: 's1',
     actorId: 'user-2',
-    nickname: '김철수',
-  },
-  {
-    sessionId: 's3',
-    actorId: 'user-3',
-    nickname: '이영희',
-  },
-  {
-    sessionId: 's4',
-    actorId: 'user-4',
-    nickname: '박지민',
+    displayName: '철수',
+    permissionRole: ROLE_MAP['admin'],
+    lastSeenAt: new Date().toISOString(),
   },
 ];
 export default function RecordEditorHeader({
@@ -38,7 +33,7 @@ export default function RecordEditorHeader({
   draftId,
 }: RecordEditorHeaderProps) {
   let { members } = useDraftPresence(draftId);
-
+  console.log('여기 멤버', members);
   // 임시로 둠
   // TODO: 타입 추가
   if (members.length === 0) {
@@ -63,8 +58,9 @@ export default function RecordEditorHeader({
                 className="relative inline-block h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#121212]"
                 title={member?.displayName || '참여자'}
               >
+                {/**TODO : 추후 유저 이미지 받아와서 추가 */}
                 <Image
-                  src={member?.profileUrl || '/profile-ex.jpeg'}
+                  src={'/profile-ex.jpeg'}
                   alt="참여자 프로필"
                   fill
                   className="rounded-full object-cover"
@@ -81,7 +77,6 @@ export default function RecordEditorHeader({
           )}
         </div>
 
-        {/* 저장 버튼 */}
         <button
           onClick={onSave}
           className="px-5 py-2 rounded-xl text-sm font-semibold active:scale-95 transition-all shadow-sm bg-itta-black text-white"

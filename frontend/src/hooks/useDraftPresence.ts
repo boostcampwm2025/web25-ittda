@@ -1,9 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useSocketStore } from '@/store/useSocketStore';
+import { GroupRoleType } from '@/lib/types/group';
+
+export interface PresenceMember {
+  actorId: string;
+  sessionId: string;
+  displayName: string;
+  permissionRole: GroupRoleType;
+  lastSeenAt: string;
+}
+
+export interface PresenceSnapshot {
+  sessionId: string;
+  version: number;
+  members: PresenceMember[];
+}
 
 export function useDraftPresence(draftId?: string) {
   const { socket, isConnected } = useSocketStore();
-  const [members, setMembers] = useState([]);
+  const [members, setMembers] = useState<PresenceMember[]>([]);
 
   useEffect(() => {
     if (!socket || !isConnected || !draftId) return;
