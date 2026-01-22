@@ -3,6 +3,7 @@ import { formatDateDot, getWeekdayFromDotString } from '@/lib/date';
 import { convertTo12Hour } from '@/lib/utils/time';
 import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
+import { cn } from '@/lib/utils';
 
 interface DateProps {
   date: string;
@@ -46,6 +47,9 @@ interface ContentProps {
   onChange: (val: string) => void;
   onRemove: () => void;
   isLastContentBlock: boolean;
+  isLocked: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 export const ContentField = ({
@@ -53,14 +57,25 @@ export const ContentField = ({
   onChange,
   onRemove,
   isLastContentBlock,
+  isLocked,
+  onFocus,
+  onBlur,
 }: ContentProps) => (
-  <div className="flex items-center gap-2 w-full group/content">
+  <div
+    className={cn(
+      'flex items-center gap-2 w-full group/content transition-opacity',
+      isLocked && 'opacity-60 pointer-events-none',
+    )}
+  >
     <div className="relative flex-1 pl-3">
       <div className="absolute left-0 top-1 bottom-1 w-[2.5px] rounded-full bg-gray-200 dark:bg-white/10 group-focus-within/content:bg-itta-point transition-colors duration-300" />
 
       <textarea
         placeholder="어떤 기억이 있으신가요?"
         value={value}
+        disabled={isLocked}
+        onFocus={onFocus}
+        onBlur={onBlur}
         onChange={(e) => onChange(e.target.value)}
         className="w-full min-h-[120px] border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-700"
         onInput={(e) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GripVertical } from 'lucide-react';
 
 // 컴포넌트 및 필드 임포트
@@ -51,6 +51,8 @@ import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { groupDraftOptions } from '@/lib/api/groupRecord';
 import { useDraftPresence } from '@/hooks/useDraftPresence';
+import { LockResponsePayload, useLockManager } from '@/hooks/useLockManager';
+import { useSocketStore } from '@/store/useSocketStore';
 
 export default function PostEditor({
   mode,
@@ -67,6 +69,10 @@ export default function PostEditor({
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const { mutate: createRecord } = useCreateRecord();
+  const { socket, sessionId: mySessionId } = useSocketStore();
+  const [locks, setLocks] = useState<Record<string, string>>({});
+  const { requestLock, releaseLock, pendingLockKey, setPendingLockKey } =
+    useLockManager(draftId);
 
   //TODO: 이후 활성화된 블록에 유저 정보 보여주는용
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -90,7 +96,11 @@ export default function PostEditor({
     removeBlock,
     handleApplyTemplate,
     handlePhotoUpload,
-  } = usePostEditorBlocks();
+  } = usePostEditorBlocks({
+    draftId,
+    requestLock,
+    releaseLock,
+  });
 
   const {
     gridRef,
@@ -118,6 +128,27 @@ export default function PostEditor({
 
   const { members } = useDraftPresence(draftId);
 
+  // 서버의 LOCK_CHANGED 브로드캐스트 수신
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(
+      'LOCK_CHANGED',
+      ({ lockKey, ownerSessionId }: LockResponsePayload) => {
+        if (!ownerSessionId) return;
+        setLocks((prev) => ({ ...prev, [lockKey]: ownerSessionId }));
+
+        // 기다리던 락이 승인되었다면 드로어 오픈
+        if (pendingLockKey === lockKey && ownerSessionId === mySessionId) {
+          //setActiveDrawer({ type: '', id: lockKey });
+          setPendingLockKey(null);
+        }
+      },
+    );
+    return () => {
+      socket.off('LOCK_CHANGED');
+    };
+  }, [socket, pendingLockKey, mySessionId, setPendingLockKey]);
+
   const goToLocationPicker = () => {
     sessionStorage.setItem('editor_draft', JSON.stringify({ title, blocks }));
     router.push('/location-picker');
@@ -133,20 +164,38 @@ export default function PostEditor({
   };
 
   const renderField = (block: RecordBlock) => {
+    const lockKey = `block:${block.id}`;
+    const ownerSessionId = locks[lockKey];
+    const isLockedByOther = !!ownerSessionId && ownerSessionId !== mySessionId;
+
+    const handleFocus = () => {
+      if (draftId) requestLock(lockKey);
+    };
+
+    const handleBlur = () => {
+      if (draftId) releaseLock(lockKey);
+    };
+
+    const handleLockAndAction = () => {
+      if (isLockedByOther) return;
+      if (draftId) requestLock(lockKey);
+
+      // 위치(location)만 페이지 이동이고, 나머지는 모두 드로어 오픈
+      if (block.type === 'location') {
+        goToLocationPicker();
+      } else {
+        setActiveDrawer({ type: block.type, id: block.id });
+      }
+    };
+
     switch (block.type) {
       case 'date':
         return (
-          <DateField
-            date={block.value.date}
-            onClick={() => setActiveDrawer({ type: 'date', id: block.id })}
-          />
+          <DateField date={block.value.date} onClick={handleLockAndAction} />
         );
       case 'time':
         return (
-          <TimeField
-            time={block.value.time}
-            onClick={() => setActiveDrawer({ type: 'time', id: block.id })}
-          />
+          <TimeField time={block.value.time} onClick={handleLockAndAction} />
         );
       case 'content':
         const contentBlockCount = blocks.filter(
@@ -159,13 +208,16 @@ export default function PostEditor({
             onChange={(v) => updateFieldValue({ text: v }, block.id)}
             onRemove={() => removeBlock(block.id)}
             isLastContentBlock={isLastContentBlock}
+            isLocked={isLockedByOther}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
           />
         );
       case 'photos':
         return (
           <PhotoField
             photos={block.value as PhotoValue}
-            onClick={() => setActiveDrawer({ type: 'photos', id: block.id })}
+            onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
         );
@@ -173,7 +225,7 @@ export default function PostEditor({
         return (
           <EmotionField
             emotion={block.value.mood}
-            onClick={() => setActiveDrawer({ type: 'emotion', id: block.id })}
+            onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
         );
@@ -187,7 +239,7 @@ export default function PostEditor({
                 block.id,
               )
             }
-            onAdd={() => setActiveDrawer({ type: 'tags', id: block.id })}
+            onAdd={handleLockAndAction}
             onRemoveField={() => removeBlock(block.id)}
           />
         );
@@ -202,6 +254,9 @@ export default function PostEditor({
                 removeBlock(block.id);
               }
             }}
+            isLocked={isLockedByOther}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
           />
         );
       case 'rating':
@@ -209,7 +264,7 @@ export default function PostEditor({
           <RatingField
             value={block.value.rating}
             max={5}
-            onClick={() => setActiveDrawer({ type: 'rating', id: block.id })}
+            onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
         );
@@ -225,7 +280,7 @@ export default function PostEditor({
         return (
           <MediaField
             data={block.value as MediaValue}
-            onClick={() => setActiveDrawer({ type: 'media', id: block.id })}
+            onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
         );
@@ -233,7 +288,14 @@ export default function PostEditor({
         return null;
     }
   };
-
+  const handleCloseDrawer = (id?: string) => {
+    if (id && draftId) {
+      const lockKey = `block:${id}`;
+      releaseLock(lockKey);
+    }
+    setActiveDrawer(null);
+    return;
+  };
   const renderActiveDrawer = () => {
     if (!activeDrawer) return null;
     const { type, id } = activeDrawer;
@@ -271,7 +333,7 @@ export default function PostEditor({
             mode="single"
             currentDate={initialValue as string}
             onSelectDate={(v) => handleDone({ date: v })}
-            onClose={() => setActiveDrawer(null)}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'time':
@@ -279,13 +341,13 @@ export default function PostEditor({
           <TimePickerDrawer
             currentTime={initialValue as TimeValue}
             onSave={(v) => handleDone({ time: v })}
-            onClose={() => setActiveDrawer(null)}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'tags':
         return (
           <TagDrawer
-            onClose={() => setActiveDrawer(null)}
+            onClose={() => handleCloseDrawer(id)}
             tags={initialValue as TagsValue}
             previousTags={['식단', '운동']} //TODO: 실제 최근 사용 태그 리스트
             onUpdateTags={(nt) => handleDone({ tags: nt }, false)}
@@ -296,7 +358,7 @@ export default function PostEditor({
           <RatingDrawer
             rating={initialValue as RatingValue}
             onUpdateRating={(nr) => handleDone({ rating: nr.rating })}
-            onClose={() => setActiveDrawer(null)}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'photos':
@@ -336,7 +398,7 @@ export default function PostEditor({
               if (id) updateFieldValue(emptyValue, id);
               else handleDone(emptyValue);
             }}
-            onClose={() => setActiveDrawer(null)}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'emotion':
@@ -345,14 +407,14 @@ export default function PostEditor({
             isOpen={true}
             selectedEmotion={initialValue as string}
             onSelect={(v) => handleDone({ mood: v })}
-            onClose={() => setActiveDrawer(null)}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'media':
         return (
           <MediaDrawer
             onSelect={handleDone}
-            onClose={() => setActiveDrawer(null)}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       default:
@@ -378,33 +440,39 @@ export default function PostEditor({
           onDragOver={handleGridDragOver}
           className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300"
         >
-          {blocks.map((block) => (
-            <div
-              key={block.id}
-              draggable
-              onDragStart={() => handleDragStart(block.id)}
-              onDragOver={(e) => handleDragOver(e, block.id)}
-              onDragEnd={() => setIsDraggingId(null)}
-              className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
-            >
-              <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
-                <GripVertical className="w-4 h-4 text-gray-500" />
-              </div>
+          {blocks.map((block) => {
+            const lockKey = `block:${block.id}`;
+            const ownerSessionId = locks[lockKey];
+            const owner = members.find((m) => m.sessionId === ownerSessionId);
+            //const isLockedByOther = ownerSessionId && ownerSessionId !== mySessionId;
+            return (
+              <div
+                key={block.id}
+                draggable
+                onDragStart={() => handleDragStart(block.id)}
+                onDragOver={(e) => handleDragOver(e, block.id)}
+                onDragEnd={() => setIsDraggingId(null)}
+                className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
+              >
+                <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
+                  <GripVertical className="w-4 h-4 text-gray-500" />
+                </div>
 
-              <div className="w-full flex flex-row gap-2 items-center">
-                {isActive && (
-                  <Image
-                    src="/profile-ex.jpeg"
-                    className="w-6 h-6 rounded-full"
-                    width={8}
-                    height={8}
-                    alt="현재 유저 프로필"
-                  />
-                )}
-                {renderField(block)}
+                <div className="w-full flex flex-row gap-2 items-center">
+                  {owner && (
+                    <Image
+                      src="/profile-ex.jpeg"
+                      className="w-6 h-6 rounded-full"
+                      width={8}
+                      height={8}
+                      alt="현재 유저 프로필"
+                    />
+                  )}
+                  {renderField(block)}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </main>
       <Toolbar
