@@ -4,6 +4,8 @@ import { PostController } from './post.controller';
 import { PostDraftController } from './post-draft.controller';
 import { PostDraftService } from './post-draft.service';
 import { PostDraftGateway } from './post-draft.gateway';
+import { PresenceService } from './collab/presence.service';
+import { LockService } from './collab/lock.service';
 import { PostService } from './post.service';
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
@@ -30,6 +32,12 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule,
   ],
   controllers: [PostController, PostDraftController],
-  providers: [PostService, PostDraftService, PostDraftGateway],
+  providers: [
+    PostService,
+    PostDraftService,
+    PostDraftGateway,
+    PresenceService,
+    LockService,
+  ],
 })
 export class PostModule {}

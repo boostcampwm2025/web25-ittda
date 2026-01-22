@@ -16,31 +16,17 @@ import type { Server, Socket } from 'socket.io';
 import { isUUID } from 'class-validator';
 
 import { WsJwtGuard } from '@/modules/auth/ws/ws-jwt.guard';
-import type { MyJwtPayload } from '@/modules/auth/auth.type';
 import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/user.entity';
-
-type PresenceMember = {
-  actorId: string;
-  sessionId: string;
-  displayName: string;
-  permissionRole: string;
-  lastSeenAt: string;
-};
-
-type JoinDraftPayload = {
-  draftId: string;
-};
-
-type DraftSocketData = {
-  user?: MyJwtPayload;
-  sessionId?: string;
-  actorId?: string;
-  displayName?: string;
-  role?: string;
-  draftId?: string;
-};
+import { PresenceService } from './collab/presence.service';
+import { LockService } from './collab/lock.service';
+import type {
+  DraftSocketData,
+  JoinDraftPayload,
+  LockPayload,
+  PresenceMember,
+} from './collab/types';
 
 @WebSocketGateway({
   cors: {
@@ -61,16 +47,12 @@ export class PostDraftGateway
     private readonly groupMemberRepository: Repository<GroupMember>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly presenceService: PresenceService,
+    private readonly lockService: LockService,
   ) {}
 
   @WebSocketServer()
   private readonly server: Server;
-
-  private readonly presenceByDraft = new Map<
-    string,
-    Map<string, PresenceMember>
-  >();
-  private readonly replacedSessionsByDraft = new Map<string, Set<string>>();
 
   @SubscribeMessage('JOIN_DRAFT')
   async handleJoinDraft(
@@ -87,14 +69,14 @@ export class PostDraftGateway
 
     const sessionId = randomUUID();
     const actorId = this.resolveActorId(socket);
-    const { displayName, role } = await this.resolveMemberInfo(
+    const { displayName, role, profileImageId } = await this.resolveMemberInfo(
       actorId,
       draftId,
     );
     const member: PresenceMember = {
-      actorId,
       sessionId,
       displayName,
+      profileImageId,
       permissionRole: role,
       lastSeenAt: new Date().toISOString(),
     };
@@ -107,29 +89,141 @@ export class PostDraftGateway
     socketData.displayName = displayName;
     socketData.role = role;
     socketData.draftId = draftId;
+    this.presenceService.setSessionActor(sessionId, actorId);
 
     const room = this.getDraftRoom(draftId);
     void socket.join(room);
 
-    const membersMap = this.getOrCreateDraftMembers(draftId);
-    const previous = membersMap.get(actorId);
+    const previous = this.presenceService.getMemberByActor(draftId, actorId);
     if (previous) {
-      this.getOrCreateReplacedSessions(draftId).add(previous.sessionId);
+      this.presenceService.markReplaced(draftId, previous.sessionId);
+      this.releaseLocksForSessionId(draftId, previous.sessionId);
+      this.notifySessionReplaced(actorId, socket.id);
+      this.disconnectPreviousSession(actorId, socket.id);
       this.server.to(room).emit('PRESENCE_REPLACED', {
         previousSessionId: previous.sessionId,
         sessionId,
-        actorId,
+        displayName: member.displayName,
       });
     }
-    membersMap.set(actorId, member);
+    this.presenceService.addMember(draftId, actorId, member);
+    this.presenceService.setSocketId(actorId, socket.id);
 
     socket.emit('PRESENCE_SNAPSHOT', {
       sessionId,
-      members: Array.from(membersMap.values()),
+      members: this.presenceService.getMembersArray(draftId),
+      locks: this.lockService.getLocks(draftId),
       version: 0,
     });
 
     socket.to(room).emit('PRESENCE_JOINED', { member });
+  }
+
+  @SubscribeMessage('LOCK_ACQUIRE')
+  handleLockAcquire(
+    @MessageBody() payload: LockPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
+    const lockKey = this.normalizeLockKey(payload?.lockKey);
+    if (!lockKey) {
+      throw new WsException('lockKey is invalid.');
+    }
+
+    const result = this.lockService.acquireLock(
+      draftId,
+      lockKey,
+      actorId,
+      sessionId,
+      (entry) => {
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_EXPIRED', {
+          lockKey: entry.lockKey,
+          ownerSessionId: entry.ownerSessionId,
+        });
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
+          lockKey: entry.lockKey,
+          ownerSessionId: null,
+        });
+      },
+    );
+    if (!result.ok) {
+      socket.emit('LOCK_DENIED', {
+        lockKey,
+        ownerSessionId: result.ownerSessionId,
+      });
+      return;
+    }
+
+    socket.emit('LOCK_GRANTED', { lockKey, ownerSessionId: sessionId });
+    this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
+      lockKey,
+      ownerSessionId: sessionId,
+    });
+  }
+
+  @SubscribeMessage('LOCK_RELEASE')
+  handleLockRelease(
+    @MessageBody() payload: LockPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
+    const lockKey = this.normalizeLockKey(payload?.lockKey);
+    if (!lockKey) {
+      throw new WsException('lockKey is invalid.');
+    }
+
+    const result = this.lockService.releaseLock(
+      draftId,
+      lockKey,
+      actorId,
+      sessionId,
+    );
+    if (!result.ok) {
+      socket.emit('LOCK_DENIED', {
+        lockKey,
+        ownerSessionId: result.ownerSessionId,
+      });
+      return;
+    }
+    this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
+      lockKey,
+      ownerSessionId: null,
+    });
+  }
+
+  @SubscribeMessage('LOCK_HEARTBEAT')
+  handleLockHeartbeat(
+    @MessageBody() payload: LockPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
+    const lockKey = this.normalizeLockKey(payload?.lockKey);
+    if (!lockKey) {
+      throw new WsException('lockKey is invalid.');
+    }
+
+    const result = this.lockService.heartbeat(
+      draftId,
+      lockKey,
+      actorId,
+      sessionId,
+      (entry) => {
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_EXPIRED', {
+          lockKey: entry.lockKey,
+          ownerSessionId: entry.ownerSessionId,
+        });
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
+          lockKey: entry.lockKey,
+          ownerSessionId: null,
+        });
+      },
+    );
+    if (!result.ok) {
+      socket.emit('LOCK_DENIED', {
+        lockKey,
+        ownerSessionId: result.ownerSessionId,
+      });
+    }
   }
 
   handleDisconnect(socket: Socket) {
@@ -144,55 +238,31 @@ export class PostDraftGateway
     return `draft:${draftId}`;
   }
 
-  private getOrCreateDraftMembers(draftId: string) {
-    const existing = this.presenceByDraft.get(draftId);
-    if (existing) return existing;
-    const created = new Map<string, PresenceMember>();
-    this.presenceByDraft.set(draftId, created);
-    return created;
-  }
-
-  private getOrCreateReplacedSessions(draftId: string) {
-    const existing = this.replacedSessionsByDraft.get(draftId);
-    if (existing) return existing;
-    const created = new Set<string>();
-    this.replacedSessionsByDraft.set(draftId, created);
-    return created;
-  }
-
   private leaveCurrentDraft(socket: Socket) {
     const socketData = this.getSocketData(socket);
     const draftId = socketData.draftId;
     const sessionId = socketData.sessionId;
     if (!draftId || !sessionId) return;
 
-    const membersMap = this.presenceByDraft.get(draftId);
-    const member = Array.from(membersMap?.values() ?? []).find(
-      (value) => value.sessionId === sessionId,
-    );
-    if (member) {
-      membersMap?.delete(member.actorId);
-    }
-    if (membersMap && membersMap.size === 0) {
-      this.presenceByDraft.delete(draftId);
-    }
+    this.releaseLocksForSessionId(draftId, sessionId);
+
+    const isReplaced = this.presenceService.isReplaced(draftId, sessionId);
+    const removed = isReplaced
+      ? { member: null, actorId: null }
+      : this.presenceService.removeMemberBySession(draftId, sessionId);
 
     void socket.leave(this.getDraftRoom(draftId));
-    const replacedSessions = this.replacedSessionsByDraft.get(draftId);
-    const isReplaced = replacedSessions?.has(sessionId) ?? false;
-    if (replacedSessions?.size) {
-      replacedSessions.delete(sessionId);
-      if (replacedSessions.size === 0) {
-        this.replacedSessionsByDraft.delete(draftId);
-      }
-    }
-    if (member && !isReplaced) {
+    this.presenceService.clearReplaced(draftId, sessionId);
+    if (removed.member && !isReplaced) {
       this.server.to(this.getDraftRoom(draftId)).emit('PRESENCE_LEFT', {
         sessionId,
-        actorId: member.actorId,
       });
     }
     socketData.draftId = undefined;
+    this.presenceService.clearSessionActor(sessionId);
+    if (socketData.actorId) {
+      this.presenceService.clearSocketIdIfMatch(socketData.actorId, socket.id);
+    }
   }
 
   private resolveActorId(socket: Socket) {
@@ -219,29 +289,77 @@ export class PostDraftGateway
     });
     const user = await this.userRepository.findOne({
       where: { id: actorId },
-      select: { nickname: true },
+      select: { nickname: true, profileImageId: true },
     });
     if (!user) {
       throw new WsException('User not found.');
     }
 
     const displayName = member?.nicknameInGroup ?? user.nickname ?? 'User';
+    const profileImageId = user.profileImageId ?? null;
     if (!member) {
       // TODO: Remove this bypass after invite/guest access rules are finalized.
       // TODO: Enforce group membership or contributor role (>= EDITOR) before allowing join.
       return {
         displayName,
         role: 'EDITOR',
+        profileImageId,
       };
     }
 
     return {
       displayName,
       role: member.role,
+      profileImageId,
     };
   }
 
   private getSocketData(socket: Socket): DraftSocketData {
     return socket.data as DraftSocketData;
+  }
+
+  private normalizeLockKey(lockKey?: string) {
+    if (!lockKey) return null;
+    const match = /^(block|table):([0-9a-fA-F-]{36})$/.exec(lockKey);
+    if (!match) return null;
+    const blockId = match[2];
+    if (!isUUID(blockId)) return null;
+    // TODO: Validate that the blockId exists in the draft when PATCH/STREAM is implemented.
+    return `${match[1]}:${blockId}`;
+  }
+
+  private getRequiredSession(socket: Socket) {
+    const socketData = this.getSocketData(socket);
+    const draftId = socketData.draftId;
+    const sessionId = socketData.sessionId;
+    const actorId = socketData.actorId;
+    if (!draftId || !sessionId || !actorId) {
+      throw new WsException('Session is not initialized.');
+    }
+    return { draftId, sessionId, actorId };
+  }
+
+  private releaseLocksForSessionId(draftId: string, sessionId: string) {
+    this.lockService.releaseLocksForSessionId(draftId, sessionId, (lockKey) => {
+      this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
+        lockKey,
+        ownerSessionId: null,
+      });
+    });
+  }
+
+  private disconnectPreviousSession(actorId: string, currentSocketId: string) {
+    const previousSocketId = this.presenceService.getSocketId(actorId);
+    if (!previousSocketId || previousSocketId === currentSocketId) return;
+    const previousSocket = this.server.sockets.sockets.get(previousSocketId);
+    previousSocket?.disconnect(true);
+  }
+
+  private notifySessionReplaced(actorId: string, currentSocketId: string) {
+    const previousSocketId = this.presenceService.getSocketId(actorId);
+    if (!previousSocketId || previousSocketId === currentSocketId) return;
+    const previousSocket = this.server.sockets.sockets.get(previousSocketId);
+    // TODO: Include device info (user agent / deviceId) in SESSION_REPLACED payload.
+    previousSocket?.emit('SESSION_REPLACED', {});
   }
 }
