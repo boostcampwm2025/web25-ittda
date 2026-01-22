@@ -1,12 +1,36 @@
+// Usage:
+// ACCESS_TOKEN=... node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... WS_URL=http://localhost:4000 node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... LOCK_KEY=block:<blockId> node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... LOCK_KEY=block:title node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... LOCK_KEY=table:<blockId> node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... LOCK_HEARTBEAT_MS=10000 node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... LOCK_KEY=block:<blockId> RELEASE_AFTER_MS=3000 node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... PATCH_JSON='{"type":"BLOCK_SET_TITLE","title":"테스트"}' node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... PATCH_JSON='{"type":"BLOCK_INSERT","block":{"id":"<uuid>","type":"TEXT","value":{"text":"hello"},"layout":{"row":1,"col":1,"span":2}}}' node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... PATCH_JSON='[{"type":"BLOCK_INSERT","block":{"id":"<uuid>","type":"DATE","value":{"date":"2025-01-14"},"layout":{"row":1,"col":1,"span":1}}},{"type":"BLOCK_INSERT","block":{"id":"<uuid>","type":"TIME","value":{"time":"13:30"},"layout":{"row":1,"col":2,"span":1}}}]' node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... PATCH_JSON='{"type":"BLOCK_SET_VALUE","blockId":"<blockId>","value":{"text":"updated"}}' node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... STREAM_BLOCK_ID=<blockId> STREAM_VALUE='{"text":"typing..."}' node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... STREAM_BLOCK_ID=<blockId> STREAM_VALUE='{"text":"typing..."}' STREAM_INTERVAL_MS=2500 node backend/scripts/ws-presence-test.js <draftId>
+// Block DTO 참고:
+// - 타입/값 구조: backend/src/modules/post/dto/post-block.dto.ts
+// - value 스키마: backend/src/modules/post/types/post-block.types.ts
 const { io } = require('socket.io-client');
 
-const draftId = process.argv[2] ?? 'draft-1';
+const draftId = process.argv[2] ?? '99057f70-74cd-4481-9ede-57b1b42c3945'; // 직접 입력하면 편함
 const serverUrl = process.env.WS_URL ?? 'http://localhost:4000';
 const accessToken = process.env.ACCESS_TOKEN;
 const lockKey = process.env.LOCK_KEY;
 const heartbeatIntervalMs = Number(process.env.LOCK_HEARTBEAT_MS ?? 10000);
+const releaseAfterMs = Number(process.env.RELEASE_AFTER_MS ?? 0);
+const patchBaseVersion = Number(process.env.PATCH_BASE_VERSION ?? 0);
+const patchJson = process.env.PATCH_JSON;
+const streamBlockId = process.env.STREAM_BLOCK_ID;
+const streamValueRaw = process.env.STREAM_VALUE;
+const streamIntervalMs = Number(process.env.STREAM_INTERVAL_MS ?? 2500);
 let heartbeatTimer;
 let sessionReady = false;
+let streamTimer;
 
 if (!accessToken) {
   console.error('ACCESS_TOKEN is required.');
@@ -22,6 +46,27 @@ const socket = io(serverUrl, {
     role: process.env.ROLE ?? 'EDITOR',
   },
 });
+
+const parseJson = (label, raw) => {
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error(`[error] ${label} must be valid JSON.`);
+    process.exit(1);
+  }
+};
+
+const patchPayload = patchJson
+  ? {
+      draftId,
+      baseVersion: patchBaseVersion,
+      patch: parseJson('PATCH_JSON', patchJson),
+    }
+  : null;
+const streamValue = streamValueRaw
+  ? parseJson('STREAM_VALUE', streamValueRaw)
+  : null;
 
 socket.on('connect', () => {
   console.log('[connect]', socket.id);
@@ -41,6 +86,29 @@ socket.onAny((event, ...args) => {
     heartbeatTimer = setInterval(() => {
       socket.emit('LOCK_HEARTBEAT', { lockKey });
     }, heartbeatIntervalMs);
+    // 지정된 시간 후 락 해제 테스트용
+    if (releaseAfterMs > 0) {
+      setTimeout(() => {
+        console.log('[emit] LOCK_RELEASE', lockKey);
+        socket.emit('LOCK_RELEASE', { lockKey });
+      }, releaseAfterMs);
+    }
+  }
+
+  if (event === 'PRESENCE_SNAPSHOT' && !sessionReady) {
+    sessionReady = true;
+    if (patchPayload) {
+      console.log('[emit] PATCH_APPLY', JSON.stringify(patchPayload, null, 2));
+      socket.emit('PATCH_APPLY', patchPayload);
+    }
+    if (streamBlockId && streamValue !== null) {
+      streamTimer = setInterval(() => {
+        socket.emit('BLOCK_VALUE_STREAM', {
+          blockId: streamBlockId,
+          partialValue: streamValue,
+        });
+      }, streamIntervalMs);
+    }
   }
 });
 
@@ -76,6 +144,10 @@ socket.on('disconnect', (reason) => {
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
     heartbeatTimer = undefined;
+  }
+  if (streamTimer) {
+    clearInterval(streamTimer);
+    streamTimer = undefined;
   }
 });
 
