@@ -27,31 +27,35 @@ import PWAInstallModal from '@/components/PWAInstallModal';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useApiDelete, useApiPost } from '@/hooks/useApi';
 import { toast } from 'sonner';
+import { signOut } from 'next-auth/react';
 
 export default function Setting() {
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
-  const { guestSessionId, userId } = useAuthStore();
+  const { guestSessionId, userId, logout: storeLogout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
     usePWAInstall();
   const [showInstructions, setShowInstructions] = useState(false);
 
   const { mutate: logout } = useApiPost('/api/auth/logout', {
-    onSuccess: () => {
-      toast.success('로그아웃 되었습니다. 잠시후 로그인 페이지로 이동합니다.');
-      setTimeout(() => {
-        router.push('/login');
-      }, 1000);
+    onSuccess: async () => {
+      storeLogout();
+      await signOut({ callbackUrl: '/login' });
+
+      toast.success('로그아웃 되었습니다.');
     },
   });
 
   const { mutate: withdrawal } = useApiDelete('/api/me', {
-    onSuccess: () => {
-      toast.success('탈퇴되었습니다. 잠시후 로그인 페이지로 이동합니다.');
-      setTimeout(() => {
-        router.push('/');
-      }, 1000);
+    onSuccess: async () => {
+      storeLogout();
+
+      await signOut({ callbackUrl: '/login' });
+      toast.success('탈퇴되었습니다. 이용해 주셔서 감사합니다.');
+    },
+    onError: () => {
+      toast.error('탈퇴 처리 중 오류가 발생했습니다. 다시 시도해 주세요.');
     },
   });
 
@@ -144,7 +148,10 @@ export default function Setting() {
         </div>
 
         <div className="pt-2 border-t dark:border-white/5 border-gray-50">
-          <button className="w-full flex items-center justify-between py-2 group">
+          <button
+            onClick={handleWithdrawal}
+            className="w-full flex items-center justify-between py-2 group"
+          >
             <span className="text-sm font-bold dark:text-gray-400 text-itta-black">
               버전 정보
             </span>
@@ -176,55 +183,58 @@ export default function Setting() {
             </button>
           )}
           {!guestSessionId && userId && (
-            <button
-              onClick={handleLogout}
-              className="cursor-pointer w-full flex items-center justify-between py-2 group"
-            >
-              <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
-                <LogOut className="w-4 h-4 text-gray-400" />
-                로그아웃
-              </span>
-              <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
-            </button>
-          )}
-          <Drawer>
-            <DrawerTrigger className="cursor-pointer w-full flex items-center justify-between py-2 group text-red-400">
-              <span className="text-sm font-bold flex items-center gap-2">
-                <UserX className="w-4 h-4 text-red-400" />
-                탈퇴하기
-              </span>
-              <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
-            </DrawerTrigger>
-            <DrawerContent className="px-8 pt-4 pb-12">
-              <DrawerHeader>
-                <div className="flex flex-col items-center text-center space-y-4 mb-10">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
-                    <AlertCircle className="w-8 h-8" />
-                  </div>
-                  <div className="space-y-1">
-                    <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-                      정말 탈퇴하시겠습니까?
-                    </DrawerTitle>
-                    <p className="text-sm text-gray-400 font-medium">
-                      기록된 모든 추억이 사라집니다.
-                    </p>
-                  </div>
-                </div>
-              </DrawerHeader>
+            <>
+              <button
+                onClick={handleLogout}
+                className="cursor-pointer w-full flex items-center justify-between py-2 group"
+              >
+                <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
+                  <LogOut className="w-4 h-4 text-gray-400" />
+                  로그아웃
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+              </button>
 
-              <div className="flex gap-4">
-                <DrawerClose className="cursor-pointer flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
-                  취소
-                </DrawerClose>
-                <DrawerClose
-                  onClick={handleWithdrawal}
-                  className="cursor-pointer flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
-                >
-                  탈퇴하기
-                </DrawerClose>
-              </div>
-            </DrawerContent>
-          </Drawer>
+              <Drawer>
+                <DrawerTrigger className="cursor-pointer w-full flex items-center justify-between py-2 group text-red-400">
+                  <span className="text-sm font-bold flex items-center gap-2">
+                    <UserX className="w-4 h-4 text-red-400" />
+                    탈퇴하기
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+                </DrawerTrigger>
+                <DrawerContent className="px-8 pt-4 pb-12">
+                  <DrawerHeader>
+                    <div className="flex flex-col items-center text-center space-y-4 mb-10">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
+                        <AlertCircle className="w-8 h-8" />
+                      </div>
+                      <div className="space-y-1">
+                        <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
+                          정말 탈퇴하시겠습니까?
+                        </DrawerTitle>
+                        <p className="text-sm text-gray-400 font-medium">
+                          기록된 모든 추억이 사라집니다.
+                        </p>
+                      </div>
+                    </div>
+                  </DrawerHeader>
+
+                  <div className="flex gap-4">
+                    <DrawerClose className="cursor-pointer flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
+                      취소
+                    </DrawerClose>
+                    <DrawerClose
+                      onClick={handleWithdrawal}
+                      className="cursor-pointer flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
+                    >
+                      탈퇴하기
+                    </DrawerClose>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            </>
+          )}
         </div>
       </div>
     </>
