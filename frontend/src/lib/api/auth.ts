@@ -1,22 +1,24 @@
-import { post } from './api';
-import type { ReissueResponse } from '../types/response';
+import { auth } from '@/auth';
+import { getSession, signOut } from 'next-auth/react';
+import { deleteCookie } from '../utils/cookie';
+import { guestCookieKey } from '@/store/useAuthStore';
 
-let accessToken: string | null = null;
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 
 /**
  * 액세스 토큰 가져오기
  */
-export function getAccessToken(): string | null {
-  return accessToken;
-}
-
-/**
- * 액세스 토큰 설정
- */
-export function setAccessToken(token: string | null) {
-  accessToken = token;
+export async function getAccessToken() {
+  if (typeof window === 'undefined') {
+    // 서버 환경이므로 Auth 서버 세션에서 가져옴
+    const session = await auth();
+    return session?.accessToken;
+  } else {
+    // 클라이언트 환경이므로 Auth 클라이언트 세션에서 가져옴
+    const session = await getSession();
+    return session?.accessToken;
+  }
 }
 
 /**
@@ -53,11 +55,12 @@ export async function refreshAccessToken(): Promise<string | null> {
   try {
     const response = await fetch('/api/auth/refresh', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
 
     if (!response.ok) {
-      setAccessToken(null);
+      // 로그아웃 필요
       return null;
     }
 
@@ -65,24 +68,75 @@ export async function refreshAccessToken(): Promise<string | null> {
     const newAccessToken = authHeader?.replace('Bearer ', '') ?? null;
 
     if (!newAccessToken) {
-      setAccessToken(null);
+      // 로그아웃 필요
       return null;
     }
 
-    setAccessToken(newAccessToken);
+    // 브라우저의 storage 이벤트를 트리거해서 Auth 클라이언트가 storage 이벤트를 감지해 세션을 최신화
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'nextauth.message',
+          newValue: JSON.stringify({
+            event: 'session',
+            data: { trigger: 'getSession' },
+            timestamp: Math.floor(Date.now() / 1000),
+          }),
+        }),
+      );
+    }
+
     onTokenRefreshed(newAccessToken);
     return newAccessToken;
   } catch {
-    setAccessToken(null);
     return null;
   } finally {
     isRefreshing = false;
   }
 }
 
-/**
- * 로그아웃 (토큰 초기화)
- */
-export function clearTokens() {
-  setAccessToken(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function refreshServerAccessToken(token: any) {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/refresh`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      },
+    );
+
+    const data = await response.json();
+    if (!response.ok) throw data;
+
+    const newAccessToken = response.headers
+      .get('Authorization')
+      ?.replace('Bearer ', '');
+
+    return {
+      ...token,
+      accessToken: newAccessToken,
+      accessTokenExpires: Date.now() + 14 * 60 * 1000,
+    };
+  } catch (error) {
+    console.error('서버 토큰 갱신 실패', error);
+    return {
+      ...token,
+      error: 'RefreshAccessTokenError',
+    };
+  }
+}
+
+export async function handleLogout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+
+    deleteCookie(guestCookieKey);
+
+    await signOut({ callbackUrl: '/login' });
+  } catch (error) {
+    console.error('로그아웃 중 에러 발생', error);
+    window.location.href = '/login';
+  }
 }
