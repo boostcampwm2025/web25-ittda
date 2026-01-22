@@ -74,6 +74,14 @@ export async function refreshAccessToken(): Promise<string | null> {
 
     // 브라우저의 storage 이벤트를 트리거해서 Auth 클라이언트가 storage 이벤트를 감지해 세션을 최신화
     if (typeof window !== 'undefined') {
+      // NextAuth가 사용하는 것과 동일한 채널 생성
+      const channel = new BroadcastChannel('next-auth');
+
+      channel.postMessage({
+        event: 'session',
+        data: { trigger: 'getSession' },
+      });
+
       window.dispatchEvent(
         new StorageEvent('storage', {
           key: 'nextauth.message',
