@@ -3,17 +3,29 @@
 import { useApiQuery } from '@/hooks/useApi';
 import { UserProfileResponse } from '@/lib/types/profileResponse';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const router = useRouter();
+  const { userId, setLogin } = useAuthStore();
 
   const { data: userProfile } = useApiQuery<UserProfileResponse>(
     ['me'],
     '/api/me',
   );
+
+  if (userProfile && !userId) {
+    setLogin({
+      id: userProfile.userId,
+      email: userProfile.user.email ?? 'example.com',
+      nickname: userProfile.user.nickname ?? 'Anonymous',
+      profileImageId: userProfile.user.profileImage?.url ?? null,
+      createdAt: userProfile.user.createdAt,
+    });
+  }
 
   return (
     <header
