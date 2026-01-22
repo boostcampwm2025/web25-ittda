@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import LoginContent from '../../login/_components/LoginContent';
-import { setAccessToken } from '@/lib/api/auth';
+import { signIn } from 'next-auth/react';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { toast } from 'sonner';
@@ -23,40 +23,24 @@ export default function OAuthCallbackPage() {
   const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
 
   useEffect(() => {
-    const handleOAuthCallback = async () => {
-      const code = searchParams.get('code');
+    const code = searchParams.get('code');
 
-      // OAuth 인증 코드가 없으면 로그인 페이지로
-      if (!code) {
-        router.push('/login?error=invalid_callback');
-        return;
-      }
+    // OAuth 인증 코드가 없으면 로그인 페이지로
+    if (!code) {
+      router.push('/login?error=invalid_callback');
+      return;
+    }
 
-      try {
-        // 백엔드로 인증 코드 전송하여 access token 발급
-        const response = await fetch(`/api/auth/exchange`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code,
-          }),
-          credentials: 'include', // 쿠키 포함
-        });
+    const handleLogin = async () => {
+      const result = await signIn('credentials', {
+        code,
+        redirect: false,
+      });
 
-        if (!response.ok) {
-          throw new Error('OAuth callback failed');
-        }
-
-        const token = response.headers
-          .get('Authorization')
-          ?.replace('Bearer ', '');
-
-        if (token) {
-          setAccessToken(token);
-        }
-
+      if (result?.error) {
+        router.push('/login?error=login_failed');
+      } else {
+        // TODO: 유저 프로필 조회 로직 여기에 추가
         // 유저 프로필 조회 및 캐시 저장
         try {
           const profileData =
@@ -74,7 +58,7 @@ export default function OAuthCallbackPage() {
         }
 
         // 초대 코드 기반 그룹 자동 가입
-        if (token && inviteCode) {
+        if (inviteCode) {
           joinGroup(
             {},
             {
@@ -90,15 +74,11 @@ export default function OAuthCallbackPage() {
           );
         }
 
-        // 2. 로그인 성공 - 홈으로 리디렉션
         router.push('/');
-      } catch (error) {
-        console.error('OAuth callback error:', error);
-        router.push('/login?error=login_failed');
       }
     };
 
-    handleOAuthCallback();
+    handleLogin();
   }, [searchParams, router, queryClient, setLogin, setSocialLogin]);
 
   return (
