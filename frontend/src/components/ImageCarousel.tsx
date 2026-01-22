@@ -11,6 +11,7 @@ interface ImageCarouselProps {
 export default function ImageCarousel({ images }: ImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMoved, setIsMoved] = useState(false);
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -45,10 +46,21 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
     setStartX(e.clientX);
   };
 
+  const handleDragStart = (clientX: number) => {
+    setIsDragging(true);
+    setIsMoved(false); // 시작할 때는 이동하지 않은 상태
+    setStartX(clientX);
+  };
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     const currentX = e.clientX;
     const diff = currentX - startX;
+
+    // 5픽셀 이상 움직이면 클릭이 아닌 드래그로 간주
+    if (Math.abs(diff) > 5) {
+      setIsMoved(true);
+    }
     setTranslateX(diff);
   };
 
@@ -68,6 +80,13 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
   const handleMouseLeave = () => {
     if (isDragging) {
       handleMouseUp();
+    }
+  };
+
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (isMoved) {
+      e.stopPropagation();
+      e.preventDefault();
     }
   };
 
@@ -95,6 +114,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClickCapture={handleClickCapture}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -131,7 +151,9 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
         {images.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentIndex(index)}
+            onClick={() => {
+              setCurrentIndex(index);
+            }}
             className={cn(
               'h-1.5 rounded-full transition-all',
               index === currentIndex
