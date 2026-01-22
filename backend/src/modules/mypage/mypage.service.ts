@@ -71,7 +71,7 @@ export class MyPageService {
   async getEmotions(
     userId: string,
     sort: 'recent' | 'frequent',
-  ): Promise<EmotionCount[] | string[]> {
+  ): Promise<EmotionCount[] | PostMood[]> {
     if (sort === 'frequent') {
       const result = await this.postRepo
         .createQueryBuilder('post')
@@ -81,7 +81,7 @@ export class MyPageService {
         .andWhere('post.emotion IS NOT NULL')
         .groupBy('post.emotion')
         .orderBy('count', 'DESC')
-        .getRawMany<{ emotion: string; count: string }>(); // Raw 결과 타입 지정
+        .getRawMany<{ emotion: string; count: string }>();
 
       return result.map((r) => ({
         emotion: r.emotion,
@@ -93,9 +93,11 @@ export class MyPageService {
         order: { createdAt: 'DESC' },
         select: ['emotion'],
       });
+
       const validEmotions = res
         .map((r) => r.emotion)
-        .filter((e): e is PostMood => !!e);
+        .filter(Boolean) as unknown as PostMood[];
+
       return [...new Set(validEmotions)];
     }
   }
