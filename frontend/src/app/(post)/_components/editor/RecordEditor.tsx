@@ -66,10 +66,13 @@ export default function PostEditor({
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const { mutate: createRecord } = useCreateRecord();
+
+  //TODO: 이후 활성화된 블록에 유저 정보 보여주는용
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isActive, setIsActive] = useState(false);
 
   //TODO: 임시 클라이언트 호출
-  const { data: remoteData, isLoading } = useQuery({
+  const { data: remoteData } = useQuery({
     ...groupDraftOptions(groupId ?? '', draftId ?? ''),
     enabled: !!groupId && !!draftId,
   });
