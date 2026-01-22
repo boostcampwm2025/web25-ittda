@@ -43,7 +43,6 @@ export default function MonthlyDetailRecords({
     initialData: serverSideData,
   });
 
-  console.log('dayRecords', dayRecords);
   const sortedGroups = useMemo(() => {
     if (sortBy === 'date-desc') return dayRecords;
     return sortRecords(dayRecords, sortBy);
