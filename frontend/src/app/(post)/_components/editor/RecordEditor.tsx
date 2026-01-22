@@ -50,6 +50,7 @@ import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitialize
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { groupDraftOptions } from '@/lib/api/groupRecord';
+import { useDraftPresence } from '@/hooks/useDraftPresence';
 
 export default function PostEditor({
   mode,
@@ -114,6 +115,8 @@ export default function PostEditor({
       setBlocks(blocks);
     },
   });
+
+  const { members } = useDraftPresence(draftId);
 
   const goToLocationPicker = () => {
     sessionStorage.setItem('editor_draft', JSON.stringify({ title, blocks }));
@@ -367,7 +370,7 @@ export default function PostEditor({
   };
   return (
     <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
-      <RecordEditorHeader mode={mode} onSave={handleSave} draftId={draftId} />
+      <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput value={title} onChange={setTitle} />
         <div
