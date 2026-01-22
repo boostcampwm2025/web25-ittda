@@ -110,3 +110,9 @@ export interface MyDailyRecordListResponse {
   latestPostTitle: string;
   latestPlaceName: string | null;
 }
+
+export type MyCoverListResponse = string[];
+
+export interface MyCoverUpdateResponse {
+  coverAssetId: string;
+}
