@@ -70,6 +70,13 @@ async function fetchWithRetry<T>(
 ) {
   try {
     const response = await fetch(url, fetchOptions);
+    if (response.status === 204) {
+      return {
+        success: true,
+        data: {},
+        error: null,
+      };
+    }
     const data = await response.json();
 
     // 토큰 만료 에러 처리 (인터셉터 역할)
