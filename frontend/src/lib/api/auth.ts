@@ -75,25 +75,24 @@ export async function refreshAccessToken(): Promise<string | null> {
     // 브라우저의 storage 이벤트를 트리거해서 Auth 클라이언트가 storage 이벤트를 감지해 세션을 최신화
     if (typeof window !== 'undefined') {
       // NextAuth가 사용하는 것과 동일한 채널 생성
-      const channel = new BroadcastChannel('next-auth');
-
-      channel.postMessage({
-        event: 'session',
-        data: { trigger: 'getSession' },
-      });
-
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: 'nextauth.message',
-          newValue: JSON.stringify({
-            event: 'session',
-            data: { trigger: 'getSession' },
-            timestamp: Math.floor(Date.now() / 1000),
+      if (typeof BroadcastChannel !== 'undefined') {
+        // 최신 브라우저: BroadcastChannel만 사용
+        const bc = new BroadcastChannel('next-auth');
+        bc.postMessage({ event: 'session', data: { trigger: 'getSession' } });
+        bc.close();
+      } else {
+        // 구형 브라우저 폴백: BroadcastChannel이 없을 때만 StorageEvent 발생
+        window.dispatchEvent(
+          new StorageEvent('storage', {
+            key: 'nextauth.message',
+            newValue: JSON.stringify({
+              event: 'session',
+              data: { trigger: 'getSession' },
+              timestamp: Math.floor(Date.now() / 1000),
+            }),
           }),
-        }),
-      );
-
-      channel.close();
+        );
+      }
     }
 
     onTokenRefreshed(newAccessToken);
