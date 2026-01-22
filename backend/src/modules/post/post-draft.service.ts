@@ -211,7 +211,7 @@ export class PostDraftService {
           }
           this.ensureBlockValueValid({
             ...target,
-            value: command.value,
+            value: command.value as typeof target.value,
           });
           target.value = command.value as typeof target.value;
           break;
