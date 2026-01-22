@@ -135,6 +135,7 @@ Stream/Patch/Publish
 - patch는 단일 명령 또는 배열 형태
 - 락 소유자만 PATCH 가능
   - `BLOCK_SET_TITLE`은 `block:title` 락 필요
+- `BLOCK_INSERT` 성공 시 서버가 `block:{id}` 락을 자동 획득하고 `LOCK_GRANTED/LOCK_CHANGED` 브로드캐스트
 - 지원 명령
   - `BLOCK_INSERT { block }`
   - `BLOCK_DELETE { blockId }`
