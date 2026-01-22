@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Users, X } from 'lucide-react';
 import {
@@ -11,7 +10,6 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
-import { useApiQuery } from '@/hooks/useApi';
 import { useNewPostDraft } from '@/hooks/useGrouprRecord';
 
 interface AddRecordDrawerProps {

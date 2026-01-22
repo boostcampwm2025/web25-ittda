@@ -40,6 +40,7 @@ export default function BottomNavigation() {
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false); // 그룹 상세용 기록 방식 선택
 
   const isSharedPage = pathname === '/shared';
+  const isGroupDetail = /\/group\/[^/]+\/(post|draft)\//.test(pathname);
 
   const minimalPaths = [
     '/add',
@@ -54,6 +55,7 @@ export default function BottomNavigation() {
     pathname.includes('/detail/') ||
     pathname.includes('/month/') ||
     pathname.includes('/edit');
+
   const isGroupChat = pathname.includes('/chat');
   const isLogin =
     pathname.includes('/login') || pathname.includes('/oauth/callback');
@@ -65,6 +67,7 @@ export default function BottomNavigation() {
   const pathGroupId = groupMatch ? groupMatch[1] : null;
 
   if (!showNav) return null;
+  if (isGroupDetail) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-8 py-4 pb-6 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
