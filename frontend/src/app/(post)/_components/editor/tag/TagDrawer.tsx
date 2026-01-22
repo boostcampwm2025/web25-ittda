@@ -78,7 +78,7 @@ export default function TagDrawer({
       onUpdateTags([...prevTags, tag]);
     }
   };
-  console.log(prevTags);
+
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent>

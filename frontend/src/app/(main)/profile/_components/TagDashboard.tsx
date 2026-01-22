@@ -38,7 +38,6 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
     // TODO: 검색 페이지에서 쿼리로 전달받은 태그를 입력창에 입력해주기(query)
     const query = selectedTags.map((t) => `#${t}`).join(' ');
     const tagQuery = selectedTags.join(',');
-    console.log('selectedTags', tagQuery);
     router.push(`/search?tags=${encodeURIComponent(tagQuery)}`);
   };
 
