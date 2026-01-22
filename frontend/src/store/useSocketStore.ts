@@ -48,7 +48,7 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     });
 
     // 에러 발생 시 처리
-    socket.on('connect_error', async (err) => {
+    socket.on('connect_error', async (err: { message: string }) => {
       if (err.message === 'Unauthorized') {
         console.debug('소켓 인증 에러 발생, 토큰 재발급 시도...');
         const newToken = await refreshAccessToken();

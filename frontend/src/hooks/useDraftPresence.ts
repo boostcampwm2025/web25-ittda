@@ -18,6 +18,19 @@ export interface PresenceSnapshot {
   members: PresenceMember[];
 }
 
+export interface PresenceJoinedPayload {
+  member: PresenceMember;
+}
+
+export interface PresenceLeftPayload {
+  sessionId: string;
+}
+
+export interface PresenceReplacedPayload {
+  previousSessionId: string;
+  sessionId: string;
+}
+
 export function useDraftPresence(draftId?: string) {
   const { socket, isConnected, setSessionId } = useSocketStore();
   const [members, setMembers] = useState<PresenceMember[]>([]);
@@ -27,7 +40,7 @@ export function useDraftPresence(draftId?: string) {
     if (!socket || !isConnected || !draftId) return;
 
     // 현재 접속중인 멤버 상태 이벤트
-    socket.on('PRESENCE_SNAPSHOT', (data) => {
+    socket.on('PRESENCE_SNAPSHOT', (data: PresenceSnapshot) => {
       setMembers(data.members); // 초기 전체 목록
       setSessionId(data.sessionId);
     });
@@ -42,17 +55,20 @@ export function useDraftPresence(draftId?: string) {
     });
 
     // 나갔을 때 브로드 캐스트
-    socket.on('PRESENCE_LEFT', ({ sessionId }) => {
+    socket.on('PRESENCE_LEFT', ({ sessionId }: PresenceLeftPayload) => {
       setMembers((prev) => prev.filter((m) => m.sessionId !== sessionId)); // 나간 유저 제거
     });
 
-    socket.on('PRESENCE_REPLACED', ({ previousSessionId, sessionId }) => {
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.sessionId === previousSessionId ? { ...m, sessionId } : m,
-        ),
-      );
-    });
+    socket.on(
+      'PRESENCE_REPLACED',
+      ({ previousSessionId, sessionId }: PresenceReplacedPayload) => {
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.sessionId === previousSessionId ? { ...m, sessionId } : m,
+          ),
+        );
+      },
+    );
     socket.on('SESSION_REPLACED', () => {
       toast.info('다른 기기/탭에서 접속하여 연결이 종료되었습니다.');
       socket.disconnect();
@@ -68,7 +84,7 @@ export function useDraftPresence(draftId?: string) {
       socket.off('PRESENCE_REPLACED');
       socket.off('SESSION_REPLACED');
     };
-  }, [socket, isConnected, draftId]);
+  }, [socket, isConnected, draftId, setSessionId, router]);
 
   return { members };
 }
