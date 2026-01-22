@@ -10,7 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { User } from '@/common/decorators/user.decorator';
 
@@ -27,6 +32,7 @@ import type { MyJwtPayload } from '../auth/auth.type';
 
 // 내 기록함 포함 사용자 관련 api
 @ApiTags('user')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller({
   path: 'me',
@@ -36,6 +42,10 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('archives/months')
+  @ApiOperation({
+    summary: '사용자 월별 아카이브 조회',
+    description: '로그인한 사용자의 월별 기록 요약 목록을 조회합니다.',
+  })
   @ApiWrappedOkResponse({ type: MonthRecordResponseDto, isArray: true })
   async getMonthlyArchive(
     @User() user: MyJwtPayload,
@@ -55,6 +65,12 @@ export class UserController {
   }
 
   @Get('archives/months/:yyyy_mm/images')
+  @ApiOperation({
+    summary: '사용자 월별 이미지 조회',
+    description:
+      '특정 월의 모든 기록에서 사용된 이미지 목록을 조회합니다. (deprecated: archives/monthcover 권장)',
+  })
+  @ApiParam({ name: 'yyyy_mm', description: '연-월 (예: 2026-01)' })
   @ApiWrappedOkResponse({ type: GetMonthImagesResponseDto })
   async getMonthImages(
     @User() user: MyJwtPayload,
@@ -72,6 +88,12 @@ export class UserController {
   }
 
   @Patch('archives/months/:yyyy_mm/cover')
+  @ApiOperation({
+    summary: '사용자 월별 커버 변경',
+    description: '특정 월의 카드 커버 이미지를 변경합니다.',
+  })
+  @ApiParam({ name: 'yyyy_mm', description: '연-월 (예: 2026-01)' })
+  @ApiWrappedOkResponse({ type: Object })
   async updateMonthCover(
     @User() user: MyJwtPayload,
     @Param('yyyy_mm') yyyy_mm: string,
@@ -94,6 +116,10 @@ export class UserController {
   }
 
   @Get('archives/days')
+  @ApiOperation({
+    summary: '사용자 일별 아카이브 조회',
+    description: '로그인한 사용자의 특정 월 일별 기록 요약 목록을 조회합니다.',
+  })
   @ApiWrappedOkResponse({ type: DayRecordResponseDto, isArray: true })
   async getDailyArchive(
     @User() user: MyJwtPayload,
@@ -111,6 +137,10 @@ export class UserController {
   }
 
   @Get('archives/record-days')
+  @ApiOperation({
+    summary: '기록이 있는 날짜 조회',
+    description: '특정 월 중 기록이 있는 날짜 목록을 조회합니다.',
+  })
   @ApiWrappedOkResponse({ type: String, isArray: true })
   async getRecordedDays(
     @User() user: MyJwtPayload,
@@ -128,6 +158,10 @@ export class UserController {
   }
 
   @Get('archives/monthcover')
+  @ApiOperation({
+    summary: '사용자 월별 커버 후보 이미지 조회',
+    description: '특정 월의 모든 기록에서 사용된 이미지 목록을 조회합니다.',
+  })
   @ApiWrappedOkResponse({ type: String, isArray: true })
   async getArchivesMonthCover(
     @User() user: MyJwtPayload,
