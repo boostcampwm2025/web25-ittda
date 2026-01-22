@@ -27,8 +27,6 @@ interface GroupInviteDrawerProps {
   groupInfo: GroupInfo;
 }
 
-const BASE_COPY_URL = 'http://localhost:3000/invite?inviteCode=';
-
 export default function GroupInviteDrawer({
   groupId,
   groupInfo,
@@ -43,6 +41,13 @@ export default function GroupInviteDrawer({
     selectedInviteRole,
     isOpen,
   );
+
+  const getFullInviteUrl = (code: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/invite?inviteCode=${code}`;
+    }
+    return '';
+  };
 
   const roles = [
     {
@@ -71,7 +76,7 @@ export default function GroupInviteDrawer({
 
   const handleCopyCode = () => {
     const code = inviteResult?.code || groupInfo.inviteCode;
-    navigator.clipboard.writeText(BASE_COPY_URL + code);
+    navigator.clipboard.writeText(getFullInviteUrl(code));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -89,8 +94,8 @@ export default function GroupInviteDrawer({
         imageUrl:
           'https://substantial-jade-zgft0gga6m.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-01-16%20003841.png',
         link: {
-          mobileWebUrl: BASE_COPY_URL + code,
-          webUrl: BASE_COPY_URL + code,
+          mobileWebUrl: getFullInviteUrl(code),
+          webUrl: getFullInviteUrl(code),
         },
       },
     });
@@ -173,7 +178,7 @@ export default function GroupInviteDrawer({
             <div className="p-6 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 dark:bg-black/20 dark:border-white/10 bg-gray-50 border-gray-100">
               <div className="flex flex-col items-center">
                 <span className="text-lg font-bold tracking-widest text-[#10B981] break-all text-center">
-                  {BASE_COPY_URL + (inviteResult?.code || groupInfo.inviteCode)}
+                  {getFullInviteUrl(inviteResult?.code || groupInfo.inviteCode)}
                 </span>
                 <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
                   {selectedInviteRole} LEVEL
