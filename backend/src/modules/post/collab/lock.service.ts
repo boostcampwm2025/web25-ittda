@@ -19,6 +19,15 @@ export class LockService {
       }));
   }
 
+  getActiveLockOwnerSessionId(draftId: string, lockKey: string) {
+    const locks = this.locksByDraft.get(draftId);
+    if (!locks) return null;
+    const existing = locks.get(lockKey);
+    if (!existing) return null;
+    if (existing.expiresAt <= Date.now()) return null;
+    return existing.ownerSessionId;
+  }
+
   acquireLock(
     draftId: string,
     lockKey: string,

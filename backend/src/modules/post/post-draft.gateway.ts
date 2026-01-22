@@ -21,11 +21,15 @@ import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/user.entity';
 import { PresenceService } from './collab/presence.service';
 import { LockService } from './collab/lock.service';
+import { DraftStateService } from './collab/draft-state.service';
+import { PostDraftService } from './post-draft.service';
 import type {
   DraftSocketData,
   JoinDraftPayload,
   LockPayload,
   PresenceMember,
+  PatchApplyPayload,
+  StreamPayload,
 } from './collab/types';
 
 @WebSocketGateway({
@@ -49,6 +53,8 @@ export class PostDraftGateway
     private readonly userRepository: Repository<User>,
     private readonly presenceService: PresenceService,
     private readonly lockService: LockService,
+    private readonly draftStateService: DraftStateService,
+    private readonly postDraftService: PostDraftService,
   ) {}
 
   @WebSocketServer()
@@ -97,7 +103,7 @@ export class PostDraftGateway
     const previous = this.presenceService.getMemberByActor(draftId, actorId);
     if (previous) {
       this.presenceService.markReplaced(draftId, previous.sessionId);
-      this.releaseLocksForSessionId(draftId, previous.sessionId);
+      this.releaseLocksForSessionId(draftId, previous.sessionId, true);
       this.notifySessionReplaced(actorId, socket.id);
       this.disconnectPreviousSession(actorId, socket.id);
       this.server.to(room).emit('PRESENCE_REPLACED', {
@@ -125,6 +131,7 @@ export class PostDraftGateway
     @ConnectedSocket() socket: Socket,
   ) {
     const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
+    this.ensureNotPublishing(draftId);
     const lockKey = this.normalizeLockKey(payload?.lockKey);
     if (!lockKey) {
       throw new WsException('lockKey is invalid.');
@@ -197,6 +204,7 @@ export class PostDraftGateway
     @ConnectedSocket() socket: Socket,
   ) {
     const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
+    this.ensureNotPublishing(draftId);
     const lockKey = this.normalizeLockKey(payload?.lockKey);
     if (!lockKey) {
       throw new WsException('lockKey is invalid.');
@@ -226,12 +234,94 @@ export class PostDraftGateway
     }
   }
 
+  @SubscribeMessage('BLOCK_VALUE_STREAM')
+  handleBlockValueStream(
+    @MessageBody() payload: StreamPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const { draftId, sessionId } = this.getRequiredSession(socket);
+    this.ensureNotPublishing(draftId);
+    const blockId = payload?.blockId;
+    if (!blockId || !isUUID(blockId)) {
+      throw new WsException('blockId must be a UUID.');
+    }
+    this.ensureLockOwner(draftId, sessionId, blockId);
+
+    this.server.to(this.getDraftRoom(draftId)).emit('BLOCK_VALUE_STREAM', {
+      blockId,
+      partialValue: payload.partialValue ?? null,
+      sessionId,
+    });
+  }
+
+  @SubscribeMessage('PATCH_APPLY')
+  async handlePatchApply(
+    @MessageBody() payload: PatchApplyPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
+    this.ensureNotPublishing(draftId);
+    if (!payload?.draftId || payload.draftId !== draftId) {
+      throw new WsException('draftId mismatch.');
+    }
+    if (typeof payload.baseVersion !== 'number') {
+      throw new WsException('baseVersion must be a number.');
+    }
+    if (!payload.patch) {
+      throw new WsException('patch is required.');
+    }
+
+    const commands = Array.isArray(payload.patch)
+      ? payload.patch
+      : [payload.patch];
+
+    for (const command of commands) {
+      const blockId =
+        command.type === 'BLOCK_INSERT'
+          ? command.block?.id
+          : 'blockId' in command
+            ? command.blockId
+            : null;
+      if (blockId) {
+        if (!isUUID(blockId)) {
+          throw new WsException('blockId must be a UUID.');
+        }
+        this.ensureLockOwner(draftId, sessionId, blockId);
+      }
+    }
+
+    const result = await this.postDraftService.applyPatch(
+      draftId,
+      payload.baseVersion,
+      payload.patch,
+    );
+    if (result.status === 'stale') {
+      socket.emit('PATCH_REJECTED_STALE', {
+        currentVersion: result.currentVersion,
+      });
+      return;
+    }
+
+    this.draftStateService.addTouchedBy(draftId, actorId);
+    this.server.to(this.getDraftRoom(draftId)).emit('PATCH_COMMITTED', {
+      version: result.version,
+      patch: payload.patch,
+      authorSessionId: sessionId,
+    });
+  }
+
   handleDisconnect(socket: Socket) {
     this.leaveCurrentDraft(socket);
   }
 
   handleConnection(socket: Socket) {
     this.logger.log(`WS_CONNECT socketId=${socket.id}`);
+  }
+
+  broadcastDraftPublished(draftId: string, postId: string) {
+    this.server.to(this.getDraftRoom(draftId)).emit('DRAFT_PUBLISHED', {
+      postId,
+    });
   }
 
   private getDraftRoom(draftId: string) {
@@ -244,7 +334,7 @@ export class PostDraftGateway
     const sessionId = socketData.sessionId;
     if (!draftId || !sessionId) return;
 
-    this.releaseLocksForSessionId(draftId, sessionId);
+    this.releaseLocksForSessionId(draftId, sessionId, true);
 
     const isReplaced = this.presenceService.isReplaced(draftId, sessionId);
     const removed = isReplaced
@@ -339,8 +429,19 @@ export class PostDraftGateway
     return { draftId, sessionId, actorId };
   }
 
-  private releaseLocksForSessionId(draftId: string, sessionId: string) {
+  private releaseLocksForSessionId(
+    draftId: string,
+    sessionId: string,
+    emitStreamAbort: boolean,
+  ) {
     this.lockService.releaseLocksForSessionId(draftId, sessionId, (lockKey) => {
+      if (emitStreamAbort && lockKey.startsWith('block:')) {
+        const blockId = lockKey.slice('block:'.length);
+        this.server.to(this.getDraftRoom(draftId)).emit('STREAM_ABORTED', {
+          blockId,
+          sessionId,
+        });
+      }
       this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
         lockKey,
         ownerSessionId: null,
@@ -361,5 +462,26 @@ export class PostDraftGateway
     const previousSocket = this.server.sockets.sockets.get(previousSocketId);
     // TODO: Include device info (user agent / deviceId) in SESSION_REPLACED payload.
     previousSocket?.emit('SESSION_REPLACED', {});
+  }
+
+  private ensureNotPublishing(draftId: string) {
+    if (this.draftStateService.isPublishing(draftId)) {
+      throw new WsException('Draft is publishing.');
+    }
+  }
+
+  private ensureLockOwner(draftId: string, sessionId: string, blockId: string) {
+    const blockOwner = this.lockService.getActiveLockOwnerSessionId(
+      draftId,
+      `block:${blockId}`,
+    );
+    const tableOwner = this.lockService.getActiveLockOwnerSessionId(
+      draftId,
+      `table:${blockId}`,
+    );
+    if (blockOwner === sessionId || tableOwner === sessionId) {
+      return;
+    }
+    throw new WsException('Lock owner only.');
   }
 }

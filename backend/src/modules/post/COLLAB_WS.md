@@ -8,7 +8,7 @@
 - 인증은 access token 기반이며, 클라이언트는 userId를 직접 알 수 없음
 - 클라이언트 식별은 sessionId 기준으로 동작
 - 락 키는 `block:{uuid}` 형식만 허용 (table은 `table:{uuid}`)
-  - 현재는
+  - 현재는 실제 id가 아니더라도 lock 동작을 확인 가능하도록 구현
 - lock TTL: 30초, heartbeat 권장 주기: 10초
 - 초기 스냅샷으로 전체 동기화 후, 이후에는 delta 이벤트로 상태 갱신
 
@@ -32,6 +32,15 @@ Lock
 - `LOCK_CHANGED { lockKey, ownerSessionId | null }`
 - `LOCK_HEARTBEAT { lockKey }`
 - `LOCK_EXPIRED { lockKey, ownerSessionId }`
+
+Stream/Patch/Publish
+
+- `BLOCK_VALUE_STREAM { blockId, partialValue }`
+- `STREAM_ABORTED { blockId, sessionId }`
+- `PATCH_APPLY { draftId, baseVersion, patch }`
+- `PATCH_COMMITTED { version, patch, authorSessionId }`
+- `PATCH_REJECTED_STALE { currentVersion }`
+- `DRAFT_PUBLISHED { postId }`
 
 ## 이벤트 상세 설명
 
@@ -105,6 +114,49 @@ Lock
 - TTL 만료로 락이 자동 해제될 때 브로드캐스트
 - 이후 `LOCK_CHANGED(ownerSessionId=null)`이 뒤따름
 
+### BLOCK_VALUE_STREAM
+
+- 락 소유자만 전송 가능 (block/table lock)
+- 룸에 브로드캐스트되어 다른 클라이언트가 임시 값을 표시
+- payload: `{ blockId, partialValue, sessionId }`
+
+### STREAM_ABORTED
+
+- 세션 disconnect 시 서버가 스트림 중단 브로드캐스트
+- payload: `{ blockId, sessionId }`
+- 클라이언트는 임시 표시 제거 및 마지막 커밋 상태로 롤백
+
+### PATCH_APPLY
+
+- 클라이언트 → 서버 커밋 요청
+- payload: `{ draftId, baseVersion, patch }`
+- patch는 단일 명령 또는 배열 형태
+- 락 소유자만 PATCH 가능
+- 지원 명령
+  - `BLOCK_INSERT { block }`
+  - `BLOCK_DELETE { blockId }`
+  - `BLOCK_MOVE { blockId, layout }`
+  - `BLOCK_SET_VALUE { blockId, value }`
+  - `BLOCK_SET_TITLE { title }`
+
+### PATCH_COMMITTED
+
+- 서버 → 룸 전체 브로드캐스트
+- payload: `{ version, patch, authorSessionId }`
+- 클라이언트는 이 이벤트를 기준으로 “확정됨” UI 처리
+
+### PATCH_REJECTED_STALE
+
+- baseVersion 불일치 시 요청자에게 전송
+- payload: `{ currentVersion }`
+- 클라이언트는 스냅샷 재요청 후 재시도
+
+### DRAFT_PUBLISHED
+
+- publish 완료 시 룸 전체 브로드캐스트
+- payload: `{ postId }`
+- 클라이언트는 편집 화면 종료/상세 페이지 이동
+
 ## Payload 요약
 
 presence member
@@ -115,14 +167,22 @@ locks
 
 - `lockKey`, `ownerSessionId`
 
+stream
+
+- `blockId`, `partialValue`, `sessionId`
+
+patch
+
+- `draftId`, `baseVersion`, `patch`
+
 ## 클라이언트 동작 가이드
 
 - `PRESENCE_SNAPSHOT` 수신 후 세션 준비 완료로 판단
 - 락 상태는 `PRESENCE_SNAPSHOT.locks`로 초기화하고, 이후 `LOCK_CHANGED/LOCK_EXPIRED`로 갱신
-- `LOCK_RELEASE` 직전에 `PATCH_APPLY`를 호출해서 최종 저장 (PATCH/STREAM은 다음 이슈에서 구현)
+- `LOCK_RELEASE` 직전에 `PATCH_APPLY`를 호출해서 최종 저장
 - 세션 교체 시 `SESSION_REPLACED`를 받으면 모달로 재접속 안내
+- publish 중에는 PATCH/LOCK 요청이 거절될 수 있음 (서버가 임시 freeze)
 
 ## TODO
 
-- blockId 존재 검증은 PATCH/STREAM 단계에서 추가
 - 추후 세션 교체 이벤트에 device info 확장 가능

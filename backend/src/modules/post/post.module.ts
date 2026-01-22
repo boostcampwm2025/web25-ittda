@@ -6,7 +6,9 @@ import { PostDraftService } from './post-draft.service';
 import { PostDraftGateway } from './post-draft.gateway';
 import { PresenceService } from './collab/presence.service';
 import { LockService } from './collab/lock.service';
+import { DraftStateService } from './collab/draft-state.service';
 import { PostService } from './post.service';
+import { PostPublishService } from './post-publish.service';
 
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
@@ -37,6 +39,8 @@ import { AuthModule } from '../auth/auth.module';
     PostDraftGateway,
     PresenceService,
     LockService,
+    DraftStateService,
+    PostPublishService,
   ],
 })
 export class PostModule {}
