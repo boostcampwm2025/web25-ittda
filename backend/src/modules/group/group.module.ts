@@ -9,6 +9,8 @@ import { GroupController } from './group.controller';
 import { GroupRecordService } from './group-record.service';
 import { GroupRecordController } from './group-record.controller';
 import { User } from '../user/entity/user.entity';
+import { Post } from '../post/entity/post.entity';
+import { PostBlock } from '../post/entity/post-block.entity';
 
 import { GroupInvite } from './entity/group_invite.entity';
 import { AuthModule } from '../auth/auth.module';
@@ -21,6 +23,8 @@ import { AuthModule } from '../auth/auth.module';
       GroupMonthCover,
       User,
       GroupInvite,
+      Post,
+      PostBlock,
     ]),
     AuthModule,
   ],

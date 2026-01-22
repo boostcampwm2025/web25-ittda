@@ -1,8 +1,10 @@
 import {
   Controller,
   Patch,
+  Get,
   Param,
   Body,
+  Query,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
@@ -14,6 +16,11 @@ import { GroupRoleGuard } from './guards/group-roles.guard';
 import { GroupRoles } from './guards/group-roles.decorator';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { UpdateGroupMonthCoverDto } from './dto/update-group-month-cover.dto';
+import {
+  GetGroupMonthlyArchiveQueryDto,
+  GroupArchiveSortEnum,
+} from './dto/get-group-monthly-archive.query.dto';
+import { GetGroupDailyArchiveQueryDto } from './dto/get-group-daily-archive.query.dto';
 
 @ApiTags('group-records')
 @Controller({
@@ -46,6 +53,47 @@ export class GroupRecordController {
     );
 
     return { data: result };
+  }
+
+  /**
+   * 그룹 월별 기록 조회
+   * GET /v1/groups/:groupId/archives/months
+   */
+  @Get(':groupId/archives/months')
+  async getMonthlyArchive(
+    @Param('groupId') groupId: string,
+    @Query() query: GetGroupMonthlyArchiveQueryDto,
+  ) {
+    const year = query.year ?? new Date().getFullYear();
+    const sort = query.sort ?? GroupArchiveSortEnum.LATEST;
+
+    const data = await this.groupRecordService.getMonthlyArchive(
+      groupId,
+      year,
+      sort,
+    );
+
+    return { data };
+  }
+
+  /**
+   * 그룹 일별 기록 조회
+   * GET /v1/groups/:groupId/archives/days
+   */
+  @Get(':groupId/archives/days')
+  async getDailyArchive(
+    @Param('groupId') groupId: string,
+    @Query() query: GetGroupDailyArchiveQueryDto,
+  ) {
+    const { year, month } = this.parseYearMonth(query.month);
+
+    const data = await this.groupRecordService.getDailyArchive(
+      groupId,
+      year,
+      month,
+    );
+
+    return { data };
   }
 
   /**
