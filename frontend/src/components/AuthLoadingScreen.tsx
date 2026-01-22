@@ -5,7 +5,7 @@ export default function AuthLoadingScreen() {
         {/* 연결되는 직선 애니메이션 */}
         <div className="relative w-32 h-2 overflow-hidden">
           {/* 이동하는 선 */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full h-1 bg-gray-800">
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full h-1 dark:bg-gray-800 bg-gray-400">
             <div className="h-full w-15 bg-white animate-move-line" />
           </div>
         </div>
