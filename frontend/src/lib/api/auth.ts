@@ -92,6 +92,8 @@ export async function refreshAccessToken(): Promise<string | null> {
           }),
         }),
       );
+
+      channel.close();
     }
 
     onTokenRefreshed(newAccessToken);
