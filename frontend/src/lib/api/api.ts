@@ -1,5 +1,5 @@
 import { ApiResponse } from '../types/response';
-import { getAccessToken, refreshAccessToken, clearTokens } from './auth';
+import { getAccessToken, refreshAccessToken, handleLogout } from './auth';
 
 /**
  * API Base URL 결정
@@ -86,12 +86,18 @@ async function fetchWithRetry<T>(
       !skipAuth &&
       !url.includes('/auth/reissue') // 재발급 API는 제외
     ) {
+      if (typeof window === 'undefined') {
+        // 서버 컴포넌트 환경이라면 토큰 재발급이 아닌 세션 초기화 후 로그인 재요청
+        const { redirect } = await import('next/navigation');
+        redirect('/login?reason=expired');
+        return;
+      }
       // 토큰 재발급 시도
       const newToken = await refreshAccessToken();
 
       if (!newToken) {
-        // 재발급 실패 - 로그인 페이지로 리다이렉트
-        clearTokens();
+        // 재발급 실패 - 로그아웃 처리
+        handleLogout();
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
         }
@@ -211,11 +217,23 @@ export async function fetchApi<T>(
 
   // 액세스 토큰이 있고 skipAuth가 false면 Authorization 헤더 추가
   if (!skipAuth) {
-    const token = getAccessToken();
+    const token = await getAccessToken();
     if (token) {
       (defaultHeaders as Record<string, string>).Authorization =
         `Bearer ${token}`;
     }
+  }
+
+  // 서버 환경에서 fetch 실행시 쿠키 전달
+  const finalOptions: RequestInit = {
+    ...fetchOptions,
+    headers: defaultHeaders,
+  };
+
+  if (typeof window === 'undefined') {
+    const { cookies } = await import('next/headers');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (finalOptions.headers as any).cookie = (await cookies()).toString();
   }
 
   return fetchWithRetry<T>(

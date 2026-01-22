@@ -1,6 +1,5 @@
 'use client';
 
-import { clearTokens } from '@/lib/api/auth';
 import { GuestInfo, UserType } from '@/lib/types/profile';
 import { UserLoginResponse } from '@/lib/types/response';
 import Cookies from 'js-cookie';
@@ -22,7 +21,7 @@ interface Action {
   logout: () => void;
 }
 
-const guestCookieKey = 'x-guest-session-id';
+export const guestCookieKey = 'x-guest-session-id';
 
 // 쿠키에 세션 ID를 설정하는 헬퍼 함수
 const setGuestCookie = (sessionId: string) => {
@@ -91,7 +90,6 @@ export const useAuthStore = create<State & Action>()(
           guestSessionId: null,
           guestSessionExpiresAt: null,
         });
-        clearTokens();
         // 로그아웃 시 쿠키 명시적 삭제
         Cookies.remove(guestCookieKey);
       },
