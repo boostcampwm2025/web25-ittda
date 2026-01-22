@@ -5,10 +5,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import LoginContent from '../../login/_components/LoginContent';
 import { setAccessToken } from '@/lib/api/auth';
+import { useJoinGroup } from '@/hooks/useGroupInvite';
+import { deleteCookie, getCookie } from '@/lib/utils/cookie';
+import { toast } from 'sonner';
+import { createApiError } from '@/lib/utils/errorHandler';
 
 export default function OAuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const inviteCode = getCookie('invite-code') || '';
+  const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
@@ -47,6 +53,23 @@ export default function OAuthCallbackPage() {
 
         const data = await response.json();
         // TODO: 유저 프로필 조회
+
+        // 초대 코드 기반 그룹 자동 가입
+        if (token && inviteCode) {
+          joinGroup(
+            {},
+            {
+              onSuccess: (response) => {
+                const groupId = response.data.groupId;
+                const groupName = response.data.group.name;
+                if (!groupId) createApiError(response);
+                deleteCookie('invite-code');
+                toast.success(`${groupName} 그룹에 참여되었습니다!`);
+                router.replace(`/group/${groupId}`);
+              },
+            },
+          );
+        }
 
         // 2. 로그인 성공 - 홈으로 리디렉션
         router.push('/');

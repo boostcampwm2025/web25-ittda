@@ -1,13 +1,8 @@
-import { GroupRoleType } from '@/lib/types/group';
 import { useApiPost } from './useApi';
 import { useQuery } from '@tanstack/react-query';
 import { post } from '@/lib/api/api';
 import { createApiError } from '@/lib/utils/errorHandler';
-
-export interface InviteRequest {
-  permission: GroupRoleType;
-  expiresInSeconds: number;
-}
+import { InviteJoinResponse } from '@/lib/types/groupResponse';
 
 export interface InviteResponse {
   inviteId: string;
@@ -56,5 +51,5 @@ export const useCreateInviteCode = (
  */
 export const useJoinGroup = (code: string) => {
   //TODO: 임시 Response 이후 확정나면 수정
-  return useApiPost<InviteResponse>(`/api/groups/invites/${code}/join`);
+  return useApiPost<InviteJoinResponse>(`/api/groups/invites/${code}/join`);
 };
