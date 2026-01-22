@@ -55,8 +55,8 @@ export class Post {
   @Column({ type: 'text', array: true, nullable: true })
   tags?: string[] | null;
 
-  @Column({ type: 'varchar', length: 5, nullable: true })
-  emotion?: PostMood | null;
+  @Column({ type: 'varchar', length: 5, array: true, nullable: true })
+  emotion?: PostMood[] | null;
 
   @Column({ type: 'real', nullable: true })
   rating?: number | null;

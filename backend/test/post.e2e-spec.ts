@@ -493,8 +493,119 @@ describe('PostController (e2e)', () => {
     });
     expect(Array.isArray(badBody.message)).toBe(true);
     expect(badBody.message.join(' ')).toContain(
-      'mood must be one of: 행복, 슬픔, 설렘, 좋음, 놀람',
+      'mood must be one of: 행복, 좋음, 만족, 재미, 보통, 피곤, 놀람, 화남, 슬픔, 아픔, 짜증',
     );
+  });
+
+  it('POST /posts should allow up to 4 MOOD blocks', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '감정 4개 허용',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '감정 4개 테스트' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '행복' },
+          layout: { row: 3, col: 1, span: 1 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '슬픔' },
+          layout: { row: 3, col: 2, span: 1 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '설렘' },
+          layout: { row: 4, col: 1, span: 1 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '좋음' },
+          layout: { row: 4, col: 2, span: 1 },
+        },
+      ],
+    };
+
+    await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(201);
+  });
+
+  it('POST /posts should return 400 when MOOD blocks exceed limit', async () => {
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '감정 5개 오류',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '감정 5개 테스트' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '행복' },
+          layout: { row: 3, col: 1, span: 1 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '슬픔' },
+          layout: { row: 3, col: 2, span: 1 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '설렘' },
+          layout: { row: 4, col: 1, span: 1 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '좋음' },
+          layout: { row: 4, col: 2, span: 1 },
+        },
+        {
+          type: 'MOOD',
+          value: { mood: '놀람' },
+          layout: { row: 5, col: 1, span: 1 },
+        },
+      ],
+    };
+
+    const badRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(400);
+
+    expect(badRes.body).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+      message: 'MOOD block must be at most 4',
+    });
   });
 
   it('POST /posts should return 400 when LOCATION value is invalid', async () => {

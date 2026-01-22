@@ -43,7 +43,7 @@ export class FeedCardResponseDto {
   @ApiPropertyOptional()
   tags: string[] | null;
   @ApiPropertyOptional({ enum: PostMood })
-  emotion: PostMood | null;
+  emotion: PostMood[] | null;
   @ApiPropertyOptional()
   rating: number | null;
   @ApiProperty({ type: () => [FeedBlockDto] })
