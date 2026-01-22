@@ -153,8 +153,6 @@ async function reverseGeocodeAddress(
     geocoder.geocode(
       { location: latlng, language: 'ko' },
       (results, status) => {
-        console.log('Geocoding result:', { status, results });
-
         if (status === 'OK' && results && results.length > 0) {
           const addressComponents = results[0].address_components;
 
