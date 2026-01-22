@@ -18,18 +18,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const selectedDate = date || formatDateISO();
 
   const queryClient = new QueryClient();
-  let currentStreak: number = 0;
-  let monthlyRecordCount: number = 0;
+  const currentStreak: number = 0;
+  const monthlyRecordCount: number = 0;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    const [, streakData, monthlyData] = await Promise.all([
+    const [,] = await Promise.all([
       queryClient.prefetchQuery(recordPreviewListOptions(selectedDate)),
-      queryClient.fetchQuery(userRecordPatternOptions(selectedDate)),
-      queryClient.fetchQuery(userRecordPatternOptions(selectedDate.slice(0, 7))), // YYYY-MM 형식
+      // queryClient.fetchQuery(userRecordPatternOptions(selectedDate)),
+      // queryClient.fetchQuery(userRecordPatternOptions(selectedDate.slice(0, 7))), // YYYY-MM 형식
     ]);
 
-    currentStreak = streakData.count;
-    monthlyRecordCount = monthlyData.count;
+    // currentStreak = streakData.count;
+    // monthlyRecordCount = monthlyData.count;
   }
   return (
     <>

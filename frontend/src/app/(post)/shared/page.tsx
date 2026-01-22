@@ -6,8 +6,14 @@ import {
 import SharedRecords from './_components/SharedRecords';
 import { groupListOptions } from '@/lib/api/group';
 
-export default async function SharedPage() {
+interface SharedPageProps {
+  searchParams: Promise<{ [key: string]: string }>;
+}
+
+export default async function SharedPage({ searchParams }: SharedPageProps) {
   const queryClient = new QueryClient();
+  const params = await searchParams;
+  const sortBy = params.sort;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
     await queryClient.prefetchQuery(groupListOptions());
@@ -16,7 +22,7 @@ export default async function SharedPage() {
   return (
     <div className="w-full flex flex-col gap-6">
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <SharedRecords />
+        <SharedRecords searchParams={sortBy} />
       </HydrationBoundary>
     </div>
   );

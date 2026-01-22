@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: '/api/tmdb/:path*',
+        destination: 'https://api.themoviedb.org/3/:path*',
+      },
+      {
         source: '/api/kopis/:path*',
         destination: 'http://www.kopis.or.kr/openApi/restful/:path*',
       },
@@ -45,6 +49,10 @@ const nextConfig: NextConfig = {
         protocol: 'https' as const,
         hostname: host,
       })),
+      {
+        protocol: 'https',
+        hostname: 'api.themoviedb.org',
+      },
       //  KOPIS 도메인 (http 허용 추가)
       {
         protocol: 'http',
