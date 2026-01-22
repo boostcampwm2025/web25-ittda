@@ -137,6 +137,10 @@ export class UserController {
   }
 
   @Get('archives/record-days')
+  @ApiOperation({
+    summary: '기록이 있는 날짜 조회',
+    description: '특정 월 중 기록이 있는 날짜 목록을 조회합니다.',
+  })
   @ApiWrappedOkResponse({ type: String, isArray: true })
   async getRecordedDays(
     @User() user: MyJwtPayload,

@@ -8,7 +8,12 @@ import {
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 import { GroupRecordService } from './group-record.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
@@ -22,8 +27,12 @@ import {
 } from './dto/get-group-monthly-archive.query.dto';
 import { GetGroupDailyArchiveQueryDto } from './dto/get-group-daily-archive.query.dto';
 import { GetGroupMonthImagesQueryDto } from './dto/get-group-month-images.query.dto';
+import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
+import { GroupMonthRecordResponseDto } from './dto/group-month-record.response.dto';
+import { GroupDayRecordResponseDto } from './dto/group-day-record.response.dto';
 
 @ApiTags('group-records')
+@ApiBearerAuth()
 @Controller({
   path: 'groups',
   version: '1',
@@ -34,11 +43,18 @@ export class GroupRecordController {
 
   /**
    * 그룹 월별 커버 변경
-   * PATCH /v1/groups/:groupId/archives/months/:yyyy_mm/cover
    */
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.EDITOR)
   @Patch(':groupId/archives/months/:yyyy_mm/cover')
+  @ApiOperation({
+    summary: '그룹 월별 커버 변경',
+    description:
+      '특정 월의 카드 커버 이미지를 변경합니다. EDITOR 이상의 권한이 필요합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiParam({ name: 'yyyy_mm', description: '연-월 (예: 2026-01)' })
+  @ApiWrappedOkResponse({ type: Object })
   async updateMonthCover(
     @Param('groupId') groupId: string,
     @Param('yyyy_mm') yyyy_mm: string,
@@ -58,9 +74,14 @@ export class GroupRecordController {
 
   /**
    * 그룹 월별 기록 조회
-   * GET /v1/groups/:groupId/archives/months
    */
   @Get(':groupId/archives/months')
+  @ApiOperation({
+    summary: '그룹 월별 아카이브 조회',
+    description: '그룹의 월별 기록 요약 목록을 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: GroupMonthRecordResponseDto, isArray: true })
   async getMonthlyArchive(
     @Param('groupId') groupId: string,
     @Query() query: GetGroupMonthlyArchiveQueryDto,
@@ -79,9 +100,14 @@ export class GroupRecordController {
 
   /**
    * 그룹 일별 기록 조회
-   * GET /v1/groups/:groupId/archives/days
    */
   @Get(':groupId/archives/days')
+  @ApiOperation({
+    summary: '그룹 일별 아카이브 조회',
+    description: '특정 월의 일별 기록 요약 목록을 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: GroupDayRecordResponseDto, isArray: true })
   async getDailyArchive(
     @Param('groupId') groupId: string,
     @Query() query: GetGroupDailyArchiveQueryDto,
@@ -99,9 +125,14 @@ export class GroupRecordController {
 
   /**
    * 그룹 월별 커버 이미지 조회
-   * GET /v1/groups/:groupId/archives/monthcover
    */
   @Get(':groupId/archives/monthcover')
+  @ApiOperation({
+    summary: '그룹 월별 커버 후보 이미지 조회',
+    description: '특정 월의 모든 기록에서 사용된 이미지 목록을 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: String, isArray: true })
   async getMonthImages(
     @Param('groupId') groupId: string,
     @Query() query: GetGroupMonthImagesQueryDto,
@@ -119,9 +150,14 @@ export class GroupRecordController {
 
   /**
    * 그룹의 기록이 있는 날짜 조회
-   * GET /v1/groups/:groupId/archives/record-days
    */
   @Get(':groupId/archives/record-days')
+  @ApiOperation({
+    summary: '기록이 있는 날짜 조회',
+    description: '특정 월 중 기록이 있는 날짜 목록을 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: String, isArray: true })
   async getRecordedDays(
     @Param('groupId') groupId: string,
     @Query() query: GetGroupDailyArchiveQueryDto,

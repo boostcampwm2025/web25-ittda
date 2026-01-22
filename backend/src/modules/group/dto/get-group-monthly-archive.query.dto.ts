@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min, IsEnum } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export enum GroupArchiveSortEnum {
   LATEST = 'latest',
@@ -8,6 +9,14 @@ export enum GroupArchiveSortEnum {
 }
 
 export class GetGroupMonthlyArchiveQueryDto {
+  @ApiProperty({
+    description: '조회할 연도',
+    example: 2026,
+    required: false,
+    minimum: 1500,
+    maximum: 3000,
+    default: new Date().getFullYear(),
+  })
   @Type(() => Number)
   @IsInt()
   @Min(1500)
@@ -15,6 +24,14 @@ export class GetGroupMonthlyArchiveQueryDto {
   @IsOptional()
   year?: number;
 
+  @ApiProperty({
+    description:
+      '정렬 방식 (latest: 최신순, oldest: 오래된순, mostRecords: 기록 많은순)',
+    enum: GroupArchiveSortEnum,
+    example: GroupArchiveSortEnum.LATEST,
+    required: false,
+    default: GroupArchiveSortEnum.LATEST,
+  })
   @IsEnum(GroupArchiveSortEnum, {
     message: 'sort must be one of: latest, oldest, mostRecords',
   })
