@@ -14,6 +14,15 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.delete('/api/posts/:postId', ({ params }) => {
+    const id = String(params.postId);
+
+    return HttpResponse.json({
+      success: true,
+      data: {},
+      error: null,
+    });
+  }),
   http.get('/api/user/archives/days', ({ request }) => {
     const url = new URL(request.url);
     const month = url.searchParams.get('month');
