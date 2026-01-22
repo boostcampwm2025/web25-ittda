@@ -22,7 +22,8 @@ import { User } from '@/modules/user/user.entity';
 import { PresenceService } from './collab/presence.service';
 import { LockService } from './collab/lock.service';
 import { DraftStateService } from './collab/draft-state.service';
-import { PostDraftService } from './post-draft.service';
+import { PatchStreamService } from './collab/patch-stream.service';
+import { acquireLockWithEmit, emitLockExpired } from './collab/lock-events';
 import type {
   DraftSocketData,
   JoinDraftPayload,
@@ -54,7 +55,7 @@ export class PostDraftGateway
     private readonly presenceService: PresenceService,
     private readonly lockService: LockService,
     private readonly draftStateService: DraftStateService,
-    private readonly postDraftService: PostDraftService,
+    private readonly patchStreamService: PatchStreamService,
   ) {}
 
   @WebSocketServer()
@@ -132,18 +133,21 @@ export class PostDraftGateway
   ) {
     const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
     this.ensureNotPublishing(draftId);
+    const room = this.getDraftRoom(draftId);
     const lockKey = this.normalizeLockKey(payload?.lockKey);
     if (!lockKey) {
       throw new WsException('lockKey is invalid.');
     }
 
-    const result = this.lockService.acquireLock(
+    const result = acquireLockWithEmit(
+      this.lockService,
+      this.server,
+      room,
+      socket,
       draftId,
       lockKey,
       actorId,
       sessionId,
-      (entry) =>
-        this.emitLockExpired(draftId, entry.lockKey, entry.ownerSessionId),
     );
     if (!result.ok) {
       socket.emit('LOCK_DENIED', {
@@ -152,8 +156,6 @@ export class PostDraftGateway
       });
       return;
     }
-
-    this.emitLockGranted(socket, draftId, lockKey, sessionId);
   }
 
   @SubscribeMessage('LOCK_RELEASE')
@@ -193,6 +195,7 @@ export class PostDraftGateway
   ) {
     const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
     this.ensureNotPublishing(draftId);
+    const room = this.getDraftRoom(draftId);
     const lockKey = this.normalizeLockKey(payload?.lockKey);
     if (!lockKey) {
       throw new WsException('lockKey is invalid.');
@@ -204,7 +207,7 @@ export class PostDraftGateway
       actorId,
       sessionId,
       (entry) =>
-        this.emitLockExpired(draftId, entry.lockKey, entry.ownerSessionId),
+        emitLockExpired(this.server, room, entry.lockKey, entry.ownerSessionId),
     );
     if (!result.ok) {
       socket.emit('LOCK_DENIED', {
@@ -220,18 +223,15 @@ export class PostDraftGateway
     @ConnectedSocket() socket: Socket,
   ) {
     const { draftId, sessionId } = this.getRequiredSession(socket);
-    this.ensureNotPublishing(draftId);
-    const blockId = payload?.blockId;
-    if (!blockId || !isUUID(blockId)) {
-      throw new WsException('blockId must be a UUID.');
-    }
-    this.ensureLockOwner(draftId, sessionId, blockId);
-
-    this.server.to(this.getDraftRoom(draftId)).emit('BLOCK_VALUE_STREAM', {
-      blockId,
-      partialValue: payload.partialValue ?? null,
+    const room = this.getDraftRoom(draftId);
+    this.patchStreamService.handleBlockValueStream(
+      this.server,
+      socket,
+      room,
+      draftId,
       sessionId,
-    });
+      payload,
+    );
   }
 
   @SubscribeMessage('PATCH_APPLY')
@@ -240,74 +240,16 @@ export class PostDraftGateway
     @ConnectedSocket() socket: Socket,
   ) {
     const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
-    this.ensureNotPublishing(draftId);
-    if (!payload?.draftId || payload.draftId !== draftId) {
-      throw new WsException('draftId mismatch.');
-    }
-    if (typeof payload.baseVersion !== 'number') {
-      throw new WsException('baseVersion must be a number.');
-    }
-    if (!payload.patch) {
-      throw new WsException('patch is required.');
-    }
-
-    const commands = Array.isArray(payload.patch)
-      ? payload.patch
-      : [payload.patch];
-    const insertedBlockIds = commands
-      .filter((command) => command.type === 'BLOCK_INSERT')
-      .map((command) => command.block?.id)
-      .filter((blockId): blockId is string => Boolean(blockId));
-
-    for (const command of commands) {
-      if (command.type === 'BLOCK_INSERT') {
-        continue;
-      }
-      if (command.type === 'BLOCK_SET_TITLE') {
-        this.ensureTitleLockOwner(draftId, sessionId);
-        continue;
-      }
-      const blockId = 'blockId' in command ? command.blockId : null;
-      if (!blockId) continue;
-      if (!isUUID(blockId)) {
-        throw new WsException('blockId must be a UUID.');
-      }
-      this.ensureLockOwner(draftId, sessionId, blockId);
-    }
-
-    const result = await this.postDraftService.applyPatch(
+    const room = this.getDraftRoom(draftId);
+    await this.patchStreamService.handlePatchApply(
+      this.server,
+      socket,
+      room,
       draftId,
-      payload.baseVersion,
-      payload.patch,
+      actorId,
+      sessionId,
+      payload,
     );
-    if (result.status === 'stale') {
-      socket.emit('PATCH_REJECTED_STALE', {
-        currentVersion: result.currentVersion,
-      });
-      return;
-    }
-
-    this.draftStateService.addTouchedBy(draftId, actorId);
-    this.server.to(this.getDraftRoom(draftId)).emit('PATCH_COMMITTED', {
-      version: result.version,
-      patch: payload.patch,
-      authorSessionId: sessionId,
-    });
-
-    if (insertedBlockIds.length > 0) {
-      insertedBlockIds.forEach((blockId) => {
-        if (!isUUID(blockId)) return;
-        const lockKey = `block:${blockId}`;
-        const lockResult = this.acquireLock(
-          draftId,
-          lockKey,
-          actorId,
-          sessionId,
-        );
-        if (!lockResult.ok) return;
-        this.emitLockGranted(socket, draftId, lockKey, sessionId);
-      });
-    }
   }
 
   handleDisconnect(socket: Socket) {
@@ -469,75 +411,5 @@ export class PostDraftGateway
     if (this.draftStateService.isPublishing(draftId)) {
       throw new WsException('Draft is publishing.');
     }
-  }
-
-  private ensureLockOwner(draftId: string, sessionId: string, blockId: string) {
-    const blockOwner = this.lockService.getActiveLockOwnerSessionId(
-      draftId,
-      `block:${blockId}`,
-    );
-    const tableOwner = this.lockService.getActiveLockOwnerSessionId(
-      draftId,
-      `table:${blockId}`,
-    );
-    if (blockOwner === sessionId || tableOwner === sessionId) {
-      return;
-    }
-    throw new WsException('Lock owner only.');
-  }
-
-  private ensureTitleLockOwner(draftId: string, sessionId: string) {
-    const owner = this.lockService.getActiveLockOwnerSessionId(
-      draftId,
-      'block:title',
-    );
-    if (owner === sessionId) {
-      return;
-    }
-    throw new WsException('Lock owner only.');
-  }
-
-  private emitLockExpired(
-    draftId: string,
-    lockKey: string,
-    ownerSessionId: string,
-  ) {
-    this.server.to(this.getDraftRoom(draftId)).emit('LOCK_EXPIRED', {
-      lockKey,
-      ownerSessionId,
-    });
-    this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
-      lockKey,
-      ownerSessionId: null,
-    });
-  }
-
-  private emitLockGranted(
-    socket: Socket,
-    draftId: string,
-    lockKey: string,
-    ownerSessionId: string,
-  ) {
-    socket.emit('LOCK_GRANTED', { lockKey, ownerSessionId });
-    this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
-      lockKey,
-      ownerSessionId,
-    });
-  }
-
-  private acquireLock(
-    draftId: string,
-    lockKey: string,
-    actorId: string,
-    sessionId: string,
-  ) {
-    return this.lockService.acquireLock(
-      draftId,
-      lockKey,
-      actorId,
-      sessionId,
-      (entry) =>
-        this.emitLockExpired(draftId, entry.lockKey, entry.ownerSessionId),
-    );
   }
 }

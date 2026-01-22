@@ -9,6 +9,7 @@ import { LockService } from './collab/lock.service';
 import { DraftStateService } from './collab/draft-state.service';
 import { PostService } from './post.service';
 import { PostPublishService } from './post-publish.service';
+import { PatchStreamService } from './collab/patch-stream.service';
 
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
@@ -41,6 +42,7 @@ import { AuthModule } from '../auth/auth.module';
     LockService,
     DraftStateService,
     PostPublishService,
+    PatchStreamService,
   ],
 })
 export class PostModule {}
