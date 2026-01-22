@@ -18,7 +18,7 @@
     "infra:test:ps": "docker compose -f docker-compose.test.yml ps",
     "dev:be": "pnpm --filter backend start:dev",
     "build:be": "pnpm --filter backend build",
-    "start:be": "pnpm --filter backend start:prod",
+    "start:be": "pnpm --filter backend start",
     "db:dev:migrate": "pnpm -C backend run db:mig:run",
     "db:test:migrate": "pnpm -C backend run db:mig:run:test",
     "lint:fix:all": "pnpm -r lint",
