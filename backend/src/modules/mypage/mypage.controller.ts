@@ -60,7 +60,8 @@ export class MyPageController {
     const stats = await this.myPageService.getUserStats(userId);
 
     return {
-      ...user,
+      userId: userId,
+      user: user,
       stats,
     };
   }
@@ -83,7 +84,7 @@ export class MyPageController {
       dto.profileImageUrl,
     );
     const stats = await this.myPageService.getUserStats(userId);
-    return { ...user, stats };
+    return { userId: userId, user: user, stats };
   }
 
   @UseGuards(JwtAuthGuard)

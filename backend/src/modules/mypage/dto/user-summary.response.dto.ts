@@ -65,7 +65,7 @@ export class UserStatsDto {
   frequentLocations: LocationStatDto[];
 }
 
-export class UserSummaryResponseDto {
+export class UserSummaryResponse {
   @ApiProperty({
     description: '유저 ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
@@ -96,6 +96,12 @@ export class UserSummaryResponseDto {
   @ApiProperty({ description: '설정 정보', example: { theme: 'dark' } })
   @Expose()
   settings: Record<string, any>;
+}
+
+export class UserSummaryResponseDto {
+  userId: string;
+
+  user: UserSummaryResponse;
 
   @ApiProperty({ description: '유저 통계 정보', type: UserStatsDto })
   @Expose()
