@@ -1,7 +1,7 @@
 import dataSource from '../data-source';
 import { Post } from '../modules/post/entity/post.entity';
 import { PostContributor } from '../modules/post/entity/post-contributor.entity';
-import { User } from '../modules/user/user.entity';
+import { User } from '../modules/user/entity/user.entity';
 
 const SEED_PROVIDER = 'kakao';
 const SEED_PROVIDER_ID = 'seed-owner';

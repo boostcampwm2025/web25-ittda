@@ -7,7 +7,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 
-import { User } from '../../../modules/user/user.entity';
+import { User } from '../../user/entity/user.entity';
 import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 

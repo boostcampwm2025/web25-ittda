@@ -8,7 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Post } from './post.entity';
-import { User } from '@/modules/user/user.entity';
+import { User } from '@/modules/user/entity/user.entity';
 import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 
 @Entity('post_contributors')

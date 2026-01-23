@@ -9,7 +9,7 @@ import {
   Index,
 } from 'typeorm';
 
-import { User } from '../../../modules/user/user.entity';
+import { User } from '../../user/entity/user.entity';
 import { Group } from './group.entity';
 import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
 

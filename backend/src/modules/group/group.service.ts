@@ -2,6 +2,8 @@ import {
   Injectable,
   InternalServerErrorException,
   BadRequestException,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -9,7 +11,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Group } from './entity/group.entity';
 import { GroupMember } from './entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
-import { User } from '../user/user.entity';
+import { User } from '../user/entity/user.entity';
 import { GroupInvite } from './entity/group_invite.entity';
 import * as crypto from 'crypto';
 
@@ -120,7 +122,7 @@ export class GroupService {
     });
 
     if (!requesterMember || requesterMember.role !== GroupRoleEnum.ADMIN) {
-      throw new BadRequestException('추방 권한이 없습니다.');
+      throw new ForbiddenException('추방 권한이 없습니다.');
     }
 
     // 대상이 방장인지 확인 (방장은 추방 불가)
@@ -128,15 +130,15 @@ export class GroupService {
       where: { id: groupId },
       relations: ['owner'],
     });
-    if (!group) throw new BadRequestException('그룹을 찾을 수 없습니다.');
+    if (!group) throw new NotFoundException('그룹을 찾을 수 없습니다.');
 
     if (group.owner.id === targetUserId) {
-      throw new BadRequestException('방장은 추방할 수 없습니다.');
+      throw new ForbiddenException('방장은 추방할 수 없습니다.');
     }
 
     // 본인 추방은 leaveGroup 사용
     if (requesterId === targetUserId) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         '자기 자신을 추방할 수 없습니다. 나가기를 이용하세요.',
       );
     }
@@ -156,7 +158,7 @@ export class GroupService {
   ) {
     // 1. 본인 여부 확인
     if (requesterId === userId) {
-      throw new BadRequestException('자신의 권한은 직접 수정할 수 없습니다.');
+      throw new ForbiddenException('자신의 권한은 직접 수정할 수 없습니다.');
     }
 
     try {
@@ -189,12 +191,12 @@ export class GroupService {
     });
 
     if (!group) {
-      throw new BadRequestException('존재하지 않는 그룹입니다.');
+      throw new NotFoundException('존재하지 않는 그룹입니다.');
     }
 
     // 방장인지 확인
     if (group.owner.id !== userId) {
-      throw new BadRequestException('그룹을 삭제할 권한이 없습니다.');
+      throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
     }
 
     // 그룹 삭제 (Cascade 설정으로 멤버들도 자동 삭제됨)
@@ -209,7 +211,7 @@ export class GroupService {
     });
 
     if (!group) {
-      throw new BadRequestException('존재하지 않는 그룹입니다.');
+      throw new NotFoundException('존재하지 않는 그룹입니다.');
     }
 
     // 이름 변경은 OWNER, ADMIN 권한이 필요하지만, 현재는 Controller에서 Guard로 처리한다고 가정
@@ -228,7 +230,7 @@ export class GroupService {
       relations: ['owner'],
     });
 
-    if (!group) throw new BadRequestException('그룹이 존재하지 않습니다.');
+    if (!group) throw new NotFoundException('그룹이 존재하지 않습니다.');
 
     // 방장은 못 나감 (삭제하거나 양도해야 함)
     if (group.owner.id === userId) {

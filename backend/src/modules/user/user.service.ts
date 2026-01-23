@@ -1,12 +1,22 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
+import { User } from './entity/user.entity';
 import { Post } from '../post/entity/post.entity';
-import { TagCount } from './user.interface';
+import { PostBlock } from '../post/entity/post-block.entity';
+import { MonthRecordResponseDto } from './dto/month-record.response.dto';
+import { DateTime } from 'luxon';
+import { PostBlockType } from '@/enums/post-block-type.enum';
+import { BlockValueMap } from '@/modules/post/types/post-block.types';
+import { PostContributor } from '../post/entity/post-contributor.entity';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
 
+import { UserMonthCover } from './entity/user-month-cover.entity';
+
+import { DayRecordResponseDto } from './dto/day-record.response.dto';
+
+// User Service에서 기능 구현
 @Injectable()
 export class UserService {
   constructor(
@@ -14,6 +24,10 @@ export class UserService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Post)
     private readonly postRepo: Repository<Post>,
+    @InjectRepository(PostBlock)
+    private readonly postBlockRepo: Repository<PostBlock>,
+    @InjectRepository(UserMonthCover)
+    private readonly userMonthCoverRepo: Repository<UserMonthCover>,
   ) {}
 
   async findOrCreateOAuthUser(params: OAuthUserType): Promise<User> {
@@ -32,165 +46,494 @@ export class UserService {
     return user;
   }
 
-  async findOne(userId: string): Promise<User> {
-    return this.userRepo.findOneByOrFail({ id: userId });
+  /**
+   * ID로 유저 단건 조회 (기본)
+   */
+  async findById(id: string): Promise<User | null> {
+    return this.userRepo.findOne({ where: { id } });
   }
 
-  // Record<string, any> 대신 unknown 권장
-  async updateSettings(
+  /**
+   * 월별 기록(아카이브) 조회
+   */
+  async getMonthlyArchive(
     userId: string,
-    settings: Record<string, unknown>,
-  ): Promise<User> {
-    const user = await this.findOne(userId);
-    user.settings = { ...user.settings, ...settings };
-    return this.userRepo.save(user);
-  }
+    year: number,
+  ): Promise<MonthRecordResponseDto[]> {
+    // 1. 조회 기간 설정 (YYYY-01-01 ~ YYYY-12-31)
+    // 타임존은 일단 KST/UTC 이슈 없이 "해당 연도에 포함된" 모든 글을 가져온 뒤 JS에서 월별로 그룹핑하는 전략
+    // (DB Timezone issue를 피하기 위해 넉넉하게 가져와서 application level grouping)
+    const startDate = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
+      'year',
+    );
+    const endDate = startDate.endOf('year');
 
-  async getTags(
-    userId: string,
-    sort: 'recent' | 'frequent',
-  ): Promise<TagCount[] | string[]> {
-    if (sort === 'frequent') {
-      // query의 반환값에 타입을 명시하여 unsafe-assignment 방지
-      const query = await this.postRepo.query<
-        Array<{ tag: string; count: string }>
-      >(
-        `SELECT unnest(tags) as tag, COUNT(*) as count 
-         FROM posts 
-         WHERE owner_user_id = $1 
-         GROUP BY tag 
-         ORDER BY count DESC, MAX(created_at) DESC`,
-        [userId],
-      ); // PostgreSQL의 unnest() 함수는 배열(Array)을 행(Row)으로 펼쳐주는(평면화하는) 함수
-      return query.map((r) => ({
-        tag: r.tag,
-        count: parseInt(r.count, 10),
-      }));
-    } else {
-      const query = await this.postRepo.query<Array<{ tag: string }>>(
-        `SELECT unnest(tags) as tag, created_at
-         FROM posts 
-         WHERE owner_user_id = $1 
-         ORDER BY created_at DESC`,
-        [userId],
-      );
-      const seen = new Set<string>();
-      const result: string[] = [];
-      for (const row of query) {
-        if (!seen.has(row.tag)) {
-          seen.add(row.tag);
-          result.push(row.tag);
-        }
-      }
-      return result;
-    }
-  }
+    const from = startDate.toJSDate();
+    const to = endDate.toJSDate();
 
-  // async getEmotions(
-  //   userId: string,
-  //   sort: 'recent' | 'frequent',
-  // ): Promise<EmotionCount[] | string[]> {
-  //   if (sort === 'frequent') {
-  //     const result = await this.postRepo
-  //       .createQueryBuilder('post')
-  //       .select('post.emotion', 'emotion')
-  //       .addSelect('COUNT(*)', 'count')
-  //       .where('post.ownerUserId = :userId', { userId })
-  //       .andWhere('post.emotion IS NOT NULL')
-  //       .groupBy('post.emotion')
-  //       .orderBy('count', 'DESC')
-  //       .getRawMany<{ emotion: string; count: string }>(); // Raw 결과 타입 지정
+    // 2. 해당 유저의 모든 포스트 조회 (내 글 + 기여한 글)
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.select(['p.id', 'p.eventAt', 'p.title']);
 
-  //     return result.map((r) => ({
-  //       emotion: r.emotion,
-  //       count: parseInt(r.count, 10),
-  //     }));
-  //   } else {
-  //     const res = await this.postRepo.find({
-  //       where: { ownerUserId: userId },
-  //       order: { createdAt: 'DESC' },
-  //       select: ['emotion'],
-  //     });
-  //     const validEmotions = res
-  //       .map((r) => r.emotion)
-  //       .filter((e): e is string => !!e);
-  //     return [...new Set(validEmotions)];
-  //   }
-  // }
-
-  // async getUserStats(userId: string): Promise<UserStats> {
-  //   const frequentTagsResult = await this.getTags(userId, 'frequent');
-  //   const recentTagsResult = await this.getTags(userId, 'recent');
-  //   const frequentEmotionsResult = await this.getEmotions(userId, 'frequent');
-  //   const recentEmotionsResult = await this.getEmotions(userId, 'recent');
-
-  //   // Type Guard를 통해 확실하게 추론 유도
-  //   const frequentTags =
-  //     Array.isArray(frequentTagsResult) &&
-  //     typeof frequentTagsResult[0] === 'object'
-  //       ? (frequentTagsResult as TagCount[])
-  //       : [];
-  //   const recentTags =
-  //     Array.isArray(recentTagsResult) && typeof recentTagsResult[0] === 'string'
-  //       ? (recentTagsResult as string[])
-  //       : [];
-
-  //   const frequentEmotions =
-  //     Array.isArray(frequentEmotionsResult) &&
-  //     typeof frequentEmotionsResult[0] === 'object'
-  //       ? (frequentEmotionsResult as EmotionCount[])
-  //       : [];
-  //   const recentEmotions =
-  //     Array.isArray(recentEmotionsResult) &&
-  //     typeof recentEmotionsResult[0] === 'string'
-  //       ? (recentEmotionsResult as string[])
-  //       : [];
-
-  //   return {
-  //     recentTags: recentTags.slice(0, 10),
-  //     frequentTags: frequentTags.slice(0, 10).map((t) => t.tag),
-  //     recentEmotions: recentEmotions.slice(0, 10),
-  //     frequentEmotions: frequentEmotions.slice(0, 10).map((e) => e.emotion),
-  //   };
-  // }
-
-  /** 내 프로필 수정 (닉네임, 프로필 이미지) */
-  async updateProfile(
-    userId: string,
-    nickname?: string,
-    profileImageId?: string,
-  ): Promise<User> {
-    // 1. 닉네임 변경 시 유효성 검사
-    if (nickname) {
-      if (nickname.length > 8) {
-        throw new BadRequestException('닉네임은 최대 8자까지 가능합니다.');
-      }
-      if (!/^[a-zA-Z가-힣0-9]+$/.test(nickname)) {
-        throw new BadRequestException(
-          '닉네임은 한글, 영어, 숫자만 입력 가능합니다.',
+    // 조건: (ownerUserId = :userId OR contributor...) AND eventAt BETWEEN :from AND :to
+    postsQb.where(
+      new Brackets((qb) => {
+        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
         );
-      }
+      }),
+    );
+
+    postsQb.andWhere('p.eventAt >= :from AND p.eventAt <= :to', { from, to });
+    postsQb.orderBy('p.eventAt', 'DESC'); // 최신순 정렬
+
+    const posts = await postsQb.getMany();
+
+    if (posts.length === 0) {
+      return [];
     }
 
-    // 2. 부분 업데이트 수행
-    await this.userRepo.update(userId, {
-      ...(nickname && { nickname }),
-      ...(profileImageId && { profileImageId }),
+    // 3. 월별 그룹핑
+    // Key: "YYYY-MM", Value: Post[]
+    const postsByMonth = new Map<string, Post[]>();
+
+    for (const p of posts) {
+      if (!p.eventAt) continue;
+      // eventAt은 UTC로 저장됨. 클라이언트 뷰 기준(User TZ)이 중요하지만,
+      // 일단 간단히 KST(+9) 기준 or 그냥 UTC 기준으로 월을 자른다.
+      // 여기서는 요구사항에 맞춰 "YYYY-MM" 문자열 생성이 필요.
+      // Luxon을 사용하여 포맷팅 (default zone or system zone?)
+      // User의 Timezone을 알 수 없으므로, 일단 Asia/Seoul 기준으로 Grouping 하거나 UTC 등 합의 필요.
+      // 코드 맥락상 Default TZ를 따르거나 함. 여기서는 KST(Asia/Seoul) 가정.
+      const dt = DateTime.fromJSDate(p.eventAt).setZone('Asia/Seoul');
+      const monthKey = dt.toFormat('yyyy-MM');
+
+      const list = postsByMonth.get(monthKey) ?? [];
+      list.push(p);
+      postsByMonth.set(monthKey, list);
+    }
+
+    // 3.5 커버 이미지 매핑 조회 (UserMonthCover)
+    const customCovers = await this.userMonthCoverRepo.find({
+      where: { userId, year },
+    });
+    const customCoverMap = new Map<string, string>(); // "yyyy-MM" -> url
+    for (const c of customCovers) {
+      const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
+      customCoverMap.set(key, c.coverAssetId ?? '');
+    }
+
+    // 4. 각 월별 "대표(최신) 포스트 ID" 추출
+    const monthKeys = Array.from(postsByMonth.keys()).sort().reverse(); // 최신 달부터
+    const representativePostIds: string[] = [];
+    const representativePostMap = new Map<string, Post>(); // postId -> Post(latest)
+
+    // 결과 조립용 Map
+    // MonthKey -> PartialResult
+    const resultFromMonth = new Map<
+      string,
+      {
+        postCount: number;
+        latestPost: Post;
+      }
+    >();
+
+    for (const mKey of monthKeys) {
+      const monthPosts = postsByMonth.get(mKey)!;
+      // 이미 쿼리에서 eventAt DESC 정렬했으므로 첫번째가 최신
+      const latestPost = monthPosts[0];
+
+      resultFromMonth.set(mKey, {
+        postCount: monthPosts.length,
+        latestPost,
+      });
+
+      representativePostIds.push(latestPost.id);
+      representativePostMap.set(latestPost.id, latestPost);
+    }
+
+    // 5. 대표 포스트들의 메타데이터(이미지, 위치) 조회 (Batch)
+    // 필요한 Block Type: IMAGE(썸네일용), LOCATION(장소명용)
+    const blocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+      },
     });
 
-    // 3. 수정된 사용자 정보 반환 (no-unsafe-return 방지)
-    return this.findOne(userId);
+    const blocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of blocks) {
+      const list = blocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      blocksByPostId.set(b.postId, list);
+    }
+
+    // 6. DTO 조립
+    const results: MonthRecordResponseDto[] = [];
+    for (const mKey of monthKeys) {
+      const { postCount, latestPost } = resultFromMonth.get(mKey)!;
+      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
+
+      // 6-1. 커버 이미지 찾기 (AssetID 사용)
+      // 우선순위: 1. UserSelected 2. Latest Post Image
+      let coverAssetId: string | null = null;
+
+      const customId = customCoverMap.get(mKey);
+      if (customId) {
+        coverAssetId = customId;
+      } else {
+        const imageBlock = relatedBlocks.find(
+          (b) => b.type === PostBlockType.IMAGE,
+        );
+        if (imageBlock) {
+          const val =
+            imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
+          if (val.mediaIds && val.mediaIds.length > 0) {
+            coverAssetId = val.mediaIds[0];
+          }
+        }
+      }
+
+      // 6-2. 위치 이름 찾기
+      const locationBlock = relatedBlocks.find(
+        (b) => b.type === PostBlockType.LOCATION,
+      );
+      let placeName: string | null = null;
+      if (locationBlock) {
+        const val =
+          locationBlock.value as BlockValueMap[typeof PostBlockType.LOCATION];
+        placeName = val.placeName || val.address || null;
+      }
+
+      results.push({
+        month: mKey,
+        count: postCount,
+        coverAssetId,
+        latestTitle: latestPost.title,
+        latestLocation: placeName,
+      });
+    }
+
+    return results;
   }
 
-  /** 회원 탈퇴 (Soft Delete) */
-  async softDeleteUser(userId: string): Promise<void> {
-    // TypeORM의 softDelete는 deletedAt 컬럼에 현재 시간을 기록합니다.
-    const result = await this.userRepo.softDelete(userId);
+  /**
+   * 해당 월의 모든 이미지 조회
+   */
+  async getMonthImages(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<string[]> {
+    const from = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const to = from.endOf('month');
 
-    if (result.affected === 0) {
-      throw new BadRequestException(
-        '존재하지 않는 사용자이거나 이미 탈퇴 처리되었습니다.',
-      );
+    // 해당 기간, 내 글(owner)에서 나온 IMAGE 블록 조회
+    // Contributor 글의 이미지도 내 앨범에 넣을지는 정책 결정 필요.
+    // "내 기록함" 맥락이므로 내가 포함된 글의 이미지는 쓸 수 있다고 가정.
+    // 여기서는 QueryBuilder로 Join하여 한 번에 가져옴.
+
+    const fromDate = from.toJSDate();
+    const toDate = to.toJSDate();
+
+    // Post p JOIN PostBlock b ON p.id = b.postId
+    // WHERE ... AND b.type = 'IMAGE'
+    const qb = this.postBlockRepo.createQueryBuilder('b');
+    qb.innerJoin('b.post', 'p');
+
+    // Auth Check Logic reuse needed?
+    // Simply check owner for now (Optimization) OR reuse complicated logic if needed.
+    // Scenario implies "My Archive", so owner + contributor.
+
+    qb.where('b.type = :type', { type: PostBlockType.IMAGE });
+    qb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+
+    qb.andWhere(
+      new Brackets((sub) => {
+        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub2 = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .getQuery();
+            return `EXISTS ${sub2}`;
+          },
+          { userId },
+        );
+      }),
+    );
+
+    // 최신순
+    qb.orderBy('p.eventAt', 'DESC');
+
+    const blocks = await qb.getMany();
+
+    // Extract Asset IDs
+    const assetIds: string[] = [];
+    for (const b of blocks) {
+      const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
+      if (val.mediaIds) {
+        assetIds.push(...val.mediaIds);
+      }
     }
+
+    return assetIds;
+  }
+
+  /**
+   * 월별 커버 이미지 변경
+   */
+  async updateMonthCover(
+    userId: string,
+    year: number,
+    month: number,
+    coverAssetId: string,
+  ) {
+    // Upsert
+    const exist = await this.userMonthCoverRepo.findOne({
+      where: { userId, year, month },
+    });
+
+    if (exist) {
+      exist.coverAssetId = coverAssetId;
+      await this.userMonthCoverRepo.save(exist);
+    } else {
+      const newCover = this.userMonthCoverRepo.create({
+        userId,
+        year,
+        month,
+        coverAssetId,
+      });
+      await this.userMonthCoverRepo.save(newCover);
+    }
+  }
+
+  /**
+   * 일별 기록(아카이브) 조회 - 달력용
+   */
+  async getDailyArchive(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<DayRecordResponseDto[]> {
+    const start = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const end = start.endOf('month');
+
+    const fromDate = start.toJSDate();
+    const toDate = end.toJSDate();
+
+    // 1. 해당 월의 모든 포스트 조회 (내 글 + 기여)
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.select(['p.id', 'p.eventAt', 'p.title']);
+
+    postsQb.where(
+      new Brackets((qb) => {
+        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+
+    postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+    postsQb.orderBy('p.eventAt', 'DESC');
+
+    const posts = await postsQb.getMany();
+    if (posts.length === 0) {
+      return [];
+    }
+
+    // 2. 일별 그룹핑 (YYYY-MM-DD)
+    const postsByDay = new Map<string, Post[]>();
+    for (const p of posts) {
+      if (!p.eventAt) continue;
+      // KST(Asia/Seoul) 가정
+      const dt = DateTime.fromJSDate(p.eventAt).setZone('Asia/Seoul');
+      const dayKey = dt.toFormat('yyyy-MM-dd');
+
+      const list = postsByDay.get(dayKey) ?? [];
+      list.push(p);
+      postsByDay.set(dayKey, list);
+    }
+
+    // 3. 각 일별 대표 포스트(최신) 추출
+    const dayKeys = Array.from(postsByDay.keys()).sort(); // 날짜 오름차순
+    const representativePostIds: string[] = [];
+    const resultFromDay = new Map<
+      string,
+      {
+        postCount: number;
+        latestPost: Post;
+      }
+    >();
+
+    for (const dKey of dayKeys) {
+      const dayPosts = postsByDay.get(dKey)!;
+      // 쿼리에서 eventAt DESC 였으므로 첫번째가 최신
+      const latestPost = dayPosts[0];
+      resultFromDay.set(dKey, {
+        postCount: dayPosts.length,
+        latestPost,
+      });
+      representativePostIds.push(latestPost.id);
+    }
+
+    // 4. 대표 포스트 메타데이터(이미지, 위치) Batch 조회
+    const blocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+      },
+    });
+
+    const blocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of blocks) {
+      const list = blocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      blocksByPostId.set(b.postId, list);
+    }
+
+    // 5. DTO 조립
+    const results: DayRecordResponseDto[] = [];
+    for (const dKey of dayKeys) {
+      const { postCount, latestPost } = resultFromDay.get(dKey)!;
+      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
+
+      // 커버 이미지
+      let coverAssetId: string | null = null;
+      const imageBlock = relatedBlocks.find(
+        (b) => b.type === PostBlockType.IMAGE,
+      );
+      if (imageBlock) {
+        const val =
+          imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
+        if (val.mediaIds && val.mediaIds.length > 0) {
+          coverAssetId = val.mediaIds[0];
+        }
+      }
+
+      // 위치 이름
+      let latestPlaceName: string | null = null;
+      const locationBlock = relatedBlocks.find(
+        (b) => b.type === PostBlockType.LOCATION,
+      );
+      if (locationBlock) {
+        const val =
+          locationBlock.value as BlockValueMap[typeof PostBlockType.LOCATION];
+        latestPlaceName = val.placeName || val.address || null;
+      }
+
+      results.push({
+        date: dKey,
+        postCount,
+        coverAssetId,
+        latestPostTitle: latestPost.title,
+        latestPlaceName,
+      });
+    }
+
+    // 날짜 오름차순 정렬되어 있음
+    return results;
+  }
+
+  /**
+   * 해당 연도의 모든 이미지(월 커버 후보) 조회
+   */
+  async getYearlyImages(userId: string, year: number): Promise<string[]> {
+    const start = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
+      'year',
+    );
+    const end = start.endOf('year');
+    const fromDate = start.toJSDate();
+    const toDate = end.toJSDate();
+
+    // 1. 해당 연도의 내 포스트(기여 포함) IDs 조회
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.select('p.id');
+
+    postsQb.where(
+      new Brackets((qb) => {
+        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+    postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+    // 최신순 정렬
+    postsQb.orderBy('p.eventAt', 'DESC');
+
+    const posts = await postsQb.getMany();
+    if (posts.length === 0) {
+      return [];
+    }
+    const postIds = posts.map((p) => p.id);
+
+    // 2. 이미지 블록 조회
+    const blocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(postIds),
+        type: PostBlockType.IMAGE,
+      },
+      order: {
+        // 같은 포스트 내에서는 순서대로
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+      },
+    });
+
+    // 3. mediaIds 추출 평탄화
+    const assetIds: string[] = [];
+    for (const b of blocks) {
+      const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
+      if (val.mediaIds) {
+        assetIds.push(...val.mediaIds);
+      }
+    }
+
+    return assetIds;
   }
 }
