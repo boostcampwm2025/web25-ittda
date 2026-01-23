@@ -18,18 +18,26 @@ import { EmotionSummaryResponseDto } from './dto/emotion-summary.response.dto';
 import { GetStatsSummaryQueryDto } from './dto/get-stats-summary.query.dto';
 import { StatsSummaryResponseDto } from './dto/stats-summary.response.dto';
 import { GetTagStatsQueryDto } from './dto/get-tag-stats.query.dto';
-import { TagStatsResponseDto } from './dto/tag-stats.response.dto';
+import { TagStatsResponseDto, TagCountDto } from './dto/tag-stats.response.dto';
+import { UserSummaryResponseDto } from './dto/user-summary.response.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 import type { Request } from 'express';
 import type { MyJwtPayload } from '../auth/auth.type';
-import type { User } from '../user/entity/user.entity';
-import type { TagCount, EmotionCount, UserStats } from './mypage.interface';
+import type { EmotionCount } from './mypage.interface';
 
 interface RequestWithUser extends Request {
   user: MyJwtPayload;
 }
 
 // 마이페이지/설정
+@ApiTags('mypage')
+@ApiBearerAuth()
 @Controller({
   path: 'me',
   version: '1',
@@ -39,9 +47,14 @@ export class MyPageController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
+  @ApiOperation({
+    summary: '내 프로필 및 통계 조회',
+    description: '로그인한 사용자의 프로필 정보와 요약 통계를 조회합니다.',
+  })
+  @ApiWrappedOkResponse({ type: UserSummaryResponseDto })
   async getMyProfile(
     @Req() req: RequestWithUser,
-  ): Promise<User & { stats: UserStats }> {
+  ): Promise<UserSummaryResponseDto> {
     const userId = req.user.sub;
     const user = await this.myPageService.findOne(userId);
     const stats = await this.myPageService.getUserStats(userId);
@@ -54,20 +67,29 @@ export class MyPageController {
 
   @UseGuards(JwtAuthGuard)
   @Patch()
-  updateProfile(
+  @ApiOperation({
+    summary: '프로필 수정',
+    description: '닉네임 또는 프로필 이미지를 수정합니다.',
+  })
+  @ApiWrappedOkResponse({ type: UserSummaryResponseDto })
+  async updateProfile(
     @Req() req: RequestWithUser,
     @Body() dto: UpdateMeDto,
-  ): Promise<User> {
+  ): Promise<UserSummaryResponseDto> {
     const userId = req.user.sub;
-    return this.myPageService.updateProfile(
+    const user = await this.myPageService.updateProfile(
       userId,
       dto.nickname,
       dto.profileImageUrl,
     );
+    const stats = await this.myPageService.getUserStats(userId);
+    return { ...user, stats };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('settings')
+  @ApiOperation({ summary: '설정 정보 조회' })
+  @ApiWrappedOkResponse({ type: Object })
   async getMySettings(
     @Req() req: RequestWithUser,
   ): Promise<Record<string, unknown>> {
@@ -78,26 +100,35 @@ export class MyPageController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('settings')
+  @ApiOperation({ summary: '설정 정보 수정' })
+  @ApiWrappedOkResponse({ type: Object })
   async updateSettings(
     @Req() req: RequestWithUser,
     @Body() dto: UpdateSettingsDto,
-  ): Promise<User> {
+  ): Promise<Record<string, unknown>> {
     const userId = req.user.sub;
-    return this.myPageService.updateSettings(userId, dto.settings);
+    const user = await this.myPageService.updateSettings(userId, dto.settings);
+    return user.settings as Record<string, unknown>;
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('tags')
+  @ApiOperation({ summary: '전체 태그 목록 조회' })
+  @ApiQuery({ name: 'sort', enum: ['recent', 'frequent'], required: false })
+  @ApiWrappedOkResponse({ type: TagCountDto, isArray: true })
   async getMyTags(
     @Req() req: RequestWithUser,
     @Query('sort') sort: 'recent' | 'frequent' = 'recent',
-  ): Promise<TagCount[]> {
+  ): Promise<TagCountDto[]> {
     const userId = req.user.sub;
     return this.myPageService.getTags(userId, sort);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('emotions')
+  @ApiOperation({ summary: '전체 감정 목록 조회' })
+  @ApiQuery({ name: 'sort', enum: ['recent', 'frequent'], required: false })
+  @ApiWrappedOkResponse({ type: String, isArray: true })
   async getMyEmotions(
     @Req() req: RequestWithUser,
     @Query('sort') sort: 'recent' | 'frequent' = 'recent',
@@ -108,6 +139,7 @@ export class MyPageController {
 
   @UseGuards(JwtAuthGuard)
   @Get('emotions/summary')
+  @ApiOperation({ summary: '월별 감정 요약' })
   @ApiWrappedOkResponse({ type: EmotionSummaryResponseDto, isArray: true })
   async getEmotionSummary(
     @Req() req: RequestWithUser,
@@ -121,6 +153,7 @@ export class MyPageController {
 
   @UseGuards(JwtAuthGuard)
   @Get('stats/summary')
+  @ApiOperation({ summary: '기간별 기록 수 요약' })
   @ApiWrappedOkResponse({ type: StatsSummaryResponseDto })
   async getStatsSummary(
     @Req() req: RequestWithUser,
@@ -132,6 +165,7 @@ export class MyPageController {
 
   @UseGuards(JwtAuthGuard)
   @Get('tags/stats')
+  @ApiOperation({ summary: '태그 통계 TOP 10' })
   @ApiWrappedOkResponse({ type: TagStatsResponseDto })
   async getTagStats(
     @Req() req: RequestWithUser,
@@ -146,13 +180,15 @@ export class MyPageController {
     ]);
 
     return {
-      recentTop: recentTop,
-      allTimeTop: allTimeTop,
+      recentTop: recentTop, // 최근 TOP
+      allTimeTop: allTimeTop, // 누적 TOP
     };
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete()
+  @ApiOperation({ summary: '회원 탈퇴' })
+  @ApiWrappedOkResponse({ type: Object })
   async withdraw(@Req() req: RequestWithUser): Promise<void> {
     const userId = req.user.sub;
     await this.myPageService.softDeleteUser(userId);
