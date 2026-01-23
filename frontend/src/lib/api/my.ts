@@ -21,7 +21,7 @@ export const myMonthlyRecordListOptions = (year?: string) =>
         ? `?year=${year}`
         : `?year=${new Date().getFullYear()}`;
       const response = await get<MyMonthlyRecordListResponse[]>(
-        `/api/user/archives/months${query}`,
+        `/v1/user/archives/months${query}`,
       );
 
       if (!response.success) {
@@ -40,7 +40,7 @@ export const myDailyRecordListOptions = (month?: string) =>
       : ['my', 'records', 'daily'],
     queryFn: async () => {
       const response = await get<MyDailyRecordListResponse[]>(
-        `/api/user/archives/day?month=${month}`,
+        `/v1/user/archives/day?month=${month}`,
       );
 
       if (!response.success) {
@@ -57,7 +57,7 @@ export const myMonthlyRecordCoverOption = (month: string) =>
     queryKey: ['cover', 'my', month],
     queryFn: async () => {
       const response = await get<MyCoverListResponse>(
-        `/api/user/archives/monthcover?year=${month}`,
+        `/v1/user/archives/monthcover?year=${month}`,
       );
 
       if (!response.success) {
