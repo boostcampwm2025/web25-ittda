@@ -10,6 +10,7 @@ import { ThemeProvider } from 'next-themes';
 import ThemeColorSetter from '@/components/ThemeColorSetter';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import KakaoScript from '@/lib/services/kakaoScript';
+import AuthContext from './AuthContext';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -85,22 +86,24 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
         <KakaoScript />
-        <Providers>
-          <MswLoader />
-          <ThemeProvider
-            attribute="class"
-            enableSystem={true}
-            defaultTheme="system"
-          >
-            <ThemeColorSetter />
-            <div className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
-              <PWAInstallBanner />
-              <ConditionalHeader />
-              {children}
-              <BottomNavigation />
-            </div>
-          </ThemeProvider>
-        </Providers>
+        <AuthContext>
+          <Providers>
+            <MswLoader />
+            <ThemeProvider
+              attribute="class"
+              enableSystem={true}
+              defaultTheme="system"
+            >
+              <ThemeColorSetter />
+              <div className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+                <PWAInstallBanner />
+                <ConditionalHeader />
+                {children}
+                <BottomNavigation />
+              </div>
+            </ThemeProvider>
+          </Providers>
+        </AuthContext>
       </body>
     </html>
   );

@@ -19,6 +19,10 @@ import BlockContent from '@/components/BlockContent'; // BlockContent 컴포넌�
 import { cn } from '@/lib/utils';
 import { getSingleBlockValue } from '@/lib/utils/record';
 import { TimeValue } from '@/lib/types/recordField';
+import { useQueryClient } from '@tanstack/react-query';
+import { useApiDelete } from '@/hooks/useApi';
+import { toast } from 'sonner';
+import { ApiError } from '@/lib/utils/errorHandler';
 
 interface DailyDetailRecordItemProps {
   record: RecordPreview;
@@ -34,8 +38,26 @@ export default function DailyDetailRecordItem({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const router = useRouter();
 
+  const queryClient = useQueryClient();
+  const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.postId}`, {
+    onSuccess: () => {
+      toast.success('기록이 삭제되었습니다.');
+      queryClient.invalidateQueries({ queryKey: ['records'] });
+
+      setTimeout(() => {
+        router.back();
+      }, 1000);
+    },
+    onError: (error: ApiError) => {
+      if (error.code && error.code === 'NOT_FOUND') {
+        router.back();
+      }
+    },
+  });
+
   const handleDelete = () => {
     // 실제 삭제 로직
+    deleteRecord({});
     setIsDeleteDialogOpen(false);
   };
 

@@ -3,8 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
 import { Post } from '../post/entity/post.entity';
+import { PostBlock } from '../post/entity/post-block.entity';
 import { TagCount, EmotionCount, UserStats } from './mypage.interface';
 import { PostMood } from '@/enums/post-mood.enum';
+import { PostBlockType } from '@/enums/post-block-type.enum';
+import { BlockValueMap } from '@/modules/post/types/post-block.types';
+import { DateTime } from 'luxon';
 
 // Mypage Service에서 기능 구현
 @Injectable()
@@ -14,6 +18,8 @@ export class MyPageService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Post)
     private readonly postRepo: Repository<Post>,
+    @InjectRepository(PostBlock)
+    private readonly postBlockRepo: Repository<PostBlock>,
   ) {}
 
   async findOne(userId: string): Promise<User> {
@@ -73,15 +79,16 @@ export class MyPageService {
     sort: 'recent' | 'frequent',
   ): Promise<EmotionCount[] | PostMood[]> {
     if (sort === 'frequent') {
-      const result = await this.postRepo
-        .createQueryBuilder('post')
-        .select('post.emotion', 'emotion')
-        .addSelect('COUNT(*)', 'count')
-        .where('post.ownerUserId = :userId', { userId })
-        .andWhere('post.emotion IS NOT NULL')
-        .groupBy('post.emotion')
-        .orderBy('count', 'DESC')
-        .getRawMany<{ emotion: string; count: string }>();
+      const result = await this.postRepo.query<
+        Array<{ emotion: string; count: string }>
+      >(
+        `SELECT unnest(emotion) as emotion, COUNT(*) as count
+         FROM posts 
+         WHERE owner_user_id = $1 AND emotion IS NOT NULL
+         GROUP BY emotion
+         ORDER BY count DESC`,
+        [userId],
+      );
 
       return result.map((r) => ({
         emotion: r.emotion,
@@ -95,47 +102,164 @@ export class MyPageService {
       });
 
       const validEmotions = res
-        .map((r) => r.emotion)
-        .filter(Boolean) as unknown as PostMood[];
-
+        .flatMap((r) => r.emotion || [])
+        .filter((e): e is PostMood => !!e);
       return [...new Set(validEmotions)];
     }
   }
 
   async getUserStats(userId: string): Promise<UserStats> {
-    const frequentTagsResult = await this.getTags(userId, 'frequent');
-    const recentTagsResult = await this.getTags(userId, 'recent');
-    const frequentEmotionsResult = await this.getEmotions(userId, 'frequent');
-    const recentEmotionsResult = await this.getEmotions(userId, 'recent');
-
-    // Type Guard를 통해 확실하게 추론 유도
-    const frequentTags =
-      Array.isArray(frequentTagsResult) &&
-      typeof frequentTagsResult[0] === 'object'
-        ? frequentTagsResult
-        : [];
-    const recentTags =
-      Array.isArray(recentTagsResult) && typeof recentTagsResult[0] === 'object'
-        ? recentTagsResult
-        : [];
-
-    const frequentEmotions =
-      Array.isArray(frequentEmotionsResult) &&
-      typeof frequentEmotionsResult[0] === 'object'
-        ? (frequentEmotionsResult as EmotionCount[])
-        : [];
-    const recentEmotions =
-      Array.isArray(recentEmotionsResult) &&
-      typeof recentEmotionsResult[0] === 'string'
-        ? (recentEmotionsResult as string[])
-        : [];
+    const [
+      frequentTags,
+      recentTags,
+      frequentEmotions,
+      recentEmotions,
+      streak,
+      monthlyRecordingDays,
+      totalStats,
+      locationStats,
+    ] = await Promise.all([
+      this.getTags(userId, 'frequent', 10),
+      this.getTags(userId, 'recent', 10),
+      this.getEmotions(userId, 'frequent'),
+      this.getEmotions(userId, 'recent'),
+      this.getStreak(userId),
+      this.getMonthlyRecordingDays(
+        userId,
+        DateTime.now().year,
+        DateTime.now().month,
+      ),
+      this.getTotalStats(userId),
+      this.getLocationStats(userId, 5),
+    ]);
 
     return {
-      recentTags: recentTags.slice(0, 10).map((t) => t.tag),
-      frequentTags: frequentTags.slice(0, 10).map((t) => t.tag),
-      recentEmotions: recentEmotions.slice(0, 10),
-      frequentEmotions: frequentEmotions.slice(0, 10).map((e) => e.emotion),
+      recentTags: recentTags.map((t) => t.tag),
+      frequentTags: frequentTags.map((t) => t.tag),
+      recentEmotions: (recentEmotions as string[]).slice(0, 10),
+      frequentEmotions: (frequentEmotions as EmotionCount[])
+        .slice(0, 10)
+        .map((e) => e.emotion),
+      streak,
+      monthlyRecordingDays,
+      totalPosts: totalStats.totalPosts,
+      totalImages: totalStats.totalImages,
+      frequentLocations: locationStats,
     };
+  }
+
+  async getStreak(userId: string): Promise<number> {
+    const posts = await this.postRepo
+      .createQueryBuilder('post')
+      .select('DISTINCT(DATE(post.eventAt))', 'date')
+      .where('post.ownerUserId = :userId', { userId })
+      .orderBy('date', 'DESC')
+      .getRawMany<{ date: string }>();
+
+    if (posts.length === 0) return 0;
+
+    const dates = posts.map((p) =>
+      DateTime.fromJSDate(new Date(p.date))
+        .setZone('Asia/Seoul')
+        .startOf('day'),
+    );
+    const today = DateTime.now().setZone('Asia/Seoul').startOf('day');
+    const yesterday = today.minus({ days: 1 });
+
+    // 마지막 기록이 오늘이나 어제가 아니면 streak은 0
+    if (dates[0] < yesterday) return 0;
+
+    let streak = 0;
+    let current = dates[0];
+
+    for (const date of dates) {
+      if (date.equals(current)) {
+        streak++;
+        current = current.minus({ days: 1 });
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  async getMonthlyRecordingDays(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<number> {
+    const start = DateTime.fromObject({ year, month, day: 1 })
+      .setZone('Asia/Seoul')
+      .startOf('day')
+      .toJSDate();
+    const end = DateTime.fromObject({ year, month, day: 1 })
+      .setZone('Asia/Seoul')
+      .endOf('month')
+      .toJSDate();
+
+    const result = await this.postRepo
+      .createQueryBuilder('post')
+      .select('COUNT(DISTINCT(DATE(post.eventAt)))', 'count')
+      .where('post.ownerUserId = :userId', { userId })
+      .andWhere('post.eventAt >= :start AND post.eventAt <= :end', {
+        start,
+        end,
+      })
+      .getRawOne<{ count: string }>();
+
+    return parseInt(result?.count || '0', 10);
+  }
+
+  async getTotalStats(
+    userId: string,
+  ): Promise<{ totalPosts: number; totalImages: number }> {
+    const totalPosts = await this.postRepo.count({
+      where: { ownerUserId: userId },
+    });
+
+    // 이미지 총 개수: PostBlock 중 type이 IMAGE인 것들의 value 내 mediaIds 개수 합
+    const imageBlocks = await this.postBlockRepo
+      .createQueryBuilder('block')
+      .innerJoin('block.post', 'post')
+      .where('post.ownerUserId = :userId', { userId })
+      .andWhere('block.type = :type', { type: PostBlockType.IMAGE })
+      .select('block.value', 'value')
+      .getRawMany<{ value: BlockValueMap[typeof PostBlockType.IMAGE] }>();
+
+    const totalImages = imageBlocks.reduce(
+      (acc, curr) => acc + (curr.value?.mediaIds?.length || 0),
+      0,
+    );
+
+    return { totalPosts, totalImages };
+  }
+
+  async getLocationStats(
+    userId: string,
+    limit: number,
+  ): Promise<{ placeName: string; count: number }[]> {
+    const locations = await this.postBlockRepo
+      .createQueryBuilder('block')
+      .innerJoin('block.post', 'post')
+      .where('post.ownerUserId = :userId', { userId })
+      .andWhere('block.type = :type', { type: PostBlockType.LOCATION })
+      .select(
+        "COALESCE(block.value->>'placeName', block.value->>'address')",
+        'name',
+      )
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('name')
+      .orderBy('count', 'DESC')
+      .limit(limit)
+      .getRawMany<{ name: string; count: string }>();
+
+    return locations
+      .filter((loc) => loc.name)
+      .map((loc) => ({
+        placeName: loc.name,
+        count: parseInt(loc.count, 10),
+      }));
   }
 
   /** 내 프로필 수정 (닉네임, 프로필 이미지) */
@@ -146,8 +270,10 @@ export class MyPageService {
   ): Promise<User> {
     // 1. 닉네임 변경 시 유효성 검사
     if (nickname) {
-      if (nickname.length > 8) {
-        throw new BadRequestException('닉네임은 최대 8자까지 가능합니다.');
+      if (nickname.length < 2 || nickname.length > 50) {
+        throw new BadRequestException(
+          '닉네임은 최소 2자 이상, 최대 50자까지 가능합니다.',
+        );
       }
       if (!/^[a-zA-Z가-힣0-9]+$/.test(nickname)) {
         throw new BadRequestException(
@@ -190,20 +316,19 @@ export class MyPageService {
     // month가 12일 경우 year+1, 0월(1월)로 자동 넘어감
     const toDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-    // 2. 쿼리 실행 (group by emotion)
-    const qb = this.postRepo.createQueryBuilder('post');
-    qb.select('post.emotion', 'emotion');
-    qb.addSelect('COUNT(*)', 'count');
-    qb.where('post.owner_user_id = :userId', { userId });
-    qb.andWhere('post.event_at >= :fromDate AND post.event_at <= :toDate', {
-      fromDate,
-      toDate,
-    });
-    qb.andWhere('post.emotion IS NOT NULL');
-    qb.groupBy('post.emotion');
-    qb.orderBy('count', 'DESC');
-
-    const result = await qb.getRawMany<{ emotion: string; count: string }>();
+    const result = await this.postRepo.query<
+      Array<{ emotion: string; count: string }>
+    >(
+      `SELECT unnest(emotion) as emotion, COUNT(*) as count
+       FROM posts
+       WHERE owner_user_id = $1 
+         AND event_at >= $2 
+         AND event_at <= $3 
+         AND emotion IS NOT NULL
+       GROUP BY emotion
+       ORDER BY count DESC`,
+      [userId, fromDate, toDate],
+    );
 
     return result.map((r) => ({
       emotion: r.emotion,

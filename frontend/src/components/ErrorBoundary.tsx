@@ -52,7 +52,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.log({ error, errorInfo });
+    console.error({ error, errorInfo });
   }
 
   /** 에러 상태 기본 초기화 */

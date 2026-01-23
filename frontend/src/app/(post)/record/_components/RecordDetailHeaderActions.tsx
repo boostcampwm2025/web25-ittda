@@ -12,6 +12,7 @@ import {
 import { Popover } from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
 import { RecordDetailResponse } from '@/lib/types/record';
+import { ApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   PopoverClose,
@@ -64,6 +65,11 @@ export default function RecordDetailHeaderActions({
       setTimeout(() => {
         router.back();
       }, 1000);
+    },
+    onError: (error: ApiError) => {
+      if (error.code && error.code === 'NOT_FOUND') {
+        router.back();
+      }
     },
   });
 

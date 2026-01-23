@@ -1,12 +1,12 @@
-name: CI-CD
-
+name: 초안 CI-CD
+# TODO: FE, BE 배포 분리에 따라 바꿀 예정임
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
+  #   push:
+  #     branches:
+  #       - main
+  #     paths:
+  #       - 'frontend/**'
+  #       - 'backend/**'
   workflow_dispatch:
 
 jobs:
@@ -83,30 +83,30 @@ jobs:
 # CI/CD 흐름 (Docker Compose v2 기준)
 
 # 1. Frontend 변경 시
-#
+
 # GitHub Actions:
 # - frontend Docker 이미지 빌드
 # - NCP Container Registry에 push
-#
+
 # 서버:
 # docker compose pull frontend
 #   → 레지스트리에서 최신 frontend 이미지 pull
-#
+
 # docker compose up -d frontend
 #   → frontend 서비스 컨테이너만 재생성
 #   → Nginx, backend, DB 등 다른 서비스에는 영향 없음
 #   → 단일 컨테이너 재시작이므로 짧은 연결 단절은 발생 가능
 
 # 2. Backend 변경 시
-#
+
 # GitHub Actions:
 # - backend Docker 이미지 빌드
 # - NCP Container Registry에 push
-#
+
 # 서버:
 # docker compose pull backend
 #   → 최신 backend 이미지 pull
-#
+
 # docker compose up -d backend
 #   → backend 컨테이너만 재생성
 #   → 다른 서비스 재기동 없음

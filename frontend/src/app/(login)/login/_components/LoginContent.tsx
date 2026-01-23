@@ -8,6 +8,9 @@ import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { deleteCookie, getCookie } from '@/lib/utils/cookie';
+import { useJoinGroup } from '@/hooks/useGroupInvite';
+import { createApiError } from '@/lib/utils/errorHandler';
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
@@ -18,8 +21,37 @@ const ERROR_MESSAGES: Record<string, string> = {
 export default function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const inviteCode = getCookie('invite-code') || '';
+
   const { setGuestInfo } = useAuthStore();
-  const { mutateAsync, isPending } = useApiPost<GuestInfo>('/api/auth/guest');
+  const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
+  const { mutate: guestLogin, isPending } = useApiPost<GuestInfo>(
+    '/api/auth/guest',
+    {
+      onSuccess: (response) => {
+        if (response.data) {
+          setGuestInfo(response.data);
+
+          if (inviteCode) {
+            joinGroup(
+              {},
+              {
+                onSuccess: (response) => {
+                  const groupId = response.data.groupId;
+                  const groupName = response.data.group.name;
+                  if (!groupId) createApiError(response);
+                  deleteCookie('invite-code');
+                  toast.success(`${groupName} 그룹에 참여되었습니다!`);
+                  router.replace(`/group/${groupId}`);
+                },
+              },
+            );
+          }
+          router.push('/');
+        }
+      },
+    },
+  );
 
   useEffect(() => {
     const error = searchParams.get('error');
@@ -33,11 +65,7 @@ export default function LoginContent() {
   }, [searchParams, router]);
 
   const handleLoginGuest = async () => {
-    const response = await mutateAsync({});
-    if (response.success && response.data) {
-      setGuestInfo(response.data);
-      router.push('/');
-    }
+    guestLogin({});
   };
 
   return (

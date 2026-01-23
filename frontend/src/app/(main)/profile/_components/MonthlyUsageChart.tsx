@@ -1,5 +1,7 @@
 'use client';
 
+import { useApiQuery } from '@/hooks/useApi';
+import { MyMonthlyRecordListResponse } from '@/lib/types/recordResponse';
 import { useTheme } from 'next-themes';
 import {
   Bar,
@@ -12,14 +14,57 @@ import {
 
 export default function MonthlyUsageChart() {
   const { theme } = useTheme();
+  const year = new Date().getFullYear().toString();
 
-  const monthlyUsageData = [
-    { name: '25.12', value: 86 },
-    { name: '25.11', value: 48 },
-    { name: '25.10', value: 22 },
-    { name: '25.09', value: 34 },
-    { name: '25.08', value: 6 },
-  ];
+  const {
+    data: monthlyRecords,
+    isLoading,
+    isError,
+  } = useApiQuery<MyMonthlyRecordListResponse[]>(
+    ['my', 'records', 'month', year],
+    `/api/user/archives/months?year=${year}`,
+  );
+
+  // API 응답을 차트 데이터 형식으로 변환
+  const monthlyUsageData = (monthlyRecords ?? []).map((record) => {
+    const [year, month] = record.month.split('-');
+    return {
+      name: `${year.slice(2)}.${month}`,
+      value: record.count,
+    };
+  });
+
+  if (isLoading) {
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-[13px] font-bold dark:text-white text-itta-black">
+            올해 월별 사용 그래프
+          </h2>
+        </div>
+        <div className="h-44 w-full pb-3 flex items-center justify-center">
+          <div className="w-full h-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+        </div>
+      </section>
+    );
+  }
+
+  if (isError) {
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-[13px] font-bold dark:text-white text-itta-black">
+            월별 사용 그래프
+          </h2>
+        </div>
+        <div className="h-44 w-full pb-3 flex items-center justify-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            데이터를 불러올 수 없습니다.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-4">

@@ -6,6 +6,8 @@ import { setCookie } from '@/lib/utils/cookie';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
+import { createApiError } from '@/lib/utils/errorHandler';
+import { handleInviteError } from '../_utils/handleInviteError';
 
 export default function InvitePage() {
   const router = useRouter();
@@ -43,24 +45,26 @@ export default function InvitePage() {
   const handleAccept = async (forceLogin = false) => {
     if (!inviteCode) return;
 
-    // 현재 계정으로 즉시 참여
+    //현재 계정으로 즉시 참여
     if (isLoggedIn && !forceLogin) {
-      try {
-        joinGroup({
-          onSuccess: () => {
+      joinGroup(
+        {},
+        {
+          onSuccess: (response) => {
+            const groupId = response.data.groupId;
+            const groupName = response.data.group.name;
+            if (!groupId) createApiError(response);
+
             toast.success(`${groupName} 그룹에 참여되었습니다!`);
-            router.push('/');
+            router.replace(`/group/${groupId}`);
           },
-          onError: () => {
-            toast.error('그룹 참여 중 오류가 발생했습니다.');
+          onError: (error) => {
+            //TODO: 임시 작업 현재 toast 가 두개 뜨는 문제 존재
+            const path = handleInviteError(error);
+            if (path) router.replace(path);
           },
-        });
-        return;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (err) {
-        toast.error('그룹 참여 중 오류가 발생했습니다.');
-        return;
-      }
+        },
+      );
     }
 
     // 다른 계정으로 가입하거나 로그인이 필요한 경우

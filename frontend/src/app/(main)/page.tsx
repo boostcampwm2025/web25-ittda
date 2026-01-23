@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query';
 import { recordPreviewListOptions } from '@/lib/api/records';
 import { formatDateISO } from '@/lib/date';
+import { userRecordPatternOptions } from '@/lib/api/profile';
 
 interface HomePageProps {
   searchParams: Promise<{ date?: string }>;
@@ -17,9 +18,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const selectedDate = date || formatDateISO();
 
   const queryClient = new QueryClient();
+  let currentStreak: number = 0;
+  let monthlyRecordCount: number = 0;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    await queryClient.prefetchQuery(recordPreviewListOptions(selectedDate));
+    const [, streakData, monthlyData] = await Promise.all([
+      queryClient.prefetchQuery(recordPreviewListOptions(selectedDate)),
+      queryClient.fetchQuery(userRecordPatternOptions(selectedDate)),
+      queryClient.fetchQuery(userRecordPatternOptions(selectedDate.slice(0, 7))), // YYYY-MM 형식
+    ]);
+
+    currentStreak = streakData.count;
+    monthlyRecordCount = monthlyData.count;
   }
   return (
     <>
@@ -28,7 +38,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="flex w-full justify-between gap-3 items-center border-r px-3 pr-5">
           <span className="text-[12px]">오늘 작성</span>
           <div className="flex justify-start items-center gap-1.5">
-            <span className="text-itta-point font-semibold">1</span>
+            <span className="text-itta-point font-semibold">
+              {currentStreak}
+            </span>
             <span className="text-[12px] font-medium text-gray-400">
               일째 작성 중
             </span>
@@ -37,7 +49,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="flex w-full justify-between gap-3 items-center px-3 pl-5">
           <span className="text-[12px]">이번달 기록</span>
           <div className="flex justify-start items-center gap-1.5 ">
-            <span className="text-itta-point font-semibold">10</span>
+            <span className="text-itta-point font-semibold">
+              {monthlyRecordCount}
+            </span>
             <span className="text-[12px] font-medium text-gray-400">일</span>
           </div>
         </div>

@@ -1,6 +1,5 @@
 'use client';
 
-import { clearTokens } from '@/lib/api/auth';
 import { GuestInfo, UserType } from '@/lib/types/profile';
 import { UserLoginResponse } from '@/lib/types/response';
 import Cookies from 'js-cookie';
@@ -19,11 +18,10 @@ interface Action {
   setLogin: (socialUser: UserLoginResponse) => void;
   setSocialLogin: () => void; // 프로필 조회 실패 시 로그인 상태만 설정
   setGuestInfo: (guest: GuestInfo) => void;
-  switchGuestToSocial: (user: UserLoginResponse) => void;
   logout: () => void;
 }
 
-const guestCookieKey = 'x-guest-session-id';
+export const guestCookieKey = 'x-guest-session-id';
 
 // 쿠키에 세션 ID를 설정하는 헬퍼 함수
 const setGuestCookie = (sessionId: string) => {
@@ -36,7 +34,7 @@ const setGuestCookie = (sessionId: string) => {
 
 export const useAuthStore = create<State & Action>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       userType: null,
       userId: null,
       guestSessionId: null,
@@ -44,12 +42,24 @@ export const useAuthStore = create<State & Action>()(
       isLoggedIn: false,
 
       setLogin: (socialUser) => {
-        set({
-          userType: 'social',
-          userId: socialUser.id,
-          isLoggedIn: true,
-        });
-        // 소셜 로그인 시에는 게스트 쿠키 삭제
+        const { guestSessionId } = get();
+
+        if (guestSessionId) {
+          // 게스트 → 소셜 전환
+          set({
+            userType: 'social',
+            userId: socialUser.id,
+            isLoggedIn: true,
+            guestSessionId: null,
+            guestSessionExpiresAt: null,
+          });
+        } else {
+          set({
+            userType: 'social',
+            userId: socialUser.id,
+            isLoggedIn: true,
+          });
+        }
         Cookies.remove(guestCookieKey);
       },
 
@@ -72,18 +82,6 @@ export const useAuthStore = create<State & Action>()(
         setGuestCookie(guest.guestSessionId);
       },
 
-      switchGuestToSocial: (socialUser) => {
-        set({
-          userType: 'social',
-          userId: socialUser.id,
-          isLoggedIn: true,
-          guestSessionId: null,
-          guestSessionExpiresAt: null,
-        });
-        // 전환 시 쿠키 삭제
-        Cookies.remove(guestCookieKey);
-      },
-
       logout: () => {
         set({
           userType: null,
@@ -92,7 +90,6 @@ export const useAuthStore = create<State & Action>()(
           guestSessionId: null,
           guestSessionExpiresAt: null,
         });
-        clearTokens();
         // 로그아웃 시 쿠키 명시적 삭제
         Cookies.remove(guestCookieKey);
       },

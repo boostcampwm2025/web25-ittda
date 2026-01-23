@@ -3,37 +3,74 @@ import { Check } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useRef } from 'react';
 import { DrawerClose } from '../../../components/ui/drawer';
-import { CoverSection } from '@/lib/types/recordResponse';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { groupRecordCoverOptions } from '@/lib/api/group';
+import { myMonthlyRecordCoverOption } from '@/lib/api/my';
+
+// 1. 공통으로 사용할 아이템 타입 정의
+interface UnifiedGalleryItem {
+  assetId: string;
+  mediaId: string;
+  postId: string;
+  postTitle: string;
+}
 
 interface GalleryDrawerProps {
+  type: 'group' | 'personal' | 'other';
   groupId?: string;
+  month?: string;
   currentAssetId?: string;
   onSelect: (assetId: string, recordId: string) => void;
 }
 
 export default function GalleryDrawer({
+  type,
   groupId,
+  month,
   currentAssetId,
   onSelect,
 }: GalleryDrawerProps) {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      ...groupRecordCoverOptions(groupId ?? ''),
-      enabled: !!groupId,
-    });
+  // --- 함께 기록함 데이터 (무한 스크롤) ---
+  const {
+    data: groupData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    ...groupRecordCoverOptions(groupId ?? ''),
+    enabled: type === 'group' && !!groupId,
+  });
 
-  // 모든 페이지의 sections 합치기
-  const allSections: CoverSection[] =
-    data?.pages.flatMap((page) => page.sections) ?? [];
+  // --- 내 기록함 데이터 ---
+  const { data: personalData } = useQuery({
+    ...myMonthlyRecordCoverOption(month ?? ''),
+    enabled: type === 'personal',
+  });
 
-  // 무한 스크롤을 위한 observer
+  // 타입에 따른 데이터 정제
+  const items: UnifiedGalleryItem[] = (() => {
+    if (type === 'group' && groupData) {
+      return groupData.pages.flatMap((page) =>
+        page.sections.flatMap((section) => section.items),
+      );
+    }
+    if (type === 'personal' && personalData) {
+      return personalData.map((item) => ({
+        assetId: item,
+        mediaId: item,
+        postId: item,
+        postTitle: '내 기록함 기록 이미지',
+      }));
+    }
+    return [];
+  })();
+
+  // 무한 스크롤 관찰자 (type이 group일 때만 동작하게 처리)
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastItemRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (isFetchingNextPage) return;
+      if (type !== 'group' || isFetchingNextPage) return;
       if (observerRef.current) observerRef.current.disconnect();
 
       observerRef.current = new IntersectionObserver(
@@ -42,24 +79,17 @@ export default function GalleryDrawer({
             fetchNextPage();
           }
         },
-        {
-          root: scrollContainerRef.current,
-          rootMargin: '100px',
-          threshold: 0,
-        },
+        { root: scrollContainerRef.current, rootMargin: '100px' },
       );
 
       if (node) observerRef.current.observe(node);
     },
-    [isFetchingNextPage, hasNextPage, fetchNextPage],
+    [type, isFetchingNextPage, hasNextPage, fetchNextPage],
   );
-
-  // 모든 이미지 아이템 flat하게 펼치기
-  const allItems = allSections.flatMap((section) => section.items);
 
   return (
     <div className="flex flex-col w-full">
-      {allItems.length === 0 ? (
+      {items.length === 0 ? (
         <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 rounded-2xl dark:bg-white/5 bg-white">
           <p className="font-bold text-[#10B981] text-xs">
             이미지가 포함된 기록이 없습니다.
@@ -70,14 +100,14 @@ export default function GalleryDrawer({
           ref={scrollContainerRef}
           className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[45vh] overflow-y-auto scrollbar-hide mb-8 min-h-0"
         >
-          {allItems.map((item, idx) => {
+          {items.map((item, idx) => {
             const isCurrent = currentAssetId === item.assetId;
-            const isLastItem = idx === allItems.length - 1;
+            const isLastItem = idx === items.length - 1;
 
             return (
               <div
                 key={item.mediaId}
-                ref={isLastItem ? lastItemRef : null}
+                ref={isLastItem ? lastItemRef : null} // 마지막 아이템에 ref 연결
                 className="relative w-full aspect-square"
               >
                 <DrawerClose asChild>
@@ -110,7 +140,8 @@ export default function GalleryDrawer({
               </div>
             );
           })}
-          {isFetchingNextPage && (
+          {/* group 타입일 때만 로딩 인디케이터 표시 */}
+          {type === 'group' && isFetchingNextPage && (
             <div className="col-span-full flex justify-center py-4">
               <div className="w-6 h-6 border-2 border-[#10B981] border-t-transparent rounded-full animate-spin" />
             </div>

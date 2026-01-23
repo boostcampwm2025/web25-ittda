@@ -51,8 +51,8 @@ export default function TagList({ tags, defaultTab = 'recent' }: TagListProps) {
         ) : (
           tags[tagTab].map((tag) => (
             <button
-              key={tag.name}
-              onClick={() => handleSingleTagSearch(tag.name)}
+              key={tag.tag}
+              onClick={() => handleSingleTagSearch(tag.tag)}
               className="cursor-pointer w-full flex items-center justify-between px-6 py-5 border-b transition-colors active:bg-gray-50 dark:active:bg-white/5 dark:border-white/5 border-gray-50"
             >
               <div className="flex items-center gap-0.5">
@@ -60,7 +60,7 @@ export default function TagList({ tags, defaultTab = 'recent' }: TagListProps) {
                   #
                 </span>
                 <span className="text-[15px] font-medium dark:text-gray-200 text-itta-black">
-                  {tag.name}
+                  {tag.tag}
                 </span>
               </div>
               <div className="flex items-center gap-2">

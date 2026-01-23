@@ -39,19 +39,15 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}
 
-  /** 그룹 생성 (로그인 유저) */
   @Post()
   @ApiOperation({
     summary: '그룹 생성',
-    description: '새로운 그룹을 생성합니다.',
+    description: '로그인한 사용자가 새로운 그룹을 생성합니다.',
   })
   @ApiBody({
     schema: {
       type: 'object',
-      properties: {
-        name: { type: 'string', example: '부스트캠프 25조' },
-      },
-      required: ['name'],
+      properties: { name: { type: 'string', example: '새로운 그룹' } },
     },
   })
   @ApiWrappedOkResponse({ type: Object })
@@ -60,13 +56,12 @@ export class GroupController {
     return this.groupService.createGroup(ownerId, groupName);
   }
 
-  /** 멤버 초대 */
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Post(':groupId/members')
   @ApiOperation({
-    summary: '멤버 직접 초대',
-    description: '그룹 관리자가 특정 유저를 그룹 멤버로 직접 초대합니다.',
+    summary: '멤버 추가',
+    description: '관리자가 특정 유저를 그룹 멤버로 추가합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiWrappedOkResponse({ type: Object })
@@ -74,13 +69,12 @@ export class GroupController {
     return this.groupService.addMember(groupId, dto.userId, dto.role);
   }
 
-  /** 멤버 권한 수정 */
   @UseGuards(GroupRoleGuard)
-  @GroupRoles(GroupRoleEnum.ADMIN) // 관리자만 접근 가능
+  @GroupRoles(GroupRoleEnum.ADMIN)
   @Patch(':groupId/members/:userId/role')
   @ApiOperation({
     summary: '멤버 권한 수정',
-    description: '그룹 관리자가 다른 멤버의 권한을 수정합니다.',
+    description: '관리자가 특정 멤버의 권한을 수정합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiParam({ name: 'userId', description: '멤버의 유저 ID' })
@@ -89,11 +83,11 @@ export class GroupController {
       type: 'object',
       properties: {
         role: {
-          enum: Object.values(GroupRoleEnum),
+          type: 'string',
+          enum: [GroupRoleEnum.ADMIN, GroupRoleEnum.EDITOR],
           example: GroupRoleEnum.EDITOR,
         },
       },
-      required: ['role'],
     },
   })
   @ApiWrappedOkResponse({ type: Object })
@@ -113,13 +107,12 @@ export class GroupController {
     );
   }
 
-  /** 그룹 삭제 (방장만 가능) */
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Delete(':groupId')
   @ApiOperation({
     summary: '그룹 삭제',
-    description: '그룹 관리자(방장)가 그룹을 삭제합니다.',
+    description: '관리자(방장)가 그룹을 삭제합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiWrappedOkResponse({ type: Object })
@@ -130,13 +123,12 @@ export class GroupController {
     return this.groupService.deleteGroup(user.sub, groupId);
   }
 
-  /** 그룹 정보 수정 */
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Patch(':groupId')
   @ApiOperation({
     summary: '그룹 정보 수정',
-    description: '그룹 관리자가 그룹의 기본 정보(이름 등)를 수정합니다.',
+    description: '관리자가 그룹의 이름을 수정합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiWrappedOkResponse({ type: Object })
@@ -148,11 +140,10 @@ export class GroupController {
     return this.groupService.updateGroup(user.sub, groupId, dto.name);
   }
 
-  /** 그룹 나가기 (본인) */
   @Delete(':groupId/members/me')
   @ApiOperation({
     summary: '그룹 나가기',
-    description: '본인이 속한 그룹에서 나갑니다.',
+    description: '사용자 본인이 그룹에서 탈퇴합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiWrappedOkResponse({ type: Object })
@@ -163,16 +154,15 @@ export class GroupController {
     return this.groupService.leaveGroup(user.sub, groupId);
   }
 
-  /** 멤버 추방 (관리자) */
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Delete(':groupId/members/:memberId')
   @ApiOperation({
     summary: '멤버 추방',
-    description: '그룹 관리자가 특정 멤버를 그룹에서 추방합니다.',
+    description: '관리자가 특정 멤버를 그룹에서 추방합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
-  @ApiParam({ name: 'memberId', description: '추방할 멤버의 유저 ID' })
+  @ApiParam({ name: 'memberId', description: '추방할 멤버의 ID' })
   @ApiWrappedOkResponse({ type: Object })
   async removeMember(
     @User() user: MyJwtPayload,
@@ -182,13 +172,12 @@ export class GroupController {
     return this.groupService.removeMember(user.sub, groupId, memberId);
   }
 
-  /** 초대 링크 생성 */
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Post(':groupId/invites')
   @ApiOperation({
     summary: '초대 링크 생성',
-    description: '그룹 관리자가 새로운 초대 링크를 생성합니다.',
+    description: '관리자가 그룹에 초대할 수 있는 고유 링크 코드를 생성합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiWrappedOkResponse({ type: Object })
@@ -205,11 +194,10 @@ export class GroupController {
     );
   }
 
-  /** 초대 링크 조회 */
   @Get('invites/:code')
   @ApiOperation({
-    summary: '초대 링크 조회',
-    description: '초대 코드를 통해 그룹 초대 정보를 조회합니다.',
+    summary: '초대 코드 정보 조회',
+    description: '초대 코드의 유효성과 대상 그룹 정보를 확인합니다.',
   })
   @ApiParam({ name: 'code', description: '초대 코드' })
   @ApiWrappedOkResponse({ type: Object })
@@ -217,11 +205,10 @@ export class GroupController {
     return this.groupService.getInvite(code);
   }
 
-  /** 초대 링크로 가입 */
   @Post('invites/:code/join')
   @ApiOperation({
-    summary: '초대 링크로 가입',
-    description: '초대 코드를 사용하여 그룹에 가입합니다.',
+    summary: '초대 코드로 그룹 가입',
+    description: '로그인한 사용자가 초대 코드를 사용하여 그룹에 가입합니다.',
   })
   @ApiParam({ name: 'code', description: '초대 코드' })
   @ApiWrappedOkResponse({ type: Object })
@@ -232,13 +219,12 @@ export class GroupController {
     return this.groupService.joinGroupViaInvite(user.sub, code);
   }
 
-  /** 초대 링크 삭제 (관리자) */
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Delete(':groupId/invites/:inviteId')
   @ApiOperation({
     summary: '초대 링크 삭제',
-    description: '그룹 관리자가 특정 초대 링크를 삭제합니다.',
+    description: '관리자가 생성된 초대 링크를 비활성화(삭제)합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiParam({ name: 'inviteId', description: '초대 ID' })
@@ -247,7 +233,6 @@ export class GroupController {
     @Param('groupId') groupId: string,
     @Param('inviteId') inviteId: string,
   ) {
-    // GroupRoleGuard가 groupId로 권한 체크를 해줌
     await this.groupService.deleteInvite(inviteId);
     return;
   }

@@ -1,5 +1,7 @@
 'use client';
 
+import { useApiQuery } from '@/hooks/useApi';
+import { UserProfileResponse } from '@/lib/types/profileResponse';
 import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
 import Image from 'next/image';
@@ -7,6 +9,11 @@ import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const router = useRouter();
+
+  const { data: userProfile } = useApiQuery<UserProfileResponse>(
+    ['me'],
+    '/api/me',
+  );
 
   return (
     <header
@@ -51,7 +58,7 @@ export default function Header() {
           )}
         >
           <Image
-            src="/profile-ex.jpeg"
+            src={userProfile?.user.profileImageId || '/profile-ex.jpeg'}
             alt="프로필"
             className="w-full h-full object-cover"
             // placeholder="blur"
