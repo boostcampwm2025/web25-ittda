@@ -72,7 +72,6 @@ export class UserSummaryResponse {
   })
   @Expose()
   id: string;
-
   @ApiProperty({
     description: '이메일',
     example: 'user@example.com',
@@ -80,11 +79,9 @@ export class UserSummaryResponse {
   })
   @Expose()
   email: string;
-
   @ApiProperty({ description: '닉네임', example: '홍길동' })
   @Expose()
   nickname: string;
-
   @ApiProperty({
     description: '프로필 이미지 ID',
     example: '888e4567-e89b-12d3-a456-426614174000',
@@ -92,17 +89,13 @@ export class UserSummaryResponse {
   })
   @Expose()
   profileImageId?: string | null;
-
   @ApiProperty({ description: '설정 정보', example: { theme: 'dark' } })
   @Expose()
   settings: Record<string, any>;
 }
-
 export class UserSummaryResponseDto {
   userId: string;
-
   user: UserSummaryResponse;
-
   @ApiProperty({ description: '유저 통계 정보', type: UserStatsDto })
   @Expose()
   @Type(() => UserStatsDto)
