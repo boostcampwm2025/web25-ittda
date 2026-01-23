@@ -1,15 +1,156 @@
 import { http, HttpResponse } from 'msw';
 import { makeFakePosts, filterByBbox } from '../fake/fakePosts';
 import {
+  createMockDailyRecord,
+  createMockEmotionStats,
   createMockGroupCoverList,
   createMockGroupList,
+  createMockMonthlyRecord,
   createMockRecordPreviews,
+  createMockTagStats,
 } from './mock';
 
 const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.patch(
+    '/api/user/archives/months/:month/cover',
+    async ({ params, request }) => {
+      const id = String(params.month);
+
+      const body = (await request.json()) as {
+        coverAssetId: string;
+      };
+
+      return HttpResponse.json({
+        success: true,
+        data: {
+          coverAssetId: body.coverAssetId,
+        },
+        error: null,
+      });
+    },
+  ),
+  http.get('/api/user/archives/monthcover', ({ request }) => {
+    const url = new URL(request.url);
+    const month = url.searchParams.get('year');
+
+    return HttpResponse.json({
+      success: true,
+      data: [
+        '/base.png',
+        '/profile-ex.jpeg',
+        '/base.png',
+        '/profile-ex.jpeg',
+        '/base.png',
+        '/profile-ex.jpeg',
+      ],
+      meta: {},
+      error: null,
+    });
+  }),
+  http.delete('/api/posts/:postId', ({ params }) => {
+    const id = String(params.postId);
+
+    return HttpResponse.json({
+      success: true,
+      data: {},
+      error: null,
+    });
+  }),
+  http.get('/api/user/archives/days', ({ request }) => {
+    const url = new URL(request.url);
+    const month = url.searchParams.get('month');
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockDailyRecord(),
+      error: null,
+    });
+  }),
+  http.get('/api/user/archives/months', ({ request }) => {
+    const url = new URL(request.url);
+    const year = url.searchParams.get('year');
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockMonthlyRecord(),
+      error: null,
+    });
+  }),
+  http.get('/api/me/stats/summary', ({ request }) => {
+    const url = new URL(request.url);
+    const date = url.searchParams.get('date') || new Date().toISOString();
+
+    const parts = date.split('-').map((s) => parseInt(s, 10));
+
+    if (parts.length === 2) {
+      return HttpResponse.json({
+        success: true,
+        data: {
+          count: 2,
+        },
+        error: null,
+      });
+    } else {
+      return HttpResponse.json({
+        success: true,
+        data: {
+          count: 16,
+        },
+        error: null,
+      });
+    }
+  }),
+  http.get('/api/me/emotions/summary', ({ request }) => {
+    const url = new URL(request.url);
+    const limit = url.searchParams.get('limit');
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockEmotionStats(),
+      error: null,
+    });
+  }),
+  http.get('/api/me/tags/stats', ({ request }) => {
+    const url = new URL(request.url);
+    const limit = url.searchParams.get('limit');
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockTagStats(),
+      error: null,
+    });
+  }),
+  http.get('/api/me', () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        userId: 'dobby_is_free',
+        user: {
+          id: 'dobby_is_free',
+          profileImageId: '/profile-ex.jpeg',
+          profileImage: {
+            url: '/profile-ex.jpeg',
+          },
+          provider: 'google',
+          providerId: 'google',
+          email: 'user@example.com',
+          nickname: '도비',
+          settings: {},
+          createdAt: '2024-01-01T00:00:00Z',
+        },
+        stats: {
+          recentTags: ['맛집', '여행'],
+          frequentTags: ['산책', '코딩'],
+          recentEmotions: ['기쁨', '설렘'],
+          frequentEmotions: ['평온'],
+        },
+      },
+      error: null,
+    });
+  }),
   http.patch('/api/groups/:groupId/cover', async ({ request, params }) => {
     const id = String(params.groupId);
     const body = (await request.json()) as {

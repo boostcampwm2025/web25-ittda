@@ -94,3 +94,25 @@ export interface GroupCoverUpdateResponse {
   };
   updatedAt: string;
 }
+
+export interface MyMonthlyRecordListResponse {
+  month: string;
+  count: number;
+  coverAssetId: string | null;
+  latestTitle: string;
+  latestLocation: string | null;
+}
+
+export interface MyDailyRecordListResponse {
+  date: string;
+  postCount: number;
+  coverThumbnailUrl: string | null;
+  latestPostTitle: string;
+  latestPlaceName: string | null;
+}
+
+export type MyCoverListResponse = string[];
+
+export interface MyCoverUpdateResponse {
+  coverAssetId: string;
+}

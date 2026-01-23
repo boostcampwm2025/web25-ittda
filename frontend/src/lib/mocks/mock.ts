@@ -1,6 +1,9 @@
+import { EmotionStatSummary, TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
   GroupListResponse,
+  MyDailyRecordListResponse,
+  MyMonthlyRecordListResponse,
   RecordPreview,
 } from '../types/recordResponse';
 
@@ -375,3 +378,116 @@ export const createMockGroupCoverList = (
     },
   };
 };
+
+export const createMockTagStats = (): TagStatSummary => ({
+  recentTop: [
+    {
+      tag: '아침',
+      count: 3,
+    },
+    {
+      tag: '커피',
+      count: 7,
+    },
+    {
+      tag: '점심',
+      count: 5,
+    },
+    {
+      tag: '팀프로젝트',
+      count: 12,
+    },
+    {
+      tag: '팀 잇다',
+      count: 1,
+    },
+  ],
+  allTimeTop: [
+    {
+      tag: '팀프로젝트',
+      count: 12,
+    },
+    {
+      tag: '커피',
+      count: 7,
+    },
+    {
+      tag: '점심',
+      count: 5,
+    },
+    {
+      tag: '아침',
+      count: 3,
+    },
+    {
+      tag: '팀 잇다',
+      count: 1,
+    },
+  ],
+});
+
+export const createMockEmotionStats = (): EmotionStatSummary => [
+  { emotion: '행복', count: 3 },
+  { emotion: '좋음', count: 2 },
+  { emotion: '만족', count: 10 },
+  { emotion: '재미', count: 4 },
+  { emotion: '보통', count: 12 },
+  { emotion: '피곤', count: 1 },
+  { emotion: '놀람', count: 2 },
+  { emotion: '화남', count: 4 },
+];
+
+export const createMockMonthlyRecord = (): MyMonthlyRecordListResponse[] => [
+  {
+    month: '2025-12',
+    count: 52,
+    coverAssetId: '/base.png',
+    latestTitle: '도쿄 여행',
+    latestLocation: '일본 도쿄',
+  },
+  {
+    month: '2025-11',
+    count: 39,
+    coverAssetId: '/base.png',
+    latestTitle: '절거운 학교생활',
+    latestLocation: '광주 북구',
+  },
+  {
+    month: '2025-10',
+    count: 61,
+    coverAssetId: '/base.png',
+    latestTitle: '귀요미들',
+    latestLocation: '전주',
+  },
+  {
+    month: '2025-09',
+    count: 28,
+    coverAssetId: '/base.png',
+    latestTitle: '프로젝트',
+    latestLocation: '서울 판교 아지트',
+  },
+];
+
+export const createMockDailyRecord = (): MyDailyRecordListResponse[] => [
+  {
+    date: '2025-11-21',
+    postCount: 1,
+    coverThumbnailUrl: '/base.png',
+    latestPostTitle: '도쿄 축제',
+    latestPlaceName: '도쿄',
+  },
+  {
+    date: '2025-11-18',
+    postCount: 3,
+    coverThumbnailUrl: '/base.png',
+    latestPostTitle: '사슴을 주의해',
+    latestPlaceName: '도쿄',
+  },
+  {
+    date: '2025-11-10',
+    postCount: 1,
+    coverThumbnailUrl: '/base.png',
+    latestPostTitle: '일본은 굉장히 더워',
+    latestPlaceName: '도쿄',
+  },
+];

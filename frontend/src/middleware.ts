@@ -1,48 +1,37 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { auth } from '@/auth';
 
 // 인증 없이 접근 가능한 경로
 const PUBLIC_PATHS = ['/login', '/oauth/callback'];
 
-// 인증이 필요한지 확인
-function isAuthenticated(request: NextRequest): boolean {
-  // 소셜 로그인: refreshToken 쿠키 확인
-  const refreshToken = request.cookies.get('refreshToken');
-  if (refreshToken?.value) return true;
+export default auth((req) => {
+  const { nextUrl, auth: session, cookies } = req;
 
-  // 게스트 로그인: x-guest-session-id 쿠키 확인
-  const guestSessionId = request.cookies.get('x-guest-session-id');
-  if (guestSessionId?.value) return true;
+  const isSocialLoggedIn = !!session;
+  const isGuestLoggedIn = !!cookies.get('x-guest-session-id');
+  const isLoggedIn = isSocialLoggedIn || isGuestLoggedIn; // 세션이 있으면 tru
 
-  return false;
-}
+  const isPublicPath = PUBLIC_PATHS.some((path) =>
+    nextUrl.pathname.startsWith(path),
+  );
+  // 초대 코드는 URL 파라미터에서 직접 확인
+  const hasInviteCode = !!nextUrl.searchParams.get('inviteCode');
 
-// 초대 코드가 있는지 확인
-function hasInviteCode(request: NextRequest): boolean {
-  const inviteCode = request.nextUrl.searchParams.get('inviteCode');
-  return !!inviteCode;
-}
-
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
-  const isLoggedIn = isAuthenticated(request);
-  const isInvited = hasInviteCode(request);
-
-  // 로그인 페이지 접근 시 이미 로그인한 유저면 홈으로
-  if (pathname === '/login' && isLoggedIn) {
-    return NextResponse.redirect(new URL('/', request.url));
+  // 로그인된 유저가 로그인 페이지 접근 시 홈으로
+  if (nextUrl.pathname === '/login' && isSocialLoggedIn) {
+    return NextResponse.redirect(new URL('/', nextUrl));
   }
 
-  // 로그인 안 했고 초대 코드도 없으면 로그인 페이지로
-  if (!isPublicPath && !isLoggedIn && !isInvited) {
-    const loginUrl = new URL('/login', request.url);
+  //  로그인 안 했고, 공개 경로도 아니고, 초대 코드도 없으면 로그인으로
+  if (!isLoggedIn && !isPublicPath && !hasInviteCode) {
+    const loginUrl = new URL('/login', nextUrl);
+    // 원래 가려던 주소를 저장해두면 로그인 후 되돌려보낼 때 유용
+    loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [

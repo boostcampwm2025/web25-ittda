@@ -13,7 +13,7 @@ type LocationValue = {
 
 type ExtractedMeta = {
   tags?: string[];
-  emotion?: PostMood;
+  emotion?: PostMood[];
   rating?: number;
   location?: LocationValue;
   date: string; // required
@@ -45,7 +45,7 @@ export function extractMetaFromBlocks(blocks: PostBlockDto[]): ExtractedMeta {
   let date: string | undefined;
   let time: string | undefined;
   let location: LocationValue | undefined;
-  let emotion: PostMood | undefined;
+  let emotion: PostMood[] | undefined;
   let rating: number | undefined;
   let tags: string[] | undefined;
 
@@ -68,7 +68,10 @@ export function extractMetaFromBlocks(blocks: PostBlockDto[]): ExtractedMeta {
       continue;
     }
     if (isBlockType(b, PostBlockType.MOOD)) {
-      emotion = b.value.mood;
+      if (!emotion) {
+        emotion = [];
+      }
+      emotion.push(b.value.mood);
       continue;
     }
     if (isBlockType(b, PostBlockType.RATING)) {

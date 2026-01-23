@@ -3,38 +3,40 @@
 import { useRouter } from 'next/navigation';
 import MonthlyPatternChart from '../../_components/MonthlyPatternChart';
 import { cn } from '@/lib/utils';
-
-const emotions = {
-  recent: [
-    { name: '행복', emoji: '😊', count: 1 },
-    { name: '슬픔', emoji: '😢', count: 1 },
-    { name: '설렘', emoji: '🥰', count: 1 },
-    { name: '좋음', emoji: '🥰', count: 1 },
-    { name: '놀람', emoji: '😮', count: 1 },
-  ],
-  frequent: [
-    { name: '행복', emoji: '😊', count: 6 },
-    { name: '슬픔', emoji: '😢', count: 5 },
-    { name: '설렘', emoji: '🥰', count: 4 },
-    { name: '좋음', emoji: '🥰', count: 3 },
-    { name: '놀람', emoji: '😮', count: 2 },
-    { name: '화남', emoji: '😡', count: 1 },
-    { name: '피곤', emoji: '😴', count: 1 },
-  ],
-  all: [
-    { name: '슬픔', emoji: '😢', count: 5 },
-    { name: '설렘', emoji: '🥰', count: 4 },
-    { name: '좋음', emoji: '🥰', count: 3 },
-    { name: '놀람', emoji: '😮', count: 2 },
-    { name: '화남', emoji: '😡', count: 1 },
-    { name: '피곤', emoji: '😴', count: 1 },
-  ],
-};
+import { useApiQuery } from '@/hooks/useApi';
+import { EmotionStatSummary } from '@/lib/types/profile';
+import { EMOTION_MAP } from '@/lib/constants/constants';
 
 export default function EmotionDashboard() {
   const router = useRouter();
 
-  const currentEmotions = emotions['frequent'];
+  const {
+    data: currentEmotions,
+    isLoading,
+    isError,
+  } = useApiQuery<EmotionStatSummary>(
+    ['emotion', 'summary'],
+    '/api/me/emotions/summary?limit=7',
+  );
+
+  if (isLoading) {
+    return (
+      <section className="space-y-4 animate-pulse">
+        <div className="h-20 w-full bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+        <div className="h-40 bg-gray-200 dark:bg-gray-700 rounded" />
+      </section>
+    );
+  }
+
+  if (isError || !currentEmotions) {
+    return (
+      <section className="space-y-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          감정 데이터를 불러올 수 없습니다.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-4">
@@ -51,50 +53,56 @@ export default function EmotionDashboard() {
         <div className="mt-5 mb-6">
           {currentEmotions.length > 0 ? (
             <div className="space-y-2">
-              {currentEmotions.slice(0, 5).map((emotion, index) => {
-                const totalCount = currentEmotions.reduce(
-                  (sum, e) => sum + e.count,
-                  0,
-                );
-                const percentage = ((emotion.count / totalCount) * 100).toFixed(
-                  1,
-                );
+              {[...currentEmotions]
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5)
+                .map((emotion, index) => {
+                  const totalCount = currentEmotions.reduce(
+                    (sum, e) => sum + e.count,
+                    0,
+                  );
+                  const percentage = (
+                    (emotion.count / totalCount) *
+                    100
+                  ).toFixed(1);
 
-                return (
-                  <div
-                    key={emotion.name}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg dark:bg-white/5 bg-white transition-colors"
-                  >
-                    {/* 순위 */}
-                    <span
-                      className={cn(
-                        'text-[13px] font-semobold text-itta-point w-5 text-center',
-                        index > 0 && 'text-gray-400',
-                      )}
+                  return (
+                    <div
+                      key={emotion.emotion}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg dark:bg-white/5 bg-white transition-colors"
                     >
-                      {index + 1}
-                    </span>
+                      {/* 순위 */}
+                      <span
+                        className={cn(
+                          'text-[13px] font-semobold text-itta-point w-5 text-center',
+                          index > 0 && 'text-gray-400',
+                        )}
+                      >
+                        {index + 1}
+                      </span>
 
-                    {/* 이모지 */}
-                    <span className="text-lg">{emotion.emoji}</span>
+                      {/* 이모지 */}
+                      <span className="text-lg">
+                        {EMOTION_MAP[emotion.emotion]}
+                      </span>
 
-                    {/* 감정명 */}
-                    <span className="text-[13px] font-medium dark:text-gray-200 text-itta-black flex-1">
-                      {emotion.name}
-                    </span>
+                      {/* 감정명 */}
+                      <span className="text-[13px] font-medium dark:text-gray-200 text-itta-black flex-1">
+                        {emotion.emotion}
+                      </span>
 
-                    {/* 횟수 */}
-                    <span className="text-[12px] font-bold text-[#10B981]/90">
-                      {emotion.count}회
-                    </span>
+                      {/* 횟수 */}
+                      <span className="text-[12px] font-bold text-[#10B981]/90">
+                        {emotion.count}회
+                      </span>
 
-                    {/* 퍼센티지 */}
-                    <span className="text-[11px] font-medium text-gray-400 w-12 text-right">
-                      {percentage}%
-                    </span>
-                  </div>
-                );
-              })}
+                      {/* 퍼센티지 */}
+                      <span className="text-[11px] font-medium text-gray-400 w-12 text-right">
+                        {percentage}%
+                      </span>
+                    </div>
+                  );
+                })}
             </div>
           ) : (
             <p className="w-full text-center py-4 text-[11px] text-gray-400">

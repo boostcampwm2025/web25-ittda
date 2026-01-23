@@ -1,5 +1,6 @@
 'use client';
 
+import { EMOTION_MAP } from '@/lib/constants/constants';
 import { ProfileEmotion } from '@/lib/types/profile';
 import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -10,8 +11,13 @@ interface EmotionListProps {
   defaultTab?: 'recent' | 'frequent';
 }
 
-export default function EmotionList({ emotions, defaultTab = 'recent' }: EmotionListProps) {
-  const [emotionTab, setEmotionTab] = useState<'recent' | 'frequent'>(defaultTab);
+export default function EmotionList({
+  emotions,
+  defaultTab = 'recent',
+}: EmotionListProps) {
+  const [emotionTab, setEmotionTab] = useState<'recent' | 'frequent'>(
+    defaultTab,
+  );
   const router = useRouter();
 
   const handleSingleTagSearch = (tagName: string) => {
@@ -51,14 +57,16 @@ export default function EmotionList({ emotions, defaultTab = 'recent' }: Emotion
         ) : (
           emotions[emotionTab].map((emotion) => (
             <button
-              key={emotion.name}
-              onClick={() => handleSingleTagSearch(emotion.name)}
-              className="cursor-pointer w-full flex items-center justify-between px-6 py-5 border-b transition-colors active:bg-gray-50 dark:active:bg-white/5 dark:border-white/5 border-gray-50"
+              key={emotion.emotion}
+              onClick={() => handleSingleTagSearch(emotion.emotion)}
+              className="cursor-pointer w-full flex items-center justify-between px-6 py-5 transition-colors active:bg-gray-50 dark:active:bg-white/5"
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-[15px]">{emotion.emoji}</span>
+                <span className="text-[15px]">
+                  {EMOTION_MAP[emotion.emotion]}
+                </span>
                 <span className="text-[15px] font-medium dark:text-gray-200 text-itta-black">
-                  {emotion.name}
+                  {emotion.emotion}
                 </span>
               </div>
               <div className="flex items-center gap-2">

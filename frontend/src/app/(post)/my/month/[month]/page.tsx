@@ -1,38 +1,9 @@
 import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
 import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
-
-const initialDays = [
-  {
-    date: '2025-12-21',
-    dayName: '일',
-    title: '엄마의 팥죽',
-    emoji: '🥣',
-    author: '엄마',
-    count: 1,
-    coverUrl:
-      'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    date: '2025-12-18',
-    dayName: '목',
-    title: '성수동 카페 나들이',
-    emoji: '☕',
-    author: '나',
-    count: 3,
-    coverUrl:
-      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    date: '2025-12-10',
-    dayName: '수',
-    title: '눈 내린 아침 산책',
-    emoji: '❄️',
-    author: '아빠',
-    count: 1,
-    coverUrl:
-      'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=600',
-  },
-];
+import { myDailyRecordListOptions } from '@/lib/api/my';
+import { createMockDailyRecord } from '@/lib/mocks/mock';
+import { MyDailyRecordListResponse } from '@/lib/types/recordResponse';
+import { QueryClient } from '@tanstack/react-query';
 
 interface MyMonthlyDetailPageProps {
   params: Promise<{ month: string }>;
@@ -42,6 +13,17 @@ export default async function MyMonthlyDetailPage({
   params,
 }: MyMonthlyDetailPageProps) {
   const { month } = await params;
+
+  let dailyRecords: MyDailyRecordListResponse[];
+
+  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
+    dailyRecords = createMockDailyRecord();
+  } else {
+    const queryClient = new QueryClient();
+    dailyRecords = await queryClient.fetchQuery(
+      myDailyRecordListOptions(month),
+    );
+  }
 
   return (
     <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -53,7 +35,8 @@ export default async function MyMonthlyDetailPage({
 
       <div className="py-6 pb-40">
         <MonthlyDetailRecords
-          dayRecords={initialDays}
+          month={month}
+          serverSideData={dailyRecords}
           routePath="/my/detail"
           viewMapRoutePath={`my/map/month/${month}`}
         />

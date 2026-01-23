@@ -11,9 +11,9 @@ import {
 } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
 import { BarChart3, CalendarDays, Check, ListFilter, X } from 'lucide-react';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-type SortOption = 'date-desc' | 'date-asc' | 'count-desc';
+export type SortOption = 'date-desc' | 'date-asc' | 'count-desc';
 
 interface MonthlyDetailHeaderActionsProps {
   month: string;
@@ -22,32 +22,39 @@ interface MonthlyDetailHeaderActionsProps {
   className?: string;
 }
 
+const sortOptions = [
+  {
+    id: 'date-desc',
+    label: '최신순',
+    icon: <CalendarDays className="w-4 h-4" />,
+  },
+  {
+    id: 'date-asc',
+    label: '오래된순',
+    icon: <CalendarDays className="w-4 h-4" />,
+  },
+  {
+    id: 'count-desc',
+    label: '기록 많은순',
+    icon: <BarChart3 className="w-4 h-4" />,
+  },
+];
+
 export default function MonthlyDetailHeaderActions({
   month,
   title,
   onClick,
   className,
 }: MonthlyDetailHeaderActionsProps) {
-  const [showSortMenu, setShowSortMenu] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>('date-desc');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const sortBy = (searchParams.get('sort') as SortOption) || 'date-desc';
 
-  const sortOptions = [
-    {
-      id: 'date-desc',
-      label: '최신순',
-      icon: <CalendarDays className="w-4 h-4" />,
-    },
-    {
-      id: 'date-asc',
-      label: '오래된순',
-      icon: <CalendarDays className="w-4 h-4" />,
-    },
-    {
-      id: 'count-desc',
-      label: '기록 많은순',
-      icon: <BarChart3 className="w-4 h-4" />,
-    },
-  ];
+  const setSortBy = (sort: SortOption) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sort', sort);
+    router.replace(`?${params.toString()}`);
+  };
 
   return (
     <>
@@ -60,15 +67,11 @@ export default function MonthlyDetailHeaderActions({
           {month?.replace('-', '년 ')}월
         </span>
       </div>
-      <Drawer open={showSortMenu} onOpenChange={setShowSortMenu}>
+      <Drawer>
         <DrawerTrigger asChild>
           <button
-            onClick={() => setShowSortMenu(true)}
             className={cn(
-              'cursor-pointer p-1.5 rounded-lg transition-colors',
-              showSortMenu
-                ? 'text-[#10B981] bg-[#10B981]/10'
-                : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-itta-black/80',
+              'cursor-pointer p-1.5 rounded-lg transition-colors text-gray-300 hover:bg-gray-100 dark:hover:bg-itta-black/80',
             )}
           >
             <ListFilter className="w-5 h-5" />
@@ -90,11 +93,10 @@ export default function MonthlyDetailHeaderActions({
 
           <div className="space-y-2">
             {sortOptions.map((option) => (
-              <button
+              <DrawerClose
                 key={option.id}
                 onClick={() => {
                   setSortBy(option.id as SortOption);
-                  setShowSortMenu(false);
                 }}
                 className={cn(
                   'cursor-pointer w-full flex items-center justify-between p-4 rounded-2xl transition-all',
@@ -110,7 +112,7 @@ export default function MonthlyDetailHeaderActions({
                 {sortBy === option.id && (
                   <Check className="w-4 h-4" strokeWidth={3} />
                 )}
-              </button>
+              </DrawerClose>
             ))}
           </div>
         </DrawerContent>

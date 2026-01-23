@@ -6,9 +6,15 @@ export interface ProfileTag {
   all: Tag[];
 }
 
+export interface TagStatSummary {
+  recentTop: Tag[];
+  allTimeTop: Tag[];
+}
+
+export type EmotionStatSummary = Emotion[];
+
 export interface Emotion {
-  name: string;
-  emoji: string;
+  emotion: string;
   count: number;
 }
 

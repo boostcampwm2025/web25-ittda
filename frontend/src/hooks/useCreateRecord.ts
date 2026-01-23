@@ -13,7 +13,7 @@ export const useCreateRecord = () => {
     {
       onSuccess: (res) => {
         if (res.success && res.data?.id) {
-          router.push(`/record/${res.data?.id}`);
+          router.replace(`/record/${res.data?.id}`);
         }
       },
     },
