@@ -16,7 +16,7 @@ export default function EmotionDashboard() {
     isError,
   } = useApiQuery<EmotionStatSummary>(
     ['emotion', 'summary'],
-    '/api/me/emotions/summary?limit=7',
+    '/api/me/emotions',
   );
 
   if (isLoading) {

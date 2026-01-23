@@ -60,7 +60,8 @@ export class MyPageController {
     const stats = await this.myPageService.getUserStats(userId);
 
     return {
-      ...user,
+      userId: userId,
+      user: user,
       stats,
     };
   }
@@ -83,7 +84,7 @@ export class MyPageController {
       dto.profileImageUrl,
     );
     const stats = await this.myPageService.getUserStats(userId);
-    return { ...user, stats };
+    return { userId, user, stats };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -132,7 +133,7 @@ export class MyPageController {
   async getMyEmotions(
     @Req() req: RequestWithUser,
     @Query('sort') sort: 'recent' | 'frequent' = 'recent',
-  ): Promise<EmotionCount[] | string[]> {
+  ): Promise<EmotionCount[]> {
     const userId = req.user.sub;
     return this.myPageService.getEmotions(userId, sort);
   }

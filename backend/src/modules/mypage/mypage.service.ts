@@ -77,7 +77,7 @@ export class MyPageService {
   async getEmotions(
     userId: string,
     sort: 'recent' | 'frequent',
-  ): Promise<EmotionCount[] | string[]> {
+  ): Promise<EmotionCount[]> {
     if (sort === 'frequent') {
       const result = await this.postRepo.query<
         Array<{ emotion: string; count: string }>
@@ -103,7 +103,14 @@ export class MyPageService {
       const validEmotions = res
         .flatMap((r) => r.emotion || [])
         .filter((e): e is PostMood => !!e);
-      return [...new Set(validEmotions)];
+      const counts = new Map<PostMood, number>();
+      validEmotions.forEach((emotion) => {
+        counts.set(emotion, (counts.get(emotion) ?? 0) + 1);
+      });
+      return Array.from(counts.entries()).map(([emotion, count]) => ({
+        emotion,
+        count,
+      }));
     }
   }
 
@@ -135,10 +142,8 @@ export class MyPageService {
     return {
       recentTags: recentTags.map((t) => t.tag),
       frequentTags: frequentTags.map((t) => t.tag),
-      recentEmotions: (recentEmotions as string[]).slice(0, 10),
-      frequentEmotions: (frequentEmotions as EmotionCount[])
-        .slice(0, 10)
-        .map((e) => e.emotion),
+      recentEmotions: recentEmotions.slice(0, 10).map((e) => e.emotion),
+      frequentEmotions: frequentEmotions.slice(0, 10).map((e) => e.emotion),
       streak,
       monthlyRecordingDays,
       totalPosts: totalStats.totalPosts,
