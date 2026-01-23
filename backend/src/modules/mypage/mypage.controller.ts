@@ -6,7 +6,6 @@ import {
   Body,
   UseGuards,
   Req,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { MyPageService } from './mypage.service';
 import { StatsService } from '../stats/stats.service';
@@ -47,9 +46,6 @@ export class MyPageController {
     @Req() req: RequestWithUser,
   ): Promise<UserSummaryResponseDto> {
     const userId = req.user.sub;
-    if (!userId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
     const user = await this.myPageService.findOne(userId);
     const stats = await this.statsService.getUserStats(userId);
 
@@ -72,9 +68,6 @@ export class MyPageController {
     @Body() dto: UpdateMeDto,
   ): Promise<UserSummaryResponseDto> {
     const userId = req.user.sub;
-    if (!userId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
     const user = await this.myPageService.updateProfile(
       userId,
       dto.nickname,
@@ -92,9 +85,6 @@ export class MyPageController {
     @Req() req: RequestWithUser,
   ): Promise<Record<string, unknown>> {
     const userId = req.user.sub;
-    if (!userId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
     const user = await this.myPageService.findOne(userId);
     return user.settings as Record<string, unknown>;
   }
@@ -108,9 +98,6 @@ export class MyPageController {
     @Body() dto: UpdateSettingsDto,
   ): Promise<Record<string, unknown>> {
     const userId = req.user.sub;
-    if (!userId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
     const user = await this.myPageService.updateSettings(userId, dto.settings);
     return user.settings as Record<string, unknown>;
   }
@@ -121,9 +108,6 @@ export class MyPageController {
   @ApiWrappedOkResponse({ type: Object })
   async withdraw(@Req() req: RequestWithUser): Promise<void> {
     const userId = req.user.sub;
-    if (!userId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
     await this.myPageService.softDeleteUser(userId);
   }
 }
