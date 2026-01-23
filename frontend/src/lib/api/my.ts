@@ -40,7 +40,7 @@ export const myDailyRecordListOptions = (month?: string) =>
       : ['my', 'records', 'daily'],
     queryFn: async () => {
       const response = await get<MyDailyRecordListResponse[]>(
-        `/api/user/archives/day?month=${month}`,
+        `/api/user/archives/days?month=${month}`,
       );
 
       if (!response.success) {

@@ -77,7 +77,10 @@ export default function RecordList() {
                     return (
                       <div key={rowNumber} className="w-full">
                         {sortedBlocks.map((block) => (
-                          <BlockContent key={block.id} block={block} />
+                          <BlockContent
+                            key={`${block.id}-${rowNumber}-${block.layout.col}`}
+                            block={block}
+                          />
                         ))}
                       </div>
                     );
@@ -90,7 +93,7 @@ export default function RecordList() {
                       >
                         {sortedBlocks.map((block) => (
                           <div
-                            key={block.id}
+                            key={`${block.id}-${rowNumber}-${block.layout.col}`}
                             className={cn(
                               'min-w-0, shrink',
                               block.layout.col === 2

@@ -198,7 +198,9 @@ export async function fetchApi<T>(
   const currentBaseUrl = getApiBaseUrl();
   // 서버 환경에서는 /api -> /v1로 변환 (rewrites 규칙 반영)
   const finalEndpoint =
-    typeof window === 'undefined' ? endpoint.replace(/^\/api/, '') : endpoint;
+    typeof window === 'undefined'
+      ? endpoint.replace(/^\/api/, '/v1')
+      : endpoint;
 
   let fullUrl = `${currentBaseUrl}${finalEndpoint}`;
   // 서버 환경인데 여전히 상대경로라면 강제로 도메인을 붙여줌 (방어 코드)

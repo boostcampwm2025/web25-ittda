@@ -56,7 +56,7 @@ export const userRecordPatternOptions = (date: string) =>
     queryKey: ['pattern'],
     queryFn: async () => {
       const response = await get<RecordPatternResponse>(
-        `/api/me/stats/summary?date=${date}`,
+        `/v1/me/stats/summary?date=${date}`,
       );
 
       if (!response.success) {
