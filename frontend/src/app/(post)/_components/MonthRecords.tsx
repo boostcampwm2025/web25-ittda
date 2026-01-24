@@ -15,14 +15,14 @@ import { BookOpen, Plus, X } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MyCoverUpdateResponse,
-  MyMonthlyRecordListResponse,
+  MonthlyRecordList,
 } from '@/lib/types/recordResponse';
 import { useApiPatch } from '@/hooks/useApi';
 import { myMonthlyRecordListOptions } from '@/lib/api/my';
 import { convertMontRecords } from '../_utils/convertMonthRecords';
 
 interface MonthRecordsProps {
-  monthRecords: MyMonthlyRecordListResponse[];
+  monthRecords: MonthlyRecordList[];
   cardRoute: string;
 }
 
@@ -39,7 +39,7 @@ export default function MonthRecords({
   const { data: months = [] } = useQuery({
     ...myMonthlyRecordListOptions(),
     initialData: monthRecords,
-    select: (data: MyMonthlyRecordListResponse[]) => convertMontRecords(data),
+    select: (data: MonthlyRecordList[]) => convertMontRecords(data),
   });
 
   const openGallery = (monthId: string) => {
@@ -54,7 +54,7 @@ export default function MonthRecords({
         if (!response.data) return;
         const coverInfo = response.data;
         // 서버 응답 데이터를 캐시에 즉시 수정
-        queryClient.setQueryData<MyMonthlyRecordListResponse[]>(
+        queryClient.setQueryData<MonthlyRecordList[]>(
           year
             ? ['my', 'records', 'month', new Date().getFullYear().toString()]
             : ['my', 'records', 'month'],
@@ -87,7 +87,7 @@ export default function MonthRecords({
     if (!activeMonthId) return;
 
     // 낙관적 업데이트: 캐시 직접 수정
-    queryClient.setQueryData<MyMonthlyRecordListResponse[]>(
+    queryClient.setQueryData<MonthlyRecordList[]>(
       year ? ['my', 'records', 'month', year] : ['my', 'records', 'month'],
       (oldData) => {
         if (!oldData) return oldData;
