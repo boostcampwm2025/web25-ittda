@@ -18,23 +18,6 @@ interface GalleryDrawerProps {
   onSelect: (assetId: string, recordId: string) => void;
 }
 
-function getQueryOptions(
-  type: 'group' | 'personal' | 'other',
-  groupId?: string,
-  month?: string,
-) {
-  if (type === 'group' && groupId && month) {
-    return groupMonthlyRecordCoverOptions(groupId, month);
-  }
-  if (type === 'group' && groupId) {
-    return groupRecordCoverOptions(groupId);
-  }
-  if (type === 'personal' && month) {
-    return myMonthlyRecordCoverOptions(month);
-  }
-  return myMonthlyRecordCoverOptions(month ?? '');
-}
-
 export default function GalleryDrawer({
   type,
   groupId,
