@@ -4,7 +4,7 @@ import { createApiError } from '../utils/errorHandler';
 import {
   MyCoverListResponse,
   MyDailyRecordedDatesResponse,
-  MyDailyRecordListResponse,
+  DailyRecordList,
   MonthlyRecordList,
 } from '../types/recordResponse';
 import {
@@ -40,7 +40,7 @@ export const myDailyRecordListOptions = (month?: string) =>
       ? ['my', 'records', 'daily', month]
       : ['my', 'records', 'daily'],
     queryFn: async () => {
-      const response = await get<MyDailyRecordListResponse[]>(
+      const response = await get<DailyRecordList[]>(
         `/api/user/archives/days?month=${month}`,
       );
 
@@ -49,7 +49,7 @@ export const myDailyRecordListOptions = (month?: string) =>
       }
       return response.data;
     },
-    select: (data: MyDailyRecordListResponse[]) => convertDayRecords(data),
+    select: (data: DailyRecordList[]) => convertDayRecords(data),
     retry: false,
   });
 
