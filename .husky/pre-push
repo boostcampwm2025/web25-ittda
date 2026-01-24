@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Get the remote and branch info
+remote="$1"
+url="$2"
+
+# Read stdin for push details
+while read local_ref local_sha remote_ref remote_sha; do
+  # Check if there are frontend changes between local and remote
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    # New branch - compare with the merge base of dev
+    changed_files=$(git diff --name-only dev..."$local_sha" 2>/dev/null || git diff --name-only HEAD)
+  else
+    changed_files=$(git diff --name-only "$remote_sha" "$local_sha")
+  fi
+
+  if echo "$changed_files" | grep -q "^frontend/"; then
+    echo "🔨 Frontend changes detected. Running build check..."
+    pnpm --filter frontend build
+    if [ $? -ne 0 ]; then
+      echo "❌ Frontend build failed. Push aborted."
+      exit 1
+    fi
+    echo "✅ Frontend build succeeded."
+  fi
+done
