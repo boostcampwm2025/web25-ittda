@@ -4,6 +4,7 @@ import {
   GroupCoverListResponse,
   GroupDailyRecordedDatesResponse,
   GroupListResponse,
+  MonthlyRecordList,
 } from '../types/recordResponse';
 import {
   GroupEditResponse,
@@ -12,6 +13,7 @@ import {
 } from '../types/groupResponse';
 import { createApiError } from '../utils/errorHandler';
 import { ROLE_MAP } from '../types/group';
+import { convertMontRecords } from '@/app/(post)/_utils/convertMonthRecords';
 
 export const groupListOptions = () =>
   queryOptions({
@@ -192,5 +194,27 @@ export const groupCurrentMembersOption = (groupId: string) =>
       }
       return response.data;
     },
+    retry: false,
+  });
+
+export const groupMonthlyRecordListOptions = (groupId: string, year?: string) =>
+  queryOptions({
+    queryKey: year
+      ? ['group', 'records', 'month', year]
+      : ['group', 'records', 'month'],
+    queryFn: async () => {
+      const query = year
+        ? `?year=${year}&sort=latest`
+        : `?year=${new Date().getFullYear()}&sort=latest`;
+      const response = await get<MonthlyRecordList[]>(
+        `/api/groups/${groupId}/archives/months${query}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    select: (data: MonthlyRecordList[]) => convertMontRecords(data),
     retry: false,
   });

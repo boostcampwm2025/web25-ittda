@@ -11,7 +11,11 @@ export default async function MyRecordsPage() {
     monthlyRecords = createMockMonthlyRecord();
   } else {
     const queryClient = new QueryClient();
-    monthlyRecords = await queryClient.fetchQuery(myMonthlyRecordListOptions());
+
+    const year = String(new Date().getFullYear());
+    monthlyRecords = await queryClient.fetchQuery(
+      myMonthlyRecordListOptions(year),
+    );
   }
 
   return <MonthRecords monthRecords={monthlyRecords} cardRoute={'/my/month'} />;

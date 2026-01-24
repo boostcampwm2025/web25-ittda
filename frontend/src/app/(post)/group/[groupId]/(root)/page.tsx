@@ -1,5 +1,8 @@
 import MonthRecords from '@/app/(post)/_components/MonthRecords';
-import { createMockMonthlyRecord } from '@/lib/mocks/mock';
+import { groupMonthlyRecordListOptions } from '@/lib/api/group';
+import { createMockGroupMonthlyRecords } from '@/lib/mocks/mock';
+import { MonthlyRecordList } from '@/lib/types/recordResponse';
+import { QueryClient } from '@tanstack/react-query';
 
 interface GroupPageProps {
   params: Promise<{ groupId: string }>;
@@ -7,19 +10,24 @@ interface GroupPageProps {
 
 export default async function GroupPage({ params }: GroupPageProps) {
   const { groupId } = await params;
+  const year = String(new Date().getFullYear());
 
-  // const { data } = useQuery({
-  //   queryKey: ['posts'],
-  //   queryFn: () => fetchPostList(),
-  //   select: (res) => res.items,
-  // });
-  // const posts = data ?? [];
+  let monthlyRecords: MonthlyRecordList[];
+
+  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
+    monthlyRecords = createMockGroupMonthlyRecords();
+  } else {
+    const queryClient = new QueryClient();
+    monthlyRecords = await queryClient.fetchQuery(
+      groupMonthlyRecordListOptions(groupId, year),
+    );
+  }
 
   return (
     <>
       {groupId && (
         <MonthRecords
-          monthRecords={createMockMonthlyRecord()}
+          monthRecords={monthlyRecords}
           cardRoute={`/group/${groupId}/month`}
         />
       )}
