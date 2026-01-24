@@ -43,7 +43,6 @@ export default function GalleryDrawer({
   onSelect,
 }: GalleryDrawerProps) {
   // 그룹 쿼리
-  console.log('groupId', groupId);
   const groupQuery = useInfiniteQuery({
     ...groupRecordCoverOptions(groupId!),
     enabled: type === 'group' && !!groupId && !month,
