@@ -8,6 +8,7 @@ import {
   createMockGroupList,
   createMockGroupMembers,
   createMockGroupMonthlyRecords,
+  createMockGroupSettings,
   createMockMonthlyRecord,
   createMockMyCoverList,
   createMockRecordPreviews,
@@ -18,6 +19,20 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.patch('/api/groups/:groupId', async ({ params, request }) => {
+    const id = String(params.groupId);
+
+    const body = (await request.json()) as {
+      groupName: string;
+      coverAssetId: string;
+    };
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockGroupSettings(id),
+      error: null,
+    });
+  }),
   http.patch(
     '/api/groups/:groupId/archives/months/:month/cover',
     async ({ params, request }) => {
