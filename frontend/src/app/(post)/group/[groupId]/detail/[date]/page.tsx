@@ -7,6 +7,8 @@ import { QueryClient } from '@tanstack/react-query';
 import { recordPreviewListOptions } from '@/lib/api/records';
 import { RecordPreview } from '@/lib/types/recordResponse';
 import { createMockRecordPreviews } from '@/lib/mocks/mock';
+import { groupDailyRecordedDatesOption } from '@/lib/api/group';
+import { getPastDate } from '@/lib/utils/time';
 
 interface GroupDailyDetailPageProps {
   params: Promise<{ date: string; groupId: string }>;
@@ -47,6 +49,7 @@ export default async function GroupDailyDetailPage({
 
   const queryClient = new QueryClient();
 
+  // TODO: 그룹 기록함 타임라인 데이터 서버로부터 받아오기
   // group 일 때의 쿼리 파라미터 전달 필요
   // const records = await queryClient.fetchQuery(
   //   recordPreviewListOptions(selectedDate),
@@ -54,8 +57,24 @@ export default async function GroupDailyDetailPage({
 
   const records = createMockRecordPreviews(date);
 
-  // TODO: 서버로부터 데이터 받아와야 함
-  const recordedDates = ['2025-12-20', '2025-12-21', '2025-12-15'];
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+
+  let recordedDates: string[];
+  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
+    recordedDates = [
+      getPastDate(date, 0),
+      getPastDate(date, 1),
+      getPastDate(date, 2),
+      getPastDate(date, 5),
+      getPastDate(date, 7),
+    ];
+  } else {
+    recordedDates = await queryClient.fetchQuery(
+      groupDailyRecordedDatesOption(groupId, year, month),
+    );
+  }
 
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
