@@ -241,3 +241,27 @@ export const groupDailyRecordListOptions = (groupId: string, month: string) =>
     select: (data: DailyRecordList[]) => convertDayRecords(data),
     retry: false,
   });
+
+export const groupMonthlyRecordCoverOptions = (
+  groupId: string,
+  month: string,
+) =>
+  infiniteQueryOptions({
+    queryKey: ['cover', groupId, month],
+    queryFn: async ({ pageParam }) => {
+      const url = pageParam
+        ? `/api/groups/${groupId}/archives/monthcover?year=${month}&cursor=${pageParam}`
+        : `/api/groups/${groupId}/archives/monthcover?year=${month}`;
+
+      const response = await get<GroupCoverListResponse>(url);
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    retry: false,
+  });

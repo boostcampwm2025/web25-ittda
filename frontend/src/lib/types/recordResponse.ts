@@ -113,7 +113,13 @@ export interface DailyRecordList {
   latestPlaceName: string | null;
 }
 
-export type MyCoverListResponse = string[];
+export interface MyCoverListResponse {
+  sections: CoverSection[];
+  pageInfo: {
+    hasNext: boolean;
+    nextCursor: string | null;
+  };
+}
 
 export interface MyCoverUpdateResponse {
   coverAssetId: string;

@@ -6,6 +6,7 @@ import {
   DailyRecordList,
   MonthlyRecordList,
   RecordPreview,
+  MyCoverListResponse,
 } from '../types/recordResponse';
 
 // 요청된 날짜에 맞는 mock 데이터를 생성하는 함수
@@ -372,6 +373,25 @@ export const createMockGroupCoverList = (
 
   return {
     groupId,
+    sections,
+    pageInfo: {
+      hasNext,
+      nextCursor: hasNext ? String(endIndex) : null,
+    },
+  };
+};
+
+export const createMockMyCoverList = (
+  cursor: string | null,
+): MyCoverListResponse => {
+  // cursor는 시작 인덱스를 나타냄
+  const startIndex = cursor ? parseInt(cursor, 10) : 0;
+  const endIndex = startIndex + PAGE_SIZE;
+
+  const sections = allCoverSections.slice(startIndex, endIndex);
+  const hasNext = endIndex < allCoverSections.length;
+
+  return {
     sections,
     pageInfo: {
       hasNext,

@@ -9,6 +9,7 @@ import {
   createMockGroupMembers,
   createMockGroupMonthlyRecords,
   createMockMonthlyRecord,
+  createMockMyCoverList,
   createMockRecordPreviews,
   createMockTagStats,
 } from './mock';
@@ -17,6 +18,22 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get(
+    '/api/groups/:groupId/archives/monthcover',
+    ({ request, params }) => {
+      const url = new URL(request.url);
+      const groupId = String(params.groupId);
+      const month = url.searchParams.get('year');
+      const cursor = url.searchParams.get('cursor');
+
+      const mockImgs = createMockGroupCoverList(groupId, cursor);
+      return HttpResponse.json({
+        success: true,
+        data: mockImgs,
+        error: null,
+      });
+    },
+  ),
   http.get(`/api/groups/:groupId/archives/days`, ({ request }) => {
     const url = new URL(request.url);
     const month = url.searchParams.get('month');
@@ -110,18 +127,12 @@ export const handlers = [
   http.get('/api/user/archives/monthcover', ({ request }) => {
     const url = new URL(request.url);
     const month = url.searchParams.get('year');
+    const cursor = url.searchParams.get('cursor');
 
+    const mockImgs = createMockMyCoverList(cursor);
     return HttpResponse.json({
       success: true,
-      data: [
-        '/base.png',
-        '/profile-ex.jpeg',
-        '/base.png',
-        '/profile-ex.jpeg',
-        '/base.png',
-        '/profile-ex.jpeg',
-      ],
-      meta: {},
+      data: mockImgs,
       error: null,
     });
   }),

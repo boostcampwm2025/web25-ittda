@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import { createApiError } from '../utils/errorHandler';
 import {
@@ -53,19 +53,24 @@ export const myDailyRecordListOptions = (month?: string) =>
     retry: false,
   });
 
-export const myMonthlyRecordCoverOption = (month: string) =>
-  queryOptions({
+export const myMonthlyRecordCoverOptions = (month: string) =>
+  infiniteQueryOptions({
     queryKey: ['cover', 'my', month],
-    queryFn: async () => {
-      const response = await get<MyCoverListResponse>(
-        `/api/user/archives/monthcover?year=${month}`,
-      );
+    queryFn: async ({ pageParam }) => {
+      const url = pageParam
+        ? `/api/user/archives/monthcover?year=${month}&cursor=${pageParam}`
+        : `/api/user/archives/monthcover?year=${month}`;
+
+      const response = await get<MyCoverListResponse>(url);
 
       if (!response.success) {
         throw createApiError(response);
       }
       return response.data;
     },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
     retry: false,
   });
 
