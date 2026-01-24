@@ -1,3 +1,4 @@
+import { GroupMembersResponse } from '../types/groupResponse';
 import { EmotionStatSummary, TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
@@ -491,3 +492,34 @@ export const createMockDailyRecord = (): MyDailyRecordListResponse[] => [
     latestPlaceName: '도쿄',
   },
 ];
+
+export const createMockGroupMembers = (): GroupMembersResponse => ({
+  groupName: '고3 전우들',
+  groupMemberCount: 4,
+  members: [
+    {
+      memberId: '1',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '2',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '3',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '4',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '5',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '6',
+      profileImageId: '/profile-ex.jpeg',
+    },
+  ],
+});

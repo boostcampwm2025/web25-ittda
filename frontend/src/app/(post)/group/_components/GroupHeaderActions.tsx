@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
-import { GroupInfo } from '@/lib/types/group';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGroupVoice } from '@/store/useGroupVoice';
 import {
@@ -25,9 +24,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
 import { cn } from '@/lib/utils';
+import { GroupMembersResponse } from '@/lib/types/groupResponse';
 
 interface GroupHeaderActionsProps {
-  groupInfo: GroupInfo;
+  groupInfo: GroupMembersResponse;
   className?: string;
 }
 export default function GroupHeaderActions({
@@ -70,7 +70,7 @@ export default function GroupHeaderActions({
             보이스 연결
           </button>
         )}
-        <GroupInviteDrawer groupId={groupId || ''} groupInfo={groupInfo} />
+        <GroupInviteDrawer groupId={groupId || 'gruop'} />
 
         <DateSelectorDrawer
           className={className}
@@ -118,7 +118,7 @@ export default function GroupHeaderActions({
                 </div>
                 <div className="space-y-1">
                   <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-                    {`정말 '${groupInfo.name}' 그룹에서 나가시겠습니까?`}
+                    {`정말 '${groupInfo.groupName}' 그룹에서 나가시겠습니까?`}
                   </DrawerTitle>
                   <p className="text-sm text-gray-400 font-medium">
                     그룹의 기록을 확인할 수 없게 됩니다.
