@@ -126,10 +126,12 @@ export async function refreshServerAccessToken(token: any) {
       ?.replace('Bearer ', '');
 
     const setCookie = response.headers.get('set-cookie');
-    const newRefreshToken = setCookie
+    const refreshCookiePart = setCookie
       ?.split(';')
-      .find((c) => c.trim().startsWith('refreshToken='))
-      ?.split('=')[1];
+      .find((c) => c.trim().startsWith('refreshToken='));
+    const newRefreshToken = refreshCookiePart
+      ?.trim()
+      .substring('refreshToken='.length);
 
     return {
       ...token,
