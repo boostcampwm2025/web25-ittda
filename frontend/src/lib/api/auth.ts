@@ -125,9 +125,16 @@ export async function refreshServerAccessToken(token: any) {
       .get('Authorization')
       ?.replace('Bearer ', '');
 
+    const setCookie = response.headers.get('set-cookie');
+    const newRefreshToken = setCookie
+      ?.split(';')
+      .find((c) => c.trim().startsWith('refreshToken='))
+      ?.split('=')[1];
+
     return {
       ...token,
       accessToken: newAccessToken,
+      refreshToken: newRefreshToken || token.refreshToken,
       accessTokenExpires: Date.now() + 14 * 60 * 1000,
     };
   } catch (error) {
