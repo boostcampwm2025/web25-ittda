@@ -5,6 +5,7 @@ import {
   createMockEmotionStats,
   createMockGroupCoverList,
   createMockGroupList,
+  createMockGroupMembers,
   createMockMonthlyRecord,
   createMockRecordPreviews,
   createMockTagStats,
@@ -14,6 +15,15 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/groups/:groupId/current-members', ({ params }) => {
+    const groupId = String(params.groupId);
+
+    HttpResponse.json({
+      success: true,
+      data: createMockGroupMembers(),
+      error: null,
+    });
+  }),
   http.get(
     '/api/groups/:groupId/archives/record-days',
     ({ request, params }) => {

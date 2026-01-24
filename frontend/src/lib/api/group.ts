@@ -8,6 +8,7 @@ import {
 import {
   GroupEditResponse,
   GroupMemberProfileResponse,
+  GroupMembersResponse,
 } from '../types/groupResponse';
 import { createApiError } from '../utils/errorHandler';
 import { ROLE_MAP } from '../types/group';
@@ -168,6 +169,22 @@ export const groupDailyRecordedDatesOption = (
     queryFn: async () => {
       const response = await get<GroupDailyRecordedDatesResponse>(
         `/api/groups/${groupId}/archives/record-days?month=${year}-${month}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    retry: false,
+  });
+
+export const groupCurrentMembersOption = (groupId: string) =>
+  queryOptions({
+    queryKey: ['currentMembers', groupId],
+    queryFn: async () => {
+      const response = await get<GroupMembersResponse>(
+        `/api/groups/${groupId}/current-members`,
       );
 
       if (!response.success) {
