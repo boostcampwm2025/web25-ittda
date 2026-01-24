@@ -35,6 +35,7 @@ export default async function GroupMonthlyDetailPage({
 
       <div className="p-6 pb-40">
         <MonthlyDetailRecords
+          groupId={groupId}
           serverSideData={dailyRecords}
           month={month}
           routePath={`/group/${groupId}/detail`}
