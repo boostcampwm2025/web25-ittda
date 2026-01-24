@@ -3,12 +3,7 @@ import DailyDetailRecords from '@/components/DailyDetailRecords';
 import { ActiveMember } from '@/lib/types/group';
 import Back from '@/components/Back';
 import { formatDateISO } from '@/lib/date';
-import { QueryClient } from '@tanstack/react-query';
-import { recordPreviewListOptions } from '@/lib/api/records';
-import { RecordPreview } from '@/lib/types/recordResponse';
 import { createMockRecordPreviews } from '@/lib/mocks/mock';
-import { groupDailyRecordedDatesOption } from '@/lib/api/group';
-import { getPastDate } from '@/lib/utils/time';
 
 interface GroupDailyDetailPageProps {
   params: Promise<{ date: string; groupId: string }>;
@@ -47,34 +42,8 @@ export default async function GroupDailyDetailPage({
   const { date, groupId } = await params;
   const selectedDate = date || formatDateISO();
 
-  const queryClient = new QueryClient();
-
   // TODO: 그룹 기록함 타임라인 데이터 서버로부터 받아오기
-  // group 일 때의 쿼리 파라미터 전달 필요
-  // const records = await queryClient.fetchQuery(
-  //   recordPreviewListOptions(selectedDate),
-  // );
-
   const records = createMockRecordPreviews(date);
-
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-
-  let recordedDates: string[];
-  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
-    recordedDates = [
-      getPastDate(date, 0),
-      getPastDate(date, 1),
-      getPastDate(date, 2),
-      getPastDate(date, 5),
-      getPastDate(date, 7),
-    ];
-  } else {
-    recordedDates = await queryClient.fetchQuery(
-      groupDailyRecordedDatesOption(groupId, year, month),
-    );
-  }
 
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -93,11 +62,7 @@ export default async function GroupDailyDetailPage({
 
       <div className="p-6">
         <DailyDetailRecords memories={records} members={members} />
-        <DailyDetailFloatingActions
-          date={date}
-          groupId={groupId}
-          recordedDates={recordedDates}
-        />
+        <DailyDetailFloatingActions date={date} groupId={groupId} />
       </div>
     </div>
   );
