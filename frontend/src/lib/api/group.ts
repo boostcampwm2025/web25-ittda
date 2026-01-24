@@ -163,11 +163,11 @@ export const groupDailyRecordedDatesOption = (
   queryOptions({
     queryKey: [
       'recordedDates',
-      `/api/groups/archives/${groupId}/record-days?month=${year}-${month}`,
+      `/api/groups/${groupId}/archives/record-days?month=${year}-${month}`,
     ],
     queryFn: async () => {
       const response = await get<GroupDailyRecordedDatesResponse>(
-        `/api/groups/archives/${groupId}/record-days?month=${year}-${month}`,
+        `/api/groups/${groupId}/archives/record-days?month=${year}-${month}`,
       );
 
       if (!response.success) {
