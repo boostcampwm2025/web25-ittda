@@ -5,7 +5,7 @@ import {
   MyCoverListResponse,
   MyDailyRecordedDatesResponse,
   MyDailyRecordListResponse,
-  MyMonthlyRecordListResponse,
+  MonthlyRecordList,
 } from '../types/recordResponse';
 import {
   convertDayRecords,
@@ -21,7 +21,7 @@ export const myMonthlyRecordListOptions = (year?: string) =>
       const query = year
         ? `?year=${year}`
         : `?year=${new Date().getFullYear()}`;
-      const response = await get<MyMonthlyRecordListResponse[]>(
+      const response = await get<MonthlyRecordList[]>(
         `/api/user/archives/months${query}`,
       );
 
@@ -30,7 +30,7 @@ export const myMonthlyRecordListOptions = (year?: string) =>
       }
       return response.data;
     },
-    select: (data: MyMonthlyRecordListResponse[]) => convertMontRecords(data),
+    select: (data: MonthlyRecordList[]) => convertMontRecords(data),
     retry: false,
   });
 

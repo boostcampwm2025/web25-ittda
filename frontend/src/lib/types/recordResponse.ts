@@ -97,7 +97,7 @@ export interface GroupCoverUpdateResponse {
 
 export type GroupDailyRecordedDatesResponse = string[];
 
-export interface MyMonthlyRecordListResponse {
+export interface MonthlyRecordList {
   month: string;
   count: number;
   coverAssetId: string | null;

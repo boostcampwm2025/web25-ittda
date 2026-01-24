@@ -1,13 +1,11 @@
 import {
   MyDailyRecordListResponse,
-  MyMonthlyRecordListResponse,
+  MonthlyRecordList,
 } from '@/lib/types/recordResponse';
 
 const dayNames = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-export const convertMontRecords = (
-  monthlyRecords: MyMonthlyRecordListResponse[],
-) =>
+export const convertMontRecords = (monthlyRecords: MonthlyRecordList[]) =>
   monthlyRecords.map((record) => {
     const [y, m] = record.month.split('-');
     return {
