@@ -95,6 +95,8 @@ export interface GroupCoverUpdateResponse {
   updatedAt: string;
 }
 
+export type GroupDailyRecordedDatesResponse = string[];
+
 export interface MyMonthlyRecordListResponse {
   month: string;
   count: number;

@@ -2,6 +2,7 @@ import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import {
   GroupCoverListResponse,
+  GroupDailyRecordedDatesResponse,
   GroupListResponse,
 } from '../types/recordResponse';
 import {
@@ -151,5 +152,28 @@ export const groupRecordCoverOptions = (groupId: string) =>
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
       lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    retry: false,
+  });
+
+export const groupDailyRecordedDatesOption = (
+  groupId: string,
+  year: number | string,
+  month: number | string,
+) =>
+  queryOptions({
+    queryKey: [
+      'recordedDates',
+      `/api/groups/archives/${groupId}record-days?month=${year}-${month}`,
+    ],
+    queryFn: async () => {
+      const response = await get<GroupDailyRecordedDatesResponse>(
+        `/api/groups/archives/${groupId}record-days?month=${year}-${month}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
     retry: false,
   });
