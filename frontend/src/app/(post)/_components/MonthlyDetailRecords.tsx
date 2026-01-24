@@ -9,12 +9,14 @@ import { SortOption } from './MonthlyDetailHeaderActions';
 import { useMemo } from 'react';
 import { myDailyRecordListOptions } from '@/lib/api/my';
 import { DailyRecordList } from '@/lib/types/recordResponse';
+import { groupDailyRecordListOptions } from '@/lib/api/group';
 
 interface MonthlyDetailRecordsProps {
   month: string;
   serverSideData: DailyRecordList[];
   routePath: string;
   viewMapRoutePath: string;
+  groupId?: string;
 }
 
 const sortRecords = (groups: DayRecord[], sortBy: SortOption): DayRecord[] => {
@@ -34,12 +36,16 @@ export default function MonthlyDetailRecords({
   month,
   routePath,
   viewMapRoutePath,
+  groupId,
 }: MonthlyDetailRecordsProps) {
   const searchParams = useSearchParams();
   const sortBy = (searchParams.get('sort') as SortOption) || 'date-desc';
 
+  const option = groupId
+    ? groupDailyRecordListOptions(groupId, month)
+    : myDailyRecordListOptions(month);
   const { data: dayRecords = [] } = useQuery({
-    ...myDailyRecordListOptions(month),
+    ...option,
     initialData: serverSideData,
   });
 

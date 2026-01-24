@@ -20,13 +20,16 @@ import {
 import { useApiPatch } from '@/hooks/useApi';
 import { myMonthlyRecordListOptions } from '@/lib/api/my';
 import { convertMontRecords } from '../_utils/convertMonthRecords';
+import { groupMonthlyRecordListOptions } from '@/lib/api/group';
 
 interface MonthRecordsProps {
   monthRecords: MonthlyRecordList[];
   cardRoute: string;
+  groupId?: string;
 }
 
 export default function MonthRecords({
+  groupId,
   monthRecords,
   cardRoute,
 }: MonthRecordsProps) {
@@ -34,10 +37,14 @@ export default function MonthRecords({
   const router = useRouter();
   const [activeMonthId, setActiveMonthId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { groupId, year } = useParams();
+  const { year } = useParams();
+
+  const options = groupId
+    ? groupMonthlyRecordListOptions(groupId)
+    : myMonthlyRecordListOptions();
 
   const { data: months = [] } = useQuery({
-    ...myMonthlyRecordListOptions(),
+    ...options,
     initialData: monthRecords,
     select: (data: MonthlyRecordList[]) => convertMontRecords(data),
   });

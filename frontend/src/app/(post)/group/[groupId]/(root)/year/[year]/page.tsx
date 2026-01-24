@@ -26,6 +26,7 @@ export default async function GroupYearPage({ params }: GroupYearPageProps) {
     <>
       {groupId && (
         <MonthRecords
+          groupId={groupId}
           monthRecords={monthlyRecords}
           cardRoute={`/group/${groupId}/month`}
         />
