@@ -2,19 +2,27 @@
 
 import { ChevronLeft, ChevronRight, MapIcon, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { myDailyRecordedDatesOption } from '@/lib/api/my';
+import { groupDailyRecordedDatesOption } from '@/lib/api/group';
 
 interface DailyDetailFloatingActionsProps {
   groupId?: string;
   date: string;
-  recordedDates: string[];
 }
 
 export default function DailyDetailFloatingActions({
   groupId,
   date,
-  recordedDates,
 }: DailyDetailFloatingActionsProps) {
   const router = useRouter();
+
+  const [year, month] = date.split('-');
+  const { data: recordedDates = [] } = useQuery(
+    groupId
+      ? groupDailyRecordedDatesOption(groupId, year, month)
+      : myDailyRecordedDatesOption(year, month),
+  );
 
   const currentIndex = recordedDates.indexOf(date || '');
   const hasPrev = currentIndex < recordedDates.length - 1;
