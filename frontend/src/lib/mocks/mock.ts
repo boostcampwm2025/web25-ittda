@@ -1,4 +1,7 @@
-import { GroupMembersResponse } from '../types/groupResponse';
+import {
+  GroupEditResponse,
+  GroupMembersResponse,
+} from '../types/groupResponse';
 import { EmotionStatSummary, TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
@@ -591,3 +594,58 @@ export const createMockGroupDailyRecords = (): DailyRecordList[] => [
     latestPlaceName: '광주 첨단',
   },
 ];
+
+export const createMockGroupSettings = (id: string): GroupEditResponse => ({
+  group: {
+    groupId: id,
+    name: '우리들의 기록',
+    createdAt: '2025-12-01T03:12:00Z',
+    ownerUserId: 'uuid',
+    cover: {
+      assetId: 'asset_cover_001',
+      sourcePostId: 'uuid',
+    },
+  },
+
+  me: {
+    userId: 'uuid',
+    name: '',
+    profileImage: {
+      assetId: 'asset_profile_01',
+    },
+    role: 'ADMIN',
+    nicknameInGroup: '민영',
+    joinedAt: '2025-12-01T03:12:00Z',
+  },
+
+  members: [
+    {
+      userId: 'usr_owner_001',
+      name: '김하민',
+      profileImage: {
+        assetId: 'asset_profile_01',
+      },
+      role: 'ADMIN',
+      nicknameInGroup: '하민',
+      joinedAt: '2025-12-01T03:12:00Z',
+    },
+    {
+      userId: 'usr_002',
+      name: '두리',
+      profileImage: {
+        assetId: 'asset_profile_02',
+      },
+      role: 'EDITOR',
+      nicknameInGroup: '두리',
+      joinedAt: '2025-12-05T07:20:10Z',
+    },
+    {
+      userId: 'usr_003',
+      name: '도비',
+      profileImage: null,
+      role: 'VIEWER',
+      nicknameInGroup: '도비',
+      joinedAt: '2025-12-07T09:10:00Z',
+    },
+  ],
+});
