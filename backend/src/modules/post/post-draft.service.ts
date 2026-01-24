@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
@@ -12,6 +13,7 @@ import { plainToInstance } from 'class-transformer';
 
 import { PostDraft } from './entity/post-draft.entity';
 import { Group } from '@/modules/group/entity/group.entity';
+import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostScope } from '@/enums/post-scope.enum';
 import type { PatchCommand } from './collab/types';
@@ -24,14 +26,17 @@ export class PostDraftService {
     private readonly postDraftRepository: Repository<PostDraft>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(GroupMember)
+    private readonly groupMemberRepository: Repository<GroupMember>,
   ) {}
 
-  async getOrCreateGroupDraft(groupId: string, ownerActorId: string) {
+  async getOrCreateGroupDraft(groupId: string, actorId: string) {
     const group = await this.groupRepository.findOne({
       where: { id: groupId },
       select: { id: true },
     });
     if (!group) throw new NotFoundException('Group not found');
+    await this.ensureGroupMember(groupId, actorId);
 
     const existing = await this.postDraftRepository.findOne({
       where: { groupId, isActive: true },
@@ -40,7 +45,7 @@ export class PostDraftService {
 
     const draft = this.postDraftRepository.create({
       groupId,
-      ownerActorId,
+      ownerActorId: actorId,
       snapshot: this.buildDefaultDraftSnapshot(groupId),
     });
 
@@ -64,7 +69,8 @@ export class PostDraftService {
     }
   }
 
-  async getGroupDraft(groupId: string, draftId: string) {
+  async getGroupDraft(groupId: string, draftId: string, requesterId: string) {
+    await this.ensureGroupMember(groupId, requesterId);
     const draft = await this.postDraftRepository.findOne({
       where: { id: draftId, groupId, isActive: true },
     });
@@ -114,6 +120,16 @@ export class PostDraftService {
       blocks: [],
     };
     return snapshot;
+  }
+
+  private async ensureGroupMember(groupId: string, userId: string) {
+    const member = await this.groupMemberRepository.findOne({
+      where: { groupId, userId },
+      select: { id: true },
+    });
+    if (!member) {
+      throw new ForbiddenException('Not a group member.');
+    }
   }
 
   private ensureNoDuplicateBlockIds(commands: PatchCommand[]) {

@@ -71,7 +71,11 @@ export class PostDraftController {
     if (!requesterId) {
       throw new UnauthorizedException('Access token is required.');
     }
-    const draft = await this.postDraftService.getGroupDraft(groupId, draftId);
+    const draft = await this.postDraftService.getGroupDraft(
+      groupId,
+      draftId,
+      requesterId,
+    );
     return {
       snapshot: draft.snapshot,
       version: draft.version,

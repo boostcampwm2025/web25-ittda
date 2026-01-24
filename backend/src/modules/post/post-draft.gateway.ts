@@ -330,13 +330,7 @@ export class PostDraftGateway
     const displayName = member?.nicknameInGroup ?? user.nickname ?? 'User';
     const profileImageId = user.profileImageId ?? null;
     if (!member) {
-      // TODO: Remove this bypass after invite/guest access rules are finalized.
-      // TODO: Enforce group membership or contributor role (>= EDITOR) before allowing join.
-      return {
-        displayName,
-        role: 'EDITOR',
-        profileImageId,
-      };
+      throw new WsException('Group membership is required.');
     }
 
     return {
