@@ -108,7 +108,7 @@ export interface MonthlyRecordList {
 export interface DailyRecordList {
   date: string;
   postCount: number;
-  coverThumbnailId: string | null;
+  coverAssetId: string | null;
   latestPostTitle: string;
   latestPlaceName: string | null;
 }

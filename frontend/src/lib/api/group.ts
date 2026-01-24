@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import {
+  DailyRecordList,
   GroupCoverListResponse,
   GroupDailyRecordedDatesResponse,
   GroupListResponse,
@@ -13,7 +14,10 @@ import {
 } from '../types/groupResponse';
 import { createApiError } from '../utils/errorHandler';
 import { ROLE_MAP } from '../types/group';
-import { convertMontRecords } from '@/app/(post)/_utils/convertMonthRecords';
+import {
+  convertDayRecords,
+  convertMontRecords,
+} from '@/app/(post)/_utils/convertMonthRecords';
 
 export const groupListOptions = () =>
   queryOptions({
@@ -216,5 +220,24 @@ export const groupMonthlyRecordListOptions = (groupId: string, year?: string) =>
       return response.data;
     },
     select: (data: MonthlyRecordList[]) => convertMontRecords(data),
+    retry: false,
+  });
+
+export const groupDailyRecordListOptions = (groupId: string, month: string) =>
+  queryOptions({
+    queryKey: month
+      ? ['group', groupId, 'records', 'daily', month]
+      : ['group', groupId, 'records', 'daily'],
+    queryFn: async () => {
+      const response = await get<DailyRecordList[]>(
+        `/api/groups/${groupId}/archives/days?month=${month}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    select: (data: DailyRecordList[]) => convertDayRecords(data),
     retry: false,
   });

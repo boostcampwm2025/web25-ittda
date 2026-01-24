@@ -473,21 +473,21 @@ export const createMockDailyRecord = (): DailyRecordList[] => [
   {
     date: '2025-11-21',
     postCount: 1,
-    coverThumbnailId: '/base.png',
+    coverAssetId: '/base.png',
     latestPostTitle: '도쿄 축제',
     latestPlaceName: '도쿄',
   },
   {
     date: '2025-11-18',
     postCount: 3,
-    coverThumbnailId: '/base.png',
+    coverAssetId: '/base.png',
     latestPostTitle: '사슴을 주의해',
     latestPlaceName: '도쿄',
   },
   {
     date: '2025-11-10',
     postCount: 1,
-    coverThumbnailId: '/base.png',
+    coverAssetId: '/base.png',
     latestPostTitle: '일본은 굉장히 더워',
     latestPlaceName: '도쿄',
   },
@@ -545,5 +545,29 @@ export const createMockGroupMonthlyRecords = (): MonthlyRecordList[] => [
     count: 15,
     latestTitle: '카페 탐방',
     latestLocation: '광주 첨단',
+  },
+];
+
+export const createMockGroupDailyRecords = (): DailyRecordList[] => [
+  {
+    date: '2025-12-21',
+    coverAssetId: '/base.png',
+    postCount: 1,
+    latestPostTitle: '친구와 함께 먹부림',
+    latestPlaceName: '판교',
+  },
+  {
+    date: '2025-12-18',
+    coverAssetId: '/base.png',
+    postCount: 3,
+    latestPostTitle: '신기한 고구마 티라미수',
+    latestPlaceName: '일본 나라',
+  },
+  {
+    date: '2025-12-10',
+    coverAssetId: '/base.png',
+    postCount: 1,
+    latestPostTitle: '오랜만에 친구와의 약속',
+    latestPlaceName: '광주 첨단',
   },
 ];

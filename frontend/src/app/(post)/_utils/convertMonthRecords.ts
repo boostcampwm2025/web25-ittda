@@ -31,6 +31,6 @@ export const convertDayRecords = (dailyRecords: DailyRecordList[]) =>
       dayName: dayNames[dayIndex],
       title: record.latestPostTitle,
       count: record.postCount,
-      coverUrl: record.coverThumbnailId || '/base.png',
+      coverUrl: record.coverAssetId || '/base.png',
     };
   });
