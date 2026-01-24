@@ -105,10 +105,10 @@ export interface MonthlyRecordList {
   latestLocation: string | null;
 }
 
-export interface MyDailyRecordListResponse {
+export interface DailyRecordList {
   date: string;
   postCount: number;
-  coverThumbnailUrl: string | null;
+  coverThumbnailId: string | null;
   latestPostTitle: string;
   latestPlaceName: string | null;
 }

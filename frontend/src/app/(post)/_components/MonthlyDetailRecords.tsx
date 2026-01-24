@@ -8,11 +8,11 @@ import { useSearchParams } from 'next/navigation';
 import { SortOption } from './MonthlyDetailHeaderActions';
 import { useMemo } from 'react';
 import { myDailyRecordListOptions } from '@/lib/api/my';
-import { MyDailyRecordListResponse } from '@/lib/types/recordResponse';
+import { DailyRecordList } from '@/lib/types/recordResponse';
 
 interface MonthlyDetailRecordsProps {
   month: string;
-  serverSideData: MyDailyRecordListResponse[];
+  serverSideData: DailyRecordList[];
   routePath: string;
   viewMapRoutePath: string;
 }
