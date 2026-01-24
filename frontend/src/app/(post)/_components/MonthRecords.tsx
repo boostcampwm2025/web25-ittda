@@ -37,7 +37,9 @@ export default function MonthRecords({
   const router = useRouter();
   const [activeMonthId, setActiveMonthId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { year } = useParams();
+
+  const params = useParams() as { year?: string };
+  const year = params.year || new Date().getFullYear().toString();
 
   const options = groupId
     ? groupMonthlyRecordListOptions(groupId)
@@ -174,6 +176,8 @@ export default function MonthRecords({
           </DrawerHeader>
 
           <GalleryDrawer
+            groupId={groupId}
+            month={activeMonthId!}
             type={groupId ? 'group' : 'personal'}
             currentAssetId={
               months.find((m) => m.id === activeMonthId)?.cover?.assetId
