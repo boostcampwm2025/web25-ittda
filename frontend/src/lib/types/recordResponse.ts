@@ -121,7 +121,7 @@ export interface MyCoverListResponse {
   };
 }
 
-export interface MyCoverUpdateResponse {
+export interface MontlyCoverUpdateResponse {
   coverAssetId: string;
 }
 export type MyDailyRecordedDatesResponse = string[];

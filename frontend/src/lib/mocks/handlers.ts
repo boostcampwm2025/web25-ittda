@@ -18,6 +18,25 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.patch(
+    '/api/groups/:groupId/archives/months/:month/cover',
+    async ({ params, request }) => {
+      const groupId = String(params.groupId);
+      const month = String(params.month);
+
+      const body = (await request.json()) as {
+        coverAssetId: string;
+      };
+
+      return HttpResponse.json({
+        success: true,
+        data: {
+          coverAssetId: body.coverAssetId,
+        },
+        error: null,
+      });
+    },
+  ),
   http.get(
     '/api/groups/:groupId/archives/monthcover',
     ({ request, params }) => {
