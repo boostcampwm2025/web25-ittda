@@ -3,6 +3,7 @@ import { get } from './api';
 import { createApiError } from '../utils/errorHandler';
 import {
   MyCoverListResponse,
+  MyDailyRecordedDatesResponse,
   MyDailyRecordListResponse,
   MyMonthlyRecordListResponse,
 } from '../types/recordResponse';
@@ -58,6 +59,28 @@ export const myMonthlyRecordCoverOption = (month: string) =>
     queryFn: async () => {
       const response = await get<MyCoverListResponse>(
         `/api/user/archives/monthcover?year=${month}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    retry: false,
+  });
+
+export const myDailyRecordedDatesOption = (
+  year: number | string,
+  month: number | string,
+) =>
+  queryOptions({
+    queryKey: [
+      'recordedDates',
+      `/api/user/archives/record-days?month=${year}-${month}`,
+    ],
+    queryFn: async () => {
+      const response = await get<MyDailyRecordedDatesResponse>(
+        `/api/user/archives/record-days?month=${year}-${month}`,
       );
 
       if (!response.success) {

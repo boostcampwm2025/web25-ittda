@@ -116,3 +116,4 @@ export type MyCoverListResponse = string[];
 export interface MyCoverUpdateResponse {
   coverAssetId: string;
 }
+export type MyDailyRecordedDatesResponse = string[];
