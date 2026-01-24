@@ -15,7 +15,7 @@ import { PostDraft } from './entity/post-draft.entity';
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
-import { User } from '@/modules/user/user.entity';
+import { User } from '@/modules/user/entity/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { DraftStateService } from './collab/draft-state.service';

@@ -18,7 +18,7 @@ import { isUUID } from 'class-validator';
 import { WsJwtGuard } from '@/modules/auth/ws/ws-jwt.guard';
 import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
-import { User } from '@/modules/user/user.entity';
+import { User } from '@/modules/user/entity/user.entity';
 import { PresenceService } from './collab/presence.service';
 import { LockService } from './collab/lock.service';
 import { DraftStateService } from './collab/draft-state.service';
