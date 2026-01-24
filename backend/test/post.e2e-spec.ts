@@ -12,8 +12,10 @@ import { Post } from '../src/modules/post/entity/post.entity';
 import { PostDraft } from '../src/modules/post/entity/post-draft.entity';
 import { User } from '../src/modules/user/entity/user.entity';
 import { Group } from '../src/modules/group/entity/group.entity';
+import { GroupMember } from '../src/modules/group/entity/group_member.entity';
 import { GoogleStrategy } from '../src/modules/auth/strategies/google.strategy';
 import { KakaoStrategy } from '../src/modules/auth/strategies/kakao.strategy';
+import { GroupRoleEnum } from '../src/enums/group-role.enum';
 
 describe('PostController (e2e)', () => {
   let app: INestApplication<App>;
@@ -21,6 +23,7 @@ describe('PostController (e2e)', () => {
   let postRepository: Repository<Post>;
   let postDraftRepository: Repository<PostDraft>;
   let groupRepository: Repository<Group>;
+  let groupMemberRepository: Repository<GroupMember>;
   let owner: User;
   let otherUser: User;
   let accessToken: string;
@@ -50,6 +53,7 @@ describe('PostController (e2e)', () => {
     postRepository = app.get(getRepositoryToken(Post));
     postDraftRepository = app.get(getRepositoryToken(PostDraft));
     groupRepository = app.get(getRepositoryToken(Group));
+    groupMemberRepository = app.get(getRepositoryToken(GroupMember));
     const jwtService = app.get(JwtService);
 
     owner = userRepository.create({
@@ -339,6 +343,14 @@ describe('PostController (e2e)', () => {
       groupRepository.create({
         name: 'draft 그룹',
         owner: { id: owner.id } as User,
+      }),
+    );
+    await groupMemberRepository.save(
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: owner.nickname,
       }),
     );
 
