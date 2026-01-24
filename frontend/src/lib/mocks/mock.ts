@@ -4,7 +4,7 @@ import {
   GroupCoverListResponse,
   GroupListResponse,
   MyDailyRecordListResponse,
-  MyMonthlyRecordListResponse,
+  MonthlyRecordList,
   RecordPreview,
 } from '../types/recordResponse';
 
@@ -438,7 +438,7 @@ export const createMockEmotionStats = (): EmotionStatSummary => [
   { emotion: '화남', count: 4 },
 ];
 
-export const createMockMonthlyRecord = (): MyMonthlyRecordListResponse[] => [
+export const createMockMonthlyRecord = (): MonthlyRecordList[] => [
   {
     month: '2025-12',
     count: 52,
@@ -523,3 +523,27 @@ export const createMockGroupMembers = (): GroupMembersResponse => ({
     },
   ],
 });
+
+export const createMockGroupMonthlyRecords = (): MonthlyRecordList[] => [
+  {
+    month: '2025-12',
+    coverAssetId: '/base.png',
+    count: 12,
+    latestTitle: '카카오 아지트 탐방',
+    latestLocation: '판교',
+  },
+  {
+    month: '2025-11',
+    coverAssetId: '/base.png',
+    count: 8,
+    latestTitle: '일본 나라 여행',
+    latestLocation: '일본 나라',
+  },
+  {
+    month: '2025-10',
+    coverAssetId: '/base.png',
+    count: 15,
+    latestTitle: '카페 탐방',
+    latestLocation: '광주 첨단',
+  },
+];

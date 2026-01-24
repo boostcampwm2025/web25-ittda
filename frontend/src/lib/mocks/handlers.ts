@@ -6,6 +6,7 @@ import {
   createMockGroupCoverList,
   createMockGroupList,
   createMockGroupMembers,
+  createMockGroupMonthlyRecords,
   createMockMonthlyRecord,
   createMockRecordPreviews,
   createMockTagStats,
@@ -15,6 +16,17 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/groups/:groupId/archives/months', ({ request }) => {
+    const url = new URL(request.url);
+    const year = url.searchParams.get('year');
+    const sort = url.searchParams.get('sort');
+
+    HttpResponse.json({
+      success: true,
+      data: createMockGroupMonthlyRecords(),
+      error: null,
+    });
+  }),
   http.get('/api/groups/:groupId/current-members', ({ params }) => {
     const groupId = String(params.groupId);
 
