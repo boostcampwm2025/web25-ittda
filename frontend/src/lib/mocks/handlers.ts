@@ -14,6 +14,48 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get(
+    '/api/groups/:groupId/archives/record-days',
+    ({ request, params }) => {
+      const groupId = String(params.groupId);
+      const url = new URL(request.url);
+      const month = url.searchParams.get('month');
+
+      HttpResponse.json({
+        success: true,
+        data: [
+          '2026-01-02',
+          '2026-01-10',
+          '2025-12-21',
+          '2025-12-20',
+          '2025-12-15',
+          '2025-12-10',
+          '2025-11-15',
+          '2025-11-02',
+        ],
+        error: null,
+      });
+    },
+  ),
+  http.get('/api/user/archives/record-days', ({ request }) => {
+    const url = new URL(request.url);
+    const month = url.searchParams.get('month');
+
+    HttpResponse.json({
+      success: true,
+      data: [
+        '2026-01-02',
+        '2026-01-10',
+        '2025-12-21',
+        '2025-12-20',
+        '2025-12-15',
+        '2025-12-10',
+        '2025-11-15',
+        '2025-11-02',
+      ],
+      error: null,
+    });
+  }),
   http.patch(
     '/api/user/archives/months/:month/cover',
     async ({ params, request }) => {
