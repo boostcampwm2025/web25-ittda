@@ -25,10 +25,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // 백엔드에서 Set-Cookie로 준 RefreshToken은 브라우저 쿠키에 자동 저장
         const cookieHeader = exchangeRes.headers.get('set-cookie');
-        const refreshToken = cookieHeader
+        const refreshCookiePart = cookieHeader
           ?.split(';')
-          .find((c) => c.trim().startsWith('refreshToken='))
-          ?.split('=')[1];
+          .find((c) => c.trim().startsWith('refreshToken='));
+        const refreshToken = refreshCookiePart
+          ?.trim()
+          .substring('refreshToken='.length);
 
         return {
           id: 'logged_in_user',
