@@ -74,6 +74,7 @@ export default function GroupHeaderActions({
 
         <DateSelectorDrawer
           className={className}
+          groupId={groupId}
           dayRoute={`/group/${groupId}/detail`}
           monthRoute={`/group/${groupId}/month`}
           yearRoute={`/group/${groupId}/year`}
