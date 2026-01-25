@@ -13,11 +13,19 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
   const logout = useAuthStore((state) => state.logout);
 
   useEffect(() => {
+    // 토큰 갱신 실패로 세션에 에러가 있으면 자동 로그아웃
+    if (session?.error) {
+      logout();
+      router.replace('/login');
+      return;
+    }
+
     if (status !== 'loading' && !session && userType === 'social') {
-      requestAnimationFrame(() => {
+      const raId = requestAnimationFrame(() => {
         logout();
         router.replace('/login');
       });
+      return () => cancelAnimationFrame(raId);
     }
 
     if (status === 'loading') return;
@@ -25,7 +33,7 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
     if (status === 'authenticated' && pathname === '/login') {
       router.replace('/');
     }
-  }, [status, userType, logout, router, pathname]);
+  }, [status, userType, logout, router, pathname, session]);
 
   return <>{children}</>;
 }

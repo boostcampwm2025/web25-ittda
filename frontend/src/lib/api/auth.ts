@@ -129,8 +129,10 @@ export async function refreshServerAccessToken(token: any) {
         },
       );
 
-      const data = await response.json();
-      if (!response.ok) throw data;
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw data;
+      }
 
       const newAccessToken = response.headers
         .get('Authorization')
@@ -147,7 +149,8 @@ export async function refreshServerAccessToken(token: any) {
       return {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken || token.refreshToken,
-        accessTokenExpires: Date.now() + 14 * 60 * 1000,
+        // 백엔드 토큰 만료(2분)보다 약간 일찍 갱신하도록 설정
+        accessTokenExpires: Date.now() + 2 * 60 * 1000 - 10000,
       };
     } catch (error) {
       console.error('서버 토큰 갱신 실패', error);

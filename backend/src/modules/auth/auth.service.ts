@@ -109,22 +109,56 @@ export class AuthService {
       where: { token: oldToken },
     });
 
-    if (!saved || saved.revoked || saved.expiresAt < new Date()) {
+    if (!saved || saved.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token reuse or expired');
     }
 
+    // 2. 이미 폐기(revoked)된 토큰인 경우 Grace Period 체크
+    if (saved.revoked) {
+      const now = new Date();
+      const gracePeriod = 10 * 1000; // 10초 유예
+      const revokedAt = new Date((saved as { updatedAt: Date }).updatedAt);
+      const isWithinGracePeriod =
+        now.getTime() - revokedAt.getTime() < gracePeriod;
+
+      if (isWithinGracePeriod) {
+        // 유예 기간 내: 가장 최근 발급된 토큰을 찾아 반환
+        const latestToken = await this.refreshTokenRepo.findOne({
+          where: { userId: saved.userId, revoked: false },
+          order: { createdAt: 'DESC' },
+        });
+
+        if (latestToken) {
+          const accessToken = this.jwtService.sign(
+            { sub: saved.userId },
+            { expiresIn: '15m' },
+          );
+          return { accessToken, refreshToken: latestToken.token };
+        }
+      }
+
+      throw new UnauthorizedException('Refresh token reuse detected');
+    }
+
+    // 정상적인 첫 번째 갱신 요청 처리
+    return await this.issueNewTokens(saved.userId, saved.id);
+  }
+
+  /**
+   * 토큰 갱신 및 폐기 로직을 별도 메서드로 분리 (트랜잭션 포함)
+   */
+  private async issueNewTokens(userId: string, oldTokenId: string) {
     return await this.refreshTokenRepo.manager.transaction(async (em) => {
-      // 기존 토큰 폐기
-      await em.update(RefreshToken, { id: saved.id }, { revoked: true });
+      // 기존 토큰 폐기 (Grace Period를 위해 updatedAt이 갱신됨)
+      await em.update(RefreshToken, { id: oldTokenId }, { revoked: true });
 
       // 새 토큰 생성
-      const { accessToken, refreshToken, expiresAt } = this.generateTokens(
-        saved.userId,
-      );
+      const { accessToken, refreshToken, expiresAt } =
+        this.generateTokens(userId);
 
       // DB에 새 refresh token 저장
       await em.insert(RefreshToken, {
-        userId: saved.userId,
+        userId,
         token: refreshToken,
         expiresAt,
       });
