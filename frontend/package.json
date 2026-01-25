@@ -35,6 +35,7 @@
     "react-share": "^5.2.2",
     "recharts": "^3.6.0",
     "sharp": "^0.34.5",
+    "socket.io-client": "^4.8.3",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "uuid": "^13.0.0",

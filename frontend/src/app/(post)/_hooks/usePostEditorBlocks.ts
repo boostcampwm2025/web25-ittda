@@ -11,6 +11,7 @@ import {
   isRecordBlockEmpty,
   normalizeLayout,
 } from '../_utils/recordLayoutHelper';
+import { toast } from 'sonner';
 
 // 개수 제한
 const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
@@ -20,7 +21,16 @@ const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
   photos: 10,
 };
 
-export function usePostEditorBlocks() {
+interface UsePostEditorBlocksProps {
+  draftId?: string;
+  requestLock: (lockKey: string) => void;
+  releaseLock: (lockKey: string) => void;
+}
+export function usePostEditorBlocks({
+  draftId,
+  requestLock,
+  releaseLock,
+}: UsePostEditorBlocksProps) {
   // 전체 블록 상태
   const [blocks, setBlocks] = useState<RecordBlock[]>([]);
 
@@ -77,6 +87,9 @@ export function usePostEditorBlocks() {
 
     if (shouldClose) {
       // 저장 후 드로어 닫기
+      if (draftId && activeDrawer.id) {
+        releaseLock(`block:${activeDrawer.id}`);
+      }
       setActiveDrawer(null);
     } else if (!activeDrawer.id && updatedId) {
       // 닫지 않고, 신규 생성된 ID를 드로어 상태에 동기화
@@ -89,20 +102,26 @@ export function usePostEditorBlocks() {
     const meta = FIELD_META[type];
     const existing = blocks.find((b) => b.type === type);
 
+    const targetId = existing ? existing.id : uuidv4();
+    const lockKey = `block:${targetId}`;
+
     if (meta.isSingle && existing) {
-      setActiveDrawer({ type, id: existing.id });
+      if (draftId) requestLock(lockKey);
+      setActiveDrawer({ type, id: targetId }); // 개인 기록은 즉시 오픈
       return;
     }
 
     const limit = MULTI_INSTANCE_LIMITS[type];
     if (limit && blocks.filter((b) => b.type === type).length >= limit) {
       //TODO: 추후 toast 도입 시 변경
-      alert(`${type} 필드는 최대 ${limit}개까지만 가능합니다.`);
+      toast.info(`${type} 필드는 최대 ${limit}개까지만 가능합니다.`);
       return;
     }
 
+    //드로어가 열릴 애들
     if (meta.requiresDrawer) {
-      setActiveDrawer({ type }); // ID 없이 열기
+      if (draftId) requestLock(lockKey);
+      setActiveDrawer({ type, id: targetId }); // ID 없이 열기
     } else {
       updateFieldValue(getDefaultValue(type), undefined, type);
     }

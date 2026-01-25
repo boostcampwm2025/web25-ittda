@@ -31,9 +31,8 @@ export class PostDraftController {
   ) {}
 
   @Get('posts/new')
-  @Redirect('', 302)
   @ApiResponse({
-    status: 302,
+    status: 200,
     description: 'Redirects to the active draft edit URL.',
     headers: {
       Location: {
@@ -54,7 +53,7 @@ export class PostDraftController {
       groupId,
       requesterId,
     );
-    return { url: `/groups/${groupId}/posts/${draft.id}/edit` };
+    return { redirectUrl: `/group/${groupId}/post/${draft.id}` };
   }
 
   @Get('drafts/:draftId')
