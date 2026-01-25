@@ -1,0 +1,132 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSocketStore } from '@/store/useSocketStore';
+import { RecordBlock, BlockValue } from '@/lib/types/recordField';
+import { useRouter } from 'next/navigation';
+import {
+  getDefaultValue,
+  normalizeLayout,
+} from '@/app/(post)/_utils/recordLayoutHelper';
+import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
+
+export function useRecordCollaboration(
+  draftId: string | undefined,
+  setBlocks: React.Dispatch<React.SetStateAction<RecordBlock[]>>,
+  initialVersion: number = 0,
+) {
+  const { socket, sessionId: mySessionId } = useSocketStore();
+  const router = useRouter();
+  const versionRef = useRef(initialVersion);
+
+  // 임시 스트리밍 값
+  const [streamingValues, setStreamingValues] = useState<
+    Record<string, BlockValue>
+  >({});
+
+  useEffect(() => {
+    if (!socket || !draftId) return;
+
+    //스트림으로 데이터 수신
+    socket.on(
+      'BLOCK_VALUE_STREAM',
+      ({ blockId, type, partialValue, sessionId }) => {
+        if (sessionId === mySessionId) return;
+
+        // 임시 값 저장
+        setStreamingValues((prev) => ({ ...prev, [blockId]: partialValue }));
+
+        // 내 blocks에 이 ID가 없다면 추가
+        setBlocks((prev) => {
+          if (prev.some((b) => b.id === blockId)) return prev;
+
+          const targetType = type || 'content';
+
+          const ghostBlock = {
+            id: blockId,
+            type: targetType,
+            value: getDefaultValue(targetType),
+            layout: { row: 0, col: 0, span: 2 },
+            isOptimistic: true,
+          } as unknown as RecordBlock;
+
+          // 기존 블록들 뒤에 배치
+          return normalizeLayout([...prev, ghostBlock]);
+        });
+      },
+    );
+
+    // 스트림 중단 시 롤백 (임시값 제거)
+    socket.on('STREAM_ABORTED', ({ blockId }) => {
+      setStreamingValues((prev) => {
+        const { [blockId]: _, ...rest } = prev;
+        return rest;
+      });
+    });
+
+    //  패치 확정 반영
+    socket.on('PATCH_COMMITTED', ({ version, patch, authorSessionId }) => {
+      versionRef.current = version;
+
+      if (authorSessionId !== mySessionId) {
+        const commands = Array.isArray(patch) ? patch : [patch];
+        setBlocks((prev) => {
+          let next = [...prev];
+          commands.forEach((cmd) => {
+            if (cmd.type === 'BLOCK_INSERT') {
+              if (!next.find((b) => b.id === cmd.block.id))
+                next.push(cmd.block);
+            } else if (cmd.type === 'BLOCK_DELETE') {
+              next = next.filter((b) => b.id !== cmd.blockId);
+            } else if (cmd.type === 'BLOCK_SET_VALUE') {
+              next = next.map((b) =>
+                b.id === cmd.blockId ? { ...b, value: cmd.value } : b,
+              );
+            } else if (cmd.type === 'BLOCK_MOVE') {
+              next = next.map((b) =>
+                b.id === cmd.blockId ? { ...b, layout: cmd.layout } : b,
+              );
+            }
+          });
+          return next;
+        });
+      }
+      // 커밋 완료 시 해당 블록의 임시 값 제거
+      setStreamingValues({});
+    });
+
+    socket.on('PATCH_REJECTED_STALE', () => window.location.reload());
+    socket.on('DRAFT_PUBLISHED', ({ postId }) =>
+      router.push(`/post/${postId}`),
+    );
+
+    return () => {
+      socket.off('BLOCK_VALUE_STREAM');
+      socket.off('STREAM_ABORTED');
+      socket.off('PATCH_COMMITTED');
+    };
+  }, [socket, draftId, mySessionId, setBlocks, router]);
+
+  const emitStream = useCallback(
+    (blockId: string, partialValue: BlockValue) => {
+      socket?.emit('BLOCK_VALUE_STREAM', {
+        draftId,
+        blockId,
+        partialValue,
+        sessionId: mySessionId,
+      });
+    },
+    [socket, draftId, mySessionId],
+  );
+
+  const applyPatch = useCallback(
+    (patch: PatchApplyPayload) => {
+      socket?.emit('PATCH_APPLY', {
+        draftId,
+        baseVersion: versionRef.current,
+        patch,
+      });
+    },
+    [socket, draftId],
+  );
+
+  return { streamingValues, emitStream, applyPatch };
+}

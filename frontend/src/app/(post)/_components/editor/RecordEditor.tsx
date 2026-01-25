@@ -26,7 +26,13 @@ import EmotionDrawer from './emotion/EmotionDrawer';
 import MediaDrawer from './media/MediaDrawer';
 
 // 타입
-import { FieldType } from '@/lib/types/record';
+import {
+  BlockValue,
+  FieldType,
+  LocationValue,
+  TableValue,
+  TextValue,
+} from '@/lib/types/record';
 import {
   RecordBlock,
   MediaValue,
@@ -48,11 +54,11 @@ import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
 import { useRouter } from 'next/navigation';
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
 import Image from 'next/image';
-import { useQuery } from '@tanstack/react-query';
-import { groupDraftOptions } from '@/lib/api/groupRecord';
 import { useDraftPresence } from '@/hooks/useDraftPresence';
 import { LockResponsePayload, useLockManager } from '@/hooks/useLockManager';
 import { useSocketStore } from '@/store/useSocketStore';
+import { useRecordCollaboration } from '@/hooks/useRecordCollaboration';
+import { useThrottle } from '@/lib/utils/useThrottle';
 
 export default function PostEditor({
   mode,
@@ -61,32 +67,27 @@ export default function PostEditor({
   draftId,
 }: {
   mode: 'add' | 'edit';
-  initialPost?: { title: string; blocks: RecordBlock[] };
+  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
   groupId?: string;
   draftId?: string;
 }) {
   const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
+  const [blocks, setBlocks] = useState<RecordBlock[]>([]);
   const { mutate: createRecord } = useCreateRecord();
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
   const { requestLock, releaseLock, pendingLockKey, setPendingLockKey } =
     useLockManager(draftId);
 
-  //TODO: 이후 활성화된 블록에 유저 정보 보여주는용
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isActive, setIsActive] = useState(false);
-
-  //TODO: 임시 클라이언트 호출
-  const { data: remoteData } = useQuery({
-    ...groupDraftOptions(groupId ?? '', draftId ?? ''),
-    enabled: !!groupId && !!draftId,
-  });
+  const { streamingValues, emitStream, applyPatch } = useRecordCollaboration(
+    draftId,
+    setBlocks,
+    initialPost?.version, // 초기 버전 주입
+  );
 
   const {
-    blocks,
-    setBlocks,
     activeDrawer,
     setActiveDrawer,
     fileInputRef,
@@ -97,9 +98,12 @@ export default function PostEditor({
     handleApplyTemplate,
     handlePhotoUpload,
   } = usePostEditorBlocks({
+    blocks,
+    setBlocks,
     draftId,
     requestLock,
     releaseLock,
+    applyPatch,
   });
 
   const {
@@ -112,10 +116,9 @@ export default function PostEditor({
   } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
 
   // 페이지 초기화/복구 및 위치 데이터 받기
-  // TODO: 이후 키 형태/서버 패칭으로 변경
-  const resolvedInitialPost = remoteData
-    ? { title: remoteData.snapshot.title, blocks: remoteData.snapshot.blocks }
-    : initialPost;
+  const resolvedInitialPost = initialPost
+    ? { title: initialPost?.title, blocks: initialPost?.blocks }
+    : undefined;
 
   // 에디터 초기화
   usePostEditorInitializer({
@@ -146,12 +149,6 @@ export default function PostEditor({
           }
           return newLocks;
         });
-
-        // 기다리던 락이 승인되었다면 드로어 오픈
-        if (pendingLockKey === lockKey && ownerSessionId === mySessionId) {
-          //setActiveDrawer({ type: '', id: lockKey });
-          setPendingLockKey(null);
-        }
       },
     );
     return () => {
@@ -165,12 +162,41 @@ export default function PostEditor({
   };
 
   const handleSave = () => {
+    //개인 기록 저장만 보장
+    //TODO: 그룹 기록 저장
     const payload = {
       scope: 'PERSONAL',
       title,
       blocks: mapBlocksToPayload(blocks),
     };
     createRecord(payload);
+  };
+
+  const throttledEmitStream = useThrottle(
+    (blockId: string, newValue: BlockValue) => {
+      if (draftId) emitStream(blockId, newValue);
+    },
+    3000,
+  ); // 3초 간격
+
+  const handleFieldUpdate = (blockId: string, newValue: BlockValue) => {
+    // 내 화면 업데이트
+    updateFieldValue(newValue, blockId);
+
+    // 다른 사람 스트리밍
+    throttledEmitStream(blockId, newValue);
+  };
+
+  // 공통 커밋 함수
+  const handleFieldCommit = (id: string, value: BlockValue) => {
+    if (!draftId) return;
+    const lockKey = `block:${id}`;
+    applyPatch({
+      type: 'BLOCK_SET_VALUE',
+      blockId: id,
+      value: value,
+    });
+    releaseLock(lockKey);
   };
 
   const renderField = (block: RecordBlock) => {
@@ -182,30 +208,29 @@ export default function PostEditor({
       if (draftId) requestLock(lockKey);
     };
 
-    const handleBlur = () => {
-      if (draftId) releaseLock(lockKey);
-    };
+    const onCommit = () => handleFieldCommit(block.id, displayValue);
+
+    const displayValue = streamingValues[block.id] ?? block.value;
+
+    // 공통 핸들러
+    const onUpdate = (val: BlockValue) => handleFieldUpdate(block.id, val);
 
     const handleLockAndAction = () => {
       if (isLockedByOther) return;
       if (draftId) requestLock(lockKey);
-
-      // 위치(location)만 페이지 이동이고, 나머지는 모두 드로어 오픈
-      if (block.type === 'location') {
-        goToLocationPicker();
-      } else {
-        setActiveDrawer({ type: block.type, id: block.id });
-      }
+      if (block.type === 'location') goToLocationPicker();
+      else setActiveDrawer({ type: block.type, id: block.id });
     };
 
+    const isMyLock = !!ownerSessionId && ownerSessionId === mySessionId;
     switch (block.type) {
       case 'date':
         return (
-          <DateField date={block.value.date} onClick={handleLockAndAction} />
+          <DateField date={displayValue.date} onClick={handleLockAndAction} />
         );
       case 'time':
         return (
-          <TimeField time={block.value.time} onClick={handleLockAndAction} />
+          <TimeField time={displayValue.time} onClick={handleLockAndAction} />
         );
       case 'content':
         const contentBlockCount = blocks.filter(
@@ -214,19 +239,20 @@ export default function PostEditor({
         const isLastContentBlock = contentBlockCount === 1;
         return (
           <ContentField
-            value={block.value.text}
-            onChange={(v) => updateFieldValue({ text: v }, block.id)}
+            value={displayValue as TextValue}
+            onChange={(v) => onUpdate({ text: v })}
             onRemove={() => removeBlock(block.id)}
             isLastContentBlock={isLastContentBlock}
             isLocked={isLockedByOther}
+            isMyLock={isMyLock}
             onFocus={handleFocus}
-            onBlur={handleBlur}
+            onBlur={onCommit}
           />
         );
       case 'photos':
         return (
           <PhotoField
-            photos={block.value as PhotoValue}
+            photos={displayValue as PhotoValue}
             onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
@@ -234,7 +260,7 @@ export default function PostEditor({
       case 'emotion':
         return (
           <EmotionField
-            emotion={block.value.mood}
+            emotion={displayValue.mood}
             onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
@@ -242,10 +268,10 @@ export default function PostEditor({
       case 'tags':
         return (
           <TagField
-            tags={block.value.tags}
+            tags={displayValue.tags}
             onRemove={(tag) =>
               updateFieldValue(
-                { tags: block.value.tags.filter((t) => t !== tag) },
+                { tags: displayValue.tags.filter((t) => t !== tag) },
                 block.id,
               )
             }
@@ -256,23 +282,23 @@ export default function PostEditor({
       case 'table':
         return (
           <TableField
-            data={block.value}
+            data={displayValue as TableValue}
             onUpdate={(d) => {
               if (d) {
-                updateFieldValue(d, block.id);
+                onUpdate(d);
               } else {
                 removeBlock(block.id);
               }
             }}
             isLocked={isLockedByOther}
             onFocus={handleFocus}
-            onBlur={handleBlur}
+            onBlur={onCommit}
           />
         );
       case 'rating':
         return (
           <RatingField
-            value={block.value.rating}
+            value={displayValue.rating}
             max={5}
             onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
@@ -281,7 +307,7 @@ export default function PostEditor({
       case 'location':
         return (
           <LocationField
-            location={block.value}
+            location={displayValue as LocationValue}
             onClick={() => goToLocationPicker()}
             onRemove={() => removeBlock(block.id)}
           />
@@ -289,7 +315,7 @@ export default function PostEditor({
       case 'media':
         return (
           <MediaField
-            data={block.value as MediaValue}
+            data={displayValue as MediaValue}
             onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
@@ -306,6 +332,23 @@ export default function PostEditor({
     setActiveDrawer(null);
     return;
   };
+
+  const handleDrawerDone = (newValue: BlockValue) => {
+    if (!activeDrawer?.id) return;
+
+    // 로컬 및 스트림 업데이트
+    handleFieldUpdate(activeDrawer.id, newValue);
+
+    // 서버에 PATCH_APPLY 커밋
+    handleFieldCommit(activeDrawer.id, newValue);
+
+    // 기존 완료 로직
+    handleDone(newValue);
+
+    //락해제 및 드로어 닫기
+    handleCloseDrawer(activeDrawer.id);
+  };
+
   const renderActiveDrawer = () => {
     if (!activeDrawer) return null;
     const { type, id } = activeDrawer;
@@ -342,7 +385,7 @@ export default function PostEditor({
           <DateDrawer
             mode="single"
             currentDate={initialValue as string}
-            onSelectDate={(v) => handleDone({ date: v })}
+            onSelectDate={(v) => handleDrawerDone({ date: v })}
             onClose={() => handleCloseDrawer(id)}
           />
         );
@@ -350,7 +393,7 @@ export default function PostEditor({
         return (
           <TimePickerDrawer
             currentTime={initialValue as TimeValue}
-            onSave={(v) => handleDone({ time: v })}
+            onSave={(v) => handleDrawerDone({ time: v })}
             onClose={() => handleCloseDrawer(id)}
           />
         );
@@ -360,14 +403,14 @@ export default function PostEditor({
             onClose={() => handleCloseDrawer(id)}
             tags={initialValue as TagsValue}
             previousTags={['식단', '운동']} //TODO: 실제 최근 사용 태그 리스트
-            onUpdateTags={(nt) => handleDone({ tags: nt }, false)}
+            onUpdateTags={(nt) => handleDrawerDone({ tags: nt })}
           />
         );
       case 'rating':
         return (
           <RatingDrawer
             rating={initialValue as RatingValue}
-            onUpdateRating={(nr) => handleDone({ rating: nr.rating })}
+            onUpdateRating={(nr) => handleDrawerDone({ rating: nr.rating })}
             onClose={() => handleCloseDrawer(id)}
           />
         );
@@ -401,12 +444,12 @@ export default function PostEditor({
               }
 
               if (id) updateFieldValue(nextValue, id);
-              else handleDone(nextValue);
+              else handleDrawerDone(nextValue);
             }}
             onRemoveAll={() => {
               const emptyValue = { mediaIds: [], tempUrls: [] };
               if (id) updateFieldValue(emptyValue, id);
-              else handleDone(emptyValue);
+              else handleDrawerDone(emptyValue);
             }}
             onClose={() => handleCloseDrawer(id)}
           />
@@ -416,14 +459,14 @@ export default function PostEditor({
           <EmotionDrawer
             isOpen={true}
             selectedEmotion={initialValue as string}
-            onSelect={(v) => handleDone({ mood: v })}
+            onSelect={(v) => handleDrawerDone({ mood: v })}
             onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'media':
         return (
           <MediaDrawer
-            onSelect={handleDone}
+            onSelect={handleDrawerDone}
             onClose={() => handleCloseDrawer(id)}
           />
         );

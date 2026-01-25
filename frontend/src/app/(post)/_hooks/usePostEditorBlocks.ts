@@ -12,6 +12,7 @@ import {
   normalizeLayout,
 } from '../_utils/recordLayoutHelper';
 import { toast } from 'sonner';
+import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 
 // 개수 제한
 const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
@@ -22,18 +23,21 @@ const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
 };
 
 interface UsePostEditorBlocksProps {
+  blocks: RecordBlock[];
+  setBlocks: React.Dispatch<React.SetStateAction<RecordBlock[]>>;
   draftId?: string;
   requestLock: (lockKey: string) => void;
   releaseLock: (lockKey: string) => void;
+  applyPatch: (patch: PatchApplyPayload) => void;
 }
 export function usePostEditorBlocks({
+  blocks,
+  setBlocks,
   draftId,
   requestLock,
   releaseLock,
+  applyPatch,
 }: UsePostEditorBlocksProps) {
-  // 전체 블록 상태
-  const [blocks, setBlocks] = useState<RecordBlock[]>([]);
-
   const [activeDrawer, setActiveDrawer] = useState<{
     type: FieldType | 'layout' | 'saveLayout';
     id?: string;
@@ -98,34 +102,55 @@ export function usePostEditorBlocks({
   };
 
   //블록 추가/열기 로직
-  const addOrShowBlock = (type: FieldType) => {
-    const meta = FIELD_META[type];
-    const existing = blocks.find((b) => b.type === type);
+  const addOrShowBlock = useCallback(
+    (type: FieldType) => {
+      const meta = FIELD_META[type];
+      const existing = blocks.find((b) => b.type === type);
+      const limit = MULTI_INSTANCE_LIMITS[type];
 
-    const targetId = existing ? existing.id : uuidv4();
-    const lockKey = `block:${targetId}`;
+      if (limit && blocks.filter((b) => b.type === type).length >= limit) {
+        toast.info(`${type} 필드는 최대 ${limit}개까지만 가능합니다.`);
+        return;
+      }
 
-    if (meta.isSingle && existing) {
-      if (draftId) requestLock(lockKey);
-      setActiveDrawer({ type, id: targetId }); // 개인 기록은 즉시 오픈
-      return;
-    }
+      // 이미 존재하는 싱글 필드면 락 걸고 드로어 오픈
+      if (meta.isSingle && existing) {
+        if (draftId) requestLock(`block:${existing.id}`);
+        setActiveDrawer({ type, id: existing.id });
+        return;
+      }
 
-    const limit = MULTI_INSTANCE_LIMITS[type];
-    if (limit && blocks.filter((b) => b.type === type).length >= limit) {
-      //TODO: 추후 toast 도입 시 변경
-      toast.info(`${type} 필드는 최대 ${limit}개까지만 가능합니다.`);
-      return;
-    }
+      // 새로 생성
+      const newId = uuidv4();
+      const defaultValue = getDefaultValue(type);
+      const newBlock = {
+        id: newId,
+        type,
+        value: defaultValue,
+        layout: { row: 0, col: 0, span: 2 },
+      } as RecordBlock;
 
-    //드로어가 열릴 애들
-    if (meta.requiresDrawer) {
-      if (draftId) requestLock(lockKey);
-      setActiveDrawer({ type, id: targetId }); // ID 없이 열기
-    } else {
-      updateFieldValue(getDefaultValue(type), undefined, type);
-    }
-  };
+      // 서버에 Insert 패치
+      if (draftId) {
+        applyPatch({
+          type: 'BLOCK_INSERT',
+          block: newBlock,
+        });
+      }
+
+      // 로컬 상태 반영
+      setBlocks((prev) => normalizeLayout([...prev, newBlock]));
+
+      if (meta.requiresDrawer) {
+        if (draftId) requestLock(`block:${newId}`);
+        setActiveDrawer({ type, id: newId });
+      } else {
+        // content, table
+        if (draftId) requestLock(`block:${newId}`);
+      }
+    },
+    [blocks, draftId, requestLock, applyPatch],
+  );
 
   //사진 업로드
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

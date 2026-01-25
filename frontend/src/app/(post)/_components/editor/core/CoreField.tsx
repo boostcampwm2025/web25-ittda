@@ -4,6 +4,8 @@ import { convertTo12Hour } from '@/lib/utils/time';
 import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
 import { cn } from '@/lib/utils';
+import { useCallback, useEffect, useRef } from 'react';
+import { TextValue } from '@/lib/types/record';
 
 interface DateProps {
   date: string;
@@ -43,11 +45,12 @@ export const TimeField = ({ time, onClick }: TimeProps) => {
 };
 
 interface ContentProps {
-  value: string;
+  value: TextValue;
   onChange: (val: string) => void;
   onRemove: () => void;
   isLastContentBlock: boolean;
-  isLocked: boolean;
+  isLocked?: boolean;
+  isMyLock?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
 }
@@ -58,37 +61,88 @@ export const ContentField = ({
   onRemove,
   isLastContentBlock,
   isLocked,
+  isMyLock,
   onFocus,
   onBlur,
-}: ContentProps) => (
-  <div
-    className={cn(
-      'flex items-center gap-2 w-full group/content transition-opacity',
-      isLocked && 'opacity-60 pointer-events-none',
-    )}
-  >
-    <div className="relative flex-1 pl-3">
-      <div className="absolute left-0 top-1 bottom-1 w-[2.5px] rounded-full bg-gray-200 dark:bg-white/10 group-focus-within/content:bg-itta-point transition-colors duration-300" />
+}: ContentProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isInternalFocus = useRef(false);
 
-      <textarea
-        placeholder="어떤 기억이 있으신가요?"
-        value={value}
-        disabled={isLocked}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full min-h-[120px] border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-700"
-        onInput={(e) => {
-          const target = e.target as HTMLTextAreaElement;
-          target.style.height = 'auto';
-          target.style.height = `${target.scrollHeight}px`;
-        }}
-      />
-    </div>
-    {!isLastContentBlock && (
-      <div className="flex-shrink-0 flex items-center justify-center mr-4">
-        <FieldDeleteButton onRemove={onRemove} ariaLabel="텍스트 필드 삭제" />
+  useEffect(() => {
+    if (isMyLock && textareaRef.current) {
+      isInternalFocus.current = true;
+      textareaRef.current.focus();
+
+      //포커스 시 커서 맨 뒤로
+      const len = textareaRef.current.value.length;
+      textareaRef.current.setSelectionRange(len, len);
+    }
+  }, [isMyLock]);
+
+  const handleFocusWrapper = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    if (isInternalFocus.current) {
+      isInternalFocus.current = false;
+      return;
+    }
+
+    onFocus?.();
+  };
+
+  const adjustHeight = useCallback(() => {
+    const target = textareaRef.current;
+    // 현재 텍스트 크기에 맞게 높이 조절
+    if (target) {
+      target.style.height = 'auto';
+      target.style.height = `${target.scrollHeight}px`;
+    }
+  }, []);
+
+  // value 변경될 때 높이 조절
+  useEffect(() => {
+    adjustHeight();
+  }, [value, adjustHeight]);
+
+  // 너비 변경될 때 높이 조절
+  useEffect(() => {
+    const target = textareaRef.current;
+    if (!target) return;
+
+    // ResizeObserver를 통해 textarea의 크기 변화 관찰
+    const observer = new ResizeObserver(() => {
+      adjustHeight();
+    });
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [adjustHeight]);
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 w-full group/content transition-opacity',
+        isLocked && 'opacity-60 pointer-events-none',
+      )}
+    >
+      <div className="relative flex-1 pl-3">
+        <div className="absolute left-0 top-1 bottom-1 w-[2.5px] rounded-full bg-gray-200 dark:bg-white/10 group-focus-within/content:bg-itta-point transition-colors duration-300" />
+
+        <textarea
+          ref={textareaRef}
+          placeholder="어떤 기억이 있으신가요?"
+          value={value.text}
+          disabled={isLocked}
+          onFocus={handleFocusWrapper}
+          onBlur={onBlur}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full min-h-[120px] border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-700"
+        />
       </div>
-    )}
-  </div>
-);
+      {!isLastContentBlock && (
+        <div className="flex-shrink-0 flex items-center justify-center mr-4">
+          <FieldDeleteButton onRemove={onRemove} ariaLabel="텍스트 필드 삭제" />
+        </div>
+      )}
+    </div>
+  );
+};
