@@ -13,7 +13,7 @@ export async function POST() {
     );
   }
 
-  const res = NextResponse.json({ success: true, data: null, error: null });
+  const res = NextResponse.json({ success: true, data: {}, error: null });
   res.headers.set('Authorization', `Bearer ${session.accessToken}`);
   return res;
 }

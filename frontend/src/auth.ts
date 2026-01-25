@@ -48,21 +48,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           ...token,
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
-          accessTokenExpires: Date.now() + 14 * 60 * 1000, // 서버 토큰 만료 시간보다 조금 이르게(14분) 잡아서 401 방지
+          accessTokenExpires:
+            Date.now() + 2 * 60 * 1000 - Math.floor(Math.random() * 10000), // 서버 토큰 만료 시간보다 조금 이르게(14분) 잡아서 401 방지
         };
+      }
+
+      // 이전 갱신에서 에러가 발생했다면, 더 이상 갱신 시도하지 않음
+      if (token.error) {
+        return token;
       }
 
       if (Date.now() < (token.accessTokenExpires as number)) {
         return token;
       }
 
-      // 14분이 지났다면 새 토큰으로 갱신
+      // 토큰 만료 시 새 토큰으로 갱신
+      console.log('토큰 갱신!', token);
       return refreshServerAccessToken(token);
     },
     async session({ session, token }) {
       if (token) {
         session.accessToken = token.accessToken as string;
         session.refreshToken = token.refreshToken as string;
+        session.error = token.error as string | undefined;
       }
       return session;
     },
