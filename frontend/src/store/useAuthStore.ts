@@ -46,40 +46,48 @@ export const useAuthStore = create<State & Action>()(
 
         if (guestSessionId) {
           // 게스트 → 소셜 전환
-          set({
-            userType: 'social',
-            userId: socialUser.id,
-            isLoggedIn: true,
-            guestSessionId: null,
-            guestSessionExpiresAt: null,
+          requestAnimationFrame(() => {
+            set({
+              userType: 'social',
+              userId: socialUser.id,
+              isLoggedIn: true,
+              guestSessionId: null,
+              guestSessionExpiresAt: null,
+            });
           });
         } else {
-          set({
-            userType: 'social',
-            userId: socialUser.id,
-            isLoggedIn: true,
+          requestAnimationFrame(() => {
+            set({
+              userType: 'social',
+              userId: socialUser.id,
+              isLoggedIn: true,
+            });
           });
         }
         Cookies.remove(guestCookieKey);
       },
 
       setSocialLogin: () => {
-        set({
-          userType: 'social',
-          isLoggedIn: true,
+        requestAnimationFrame(() => {
+          set({
+            userType: 'social',
+            isLoggedIn: true,
+          });
+          Cookies.remove(guestCookieKey);
         });
-        Cookies.remove(guestCookieKey);
       },
 
       setGuestInfo: (guest) => {
-        set({
-          guestSessionId: guest.guestSessionId,
-          guestSessionExpiresAt: guest.guestSessionId,
-          userType: 'guest',
-          isLoggedIn: true,
-        });
+        requestAnimationFrame(() => {
+          set({
+            guestSessionId: guest.guestSessionId,
+            guestSessionExpiresAt: guest.guestSessionId,
+            userType: 'guest',
+            isLoggedIn: true,
+          });
 
-        setGuestCookie(guest.guestSessionId);
+          setGuestCookie(guest.guestSessionId);
+        });
       },
 
       logout: () => {
