@@ -134,8 +134,18 @@ export default function PostEditor({
     socket.on(
       'LOCK_CHANGED',
       ({ lockKey, ownerSessionId }: LockResponsePayload) => {
-        if (!ownerSessionId) return;
-        setLocks((prev) => ({ ...prev, [lockKey]: ownerSessionId }));
+        setLocks((prev) => {
+          const newLocks = { ...prev };
+
+          if (ownerSessionId) {
+            // 소유자가 있으면 새로운 락 추가
+            newLocks[lockKey] = ownerSessionId;
+          } else {
+            // 소유자가 없으면 락 해제 = 해당 키 삭제
+            delete newLocks[lockKey];
+          }
+          return newLocks;
+        });
 
         // 기다리던 락이 승인되었다면 드로어 오픈
         if (pendingLockKey === lockKey && ownerSessionId === mySessionId) {
@@ -444,6 +454,7 @@ export default function PostEditor({
             const lockKey = `block:${block.id}`;
             const ownerSessionId = locks[lockKey];
             const owner = members.find((m) => m.sessionId === ownerSessionId);
+
             //const isLockedByOther = ownerSessionId && ownerSessionId !== mySessionId;
             return (
               <div
