@@ -5,8 +5,10 @@ import { RecordBlock } from '../types/record';
 
 export interface GroupDraftResponse {
   snapshot: {
+    scope: string;
     title: string;
     blocks: RecordBlock[];
+    groupId: string;
   };
   version: number;
   ownerActorId: string;
@@ -17,7 +19,7 @@ export const groupDraftOptions = (groupId: string, draftId: string) =>
     queryKey: ['group', 'draft', groupId, draftId],
     queryFn: async () => {
       const response = await get<GroupDraftResponse>(
-        `/v1/groups/${groupId}/drafts/${draftId}`,
+        `/api/groups/${groupId}/drafts/${draftId}`,
       );
 
       if (!response.success) {
