@@ -149,7 +149,7 @@ export function usePostEditorBlocks({
         if (draftId) requestLock(`block:${newId}`);
       }
     },
-    [blocks, draftId, requestLock, applyPatch],
+    [blocks, draftId, setBlocks, requestLock, applyPatch],
   );
 
   //사진 업로드

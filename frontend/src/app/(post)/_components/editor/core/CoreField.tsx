@@ -5,15 +5,15 @@ import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
 import { cn } from '@/lib/utils';
 import { useCallback, useEffect, useRef } from 'react';
-import { TextValue } from '@/lib/types/record';
+import { DateValue, TextValue, TimeValue } from '@/lib/types/record';
 
 interface DateProps {
-  date: string;
+  date: DateValue;
   onClick: () => void;
 }
 
 export const DateField = ({ date, onClick }: DateProps) => {
-  const formattedDate = formatDateDot(new Date(date));
+  const formattedDate = formatDateDot(new Date(date.date));
   const dayName = getWeekdayFromDotString(formattedDate);
   return (
     <button
@@ -27,12 +27,12 @@ export const DateField = ({ date, onClick }: DateProps) => {
   );
 };
 interface TimeProps {
-  time: string;
+  time: TimeValue;
   onClick: () => void;
 }
 
 export const TimeField = ({ time, onClick }: TimeProps) => {
-  const formattedTime = convertTo12Hour(time);
+  const formattedTime = convertTo12Hour(time.time);
   return (
     <button
       onClick={onClick}

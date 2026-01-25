@@ -28,19 +28,17 @@ import MediaDrawer from './media/MediaDrawer';
 // 타입
 import {
   BlockValue,
+  DateValue,
   FieldType,
   LocationValue,
-  TableValue,
-  TextValue,
-} from '@/lib/types/record';
-import {
-  RecordBlock,
-  MediaValue,
-  TagsValue,
+  MediaInfoValue,
   RatingValue,
+  TableValue,
+  TagValue,
+  TextValue,
   TimeValue,
-  PhotoValue,
-} from '@/lib/types/recordField';
+} from '@/lib/types/record';
+import { EmotionValue, PhotoValue, RecordBlock } from '@/lib/types/recordField';
 import {
   canBeHalfWidth,
   getDefaultValue,
@@ -226,11 +224,17 @@ export default function PostEditor({
     switch (block.type) {
       case 'date':
         return (
-          <DateField date={displayValue.date} onClick={handleLockAndAction} />
+          <DateField
+            date={displayValue as DateValue}
+            onClick={handleLockAndAction}
+          />
         );
       case 'time':
         return (
-          <TimeField time={displayValue.time} onClick={handleLockAndAction} />
+          <TimeField
+            time={displayValue as TimeValue}
+            onClick={handleLockAndAction}
+          />
         );
       case 'content':
         const contentBlockCount = blocks.filter(
@@ -260,18 +264,19 @@ export default function PostEditor({
       case 'emotion':
         return (
           <EmotionField
-            emotion={displayValue.mood}
+            emotion={displayValue as EmotionValue}
             onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
         );
-      case 'tags':
+      case 'tags': {
+        const tagValue = displayValue as TagValue;
         return (
           <TagField
-            tags={displayValue.tags}
-            onRemove={(tag) =>
+            tags={tagValue}
+            onRemove={(tag: string) =>
               updateFieldValue(
-                { tags: displayValue.tags.filter((t) => t !== tag) },
+                { tags: tagValue.tags.filter((t: string) => t !== tag) },
                 block.id,
               )
             }
@@ -279,6 +284,7 @@ export default function PostEditor({
             onRemoveField={() => removeBlock(block.id)}
           />
         );
+      }
       case 'table':
         return (
           <TableField
@@ -298,8 +304,7 @@ export default function PostEditor({
       case 'rating':
         return (
           <RatingField
-            value={displayValue.rating}
-            max={5}
+            value={displayValue as RatingValue}
             onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
@@ -315,7 +320,7 @@ export default function PostEditor({
       case 'media':
         return (
           <MediaField
-            data={displayValue as MediaValue}
+            data={displayValue as MediaInfoValue}
             onClick={handleLockAndAction}
             onRemove={() => removeBlock(block.id)}
           />
@@ -401,7 +406,7 @@ export default function PostEditor({
         return (
           <TagDrawer
             onClose={() => handleCloseDrawer(id)}
-            tags={initialValue as TagsValue}
+            tags={initialValue as TagValue}
             previousTags={['식단', '운동']} //TODO: 실제 최근 사용 태그 리스트
             onUpdateTags={(nt) => handleDrawerDone({ tags: nt })}
           />
