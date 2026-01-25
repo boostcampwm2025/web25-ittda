@@ -20,10 +20,10 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     const currentSocket = get().socket;
     if (currentSocket?.connected) return;
 
-    let accessToken = getAccessToken();
+    let accessToken = await getAccessToken();
     if (!accessToken) {
       // 토큰이 없다면 재발급 시도
-      accessToken = await refreshAccessToken();
+      accessToken = (await refreshAccessToken()) ?? undefined;
     }
 
     if (!accessToken) {
