@@ -165,9 +165,10 @@ export class StatsService {
   async getStreak(userId: string): Promise<number> {
     const posts = await this.postRepo
       .createQueryBuilder('post')
-      .select('DISTINCT(DATE(post.eventAt))', 'date')
+      .select("DISTINCT(DATE(post.eventAt AT TIME ZONE 'Asia/Seoul'))", 'date')
       .where('post.ownerUserId = :userId', { userId })
       .andWhere('post.deletedAt IS NULL')
+      .andWhere('post.eventAt IS NOT NULL')
       .orderBy('date', 'DESC')
       .getRawMany<{ date: string }>();
 
@@ -214,9 +215,13 @@ export class StatsService {
 
     const result = await this.postRepo
       .createQueryBuilder('post')
-      .select('COUNT(DISTINCT(DATE(post.eventAt)))', 'count')
+      .select(
+        "COUNT(DISTINCT(DATE(post.eventAt AT TIME ZONE 'Asia/Seoul')))",
+        'count',
+      )
       .where('post.ownerUserId = :userId', { userId })
       .andWhere('post.deletedAt IS NULL')
+      .andWhere('post.eventAt IS NOT NULL')
       .andWhere('post.eventAt >= :start AND post.eventAt <= :end', {
         start,
         end,
@@ -261,7 +266,7 @@ export class StatsService {
     const result = await this.postRepo.query<
       Array<{ month: string; count: string }>
     >(
-      `SELECT to_char(event_at, 'YYYY-MM') as month, COUNT(*) as count
+      `SELECT to_char(event_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM') as month, COUNT(*) as count
        FROM posts
        WHERE owner_user_id = $1
          AND event_at >= $2
@@ -319,8 +324,14 @@ export class StatsService {
     year: number,
     month: number,
   ): Promise<{ emotion: string; count: number }[]> {
-    const fromDate = new Date(year, month - 1, 1);
-    const toDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const fromDate = DateTime.fromObject({ year, month, day: 1 })
+      .setZone('Asia/Seoul')
+      .startOf('day')
+      .toJSDate();
+    const toDate = DateTime.fromObject({ year, month, day: 1 })
+      .setZone('Asia/Seoul')
+      .endOf('month')
+      .toJSDate();
 
     const result = await this.postRepo.query<
       Array<{ emotion: string; count: string }>
@@ -350,11 +361,26 @@ export class StatsService {
     const qb = this.postRepo.createQueryBuilder('post');
     qb.where('post.owner_user_id = :userId', { userId });
     qb.andWhere('post.deletedAt IS NULL');
+    qb.andWhere('post.eventAt IS NOT NULL');
 
     if (query.date) {
       const parts = query.date.split('-').map((s) => parseInt(s, 10));
-      const start = new Date(parts[0], parts[1] - 1, parts[2]);
-      const end = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
+      const start = DateTime.fromObject({
+        year: parts[0],
+        month: parts[1],
+        day: parts[2],
+      })
+        .setZone('Asia/Seoul')
+        .startOf('day')
+        .toJSDate();
+      const end = DateTime.fromObject({
+        year: parts[0],
+        month: parts[1],
+        day: parts[2],
+      })
+        .setZone('Asia/Seoul')
+        .endOf('day')
+        .toJSDate();
 
       qb.andWhere('post.event_at >= :start AND post.event_at <= :end', {
         start,
@@ -362,8 +388,22 @@ export class StatsService {
       });
     } else if (query.month) {
       const parts = query.month.split('-').map((s) => parseInt(s, 10));
-      const start = new Date(parts[0], parts[1] - 1, 1);
-      const end = new Date(parts[0], parts[1], 0, 23, 59, 59, 999);
+      const start = DateTime.fromObject({
+        year: parts[0],
+        month: parts[1],
+        day: 1,
+      })
+        .setZone('Asia/Seoul')
+        .startOf('day')
+        .toJSDate();
+      const end = DateTime.fromObject({
+        year: parts[0],
+        month: parts[1],
+        day: 1,
+      })
+        .setZone('Asia/Seoul')
+        .endOf('month')
+        .toJSDate();
 
       qb.andWhere('post.event_at >= :start AND post.event_at <= :end', {
         start,
