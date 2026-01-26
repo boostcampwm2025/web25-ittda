@@ -121,13 +121,11 @@ export const userProfileEmotionSummaryOptions = () =>
     retry: false,
   });
 
-export const userRecordPatternOptions = (date: string) =>
+export const userRecordPatternOptions = () =>
   queryOptions({
     queryKey: ['pattern'],
     queryFn: async () => {
-      const response = await get<RecordPatternResponse>(
-        `/api/stats/summary?date=${date}`,
-      );
+      const response = await get<RecordPatternResponse>('/api/stats/summary');
 
       if (!response.success) {
         throw createApiError(response);

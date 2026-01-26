@@ -209,28 +209,14 @@ export const handlers = [
     });
   }),
   http.get('/api/stats/summary', ({ request }) => {
-    const url = new URL(request.url);
-    const date = url.searchParams.get('month') || new Date().toISOString();
-
-    const parts = date.split('-').map((s) => parseInt(s, 10));
-
-    if (parts.length === 2) {
-      return HttpResponse.json({
-        success: true,
-        data: {
-          count: 2,
-        },
-        error: null,
-      });
-    } else {
-      return HttpResponse.json({
-        success: true,
-        data: {
-          count: 16,
-        },
-        error: null,
-      });
-    }
+    return HttpResponse.json({
+      success: true,
+      data: {
+        streak: 3,
+        monthlyRecordingDays: 12,
+      },
+      error: null,
+    });
   }),
   http.get('/api/stats/emotions/summary', ({ request }) => {
     const url = new URL(request.url);
