@@ -71,10 +71,18 @@ export class StatsController {
   async getMyEmotions(
     @Req() req: RequestWithUser,
     @Query() query: GetEmotionStatsQueryDto,
-  ): Promise<EmotionCount[]> {
+  ): Promise<{ data: EmotionCount[]; meta: { totalCount: number } }> {
     const userId = req.user.sub;
     const sort = query.sort ?? 'frequent';
-    return this.statsService.getEmotions(userId, sort, query.limit);
+    const { items, totalCount } = await this.statsService.getEmotionStats(
+      userId,
+      sort,
+      query.limit,
+    );
+    return {
+      data: items,
+      meta: { totalCount },
+    };
   }
 
   @Get('emotions/summary')

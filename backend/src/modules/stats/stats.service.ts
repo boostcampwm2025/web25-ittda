@@ -56,49 +56,49 @@ export class StatsService {
   async getEmotions(
     userId: string,
     sort: 'recent' | 'frequent',
-    limit?: number,
   ): Promise<EmotionCount[]> {
     if (sort === 'frequent') {
-      let querySql = `SELECT emotion, COUNT(*) as count
-        FROM (
-          SELECT unnest(emotion) as emotion
-          FROM posts
-          WHERE owner_user_id = $1 AND emotion IS NOT NULL
-        ) t
-        GROUP BY emotion
-        ORDER BY count DESC`;
-      const params: Array<string | number> = [userId];
-      if (limit !== undefined) {
-        querySql += ` LIMIT $2`;
-        params.push(limit);
-      }
-
-      const result = await this.postRepo.query<
-        Array<{ emotion: string; count: string }>
-      >(querySql, params);
-
-      const allowed = new Set(Object.values(PostMood));
-      const merged = new Map<PostMood, number>();
-      result.forEach((row) => {
-        const normalized = row.emotion?.trim().normalize('NFC') ?? '';
-        if (!allowed.has(normalized as PostMood)) {
-          return;
-        }
-        const count = parseInt(row.count, 10);
-        merged.set(
-          normalized as PostMood,
-          (merged.get(normalized as PostMood) ?? 0) + count,
-        );
-      });
-
-      const mergedEntries = Array.from(merged.entries())
-        .map(([emotion, count]) => ({ emotion, count }))
-        .sort((a, b) => b.count - a.count);
-      return limit !== undefined
-        ? mergedEntries.slice(0, limit)
-        : mergedEntries;
+      return this.getFrequentEmotions(userId);
     }
 
+    return this.getRecentEmotions(userId);
+  }
+
+  private async getFrequentEmotions(userId: string): Promise<EmotionCount[]> {
+    const result = await this.postRepo.query<
+      Array<{ emotion: string; count: string }>
+    >(
+      `SELECT emotion, COUNT(*) as count
+       FROM (
+         SELECT unnest(emotion) as emotion
+         FROM posts
+         WHERE owner_user_id = $1 AND emotion IS NOT NULL
+       ) t
+       GROUP BY emotion
+       ORDER BY count DESC`,
+      [userId],
+    );
+
+    const allowed = new Set(Object.values(PostMood));
+    const merged = new Map<PostMood, number>();
+    result.forEach((row) => {
+      const normalized = row.emotion?.trim().normalize('NFC') ?? '';
+      if (!allowed.has(normalized as PostMood)) {
+        return;
+      }
+      const count = parseInt(row.count, 10);
+      merged.set(
+        normalized as PostMood,
+        (merged.get(normalized as PostMood) ?? 0) + count,
+      );
+    });
+
+    return Array.from(merged.entries())
+      .map(([emotion, count]) => ({ emotion, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  private async getRecentEmotions(userId: string): Promise<EmotionCount[]> {
     const res = await this.postRepo.find({
       where: { ownerUserId: userId },
       order: { createdAt: 'DESC' },
@@ -111,11 +111,21 @@ export class StatsService {
     validEmotions.forEach((emotion) => {
       counts.set(emotion, (counts.get(emotion) ?? 0) + 1);
     });
-    const items = Array.from(counts.entries()).map(([emotion, count]) => ({
+    return Array.from(counts.entries()).map(([emotion, count]) => ({
       emotion,
       count,
     }));
-    return limit !== undefined ? items.slice(0, limit) : items;
+  }
+
+  async getEmotionStats(
+    userId: string,
+    sort: 'recent' | 'frequent',
+    limit?: number,
+  ): Promise<{ items: EmotionCount[]; totalCount: number }> {
+    const items = await this.getEmotions(userId, sort);
+    const totalCount = items.reduce((sum, item) => sum + item.count, 0);
+    const limited = limit !== undefined ? items.slice(0, limit) : items;
+    return { items: limited, totalCount };
   }
 
   async getUserStats(userId: string): Promise<UserStats> {
