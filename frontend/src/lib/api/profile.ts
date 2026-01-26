@@ -91,9 +91,7 @@ export const userProfileTagSummaryOptions = () =>
   queryOptions({
     queryKey: ['profile', 'tags', 'summary'],
     queryFn: async () => {
-      const response = await get<TagStatSummary>(
-        '/api/stats/tags/top?limit=10',
-      );
+      const response = await get<TagStatSummary>('/api/stats/tags?limit=10');
 
       if (!response.success) {
         throw createApiError(response);

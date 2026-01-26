@@ -228,7 +228,7 @@ export const handlers = [
       error: null,
     });
   }),
-  http.get('/api/stats/tags/top', ({ request }) => {
+  http.get('/api/stats/tags', ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit');
 

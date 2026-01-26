@@ -48,9 +48,9 @@ export default async function ProfilePage() {
   }
 
   const tags: ProfileTag = {
-    recent: tagStats.recentTop,
-    frequent: tagStats.allTimeTop,
-    all: [...tagStats.recentTop, ...tagStats.allTimeTop],
+    recent: tagStats.recentTags,
+    frequent: tagStats.frequentTags,
+    all: [...tagStats.recentTags, ...tagStats.frequentTags],
   };
 
   return (
