@@ -1,6 +1,7 @@
 # 공동작성 WS 협업 (Draft)
 
-> 기본적으로 전체적인 흐름은 ws-presence-test.js 파일로 확인 가능함
+> 기본적으로 전체적인 흐름은 ws-flow-test.js 파일로 확인 가능함
+> ws-presence-test.js로는 자잘한 이벤트 전송 가능
 > 사용법은 ACCESS_TOKEN={ACCESS_TOKEN} LOCK_KEY=block:{block_id} node backend/scripts/ws-presence-test.js {draft_id}
 
 ## 개요
@@ -11,6 +12,7 @@
   - 현재는 실제 id가 아니더라도 lock 동작을 확인 가능하도록 구현
 - lock TTL: 30초, heartbeat 권장 주기: 10초
 - 초기 스냅샷으로 전체 동기화 후, 이후에는 delta 이벤트로 상태 갱신
+- 드래프트 최초 생성 시 기본 블록 3개(DATE/TIME/TEXT)가 포함됨 (서버에서 UUID 생성)
 
 ## 이벤트 목록
 

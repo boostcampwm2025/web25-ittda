@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { isUUID, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
+import { randomUUID } from 'crypto';
 
 import { PostDraft } from './entity/post-draft.entity';
 import { Group } from '@/modules/group/entity/group.entity';
@@ -18,6 +19,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { PostScope } from '@/enums/post-scope.enum';
 import type { PatchCommand } from './collab/types';
 import { PostBlockDto } from './dto/post-block.dto';
+import { PostBlockType } from '@/enums/post-block-type.enum';
 
 @Injectable()
 export class PostDraftService {
@@ -117,7 +119,26 @@ export class PostDraftService {
       scope: PostScope.GROUP,
       groupId,
       title: '',
-      blocks: [],
+      blocks: [
+        {
+          id: randomUUID(),
+          type: PostBlockType.DATE,
+          value: { date: '' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          id: randomUUID(),
+          type: PostBlockType.TIME,
+          value: { time: '' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          id: randomUUID(),
+          type: PostBlockType.TEXT,
+          value: { text: '' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
     };
     return snapshot;
   }
