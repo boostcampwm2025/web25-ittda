@@ -208,7 +208,7 @@ export const handlers = [
       error: null,
     });
   }),
-  http.get('/api/me/stats/summary', ({ request }) => {
+  http.get('/api/stats/summary', ({ request }) => {
     const url = new URL(request.url);
     const date = url.searchParams.get('month') || new Date().toISOString();
 
@@ -232,7 +232,7 @@ export const handlers = [
       });
     }
   }),
-  http.get('/api/me/emotions/summary', ({ request }) => {
+  http.get('/api/stats/emotions/summary', ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit');
 
@@ -242,7 +242,7 @@ export const handlers = [
       error: null,
     });
   }),
-  http.get('/api/me/tags/stats', ({ request }) => {
+  http.get('/api/stats/tags/top', ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit');
 

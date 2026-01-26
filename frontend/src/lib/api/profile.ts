@@ -40,7 +40,9 @@ export const getCachedUserTagSummary = cache(async () => {
  * 서버 컴포넌트에서 사용하는 캐시된 감정 통계 조회
  */
 export const getCachedUserEmotionSummary = cache(async () => {
-  const response = await get<EmotionStatSummary>('/api/me/emotions/stats?limit=7');
+  const response = await get<EmotionStatSummary>(
+    '/api/me/emotions/stats?limit=7',
+  );
   if (!response.success) {
     throw createApiError(response);
   }
@@ -89,7 +91,9 @@ export const userProfileTagSummaryOptions = () =>
   queryOptions({
     queryKey: ['profile', 'tags', 'summary'],
     queryFn: async () => {
-      const response = await get<TagStatSummary>('/api/me/tags/stats?limit=10');
+      const response = await get<TagStatSummary>(
+        '/api/stats/tags/top?limit=10',
+      );
 
       if (!response.success) {
         throw createApiError(response);
@@ -105,7 +109,7 @@ export const userProfileEmotionSummaryOptions = () =>
     queryKey: ['profile', 'emotions', 'summary'],
     queryFn: async () => {
       const response = await get<EmotionStatSummary>(
-        '/api/me/emotions/stats?limit=7',
+        '/api/stats/emotions?limit=7',
       );
 
       if (!response.success) {
@@ -117,12 +121,12 @@ export const userProfileEmotionSummaryOptions = () =>
     retry: false,
   });
 
-export const userRecordPatternOptions = (month: string) =>
+export const userRecordPatternOptions = (date: string) =>
   queryOptions({
     queryKey: ['pattern'],
     queryFn: async () => {
       const response = await get<RecordPatternResponse>(
-        `/v1/me/stats/summary?month=${month}`,
+        `/api/stats/summary?date=${date}`,
       );
 
       if (!response.success) {
