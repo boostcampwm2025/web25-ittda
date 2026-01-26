@@ -13,7 +13,11 @@ import { GroupMember } from './entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { User } from '../user/entity/user.entity';
 import { GroupInvite } from './entity/group_invite.entity';
+import { Post } from '@/modules/post/entity/post.entity';
+import { GetGroupsResponseDto } from './dto/get-groups.dto';
 import * as crypto from 'crypto';
+
+import { GroupItemDto } from './dto/get-groups.dto';
 
 const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
 
@@ -31,6 +35,9 @@ export class GroupService {
 
     @InjectRepository(GroupInvite)
     private readonly inviteRepo: Repository<GroupInvite>,
+
+    @InjectRepository(Post) // Post 레포지토리 주입
+    private readonly postRepo: Repository<Post>,
 
     private readonly dataSource: DataSource,
   ) {}
@@ -354,6 +361,91 @@ export class GroupService {
         profileImageId: member.user.profileImageId,
       })),
     };
+  }
+
+  /** 그룹 목록 조회 (최신 활동 순) */
+  async getGroups(userId: string): Promise<GetGroupsResponseDto> {
+    // 1. 유저가 속한 그룹 ID 목록 조회
+    const members = await this.groupMemberRepo.find({
+      where: { userId },
+      select: ['groupId'],
+    });
+
+    if (members.length === 0) {
+      return { items: [] };
+    }
+
+    const groupIds = members.map((m) => m.groupId);
+
+    // 2. 각 그룹의 상세 정보 조회 (Parallel)
+    const items = await Promise.all(
+      groupIds.map(async (groupId) => {
+        const group = await this.groupRepo.findOne({
+          where: { id: groupId },
+          relations: ['coverMedia'],
+        });
+
+        if (!group) return null; // 혹시 삭제된 그룹이 있다면 무시
+
+        // 멤버 수
+        const memberCount = await this.groupMemberRepo.count({
+          where: { groupId },
+        });
+
+        // 기록 수
+        const recordCount = await this.postRepo.count({
+          where: { groupId },
+        });
+
+        // 최신 게시글
+        const latestPost = await this.postRepo.findOne({
+          where: { groupId },
+          order: { eventAt: 'DESC' },
+          select: ['id', 'title', 'eventAt', 'location', 'createdAt'],
+        });
+
+        // 최신 활동 시간: 그룹의 lastActivityAt이 있으면 사용, 없으면 createdAt.
+        const lastActivityAt = group.lastActivityAt || group.createdAt;
+
+        return {
+          groupId: group.id,
+          name: group.name,
+          cover: group.coverMedia
+            ? {
+                assetId: group.coverMedia.id,
+                width: group.coverMedia.width,
+                height: group.coverMedia.height,
+                // TODO: width, height는 사진 업로드 후 s3.head_object 등 api로 presigned url로 요청해서 가져오기
+                mimeType: group.coverMedia.mimeType,
+              }
+            : null,
+          memberCount,
+          recordCount,
+          createdAt: group.createdAt,
+          lastActivityAt,
+          latestPost: latestPost
+            ? {
+                postId: latestPost.id,
+                title: latestPost.title,
+                eventAt: latestPost.eventAt || latestPost.createdAt,
+                placeName: null, // TODO: location -> placeName 변환 로직 필요
+              }
+            : null,
+        };
+      }),
+    );
+
+    // null 제거 및 정렬
+    const validItems = items.filter((item) => item !== null) as GroupItemDto[];
+
+    // 최신 활동 순 정렬 (내림차순)
+    validItems.sort((a, b) => {
+      const timeA = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+      const timeB = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+      return timeB - timeA;
+    });
+
+    return { items: validItems };
   }
 
   private validateGroupNickname(nickname: string): string {

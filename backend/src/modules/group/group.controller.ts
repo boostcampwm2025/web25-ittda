@@ -16,6 +16,7 @@ import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { GetGroupMembersResponseDto } from './dto/get-group-members.dto';
+import { GetGroupsResponseDto } from './dto/get-groups.dto';
 
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../auth/auth.type';
@@ -38,6 +39,17 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
 @UseGuards(JwtAuthGuard)
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: '그룹 목록 조회',
+    description:
+      '로그인한 사용자가 속한 그룹 목록을 조회합니다. (최신 활동 순)',
+  })
+  @ApiWrappedOkResponse({ type: GetGroupsResponseDto })
+  async getGroups(@User() user: MyJwtPayload) {
+    return this.groupService.getGroups(user.sub);
+  }
 
   @Post()
   @ApiOperation({
