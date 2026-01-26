@@ -15,36 +15,16 @@ export interface LockResponsePayload {
 export function useLockManager(draftId?: string) {
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [pendingLockKey, setPendingLockKey] = useState<string | null>(null);
+  const activeLockKeys = useRef<Set<string>>(new Set());
   const heartbeatRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
   // 락 획득 요청
   const requestLock = useCallback(
     (lockKey: string) => {
       if (!socket || !draftId) return;
+      activeLockKeys.current.add(lockKey);
       setPendingLockKey(lockKey);
       socket.emit('LOCK_ACQUIRE', { draftId, lockKey });
-    },
-    [socket, draftId],
-  );
-
-  // 락 해제 요청
-  const releaseLock = useCallback(
-    (lockKey: string) => {
-      if (!socket || !draftId) return;
-      socket.emit('LOCK_RELEASE', { draftId, lockKey });
-      // eslint-disable-next-line react-hooks/immutability
-      stopHeartbeat(lockKey);
-    },
-    [socket, draftId],
-  );
-
-  // 하트비트
-  const startHeartbeat = useCallback(
-    (lockKey: string) => {
-      if (heartbeatRefs.current[lockKey]) return;
-      heartbeatRefs.current[lockKey] = setInterval(() => {
-        socket?.emit('LOCK_HEARTBEAT', { draftId, lockKey });
-      }, 5_000);
     },
     [socket, draftId],
   );
@@ -55,6 +35,34 @@ export function useLockManager(draftId?: string) {
       delete heartbeatRefs.current[lockKey];
     }
   }, []);
+
+  // 락 해제 요청
+  const releaseLock = useCallback(
+    (lockKey: string) => {
+      if (!socket || !draftId) return;
+      activeLockKeys.current.delete(lockKey);
+      socket.emit('LOCK_RELEASE', { draftId, lockKey });
+
+      stopHeartbeat(lockKey);
+    },
+    [socket, draftId],
+  );
+
+  // 하트비트
+  const startHeartbeat = useCallback(
+    (lockKey: string) => {
+      if (!activeLockKeys.current.has(lockKey)) return;
+      if (heartbeatRefs.current[lockKey]) return;
+      heartbeatRefs.current[lockKey] = setInterval(() => {
+        if (socket?.connected) {
+          socket.emit('LOCK_HEARTBEAT', { draftId, lockKey });
+        } else {
+          stopHeartbeat(lockKey); // 연결 끊기면 중단
+        }
+      }, 5_000);
+    },
+    [socket, draftId, stopHeartbeat],
+  );
 
   useEffect(() => {
     if (!socket) return;
@@ -85,6 +93,11 @@ export function useLockManager(draftId?: string) {
       socket.off('LOCK_GRANTED');
       socket.off('LOCK_DENIED');
       socket.off('LOCK_EXPIRED');
+      Object.keys(heartbeatRefs.current).forEach((key) => {
+        clearInterval(heartbeatRefs.current[key]);
+      });
+      heartbeatRefs.current = {};
+      activeLockKeys.current.clear();
     };
   }, [socket, pendingLockKey, startHeartbeat, stopHeartbeat, mySessionId]);
 
