@@ -13,11 +13,146 @@ import {
   GroupMembersResponse,
 } from '../types/groupResponse';
 import { createApiError } from '../utils/errorHandler';
-import { ROLE_MAP } from '../types/group';
 import {
   convertDayRecords,
   convertMontRecords,
 } from '@/app/(post)/_utils/convertMonthRecords';
+import { CACHE_TAGS, getCachedData } from './cache';
+import { PERSONAL_STALE_TIME } from '../constants/constants';
+
+// ============================================
+// 서버 컴포넌트용 캐시된 함수 (unstable_cache)
+// ============================================
+
+/**
+ * 서버 컴포넌트에서 사용하는 캐시된 그룹 목록 조회
+ */
+export async function getCachedGroupCurrentMembers(groupId: string) {
+  return getCachedData<GroupMembersResponse>(
+    async () => {
+      const response = await get<GroupMembersResponse>(
+        `/api/groups/${groupId}/current-members`,
+      );
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    ['currentMembers', groupId],
+    [CACHE_TAGS.MEMBER, groupId],
+  );
+}
+
+/**
+ * 서버 컴포넌트에서 사용하는 캐시된 그룹 내 월별 기록함 조회
+ */
+export async function getCachedGroupMonthlyRecordList(
+  groupId: string,
+  year: string,
+) {
+  return getCachedData<MonthlyRecordList[]>(
+    async () => {
+      const query = year
+        ? `?year=${year}&sort=latest`
+        : `?year=${new Date().getFullYear()}&sort=latest`;
+
+      const response = await get<MonthlyRecordList[]>(
+        `/api/groups/${groupId}/archives/months${query}`,
+      );
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    ['group', groupId, 'records', 'month', year],
+    [CACHE_TAGS.RECORDS, `records-group-${year}`],
+  );
+}
+
+/**
+ * 서버 컴포넌트에서 사용하는 캐시된 그룹 내 일별 기록함 조회
+ */
+export async function getCachedGroupDailyRecordList(
+  groupId: string,
+  month: string,
+) {
+  return getCachedData<DailyRecordList[]>(
+    async () => {
+      const response = await get<DailyRecordList[]>(
+        `/api/groups/${groupId}/archives/days?month=${month}`,
+      );
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    ['group', groupId, 'records', 'daily', month],
+    [CACHE_TAGS.RECORDS, `records-group-${month}`],
+  );
+}
+
+/**
+ * 서버 컴포넌트에서 사용하는 캐시된 group 월별 기록함 목록 조회
+ */
+export async function getCachedGroupList() {
+  return getCachedData<GroupListResponse[]>(
+    async () => {
+      const response = await get<GroupListResponse[]>('/api/groups');
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    ['shared'],
+    [CACHE_TAGS.SHARED],
+  );
+}
+
+/**
+ * 서버 컴포넌트에서 사용하는 캐시된 group 정보 조회
+ */
+export async function getCachedGroupDetail(groupId: string) {
+  return getCachedData<GroupEditResponse>(
+    async () => {
+      const response = await get<GroupEditResponse>(
+        `/api/groups/${groupId}/settings`,
+      );
+      if (!response.success) {
+        const status = response.error?.code; // 서버 응답의 에러 코드
+        if (status === 'FORBIDDEN' || status === 'NOT_FOUND') {
+          throw response.error;
+        }
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    ['group', groupId, 'edit'],
+    [CACHE_TAGS.PROFILE, groupId],
+  );
+}
+
+/**
+ * 서버 컴포넌트에서 사용하는 캐시된 group 내 내 정보 조회
+ */
+export async function getCachedGroupMyProfile(groupId: string) {
+  return getCachedData<GroupMemberProfileResponse>(
+    async () => {
+      const response = await get<GroupMemberProfileResponse>(
+        `/api/groups/${groupId}/members/me`,
+      );
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    ['group', groupId, 'me'],
+    [CACHE_TAGS.PROFILE, groupId, 'me'],
+  );
+}
+
+// ============================================
+// 클라이언트 컴포넌트용 queryOptions (React Query)
+// ============================================
 
 export const groupListOptions = () =>
   queryOptions({
@@ -30,6 +165,7 @@ export const groupListOptions = () =>
       }
       return response.data.items;
     },
+    staleTime: PERSONAL_STALE_TIME, // 초대를 수락했을 때 invalidate 필요
     retry: false,
   });
 
@@ -37,107 +173,33 @@ export const groupMyProfileOptions = (groupId: string) =>
   queryOptions({
     queryKey: ['group', groupId, 'me'],
     queryFn: async () => {
-      try {
-        const res = await get<GroupMemberProfileResponse>(
-          `/api/groups/${groupId}/members/me`,
-        );
-        if (!res.success) throw createApiError(res);
+      const res = await get<GroupMemberProfileResponse>(
+        `/api/groups/${groupId}/members/me`,
+      );
+      if (!res.success) throw createApiError(res);
 
-        return res.data;
-      } catch (error) {
-        // 임시로 더미 데이터 넣어주기
-        return {
-          groupId: groupId,
-          userId: 'temp-user-123',
-          name: '임시 사용자',
-          nicknameInGroup: '주디',
-          cover: {
-            assetId: 'https://picsum.photos/200',
-            sourcePostId: 'uuid-1',
-          },
-          role: 'ADMIN',
-          updatedAt: new Date().toISOString(),
-        };
-      }
+      return res.data;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: PERSONAL_STALE_TIME,
   });
 
 export const groupDetailOptions = (groupId: string) =>
   queryOptions({
     queryKey: ['group', groupId, 'edit'],
     queryFn: async () => {
-      try {
-        const res = await get<GroupEditResponse>(
-          `/api/groups/${groupId}/settings`,
-        );
+      const res = await get<GroupEditResponse>(
+        `/api/groups/${groupId}/settings`,
+      );
 
-        if (!res.success) {
-          const status = res.error?.code; // 서버 응답의 에러 코드
-          if (status === 'FORBIDDEN' || status === 'NOT_FOUND') {
-            throw res.error;
-          }
-          throw createApiError(res);
+      if (!res.success) {
+        const status = res.error?.code; // 서버 응답의 에러 코드
+        if (status === 'FORBIDDEN' || status === 'NOT_FOUND') {
+          throw res.error;
         }
-
-        return res.data;
-      } catch (error) {
-        return {
-          group: {
-            groupId: groupId,
-            name: '고3 전우들',
-            createdAt: '2025-03-01T00:00:00Z',
-            ownerUserId: 'user-001',
-            cover: null, // 필요시 assetId 추가 가능
-          },
-          me: {
-            userId: 'user-001',
-            name: '본명1',
-            profileImage: { assetId: 'https://picsum.photos/seed/bed/200' },
-            role: ROLE_MAP['admin'],
-            nicknameInGroup: '이구역 침대 지킴이',
-            joinedAt: '2025-03-01T10:00:00Z',
-          },
-          members: [
-            {
-              userId: 'user-001',
-              name: '본명1',
-              profileImage: { assetId: 'https://picsum.photos/seed/bed/200' },
-              role: ROLE_MAP['admin'],
-              nicknameInGroup: '이구역 침대 지킴이',
-              joinedAt: '2025-03-01T10:00:00Z',
-            },
-            {
-              userId: 'user-002',
-              name: '본명2',
-              profileImage: {
-                assetId: 'https://picsum.photos/seed/karina/200',
-              },
-              role: ROLE_MAP['admin'],
-              nicknameInGroup: '자칭 우산동 카리나',
-              joinedAt: '2025-03-05T14:20:00Z',
-            },
-            {
-              userId: 'user-003',
-              name: '본명3',
-              profileImage: { assetId: 'https://picsum.photos/seed/food/200' },
-              role: ROLE_MAP['admin'],
-              nicknameInGroup: '입벌려 맛집 들어간다',
-              joinedAt: '2025-03-07T09:10:00Z',
-            },
-            {
-              userId: 'user-004',
-              name: '본명4',
-              profileImage: {
-                assetId: 'https://picsum.photos/seed/davinci/200',
-              },
-              role: ROLE_MAP['admin'],
-              nicknameInGroup: '오지랖퍼 다빈치',
-              joinedAt: '2025-03-10T11:00:00Z',
-            },
-          ],
-        };
+        throw createApiError(res);
       }
+
+      return res.data;
     },
   });
 
@@ -204,8 +266,8 @@ export const groupCurrentMembersOption = (groupId: string) =>
 export const groupMonthlyRecordListOptions = (groupId: string, year?: string) =>
   queryOptions({
     queryKey: year
-      ? ['group', 'records', 'month', year]
-      : ['group', 'records', 'month'],
+      ? ['group', groupId, 'records', 'month', year]
+      : ['group', groupId, 'records', 'month'],
     queryFn: async () => {
       const query = year
         ? `?year=${year}&sort=latest`
@@ -225,9 +287,7 @@ export const groupMonthlyRecordListOptions = (groupId: string, year?: string) =>
 
 export const groupDailyRecordListOptions = (groupId: string, month: string) =>
   queryOptions({
-    queryKey: month
-      ? ['group', groupId, 'records', 'daily', month]
-      : ['group', groupId, 'records', 'daily'],
+    queryKey: ['group', groupId, 'records', 'daily', month],
     queryFn: async () => {
       const response = await get<DailyRecordList[]>(
         `/api/groups/${groupId}/archives/days?month=${month}`,
