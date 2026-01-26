@@ -136,6 +136,7 @@ export class StatsService {
       recentEmotions,
       totalStats,
       locationStats,
+      monthlyCounts,
     ] = await Promise.all([
       this.getTags(userId, 'frequent', 10),
       this.getTags(userId, 'recent', 10),
@@ -143,6 +144,7 @@ export class StatsService {
       this.getEmotions(userId, 'recent'),
       this.getTotalStats(userId),
       this.getLocationStats(userId, 5),
+      this.getMonthlyCounts(userId, 12),
     ]);
 
     return {
@@ -153,6 +155,7 @@ export class StatsService {
       totalPosts: totalStats.totalPosts,
       totalImages: totalStats.totalImages,
       frequentLocations: locationStats,
+      monthlyCounts,
     };
   }
 
@@ -239,6 +242,42 @@ export class StatsService {
     );
 
     return { totalPosts, totalImages };
+  }
+
+  async getMonthlyCounts(
+    userId: string,
+    months: number,
+  ): Promise<{ month: string; count: number }[]> {
+    const now = DateTime.now().setZone('Asia/Seoul').startOf('month');
+    const start = now.minus({ months: months - 1 });
+    const end = now.plus({ months: 1 });
+
+    const result = await this.postRepo.query<
+      Array<{ month: string; count: string }>
+    >(
+      `SELECT to_char(event_at, 'YYYY-MM') as month, COUNT(*) as count
+       FROM posts
+       WHERE owner_user_id = $1
+         AND event_at >= $2
+         AND event_at < $3
+         AND deleted_at IS NULL
+       GROUP BY month
+       ORDER BY month ASC`,
+      [userId, start.toJSDate(), end.toJSDate()],
+    );
+
+    const counts = new Map(
+      result.map((row) => [row.month, parseInt(row.count, 10)]),
+    );
+
+    const items: { month: string; count: number }[] = [];
+    for (let i = 0; i < months; i += 1) {
+      const current = start.plus({ months: i });
+      const key = current.toFormat('yyyy-MM');
+      items.push({ month: key, count: counts.get(key) ?? 0 });
+    }
+
+    return items;
   }
 
   async getLocationStats(

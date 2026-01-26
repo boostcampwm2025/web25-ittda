@@ -16,4 +16,5 @@ export interface UserStats {
   totalPosts: number;
   totalImages: number;
   frequentLocations: { placeName: string; count: number }[];
+  monthlyCounts: { month: string; count: number }[];
 }

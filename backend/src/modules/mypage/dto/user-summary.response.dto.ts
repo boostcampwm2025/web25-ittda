@@ -11,6 +11,16 @@ export class LocationStatDto {
   count: number;
 }
 
+export class MonthlyCountDto {
+  @ApiProperty({ description: '월 (YYYY-MM)', example: '2026-01' })
+  @Expose()
+  month: string;
+
+  @ApiProperty({ description: '해당 월 기록 수', example: 11 })
+  @Expose()
+  count: number;
+}
+
 export class UserStatsDto {
   @ApiProperty({
     description: '최근 사용한 태그 명단',
@@ -55,6 +65,14 @@ export class UserStatsDto {
   @Expose()
   @Type(() => LocationStatDto)
   frequentLocations: LocationStatDto[];
+
+  @ApiProperty({
+    description: '최근 12개월 기록 수',
+    type: [MonthlyCountDto],
+  })
+  @Expose()
+  @Type(() => MonthlyCountDto)
+  monthlyCounts: MonthlyCountDto[];
 }
 
 export class UserSummaryResponse {
