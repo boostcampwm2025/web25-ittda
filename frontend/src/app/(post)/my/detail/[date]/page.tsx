@@ -1,8 +1,14 @@
 import DailyDetailRecords from '../../../../../components/DailyDetailRecords';
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 import Back from '@/components/Back';
-import { formatDateISO } from '@/lib/date';
+import { getCachedRecordPreviewList } from '@/lib/api/records';
 import { createMockRecordPreviews } from '@/lib/mocks/mock';
+import { RecordPreview } from '@/lib/types/recordResponse';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 
 interface MyMonthlyDetailPageProps {
   params: Promise<{ date: string }>;
@@ -12,14 +18,18 @@ export default async function MyDateDetailPage({
   params,
 }: MyMonthlyDetailPageProps) {
   const { date } = await params;
-  const selectedDate = date || formatDateISO();
+  const queryClient = new QueryClient();
 
-  // TODO: 내 기록함 타임라인 데이터 서버로부터 받아오기
-  // const records = await queryClient.fetchQuery(
-  //   recordPreviewListOptions(selectedDate),
-  // );
-  //
-  const records = createMockRecordPreviews(date);
+  let records: RecordPreview[];
+
+  if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
+    records = await getCachedRecordPreviewList(date, 'personal');
+
+    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    queryClient.setQueryData(['records', 'preview', date, 'personal'], records);
+  } else {
+    records = createMockRecordPreviews(date);
+  }
 
   return (
     <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -37,7 +47,17 @@ export default async function MyDateDetailPage({
       </header>
 
       <div className="py-6">
-        <DailyDetailRecords memories={records} />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
+            <DailyDetailRecords
+              memories={records}
+              date={date}
+              scope="personal"
+            />
+          ) : (
+            <DailyDetailRecords date={date} scope="personal" />
+          )}
+        </HydrationBoundary>
         <DailyDetailFloatingActions date={date} />
       </div>
     </div>
