@@ -23,7 +23,7 @@ import { convertMontRecords } from '../_utils/convertMonthRecords';
 import { groupMonthlyRecordListOptions } from '@/lib/api/group';
 
 interface MonthRecordsProps {
-  monthRecords: MonthlyRecordList[];
+  monthRecords?: MonthlyRecordList[];
   cardRoute: string;
   groupId?: string;
 }
@@ -43,11 +43,11 @@ export default function MonthRecords({
 
   const options = groupId
     ? groupMonthlyRecordListOptions(groupId)
-    : myMonthlyRecordListOptions();
+    : myMonthlyRecordListOptions(year);
 
   const { data: months = [] } = useQuery({
     ...options,
-    initialData: monthRecords,
+    ...(monthRecords && { initialData: monthRecords }),
     select: (data: MonthlyRecordList[]) => convertMontRecords(data),
   });
 

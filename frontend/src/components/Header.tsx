@@ -1,9 +1,9 @@
 'use client';
 
-import { useApiQuery } from '@/hooks/useApi';
-import { UserProfileResponse } from '@/lib/types/profileResponse';
+import { userProfileOptions } from '@/lib/api/profile';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -12,10 +12,7 @@ export default function Header() {
   const router = useRouter();
   const { userId, setLogin } = useAuthStore();
 
-  const { data: userProfile } = useApiQuery<UserProfileResponse>(
-    ['me'],
-    '/api/me',
-  );
+  const { data: userProfile } = useQuery(userProfileOptions());
 
   if (userProfile && !userId) {
     setLogin({
