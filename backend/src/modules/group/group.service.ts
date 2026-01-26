@@ -20,6 +20,7 @@ import {
 } from '@/modules/post/entity/post-media.entity';
 import { GetGroupsResponseDto } from './dto/get-groups.dto';
 import { UpdateGroupCoverResponseDto } from './dto/update-group-cover.dto';
+import { GetGroupSettingsResponseDto } from './dto/get-group-settings.dto';
 import * as crypto from 'crypto';
 
 import { GroupItemDto } from './dto/get-groups.dto';
@@ -529,6 +530,95 @@ export class GroupService {
         mimeType: postMedia.media.mimeType || 'application/octet-stream',
       },
       updatedAt: new Date(), // 실제 DB 업데이트 시간과 차이가 있을 수 있으나 허용 범위
+    };
+  }
+
+  /** 그룹 설정 정보 조회 */
+  async getGroupSettings(
+    userId: string,
+    groupId: string,
+  ): Promise<GetGroupSettingsResponseDto> {
+    // 1. 그룹 존재 및 멤버 권한 확인
+    const requesterMember = await this.groupMemberRepo.findOne({
+      where: { groupId, userId },
+    });
+
+    if (!requesterMember) {
+      const groupExists = await this.groupRepo.exists({
+        where: { id: groupId },
+      });
+      if (!groupExists) {
+        throw new NotFoundException('존재하지 않는 그룹입니다.');
+      }
+      throw new ForbiddenException('그룹 멤버가 아닙니다.');
+    }
+
+    // 2. 그룹 정보 조회 (커버 이미지 포함)
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+      relations: ['coverMedia'],
+    });
+
+    if (!group) throw new NotFoundException('존재하지 않는 그룹입니다.');
+
+    // 3. 전체 멤버 조회 (유저 정보 및 프로필 이미지 포함)
+    const members = await this.groupMemberRepo.find({
+      where: { groupId },
+      relations: ['user', 'user.profileImageId'],
+      order: { joinedAt: 'ASC' }, // 가입일 순 정렬 등
+    });
+
+    // 4. 응답 구성
+    // Me 확인
+    const meMember = members.find((m) => m.userId === userId);
+    // (위에서 requesterMember를 찾았으므로 무조건 존재해야 하지만, 안전하게 확인)
+    if (!meMember) throw new ForbiddenException('그룹 멤버가 아닙니다.');
+
+    const groupDto = {
+      groupId: group.id,
+      name: group.name,
+      createdAt: group.createdAt,
+      ownerUserId: group.owner.id, // owner relation 필요함. groupRepo.findOne에서 relations 추가 필요?
+      // -> Group entity에 @JoinColumn({name: 'owner_id'}) owner: User 가 있음.
+      // typeorm은 relation load 안해도 id는 접근 가능할 수 있음 (lazy loading 아닐 때)
+      // 하지만 확실하게 하기 위해 relations에 owner 추가하거나 loadRelationId 사용.
+      // 여기서는 groupRepo.findOne relations에 owner 추가하는 게 안전.
+      cover: group.coverMedia
+        ? {
+            assetId: group.coverMedia.id,
+            sourcePostId: group.coverSourcePostId || '', // sourcePostId nullable 대응
+          }
+        : null,
+    };
+
+    // Members list (GroupSettingMemberDto[])
+    const memberDtos = members.map((m) => ({
+      userId: m.user.id,
+      name: m.user.nickname,
+      profileImage: m.user.profileImage
+        ? { assetId: m.user.profileImage.id }
+        : null,
+      role: m.role,
+      nicknameInGroup: m.nicknameInGroup,
+      joinedAt: m.joinedAt,
+    }));
+
+    // Me DTO
+    const meDto = {
+      userId: meMember.user.id,
+      name: meMember.user.nickname,
+      profileImage: meMember.user.profileImage
+        ? { assetId: meMember.user.profileImage.id }
+        : null,
+      role: meMember.role,
+      nicknameInGroup: meMember.nicknameInGroup,
+      joinedAt: meMember.joinedAt,
+    };
+
+    return {
+      group: groupDto,
+      me: meDto,
+      members: memberDtos,
     };
   }
 
