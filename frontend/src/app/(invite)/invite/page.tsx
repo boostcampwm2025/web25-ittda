@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
 import { handleInviteError } from '../_utils/handleInviteError';
+import { invalidateCache } from '@/lib/api/cache-actions';
+import { CACHE_TAGS } from '@/lib/api/cache';
 
 export default function InvitePage() {
   const router = useRouter();
@@ -55,6 +57,7 @@ export default function InvitePage() {
             const groupName = response.data.group.name;
             if (!groupId) createApiError(response);
 
+            invalidateCache(CACHE_TAGS.SHARED);
             toast.success(`${groupName} 그룹에 참여되었습니다!`);
             router.replace(`/group/${groupId}`);
           },

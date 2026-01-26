@@ -25,6 +25,8 @@ import { useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
 import { cn } from '@/lib/utils';
 import { GroupMembersResponse } from '@/lib/types/groupResponse';
+import { invalidateCache } from '@/lib/api/cache-actions';
+import { CACHE_TAGS } from '@/lib/api/cache';
 
 interface GroupHeaderActionsProps {
   groupInfo: GroupMembersResponse;
@@ -43,6 +45,7 @@ export default function GroupHeaderActions({
   const queryClient = useQueryClient();
   const { mutate: leaveGroup } = useApiDelete(`/api/${groupId}/members/me`, {
     onSuccess: () => {
+      invalidateCache(CACHE_TAGS.SHARED);
       queryClient.invalidateQueries({ queryKey: ['share'] });
       router.push('/shared');
     },

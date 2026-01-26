@@ -65,7 +65,7 @@ export async function getCachedGroupMonthlyRecordList(
       return response.data;
     },
     ['group', groupId, 'records', 'month', year],
-    [CACHE_TAGS.RECORDS, `records-group-${year}`],
+    [CACHE_TAGS.RECORDS, `records-group-${groupId}-${year}`],
   );
 }
 
@@ -92,7 +92,7 @@ export async function getCachedGroupDailyRecordList(
 }
 
 /**
- * 서버 컴포넌트에서 사용하는 캐시된 group 월별 기록함 목록 조회
+ * 서버 컴포넌트에서 사용하는 캐시된 group 목록 조회
  */
 export async function getCachedGroupList() {
   return getCachedData<GroupListResponse[]>(
