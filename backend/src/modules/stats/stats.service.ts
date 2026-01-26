@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { DateTime } from 'luxon';
 
 import { Post } from '../post/entity/post.entity';
@@ -33,7 +33,8 @@ export class StatsService {
 
     let querySql = `SELECT unnest(tags) as tag, COUNT(*) as count, MAX(created_at) as max_created_at
          FROM posts 
-         WHERE owner_user_id = $1 
+         WHERE owner_user_id = $1
+           AND deleted_at IS NULL
          GROUP BY tag 
          ${orderByClause}`;
 
@@ -72,7 +73,9 @@ export class StatsService {
        FROM (
          SELECT unnest(emotion) as emotion
          FROM posts
-         WHERE owner_user_id = $1 AND emotion IS NOT NULL
+         WHERE owner_user_id = $1
+           AND emotion IS NOT NULL
+           AND deleted_at IS NULL
        ) t
        GROUP BY emotion
        ORDER BY count DESC`,
@@ -164,6 +167,7 @@ export class StatsService {
       .createQueryBuilder('post')
       .select('DISTINCT(DATE(post.eventAt))', 'date')
       .where('post.ownerUserId = :userId', { userId })
+      .andWhere('post.deletedAt IS NULL')
       .orderBy('date', 'DESC')
       .getRawMany<{ date: string }>();
 
@@ -212,6 +216,7 @@ export class StatsService {
       .createQueryBuilder('post')
       .select('COUNT(DISTINCT(DATE(post.eventAt)))', 'count')
       .where('post.ownerUserId = :userId', { userId })
+      .andWhere('post.deletedAt IS NULL')
       .andWhere('post.eventAt >= :start AND post.eventAt <= :end', {
         start,
         end,
@@ -225,13 +230,14 @@ export class StatsService {
     userId: string,
   ): Promise<{ totalPosts: number; totalImages: number }> {
     const totalPosts = await this.postRepo.count({
-      where: { ownerUserId: userId },
+      where: { ownerUserId: userId, deletedAt: IsNull() },
     });
 
     const imageBlocks = await this.postBlockRepo
       .createQueryBuilder('block')
       .innerJoin('block.post', 'post')
       .where('post.ownerUserId = :userId', { userId })
+      .andWhere('post.deletedAt IS NULL')
       .andWhere('block.type = :type', { type: PostBlockType.IMAGE })
       .select('block.value', 'value')
       .getRawMany<{ value: BlockValueMap[typeof PostBlockType.IMAGE] }>();
@@ -288,6 +294,7 @@ export class StatsService {
       .createQueryBuilder('block')
       .innerJoin('block.post', 'post')
       .where('post.ownerUserId = :userId', { userId })
+      .andWhere('post.deletedAt IS NULL')
       .andWhere('block.type = :type', { type: PostBlockType.LOCATION })
       .select(
         "COALESCE(block.value->>'placeName', block.value->>'address')",
@@ -324,6 +331,7 @@ export class StatsService {
          AND event_at >= $2 
          AND event_at <= $3 
          AND emotion IS NOT NULL
+         AND deleted_at IS NULL
        GROUP BY emotion
        ORDER BY count DESC`,
       [userId, fromDate, toDate],
@@ -341,6 +349,7 @@ export class StatsService {
   ): Promise<{ count: number }> {
     const qb = this.postRepo.createQueryBuilder('post');
     qb.where('post.owner_user_id = :userId', { userId });
+    qb.andWhere('post.deletedAt IS NULL');
 
     if (query.date) {
       const parts = query.date.split('-').map((s) => parseInt(s, 10));
