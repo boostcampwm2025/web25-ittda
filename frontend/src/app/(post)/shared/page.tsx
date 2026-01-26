@@ -4,7 +4,7 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 import SharedRecords from './_components/SharedRecords';
-import { groupListOptions } from '@/lib/api/group';
+import { getCachedGroupList } from '@/lib/api/group';
 
 interface SharedPageProps {
   searchParams: Promise<{ [key: string]: string }>;
@@ -16,7 +16,10 @@ export default async function SharedPage({ searchParams }: SharedPageProps) {
   const sortBy = params.sort;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    await queryClient.prefetchQuery(groupListOptions());
+    const groupList = getCachedGroupList();
+
+    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    queryClient.setQueryData(['shared'], groupList);
   }
 
   return (

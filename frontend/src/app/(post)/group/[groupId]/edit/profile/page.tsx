@@ -1,10 +1,12 @@
-import { groupMyProfileOptions } from '@/lib/api/group';
+import { getCachedGroupMyProfile } from '@/lib/api/group';
 import GroupProfileEditClient from './_components/GroupProfileEditClient';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
+import { GroupMemberProfileResponse } from '@/lib/types/groupResponse';
+import { createMockGroupMyProfile } from '@/lib/mocks/mock';
 
 export default async function GroupProfileEditPage({
   params,
@@ -13,11 +15,14 @@ export default async function GroupProfileEditPage({
 }) {
   const { groupId } = await params;
   const queryClient = new QueryClient();
+  let profileData: GroupMemberProfileResponse;
 
-  // 서버에서 프리패칭 수행
-  const profileData = await queryClient.fetchQuery(
-    groupMyProfileOptions(groupId),
-  );
+  if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
+    profileData = await getCachedGroupMyProfile(groupId);
+  } else {
+    profileData = createMockGroupMyProfile(groupId);
+  }
+
   const groupProfile = {
     id: profileData.userId,
     nickname: profileData.nicknameInGroup,

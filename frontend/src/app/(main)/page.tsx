@@ -5,9 +5,9 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { recordPreviewListOptions } from '@/lib/api/records';
+import { getCachedRecordPreviewList } from '@/lib/api/records';
+import { getCachedUserRecordStats } from '@/lib/api/profile';
 import { formatDateISO } from '@/lib/date';
-import { userRecordPatternOptions } from '@/lib/api/profile';
 
 interface HomePageProps {
   searchParams: Promise<{ date?: string }>;
@@ -18,18 +18,27 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const selectedDate = date || formatDateISO();
 
   const queryClient = new QueryClient();
-  const currentStreak: number = 0;
-  const monthlyRecordCount: number = 0;
+  let currentStreak = 0;
+  let monthlyRecordCount = 0;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    const [,] = await Promise.all([
-      queryClient.prefetchQuery(recordPreviewListOptions(selectedDate)),
-      // queryClient.fetchQuery(userRecordPatternOptions(selectedDate)),
-      // queryClient.fetchQuery(userRecordPatternOptions(selectedDate.slice(0, 7))), // YYYY-MM 형식
+    // unstable_cache로 캐시된 데이터 가져오기 (병렬 실행)
+    const recordStatsDate = formatDateISO(new Date());
+    const recordStatsMonth = recordStatsDate.slice(0, 7);
+    const [recordPreviews, streakData, monthlyData] = await Promise.all([
+      getCachedRecordPreviewList(selectedDate),
+      getCachedUserRecordStats('date', recordStatsDate), // YYYY-MM-DD → 연속 작성 일수
+      getCachedUserRecordStats('month', recordStatsMonth), // YYYY-MM → 월간 기록 수
     ]);
 
-    // currentStreak = streakData.count;
-    // monthlyRecordCount = monthlyData.count;
+    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    queryClient.setQueryData(
+      ['records', 'preview', selectedDate],
+      recordPreviews,
+    );
+
+    currentStreak = streakData.count;
+    monthlyRecordCount = monthlyData.count;
   }
   return (
     <>
