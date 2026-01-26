@@ -12,13 +12,13 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { DateTime } from 'luxon';
 
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { StatsService } from './stats.service';
 import { GetEmotionSummaryQueryDto } from './dto/get-emotion-summary.query.dto';
 import { EmotionSummaryResponseDto } from './dto/emotion-summary.response.dto';
-import { GetStatsSummaryQueryDto } from './dto/get-stats-summary.query.dto';
 import { StatsSummaryResponseDto } from './dto/stats-summary.response.dto';
 import { GetTagStatsQueryDto } from './dto/get-tag-stats.query.dto';
 import { TagStatsResponseDto, TagCountDto } from './dto/tag-stats.response.dto';
@@ -79,14 +79,20 @@ export class StatsController {
   }
 
   @Get('summary')
-  @ApiOperation({ summary: '기간별 기록 수 요약' })
+  @ApiOperation({ summary: '유저 기록 요약' })
   @ApiWrappedOkResponse({ type: StatsSummaryResponseDto })
-  async getStatsSummary(
-    @Req() req: RequestWithUser,
-    @Query() query: GetStatsSummaryQueryDto,
-  ): Promise<{ count: number }> {
+  async getStatsSummary(@Req() req: RequestWithUser): Promise<{
+    streak: number;
+    monthlyRecordingDays: number;
+  }> {
     const userId = req.user.sub;
-    return this.statsService.getStatsSummary(userId, query);
+    const now = DateTime.now().setZone('Asia/Seoul');
+    const [streak, monthlyRecordingDays] = await Promise.all([
+      this.statsService.getStreak(userId),
+      this.statsService.getMonthlyRecordingDays(userId, now.year, now.month),
+    ]);
+
+    return { streak, monthlyRecordingDays };
   }
 
   @Get('tags/top')
