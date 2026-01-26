@@ -1,5 +1,6 @@
 import { useApiPatch } from '@/hooks/useApi';
 import { createApiError } from '@/lib/utils/errorHandler';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -15,6 +16,7 @@ export interface UpdateGroupMeParams {
  */
 export const useUpdateGroupProfile = (groupId: string) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const updateMutation = useApiPatch<UpdateGroupMeParams>(
     `/api/groups/${groupId}/members/me`,
@@ -22,6 +24,7 @@ export const useUpdateGroupProfile = (groupId: string) => {
       onSuccess: (res) => {
         if (!res.success) createApiError(res);
         toast.success('프로필 정보가 수정되었습니다.');
+        queryClient.invalidateQueries({ queryKey: ['group', groupId, 'me'] });
 
         router.replace(`/group/${groupId}/edit`);
       },
