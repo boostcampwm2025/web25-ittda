@@ -11,6 +11,8 @@ import {
 import { DateTime } from 'luxon';
 
 import { Post } from '../post/entity/post.entity';
+import { GroupMember } from '../group/entity/group_member.entity';
+import { PostScope } from '@/enums/post-scope.enum';
 import { GetFeedQueryDto } from './dto/get-feed.query.dto';
 import {
   FeedBlockDto,
@@ -55,35 +57,60 @@ export class FeedQueryService {
     private readonly postRepo: Repository<Post>,
     @InjectRepository(PostBlock)
     private readonly postBlockRepo: Repository<PostBlock>,
+    @InjectRepository(GroupMember)
+    private readonly groupMemberRepo: Repository<GroupMember>,
   ) {}
 
   async getFeedForUser(userId: string, query: GetFeedQueryDto) {
     // 날짜 필터링을 위해 date 파싱
     const { from, to } = dayRange(query.date, query.tz ?? 'Asia/Seoul');
 
-    // 1) posts 조회 (owner OR contributor)
-    // 정책 : "내 개인글 + 내가 작성한 그룹 글"
+    // 1) posts 조회
+    // - scope 없음: 내 개인글 + 내가 작성한 그룹 글
+    // - scope=PERSONAL: 내 개인글만
+    // - scope=GROUP: 내가 속한 그룹의 전체 글
     const postsQb = this.postRepo.createQueryBuilder('p');
 
-    postsQb.where(
-      new Brackets((qb: SelectQueryBuilder<Post>) => {
-        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
+    if (query.scope === PostScope.GROUP) {
+      const groupIds = await this.groupMemberRepo.find({
+        where: { userId },
+        select: { groupId: true },
+      });
+      const groupIdList = groupIds.map((member) => member.groupId);
+      if (groupIdList.length === 0) {
+        return { cards: [], warnings: [] };
+      }
+      postsQb.where('p.scope = :scope', { scope: PostScope.GROUP });
+      postsQb.andWhere('p.groupId IN (:...groupIds)', {
+        groupIds: groupIdList,
+      });
+    } else if (query.scope === PostScope.PERSONAL) {
+      postsQb.where('p.scope = :scope', { scope: PostScope.PERSONAL });
+      postsQb.andWhere('p.ownerUserId = :userId', { userId });
+    } else {
+      // NOTE: 기본 피드는 contributor 기반으로만 필터링한다.
+      // contributor 기록이 누락되면 피드에서 빠질 수 있으니,
+      // 생성/발행 시 owner를 contributor로 항상 저장해야 한다.
+      postsQb.where(
+        new Brackets((qb: SelectQueryBuilder<Post>) => {
+          qb.where(
+            (subQb: SelectQueryBuilder<Post>) => {
+              const sub = subQb
+                .subQuery()
+                .select('1')
+                .from(PostContributor, 'pc')
+                .where('pc.postId = p.id')
+                .andWhere('pc.userId = :userId')
+                .andWhere('pc.role IN (:...roles)')
+                .getQuery();
 
-            return `EXISTS ${sub}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
+              return `EXISTS ${sub}`;
+            },
+            { userId, roles: ['AUTHOR', 'EDITOR'] },
+          );
+        }),
+      );
+    }
     if (from && to) {
       postsQb.andWhere('p.eventAt >= :from AND p.eventAt < :to', { from, to });
     }
