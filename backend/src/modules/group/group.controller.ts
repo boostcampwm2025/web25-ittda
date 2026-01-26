@@ -21,6 +21,7 @@ import {
   UpdateGroupCoverDto,
   UpdateGroupCoverResponseDto,
 } from './dto/update-group-cover.dto';
+import { GetGroupSettingsResponseDto } from './dto/get-group-settings.dto';
 
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../auth/auth.type';
@@ -177,6 +178,20 @@ export class GroupController {
     );
   }
 
+  @Get(':groupId/settings')
+  @ApiOperation({
+    summary: '그룹 정보 조회',
+    description: '그룹의 기본 정보와 내 정보, 전체 멤버 목록을 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: GetGroupSettingsResponseDto })
+  async getGroupSettings(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+  ) {
+    return this.groupService.getGroupSettings(user.sub, groupId);
+  }
+
   @Delete(':groupId/members/me')
   @ApiOperation({
     summary: '그룹 나가기',
@@ -207,6 +222,20 @@ export class GroupController {
     @Param('memberId') memberId: string,
   ) {
     return this.groupService.removeMember(user.sub, groupId, memberId);
+  }
+
+  /** 그룹 멤버 조회 */
+  @Get(':groupId/current-members')
+  @ApiOperation({
+    summary: '그룹 멤버 목록 조회',
+    description: '현재 그룹에 속한 멤버들의 정보를 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: GetGroupMembersResponseDto })
+  async getGroupMembers(
+    @Param('groupId') groupId: string,
+  ): Promise<GetGroupMembersResponseDto> {
+    return this.groupService.getGroupMembers(groupId);
   }
 
   @UseGuards(GroupRoleGuard)
@@ -272,19 +301,5 @@ export class GroupController {
   ) {
     await this.groupService.deleteInvite(inviteId);
     return;
-  }
-
-  /** 그룹 멤버 조회 */
-  @Get(':groupId/current-members')
-  @ApiOperation({
-    summary: '그룹 멤버 목록 조회',
-    description: '현재 그룹에 속한 멤버들의 정보를 조회합니다.',
-  })
-  @ApiParam({ name: 'groupId', description: '그룹 ID' })
-  @ApiWrappedOkResponse({ type: GetGroupMembersResponseDto })
-  async getGroupMembers(
-    @Param('groupId') groupId: string,
-  ): Promise<GetGroupMembersResponseDto> {
-    return this.groupService.getGroupMembers(groupId);
   }
 }
