@@ -12,7 +12,7 @@
 
 ## 👉 배포 링크
 
-TODO: ncp 배포 주소
+https://web25-ittda-frontend.vercel.app/
 
 <br />
 

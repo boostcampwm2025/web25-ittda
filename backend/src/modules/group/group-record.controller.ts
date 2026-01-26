@@ -72,10 +72,11 @@ export class GroupRecordController {
     return { data: result };
   }
 
-  // TODO: 그룹 기록 조회 API에 대해 groupRole guard 적용해야함
   /**
    * 그룹 월별 기록 조회
    */
+  @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.VIEWER)
   @Get(':groupId/archives/months')
   @ApiOperation({
     summary: '그룹 월별 아카이브 조회',
@@ -102,6 +103,8 @@ export class GroupRecordController {
   /**
    * 그룹 일별 기록 조회
    */
+  @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.VIEWER)
   @Get(':groupId/archives/days')
   @ApiOperation({
     summary: '그룹 일별 아카이브 조회',
@@ -127,6 +130,8 @@ export class GroupRecordController {
   /**
    * 그룹 월별 커버 이미지 조회
    */
+  @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.VIEWER)
   @Get(':groupId/archives/monthcover')
   @ApiOperation({
     summary: '그룹 월별 커버 후보 이미지 조회',
@@ -152,6 +157,8 @@ export class GroupRecordController {
   /**
    * 그룹의 기록이 있는 날짜 조회
    */
+  @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.VIEWER)
   @Get(':groupId/archives/record-days')
   @ApiOperation({
     summary: '기록이 있는 날짜 조회',
