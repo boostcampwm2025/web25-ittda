@@ -72,6 +72,7 @@ export class GroupRecordController {
     return { data: result };
   }
 
+  // TODO: 그룹 기록 조회 API에 대해 groupRole guard 적용해야함
   /**
    * 그룹 월별 기록 조회
    */
