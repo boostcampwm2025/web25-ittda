@@ -7,14 +7,6 @@ import { GripVertical } from 'lucide-react';
 import RecordEditorHeader from './RecordEditorHeader';
 import RecordTitleInput from './RecordTitleInput';
 import Toolbar from './Toolbar';
-import { DateField, TimeField, ContentField } from './core/CoreField';
-import { PhotoField } from './photo/PhotoField';
-import { EmotionField } from './emotion/EmotionField';
-import { TagField } from './tag/TagField';
-import { TableField } from './table/TableField';
-import { RatingField } from './rating/RatingField';
-import { LocationField } from '@/components/map/LocationField';
-import MediaField from './media/MediaField';
 
 // 드로어
 import DateDrawer from '@/components/DateDrawer';
@@ -28,17 +20,12 @@ import MediaDrawer from './media/MediaDrawer';
 // 타입
 import {
   BlockValue,
-  DateValue,
   FieldType,
-  LocationValue,
-  MediaInfoValue,
   RatingValue,
-  TableValue,
   TagValue,
-  TextValue,
   TimeValue,
 } from '@/lib/types/record';
-import { EmotionValue, PhotoValue, RecordBlock } from '@/lib/types/recordField';
+import { RecordBlock } from '@/lib/types/recordField';
 import {
   canBeHalfWidth,
   getDefaultValue,
@@ -57,6 +44,7 @@ import { LockResponsePayload, useLockManager } from '@/hooks/useLockManager';
 import { useSocketStore } from '@/store/useSocketStore';
 import { useRecordCollaboration } from '@/hooks/useRecordCollaboration';
 import { useThrottle } from '@/lib/utils/useThrottle';
+import { RecordFieldRenderer } from './RecordFieldRender';
 
 export default function PostEditor({
   mode,
@@ -208,141 +196,6 @@ export default function PostEditor({
     releaseLock(lockKey);
   };
 
-  const renderField = (block: RecordBlock) => {
-    const lockKey = `block:${block.id}`;
-    const ownerSessionId = locks[lockKey];
-    const isLockedByOther = !!ownerSessionId && ownerSessionId !== mySessionId;
-
-    const handleFocus = () => {
-      if (draftId) requestLock(lockKey);
-    };
-
-    const onCommit = () => handleFieldCommit(block.id, displayValue);
-
-    const displayValue = streamingValues[block.id] ?? block.value;
-
-    // 공통 핸들러
-    const onUpdate = (val: BlockValue) => handleFieldUpdate(block.id, val);
-
-    const handleLockAndAction = () => {
-      if (isLockedByOther) return;
-      if (draftId) requestLock(lockKey);
-      if (block.type === 'location') goToLocationPicker();
-      else setActiveDrawer({ type: block.type, id: block.id });
-    };
-
-    const isMyLock = !!ownerSessionId && ownerSessionId === mySessionId;
-    switch (block.type) {
-      case 'date':
-        return (
-          <DateField
-            date={displayValue as DateValue}
-            onClick={handleLockAndAction}
-          />
-        );
-      case 'time':
-        return (
-          <TimeField
-            time={displayValue as TimeValue}
-            onClick={handleLockAndAction}
-          />
-        );
-      case 'content':
-        const contentBlockCount = blocks.filter(
-          (b) => b.type === 'content',
-        ).length;
-        const isLastContentBlock = contentBlockCount === 1;
-        return (
-          <ContentField
-            value={displayValue as TextValue}
-            onChange={(v) => onUpdate({ text: v })}
-            onRemove={() => removeBlock(block.id)}
-            isLastContentBlock={isLastContentBlock}
-            isLocked={isLockedByOther}
-            isMyLock={isMyLock}
-            onFocus={handleFocus}
-            onBlur={onCommit}
-          />
-        );
-      case 'photos':
-        return (
-          <PhotoField
-            photos={displayValue as PhotoValue}
-            onClick={handleLockAndAction}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      case 'emotion':
-        return (
-          <EmotionField
-            emotion={displayValue as EmotionValue}
-            onClick={handleLockAndAction}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      case 'tags': {
-        const tagValue = displayValue as TagValue;
-        return (
-          <TagField
-            tags={tagValue}
-            onRemove={(tag: string) => {
-              const newValue = { tags: tagValue.tags.filter((t) => t !== tag) };
-
-              // 화면 업데이트
-              updateFieldValue(newValue, block.id);
-
-              // 서버 커밋
-              handleFieldCommit(block.id, newValue);
-            }}
-            onAdd={handleLockAndAction}
-            onRemoveField={() => removeBlock(block.id)}
-          />
-        );
-      }
-      case 'table':
-        return (
-          <TableField
-            data={displayValue as TableValue}
-            onUpdate={(d) => {
-              if (d) {
-                onUpdate(d);
-              } else {
-                removeBlock(block.id);
-              }
-            }}
-            isLocked={isLockedByOther}
-            onFocus={handleFocus}
-            onBlur={onCommit}
-          />
-        );
-      case 'rating':
-        return (
-          <RatingField
-            value={displayValue as RatingValue}
-            onClick={handleLockAndAction}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      case 'location':
-        return (
-          <LocationField
-            location={displayValue as LocationValue}
-            onClick={() => goToLocationPicker()}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      case 'media':
-        return (
-          <MediaField
-            data={displayValue as MediaInfoValue}
-            onClick={handleLockAndAction}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      default:
-        return null;
-    }
-  };
   const handleDrawerDone = (newValue: BlockValue) => {
     if (!activeDrawer) return;
     if (activeDrawer.id && draftId) {
@@ -510,6 +363,7 @@ export default function PostEditor({
       addOrShowBlock(type);
     }
   };
+
   return (
     <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
@@ -532,7 +386,10 @@ export default function PostEditor({
             const lockKey = `block:${block.id}`;
             const ownerSessionId = locks[lockKey];
             const owner = members.find((m) => m.sessionId === ownerSessionId);
-
+            const contentBlockCount = blocks.filter(
+              (b) => b.type === 'content',
+            ).length;
+            const isLastContentBlock = contentBlockCount === 1;
             //const isLockedByOther = ownerSessionId && ownerSessionId !== mySessionId;
             return (
               <div
@@ -557,7 +414,19 @@ export default function PostEditor({
                       alt="현재 유저 프로필"
                     />
                   )}
-                  {renderField(block)}
+                  <RecordFieldRenderer
+                    block={block}
+                    locks={locks}
+                    mySessionId={mySessionId}
+                    streamingValue={streamingValues[block.id]}
+                    requestLock={requestLock}
+                    onUpdate={handleFieldUpdate}
+                    onCommit={handleFieldCommit}
+                    onRemove={removeBlock}
+                    onOpenDrawer={(type, id) => setActiveDrawer({ type, id })}
+                    goToLocationPicker={goToLocationPicker}
+                    isLastContentBlock={isLastContentBlock}
+                  />
                 </div>
               </div>
             );
