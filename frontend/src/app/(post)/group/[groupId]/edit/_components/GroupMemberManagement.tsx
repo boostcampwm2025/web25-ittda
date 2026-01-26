@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { useApiDelete } from '@/hooks/useApi';
 import { GroupMember } from '@/lib/types/groupResponse';
 import { GroupRoleType } from '@/lib/types/group';
+import { invalidateCaches } from '@/lib/api/cache-actions';
+import { CACHE_TAGS } from '@/lib/api/cache';
 
 interface GroupMemberManagementProps {
   groupId: string;
@@ -76,6 +78,11 @@ export default function GroupMemberManagement({
     `/api/${groupId}/members/${deleteMember?.userId}`,
     {
       onSuccess: () => {
+        invalidateCaches([
+          CACHE_TAGS.PROFILE,
+          CACHE_TAGS.SHARED,
+          CACHE_TAGS.MEMBER,
+        ]);
         setMembers(members.filter((m) => m.userId !== deleteMember?.userId));
         setDeleteMember(null);
       },

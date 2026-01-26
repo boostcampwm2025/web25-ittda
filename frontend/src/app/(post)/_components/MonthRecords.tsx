@@ -21,6 +21,7 @@ import { useApiPatch } from '@/hooks/useApi';
 import { myMonthlyRecordListOptions } from '@/lib/api/my';
 import { convertMontRecords } from '../_utils/convertMonthRecords';
 import { groupMonthlyRecordListOptions } from '@/lib/api/group';
+import { invalidateCache } from '@/lib/api/cache-actions';
 
 interface MonthRecordsProps {
   monthRecords?: MonthlyRecordList[];
@@ -57,7 +58,7 @@ export default function MonthRecords({
   };
 
   const cacheKey = groupId
-    ? ['group', 'records', 'month', year]
+    ? ['group', groupId, 'records', 'month', year]
     : ['my', 'records', 'month', year];
 
   const coverEndpoint = groupId
@@ -80,6 +81,11 @@ export default function MonthRecords({
         });
       },
       onSettled: () => {
+        if (groupId) {
+          invalidateCache(`records-group-${groupId}-${year}`);
+        } else {
+          invalidateCache(`records-${year}`);
+        }
         queryClient.invalidateQueries({ queryKey: cacheKey });
       },
     },

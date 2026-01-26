@@ -11,7 +11,7 @@ import { CACHE_TAGS, CacheTag } from './cache';
 /**
  * 특정 태그의 캐시 무효화
  */
-export async function invalidateCache(tag: CacheTag) {
+export async function invalidateCache(tag: string) {
   updateTag(tag);
 }
 
