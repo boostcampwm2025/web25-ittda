@@ -14,7 +14,12 @@ import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { User } from '../user/entity/user.entity';
 import { GroupInvite } from './entity/group_invite.entity';
 import { Post } from '@/modules/post/entity/post.entity';
+import {
+  PostMedia,
+  PostMediaKind,
+} from '@/modules/post/entity/post-media.entity';
 import { GetGroupsResponseDto } from './dto/get-groups.dto';
+import { UpdateGroupCoverResponseDto } from './dto/update-group-cover.dto';
 import * as crypto from 'crypto';
 
 import { GroupItemDto } from './dto/get-groups.dto';
@@ -38,6 +43,9 @@ export class GroupService {
 
     @InjectRepository(Post) // Post 레포지토리 주입
     private readonly postRepo: Repository<Post>,
+
+    @InjectRepository(PostMedia)
+    private readonly postMediaRepo: Repository<PostMedia>,
 
     private readonly dataSource: DataSource,
   ) {}
@@ -446,6 +454,82 @@ export class GroupService {
     });
 
     return { items: validItems };
+  }
+
+  /** 그룹 커버 이미지 수정 */
+  async updateGroupCover(
+    userId: string,
+    groupId: string,
+    assetId: string,
+    sourcePostId: string,
+  ): Promise<UpdateGroupCoverResponseDto> {
+    // 1. 그룹 존재 확인 및 멤버 여부 확인
+    const member = await this.groupMemberRepo.findOne({
+      where: { groupId, userId },
+      relations: ['group'],
+    });
+
+    if (!member) {
+      // 그룹이 없거나, 멤버가 아님. 상세 에러 분기를 위해 그룹 먼저 체크할 수도 있지만,
+      // 보안상 "권한 없음" 혹은 "Not Found"로 통일하는 것이 나을 수 있음.
+      // 요구사항: 그룹 멤버가 아니거나 권한이 부족 -> 403 Forbidden
+      // groupId가 존재하지 않을 때 -> 404 Not Found
+      const groupExists = await this.groupRepo.exists({
+        where: { id: groupId },
+      });
+      if (!groupExists) {
+        throw new NotFoundException('존재하지 않는 그룹입니다.');
+      }
+      throw new ForbiddenException('그룹 멤버가 아닙니다.');
+    }
+
+    // 2. 게시글 존재 및 그룹 소속 확인
+    const post = await this.postRepo.findOne({
+      where: { id: sourcePostId },
+    });
+
+    if (!post) {
+      throw new NotFoundException('존재하지 않는 게시글입니다.');
+    }
+
+    if (post.groupId !== groupId) {
+      throw new BadRequestException('해당 그룹의 게시글이 아닙니다.');
+    }
+
+    // 3. Asset 존재 및 게시글 내 포함 여부 확인 (Block 이미지인지)
+    const postMedia = await this.postMediaRepo.findOne({
+      where: {
+        postId: sourcePostId,
+        mediaId: assetId,
+        kind: PostMediaKind.BLOCK,
+      },
+      relations: ['media'],
+    });
+
+    if (!postMedia) {
+      throw new NotFoundException(
+        '해당 게시글에 포함되지 않은 이미지이거나, 사용 가능한 이미지가 아닙니다.',
+      );
+    }
+
+    // 4. 그룹 정보 업데이트
+    await this.groupRepo.update(groupId, {
+      coverMediaId: assetId,
+      coverSourcePostId: sourcePostId,
+    });
+
+    // 5. 응답 반환 (업데이트된 정보 다시 조회 혹은 구성)
+    // coverMedia 정보는 postMedia.media에서 가져올 수 있음
+    return {
+      groupId,
+      cover: {
+        assetId: postMedia.media.id,
+        width: postMedia.media.width || 0, // optional 처리
+        height: postMedia.media.height || 0,
+        mimeType: postMedia.media.mimeType || 'application/octet-stream',
+      },
+      updatedAt: new Date(), // 실제 DB 업데이트 시간과 차이가 있을 수 있으나 허용 범위
+    };
   }
 
   private validateGroupNickname(nickname: string): string {
