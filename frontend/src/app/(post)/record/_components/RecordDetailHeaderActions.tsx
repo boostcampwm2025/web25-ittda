@@ -11,8 +11,6 @@ import {
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
-import { CACHE_TAGS } from '@/lib/api/cache';
-import { invalidateCache } from '@/lib/api/cache-actions';
 import { RecordDetailResponse } from '@/lib/types/record';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -61,7 +59,6 @@ export default function RecordDetailHeaderActions({
   const queryClient = useQueryClient();
   const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.id}`, {
     onSuccess: () => {
-      invalidateCache(CACHE_TAGS.RECORDS);
       toast.success('기록이 삭제되었습니다.');
       queryClient.invalidateQueries({ queryKey: ['records'] });
 

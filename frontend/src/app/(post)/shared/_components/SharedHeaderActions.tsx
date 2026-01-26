@@ -26,8 +26,6 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { invalidateCache } from '@/lib/api/cache-actions';
-import { CACHE_TAGS } from '@/lib/api/cache';
 
 export type GroupSortOption = 'latest' | 'count' | 'members' | 'name';
 
@@ -63,7 +61,6 @@ export default function SharedHeaderActions() {
       setShowCreateModal(false);
       setIsCreating(false);
       // 백그라운드에서 서버와 동기화
-      invalidateCache(CACHE_TAGS.SHARED);
       queryClient.invalidateQueries({ queryKey: ['shared'] });
     },
   });

@@ -1,6 +1,4 @@
 import { useApiPatch } from '@/hooks/useApi';
-import { CACHE_TAGS } from '@/lib/api/cache';
-import { invalidateCache } from '@/lib/api/cache-actions';
 import { createApiError } from '@/lib/utils/errorHandler';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -26,7 +24,6 @@ export const useUpdateGroupProfile = (groupId: string) => {
       onSuccess: (res) => {
         if (!res.success) createApiError(res);
         toast.success('프로필 정보가 수정되었습니다.');
-        invalidateCache(CACHE_TAGS.PROFILE);
         queryClient.invalidateQueries({ queryKey: ['group', groupId, 'me'] });
 
         router.replace(`/group/${groupId}/edit`);

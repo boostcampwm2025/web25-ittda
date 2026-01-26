@@ -23,8 +23,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useApiDelete } from '@/hooks/useApi';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/utils/errorHandler';
-import { invalidateCache } from '@/lib/api/cache-actions';
-import { CACHE_TAGS } from '@/lib/api/cache';
 
 interface DailyDetailRecordItemProps {
   record: RecordPreview;
@@ -44,7 +42,6 @@ export default function DailyDetailRecordItem({
   const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.postId}`, {
     onSuccess: () => {
       toast.success('기록이 삭제되었습니다.');
-      invalidateCache(CACHE_TAGS.RECORDS);
       queryClient.invalidateQueries({
         queryKey: groupId ? ['group', groupId, 'records'] : ['my', 'records'],
       });

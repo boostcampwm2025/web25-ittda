@@ -21,8 +21,6 @@ import {
 } from '@/lib/types/recordResponse';
 import { GroupSortOption } from './SharedHeaderActions';
 import { useApiPatch } from '@/hooks/useApi';
-import { invalidateCaches } from '@/lib/api/cache-actions';
-import { CACHE_TAGS } from '@/lib/api/cache';
 
 interface SharedRecordProps {
   searchParams: string;
@@ -96,7 +94,6 @@ export default function SharedRecords({ searchParams }: SharedRecordProps) {
       },
       onSettled: () => {
         // 백그라운드에서 서버와 동기화
-        invalidateCaches([CACHE_TAGS.SHARED, CACHE_TAGS.PROFILE]);
         queryClient.invalidateQueries({ queryKey: ['shared'] });
       },
     },

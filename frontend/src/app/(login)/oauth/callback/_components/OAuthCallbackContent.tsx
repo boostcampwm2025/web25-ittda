@@ -2,8 +2,6 @@
 
 import LoginContent from '@/app/(login)/login/_components/LoginContent';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
-import { CACHE_TAGS } from '@/lib/api/cache';
-import { invalidateCache } from '@/lib/api/cache-actions';
 import { userProfileOptions } from '@/lib/api/profile';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { createApiError } from '@/lib/utils/errorHandler';
@@ -72,7 +70,6 @@ export default function OAuthCallbackContent({
                 const groupName = response.data.group.name;
                 if (!groupId) createApiError(response);
                 deleteCookie('invite-code');
-                invalidateCache(CACHE_TAGS.SHARED);
                 toast.success(`${groupName} 그룹에 참여되었습니다!`);
                 router.replace(`/group/${groupId}`);
               },

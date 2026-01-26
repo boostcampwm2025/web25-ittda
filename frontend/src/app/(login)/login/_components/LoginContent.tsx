@@ -11,8 +11,6 @@ import { toast } from 'sonner';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
-import { invalidateCache } from '@/lib/api/cache-actions';
-import { CACHE_TAGS } from '@/lib/api/cache';
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
@@ -46,7 +44,6 @@ export default function LoginContent({
                   const groupName = response.data.group.name;
                   if (!groupId) createApiError(response);
                   deleteCookie('invite-code');
-                  invalidateCache(CACHE_TAGS.SHARED);
                   toast.success(`${groupName} 그룹에 참여되었습니다!`);
                   router.replace(`/group/${groupId}`);
                 },
