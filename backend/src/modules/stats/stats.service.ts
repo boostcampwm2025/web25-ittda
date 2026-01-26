@@ -56,21 +56,26 @@ export class StatsService {
   async getEmotions(
     userId: string,
     sort: 'recent' | 'frequent',
+    limit?: number,
   ): Promise<EmotionCount[]> {
     if (sort === 'frequent') {
+      let querySql = `SELECT emotion, COUNT(*) as count
+        FROM (
+          SELECT unnest(emotion) as emotion
+          FROM posts
+          WHERE owner_user_id = $1 AND emotion IS NOT NULL
+        ) t
+        GROUP BY emotion
+        ORDER BY count DESC`;
+      const params: Array<string | number> = [userId];
+      if (limit !== undefined) {
+        querySql += ` LIMIT $2`;
+        params.push(limit);
+      }
+
       const result = await this.postRepo.query<
         Array<{ emotion: string; count: string }>
-      >(
-        `SELECT emotion, COUNT(*) as count
-         FROM (
-           SELECT unnest(emotion) as emotion
-           FROM posts
-           WHERE owner_user_id = $1 AND emotion IS NOT NULL
-         ) t
-         GROUP BY emotion
-         ORDER BY count DESC`,
-        [userId],
-      );
+      >(querySql, params);
 
       const allowed = new Set(Object.values(PostMood));
       const merged = new Map<PostMood, number>();
@@ -86,9 +91,12 @@ export class StatsService {
         );
       });
 
-      return Array.from(merged.entries())
+      const mergedEntries = Array.from(merged.entries())
         .map(([emotion, count]) => ({ emotion, count }))
         .sort((a, b) => b.count - a.count);
+      return limit !== undefined
+        ? mergedEntries.slice(0, limit)
+        : mergedEntries;
     }
 
     const res = await this.postRepo.find({
@@ -103,10 +111,11 @@ export class StatsService {
     validEmotions.forEach((emotion) => {
       counts.set(emotion, (counts.get(emotion) ?? 0) + 1);
     });
-    return Array.from(counts.entries()).map(([emotion, count]) => ({
+    const items = Array.from(counts.entries()).map(([emotion, count]) => ({
       emotion,
       count,
     }));
+    return limit !== undefined ? items.slice(0, limit) : items;
   }
 
   async getUserStats(userId: string): Promise<UserStats> {

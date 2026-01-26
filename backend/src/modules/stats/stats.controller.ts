@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { StatsService } from './stats.service';
 import { GetEmotionSummaryQueryDto } from './dto/get-emotion-summary.query.dto';
+import { GetEmotionStatsQueryDto } from './dto/get-emotion-stats.query.dto';
 import { EmotionSummaryResponseDto } from './dto/emotion-summary.response.dto';
 import { StatsSummaryResponseDto } from './dto/stats-summary.response.dto';
 import { GetTagStatsQueryDto } from './dto/get-tag-stats.query.dto';
@@ -50,9 +51,6 @@ export class StatsController {
   ): Promise<TagStatsResponseDto> {
     const userId = req.user.sub;
     const limit = query.limit;
-    if (limit !== undefined && limit < 1) {
-      throw new BadRequestException('limit must be at least 1.');
-    }
 
     const [recentTags, frequentTags] = await Promise.all([
       this.statsService.getTags(userId, 'recent', limit),
@@ -68,13 +66,15 @@ export class StatsController {
   @Get('emotions')
   @ApiOperation({ summary: '감정 사용 통계 조회' })
   @ApiQuery({ name: 'sort', enum: ['recent', 'frequent'], required: false })
+  @ApiQuery({ name: 'limit', required: false })
   @ApiWrappedOkResponse({ type: String, isArray: true })
   async getMyEmotions(
     @Req() req: RequestWithUser,
-    @Query('sort') sort: 'recent' | 'frequent' = 'frequent',
+    @Query() query: GetEmotionStatsQueryDto,
   ): Promise<EmotionCount[]> {
     const userId = req.user.sub;
-    return this.statsService.getEmotions(userId, sort);
+    const sort = query.sort ?? 'frequent';
+    return this.statsService.getEmotions(userId, sort, query.limit);
   }
 
   @Get('emotions/summary')
