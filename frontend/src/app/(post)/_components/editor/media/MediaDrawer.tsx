@@ -77,9 +77,14 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
 
   const handleManualSubmit = () => {
     if (!manualTitle.trim()) return;
-    // TODO: externalId/originalTitle 필드 추가 필요
-    onSelect({ title: manualTitle, type: manualType, year: manualYear });
-    onClose();
+    onSelect({
+      externalId: `user_${Date.now()}`,
+      title: manualTitle,
+      type: manualType,
+      year: manualYear,
+      originalTitle: null,
+      imageUrl: undefined,
+    });
   };
 
   return (
@@ -160,12 +165,10 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                     <div className="divide-y space-y-4  divide-gray-50 dark:divide-white/5">
                       {results.map((item, idx) => (
                         <MediaField
-                          key={`${item.title}-${idx}`}
+                          key={item.externalId}
                           data={item}
                           onClick={() => {
-                            // TODO: externalId/originalTitle 필드 추가 필요
                             onSelect(item);
-                            onClose();
                           }}
                           mode="search"
                         />

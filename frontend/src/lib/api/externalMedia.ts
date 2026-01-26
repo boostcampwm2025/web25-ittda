@@ -15,7 +15,9 @@ export const searchMovies = async (query: string): Promise<MediaValue[]> => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.results.map((item: any) => ({
+      externalId: String(item.id),
       title: item.title,
+      originalTitle: item.original_title,
       imageUrl: item.poster_path
         ? `https://image.tmdb.org/t/p/w200${item.poster_path}`
         : undefined,
@@ -48,12 +50,14 @@ export const searchKopis = async (
     const dbElements = xml.getElementsByTagName('db');
 
     return Array.from(dbElements).map((db) => ({
+      externalId: db.getElementsByTagName('mt20id')[0]?.textContent || '',
       title: db.getElementsByTagName('prfnm')[0]?.textContent || '',
+      originalTitle: null, // KOPIS는 별도의 원제 필드가 모호하므로 null 처리
       imageUrl: db.getElementsByTagName('poster')[0]?.textContent || undefined,
       year: (db.getElementsByTagName('prfpdfrom')[0]?.textContent || '-').split(
         '.',
       )[0],
-      type: typeName, // '연극' or '뮤지컬'
+      type: typeName,
     }));
   } catch (error) {
     console.error('KOPIS API Error:', error);
