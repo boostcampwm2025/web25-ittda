@@ -21,7 +21,7 @@ import { GetEmotionSummaryQueryDto } from './dto/get-emotion-summary.query.dto';
 import { EmotionSummaryResponseDto } from './dto/emotion-summary.response.dto';
 import { StatsSummaryResponseDto } from './dto/stats-summary.response.dto';
 import { GetTagStatsQueryDto } from './dto/get-tag-stats.query.dto';
-import { TagStatsResponseDto, TagCountDto } from './dto/tag-stats.response.dto';
+import { TagStatsResponseDto } from './dto/tag-stats.response.dto';
 
 import type { Request } from 'express';
 import type { MyJwtPayload } from '../auth/auth.type';
@@ -42,15 +42,24 @@ export class StatsController {
   constructor(private readonly statsService: StatsService) {}
 
   @Get('tags')
-  @ApiOperation({ summary: '전체 태그 목록 조회' })
-  @ApiQuery({ name: 'sort', enum: ['recent', 'frequent'], required: false })
-  @ApiWrappedOkResponse({ type: TagCountDto, isArray: true })
-  async getMyTags(
+  @ApiOperation({ summary: '태그 통계' })
+  @ApiWrappedOkResponse({ type: TagStatsResponseDto })
+  async getTagStats(
     @Req() req: RequestWithUser,
-    @Query('sort') sort: 'recent' | 'frequent' = 'recent',
-  ): Promise<TagCountDto[]> {
+    @Query() query: GetTagStatsQueryDto,
+  ): Promise<TagStatsResponseDto> {
     const userId = req.user.sub;
-    return this.statsService.getTags(userId, sort);
+    const limit = query.limit;
+
+    const [recentTags, frequentTags] = await Promise.all([
+      this.statsService.getTags(userId, 'recent', limit),
+      this.statsService.getTags(userId, 'frequent', limit),
+    ]);
+
+    return {
+      recentTags,
+      frequentTags,
+    };
   }
 
   @Get('emotions')
@@ -93,27 +102,6 @@ export class StatsController {
     ]);
 
     return { streak, monthlyRecordingDays };
-  }
-
-  @Get('tags/top')
-  @ApiOperation({ summary: '태그 통계 TOP 10' })
-  @ApiWrappedOkResponse({ type: TagStatsResponseDto })
-  async getTagStats(
-    @Req() req: RequestWithUser,
-    @Query() query: GetTagStatsQueryDto,
-  ): Promise<TagStatsResponseDto> {
-    const userId = req.user.sub;
-    const limit = query.limit ?? 10;
-
-    const [recentTop, allTimeTop] = await Promise.all([
-      this.statsService.getTags(userId, 'recent', limit),
-      this.statsService.getTags(userId, 'frequent', limit),
-    ]);
-
-    return {
-      recentTop: recentTop, // 최근 TOP
-      allTimeTop: allTimeTop, // 누적 TOP
-    };
   }
 
   private parseYearMonth(yyyy_mm: string) {
