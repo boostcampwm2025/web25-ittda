@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useState } from 'react';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
 import type { Marker } from '@googlemaps/markerclusterer';
