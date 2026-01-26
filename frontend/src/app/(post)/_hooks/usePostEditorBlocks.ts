@@ -27,6 +27,8 @@ interface UsePostEditorBlocksProps {
   blocks: RecordBlock[];
   setBlocks: React.Dispatch<React.SetStateAction<RecordBlock[]>>;
   draftId?: string;
+  mySessionId?: string;
+  locks?: Record<string, string>;
   requestLock: (lockKey: string) => void;
   releaseLock: (lockKey: string) => void;
   applyPatch: (patch: PatchApplyPayload) => void;
@@ -35,6 +37,8 @@ export function usePostEditorBlocks({
   blocks,
   setBlocks,
   draftId,
+  mySessionId,
+  locks,
   requestLock,
   releaseLock,
   applyPatch,
@@ -49,39 +53,70 @@ export function usePostEditorBlocks({
   //필드 값 업데이트 및 삭제
   const updateFieldValue = useCallback(
     (value: BlockValue, id?: string, type?: FieldType) => {
-      // 기존 블록인데 값이 비었으면 삭제
+      // 삭제 로직
       if (id && isRecordBlockEmpty(value)) {
-        setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
+        removeBlock(id);
         setActiveDrawer(null);
         return undefined;
       }
 
-      const targetId = id || uuidv4();
-      setBlocks((prev) => {
-        const exists = prev.some((b) => b.id === id);
-        if (exists) {
-          return prev.map((b) =>
-            b.id === id ? { ...b, value } : b,
-          ) as RecordBlock[];
-        } else if (type && !isRecordBlockEmpty(value)) {
-          return normalizeLayout([
-            ...prev,
-            {
-              id: targetId,
-              type,
-              value,
-              layout: { row: 0, col: 0, span: 2 },
-            } as RecordBlock,
-          ]);
+      // 신규 생성 로직 (id가 없는 상태에서 첫 클릭)
+      // 콘텐츠, 테이블 처음 들어왔을 때
+      // 드로어에서 처음 클릭했을 때
+      if (!id && type) {
+        const newId = uuidv4();
+        const newBlock = {
+          id: newId,
+          type,
+          value,
+          layout: { row: 0, col: 0, span: 2 },
+        } as RecordBlock;
+
+        const nextBlocks = normalizeLayout([...blocks, newBlock]);
+        const normalized = nextBlocks.find((b) => b.id === newId)!;
+
+        if (draftId) {
+          applyPatch({
+            type: 'BLOCK_INSERT',
+            block: {
+              ...normalized,
+              type: RecordFieldtypeMap[normalized.type],
+              // TODO: 서버와 필드 타입 맞춘 후 any 제거
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any,
+          });
         }
-        return prev;
-      });
-      return targetId;
+
+        setBlocks(nextBlocks);
+        return newId; // 생성된 ID 반환
+      }
+
+      // 기존 블록 업데이트
+      if (id) {
+        const lockKey = `block:${id}`;
+        // 내가 락을 가지고 있지 않다면 요청
+        if (
+          draftId &&
+          activeDrawer?.id === id &&
+          locks?.[lockKey] !== mySessionId
+        ) {
+          requestLock(lockKey);
+        }
+
+        setBlocks(
+          (prev) =>
+            prev.map((b) =>
+              b.id === id ? { ...b, value } : b,
+            ) as RecordBlock[],
+        );
+        return id;
+      }
     },
-    [],
+    [blocks, draftId, mySessionId, locks, applyPatch, requestLock, setBlocks],
   );
 
-  const handleDone = (val: BlockValue, shouldClose = true) => {
+  // 드로어 내에서 아이템 클릭 시 호출
+  const handleDone = (val: BlockValue, shouldClose = false) => {
     if (!activeDrawer) return;
 
     const updatedId = updateFieldValue(
@@ -90,78 +125,40 @@ export function usePostEditorBlocks({
       activeDrawer.type as FieldType,
     );
 
-    if (shouldClose) {
-      // 저장 후 드로어 닫기
-      if (draftId && activeDrawer.id) {
-        releaseLock(`block:${activeDrawer.id}`);
-      }
-      setActiveDrawer(null);
-    } else if (!activeDrawer.id && updatedId) {
-      // 닫지 않고, 신규 생성된 ID를 드로어 상태에 동기화
+    // 새로 생성된 경우 드로어 상태에 ID 동기화
+    if (!activeDrawer.id && updatedId) {
       setActiveDrawer({ ...activeDrawer, id: updatedId });
+    }
+
+    //바로 드로어 끄도록
+    if (shouldClose && updatedId) {
+      if (draftId) releaseLock(`block:${updatedId}`);
+      setActiveDrawer(null);
     }
   };
 
-  //블록 추가/열기 로직
   const addOrShowBlock = useCallback(
     (type: FieldType) => {
       const meta = FIELD_META[type];
       const existing = blocks.find((b) => b.type === type);
-      const limit = MULTI_INSTANCE_LIMITS[type];
 
-      if (limit && blocks.filter((b) => b.type === type).length >= limit) {
-        toast.info(`${type} 필드는 최대 ${limit}개까지만 가능합니다.`);
-        return;
-      }
-
-      // 이미 존재하는 싱글 필드면 락 걸고 드로어 오픈
+      // 한 블록만 추가할 수 있는 애는
+      // 기존 블록이 있다면 열 때 바로 락 요청
       if (meta.isSingle && existing) {
         if (draftId) requestLock(`block:${existing.id}`);
         setActiveDrawer({ type, id: existing.id });
         return;
       }
 
-      // 새로 생성
-      const newId = uuidv4();
-      const defaultValue = getDefaultValue(type);
-      const tempNewBlock = {
-        id: newId,
-        type,
-        value: defaultValue,
-        layout: { row: 0, col: 0, span: 2 }, // 임시 값
-      } as RecordBlock;
-
-      const nextBlocks = normalizeLayout([...blocks, tempNewBlock]);
-
-      const normalizedNewBlock = nextBlocks.find((b) => b.id === newId);
-
-      if (draftId && normalizedNewBlock) {
-        // 정규화 후 블록 전송
-        applyPatch({
-          type: 'BLOCK_INSERT',
-          block: {
-            ...normalizedNewBlock,
-            type: RecordFieldtypeMap[normalizedNewBlock.type],
-            //TODO: 현재는 프론트와 서버가 다른 필드 타입 형태로 전달중. 통일 시 any 제거 후 변경 예정
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any,
-        });
-      }
-
-      // 로컬 상태 반영
-      setBlocks(nextBlocks);
-
       if (meta.requiresDrawer) {
-        if (draftId) requestLock(`block:${newId}`);
-        setActiveDrawer({ type, id: newId });
+        setActiveDrawer({ type, id: undefined });
       } else {
-        // content, table
-        if (draftId) requestLock(`block:${newId}`);
+        //TEXT,TABLE 바로 생성
+        updateFieldValue(getDefaultValue(type), undefined, type);
       }
     },
-    [blocks, draftId, setBlocks, requestLock, applyPatch],
+    [blocks, draftId, requestLock, updateFieldValue],
   );
-
   //사진 업로드
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -207,7 +204,22 @@ export function usePostEditorBlocks({
     }
   };
 
-  const removeBlock = (id: string) => {
+  //지금해야할거
+  // 여기서 타입이 필드면 락 걸고 삭제하고 락 풀고
+  // 여기서 타입이 드로어라면, 바로 삭제만하고(삭제전에 락 검증해야할까?)
+  const removeBlock = (id: string, type?: string) => {
+    if (draftId) {
+      const lockKey = `block:${id}`;
+      requestLock(lockKey);
+      // 서버 사양에 맞춘 BLOCK_DELETE 명령 전송
+      applyPatch({
+        type: 'BLOCK_DELETE',
+        blockId: id,
+      });
+      releaseLock(lockKey);
+    }
+
+    // 로컬 상태 반영 및 레이아웃 정규화
     setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
   };
 

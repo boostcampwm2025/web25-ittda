@@ -9,6 +9,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { RatingValue } from '@/lib/types/recordField';
+import { useThrottle } from '@/lib/utils/useThrottle';
 
 interface RatingDrawerProps {
   onClose: () => void;
@@ -26,6 +27,10 @@ export default function RatingDrawer({
   const containerRef = useRef<HTMLDivElement>(null);
   const currentMax = 5;
 
+  const throttledUpdate = useThrottle((val: number) => {
+    onUpdateRating({ rating: val });
+  }, 500);
+
   // 소수점 지원을 위해 좌표로 점수 계산
   const calculateScore = (clientX: number) => {
     if (!containerRef.current) return;
@@ -36,7 +41,10 @@ export default function RatingDrawer({
     // 0에서 Max 사이로 계산 -> 0.1 단위 반올림
     let rawScore = (x / width) * currentMax;
     rawScore = Math.max(0, Math.min(currentMax, rawScore));
-    setLocalValue(Math.round(rawScore * 10) / 10);
+    const finalScore = Math.round(rawScore * 10) / 10;
+
+    setLocalValue(finalScore);
+    throttledUpdate(finalScore);
   };
 
   // PC용 마우스 이벤트 핸들러
@@ -61,11 +69,6 @@ export default function RatingDrawer({
     window.addEventListener('mouseup', handleMouseUp);
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, []);
-
-  const handleConfirm = () => {
-    onUpdateRating({ rating: localValue });
-    onClose();
-  };
 
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
@@ -123,7 +126,7 @@ export default function RatingDrawer({
           </div>
 
           <button
-            onClick={handleConfirm}
+            onClick={onClose}
             className="mt-8 flex w-full py-4 rounded-2xl text-sm font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 items-center justify-center"
           >
             확인

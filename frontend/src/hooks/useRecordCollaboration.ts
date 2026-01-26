@@ -8,6 +8,7 @@ import {
 } from '@/app/(post)/_utils/recordLayoutHelper';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
+import { toast } from 'sonner';
 
 export function useRecordCollaboration(
   draftId: string | undefined,
@@ -123,7 +124,18 @@ export function useRecordCollaboration(
       });
     });
 
-    socket.on('PATCH_REJECTED_STALE', () => window.location.reload());
+    socket.on('PATCH_REJECTED_STALE', () => {
+      toast.error(
+        '다른 사용자의 편집으로 인해 버전이 갱신되었습니다. 페이지를 새로고침합니다.',
+        {
+          duration: 3000,
+        },
+      );
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 2_000);
+    });
     socket.on('DRAFT_PUBLISHED', ({ postId }) =>
       router.push(`/post/${postId}`),
     );
@@ -132,8 +144,10 @@ export function useRecordCollaboration(
       socket.off('BLOCK_VALUE_STREAM');
       socket.off('STREAM_ABORTED');
       socket.off('PATCH_COMMITTED');
+      socket.off('PATCH_REJECTED_STALE');
+      socket.off('DRAFT_PUBLISHED');
     };
-  }, [socket, draftId, mySessionId, setBlocks, router]);
+  }, [socket, draftId, mySessionId, setBlocks, setTitle, router]);
 
   const emitStream = useCallback(
     (blockId: string, partialValue: BlockValue) => {

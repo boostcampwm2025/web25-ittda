@@ -98,6 +98,8 @@ export default function PostEditor({
     blocks,
     setBlocks,
     draftId,
+    mySessionId: mySessionId || undefined,
+    locks,
     requestLock,
     releaseLock,
     applyPatch,
@@ -187,7 +189,17 @@ export default function PostEditor({
   // 공통 커밋 함수
   const handleFieldCommit = (id: string, value: BlockValue) => {
     if (!draftId) return;
+
     const lockKey = `block:${id}`;
+    const ownerSessionId = locks[lockKey];
+
+    // 내가 락을 갖고있는지 확인
+    const isMine = ownerSessionId === mySessionId;
+
+    // 없으면 락 먼저 받기
+    if (!isMine) {
+      requestLock(lockKey);
+    }
     applyPatch({
       type: 'BLOCK_SET_VALUE',
       blockId: id,
@@ -273,12 +285,15 @@ export default function PostEditor({
         return (
           <TagField
             tags={tagValue}
-            onRemove={(tag: string) =>
-              updateFieldValue(
-                { tags: tagValue.tags.filter((t: string) => t !== tag) },
-                block.id,
-              )
-            }
+            onRemove={(tag: string) => {
+              const newValue = { tags: tagValue.tags.filter((t) => t !== tag) };
+
+              // 화면 업데이트
+              updateFieldValue(newValue, block.id);
+
+              // 서버 커밋
+              handleFieldCommit(block.id, newValue);
+            }}
             onAdd={handleLockAndAction}
             onRemoveField={() => removeBlock(block.id)}
           />
@@ -328,29 +343,35 @@ export default function PostEditor({
         return null;
     }
   };
-  const handleCloseDrawer = (id?: string) => {
-    if (id && draftId) {
-      const lockKey = `block:${id}`;
-      releaseLock(lockKey);
+  const handleDrawerDone = (newValue: BlockValue) => {
+    if (!activeDrawer) return;
+    if (activeDrawer.id && draftId) {
+      emitStream(activeDrawer.id, newValue);
     }
-    setActiveDrawer(null);
-    return;
+
+    //ID 없을 때 생성 및 락 획득
+    handleDone(newValue);
   };
 
-  const handleDrawerDone = (newValue: BlockValue) => {
-    if (!activeDrawer?.id) return;
+  // 명시적으로 드로어를 닫을 때
+  const handleCloseDrawer = (id?: string) => {
+    if (id && draftId) {
+      const currentBlock = blocks.find((b) => b.id === id);
 
-    // 로컬 및 스트림 업데이트
-    handleFieldUpdate(activeDrawer.id, newValue);
+      //여기서 커밋하기
+      if (currentBlock) {
+        applyPatch({
+          type: 'BLOCK_SET_VALUE',
+          blockId: id,
+          value: currentBlock.value,
+        });
+      }
 
-    // 서버에 PATCH_APPLY 커밋
-    handleFieldCommit(activeDrawer.id, newValue);
+      // 락 해제
+      releaseLock(`block:${id}`);
+    }
 
-    // 기존 완료 로직
-    handleDone(newValue);
-
-    //락해제 및 드로어 닫기
-    handleCloseDrawer(activeDrawer.id);
+    setActiveDrawer(null);
   };
 
   const renderActiveDrawer = () => {
@@ -470,7 +491,9 @@ export default function PostEditor({
       case 'media':
         return (
           <MediaDrawer
-            onSelect={handleDrawerDone}
+            onSelect={(v) => {
+              handleDrawerDone(v);
+            }}
             onClose={() => handleCloseDrawer(id)}
           />
         );
