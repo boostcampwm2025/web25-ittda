@@ -11,11 +11,18 @@ import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 export function useRecordCollaboration(
   draftId: string | undefined,
   setBlocks: React.Dispatch<React.SetStateAction<RecordBlock[]>>,
+  setTitle: (val: string) => void,
   initialVersion: number = 0,
 ) {
   const { socket, sessionId: mySessionId } = useSocketStore();
   const router = useRouter();
   const versionRef = useRef(initialVersion);
+
+  useEffect(() => {
+    if (initialVersion > versionRef.current) {
+      versionRef.current = initialVersion;
+    }
+  }, [initialVersion]);
 
   // 임시 스트리밍 값
   const [streamingValues, setStreamingValues] = useState<
@@ -71,7 +78,9 @@ export function useRecordCollaboration(
         setBlocks((prev) => {
           let next = [...prev];
           commands.forEach((cmd) => {
-            if (cmd.type === 'BLOCK_INSERT') {
+            if (cmd.type === 'BLOCK_SET_TITLE') {
+              setTitle(cmd.title);
+            } else if (cmd.type === 'BLOCK_INSERT') {
               if (!next.find((b) => b.id === cmd.block.id))
                 next.push(cmd.block);
             } else if (cmd.type === 'BLOCK_DELETE') {
@@ -90,7 +99,7 @@ export function useRecordCollaboration(
         });
       }
       // 커밋 완료 시 해당 블록의 임시 값 제거
-      setStreamingValues({});
+      //setStreamingValues({});
     });
 
     socket.on('PATCH_REJECTED_STALE', () => window.location.reload());

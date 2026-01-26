@@ -82,6 +82,7 @@ export default function PostEditor({
   const { streamingValues, emitStream, applyPatch } = useRecordCollaboration(
     draftId,
     setBlocks,
+    setTitle,
     initialPost?.version, // 초기 버전 주입
   );
 
@@ -492,7 +493,15 @@ export default function PostEditor({
     <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
-        <RecordTitleInput value={title} onChange={setTitle} />
+        <RecordTitleInput
+          title={title}
+          setTitle={setTitle}
+          draftId={draftId}
+          mySessionId={mySessionId}
+          members={members}
+          applyPatch={applyPatch}
+          lockManager={{ locks, requestLock, releaseLock }}
+        />
         <div
           ref={gridRef}
           onDragOver={handleGridDragOver}
