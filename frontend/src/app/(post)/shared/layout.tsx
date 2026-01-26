@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import SharedHeaderActions from './_components/SharedHeaderActions';
 
 export default function SharedLayout({
@@ -12,7 +13,9 @@ export default function SharedLayout({
           함께 기록함
         </h2>
         <div className="flex items-center gap-2">
-          <SharedHeaderActions />
+          <Suspense>
+            <SharedHeaderActions />
+          </Suspense>
         </div>
       </div>
 

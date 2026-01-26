@@ -78,7 +78,12 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
   const handleManualSubmit = () => {
     if (!manualTitle.trim()) return;
     // TODO: externalId/originalTitle 필드 추가 필요
-    onSelect({ title: manualTitle, type: manualType, year: manualYear });
+    onSelect({
+      title: manualTitle,
+      type: manualType,
+      year: manualYear,
+      externalId: '',
+    });
     onClose();
   };
 

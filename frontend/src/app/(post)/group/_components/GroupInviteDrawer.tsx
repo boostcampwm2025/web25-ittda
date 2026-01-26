@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   UserPlus,
   X,
@@ -9,6 +9,7 @@ import {
   Eye,
   Check,
   Copy,
+  TriangleAlert,
 } from 'lucide-react';
 import {
   Drawer,
@@ -27,14 +28,56 @@ interface GroupInviteDrawerProps {
   groupInfo: GroupInfo;
 }
 
-const BASE_COPY_URL = 'http://localhost:3000/invite?inviteCode=';
+type CopyStatus = 'idle' | 'success' | 'error';
+
+const copyStatusMap: Record<
+  CopyStatus,
+  { icon: ReactNode; text: string; style: string }
+> = {
+  idle: {
+    icon: <Copy className="w-3.5 h-3.5" />,
+    text: '복사하기',
+    style: 'dark:bg-white/5 dark:text-gray-300 bg-white text-gray-600',
+  },
+  success: {
+    icon: <Check className="w-3.5 h-3.5" />,
+    text: '복사 완료',
+    style: 'bg-[#10B981] text-white',
+  },
+  error: {
+    icon: <TriangleAlert className="w-3.5 h-3.5" />,
+    text: '복사 실패',
+    style: 'bg-red-500 text-white',
+  },
+};
+
+const roles = [
+  {
+    id: 'ADMIN',
+    label: '관리자',
+    desc: '모든 관리 및 기록 권한',
+    icon: <ShieldCheck className="w-4 h-4" />,
+  },
+  {
+    id: 'EDITOR',
+    label: '에디터',
+    desc: '기록 생성 및 수정 권한',
+    icon: <Edit3 className="w-4 h-4" />,
+  },
+  {
+    id: 'VIEWER',
+    label: '뷰어',
+    desc: '기록 열람만 가능한 권한',
+    icon: <Eye className="w-4 h-4" />,
+  },
+] as const;
 
 export default function GroupInviteDrawer({
   groupId,
   groupInfo,
 }: GroupInviteDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle');
   const [selectedInviteRole, setSelectedInviteRole] =
     useState<GroupRoleType>('EDITOR');
 
@@ -44,40 +87,30 @@ export default function GroupInviteDrawer({
     isOpen,
   );
 
-  const roles = [
-    {
-      id: 'ADMIN',
-      label: '관리자',
-      desc: '모든 관리 및 기록 권한',
-      icon: <ShieldCheck className="w-4 h-4" />,
-    },
-    {
-      id: 'EDITOR',
-      label: '에디터',
-      desc: '기록 생성 및 수정 권한',
-      icon: <Edit3 className="w-4 h-4" />,
-    },
-    {
-      id: 'VIEWER',
-      label: '뷰어',
-      desc: '기록 열람만 가능한 권한',
-      icon: <Eye className="w-4 h-4" />,
-    },
-  ];
+  const getFullInviteUrl = (code: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/invite?inviteCode=${code}`;
+    }
+    return '';
+  };
 
   const handleRoleChange = (roleId: GroupRoleType) => {
     setSelectedInviteRole(roleId);
   };
 
-  const handleCopyCode = () => {
+  const handleCopyCode = async () => {
     const code = inviteResult?.code || groupInfo.inviteCode;
-    navigator.clipboard.writeText(BASE_COPY_URL + code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(getFullInviteUrl(code));
+      setCopyStatus('success');
+    } catch {
+      setCopyStatus('error');
+    }
+    setTimeout(() => setCopyStatus('idle'), 2000);
   };
 
   const handleKakaoShare = () => {
-    if (!window.Kakao?.Share) return;
+    if (!window.Kakao || !window.Kakao?.Share) return;
 
     const code = inviteResult?.code || groupInfo.inviteCode;
 
@@ -89,8 +122,8 @@ export default function GroupInviteDrawer({
         imageUrl:
           'https://substantial-jade-zgft0gga6m.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-01-16%20003841.png',
         link: {
-          mobileWebUrl: BASE_COPY_URL + code,
-          webUrl: BASE_COPY_URL + code,
+          mobileWebUrl: getFullInviteUrl(code),
+          webUrl: getFullInviteUrl(code),
         },
       },
     });
@@ -173,7 +206,7 @@ export default function GroupInviteDrawer({
             <div className="p-6 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 dark:bg-black/20 dark:border-white/10 bg-gray-50 border-gray-100">
               <div className="flex flex-col items-center">
                 <span className="text-lg font-bold tracking-widest text-[#10B981] break-all text-center">
-                  {BASE_COPY_URL + (inviteResult?.code || groupInfo.inviteCode)}
+                  {getFullInviteUrl(inviteResult?.code || groupInfo.inviteCode)}
                 </span>
                 <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
                   {selectedInviteRole} LEVEL
@@ -181,19 +214,10 @@ export default function GroupInviteDrawer({
               </div>
               <button
                 onClick={handleCopyCode}
-                className={cn(
-                  'flex items-center gap-2 px-6 py-2.5 rounded-2xl font-bold text-xs transition-all shadow-sm',
-                  copied
-                    ? 'bg-[#10B981] text-white'
-                    : 'cursor-pointer dark:bg-white/5 dark:text-gray-300 bg-white text-gray-600',
-                )}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl font-bold text-xs transition-all shadow-sm ${copyStatusMap[copyStatus].style}`}
               >
-                {copied ? (
-                  <Check className="w-3.5 h-3.5" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
-                {copied ? '복사 완료' : '복사하기'}
+                {copyStatusMap[copyStatus].icon}
+                {copyStatusMap[copyStatus].text}
               </button>
             </div>
           </div>
