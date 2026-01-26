@@ -18,7 +18,7 @@ export default function GroupEditClient({ groupId }: GroupEditClientProps) {
   const { data } = useQuery(groupDetailOptions(groupId));
 
   if (!data) {
-    router.replace('/shared');
+    router.push(`/group/${groupId}`);
     return;
   }
 
