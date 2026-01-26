@@ -13,6 +13,7 @@ import {
 } from '../_utils/recordLayoutHelper';
 import { toast } from 'sonner';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
+import { RecordFieldtypeMap } from '@/lib/utils/mapBlocksToPayload';
 
 // 개수 제한
 const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
@@ -123,23 +124,32 @@ export function usePostEditorBlocks({
       // 새로 생성
       const newId = uuidv4();
       const defaultValue = getDefaultValue(type);
-      const newBlock = {
+      const tempNewBlock = {
         id: newId,
         type,
         value: defaultValue,
-        layout: { row: 0, col: 0, span: 2 },
+        layout: { row: 0, col: 0, span: 2 }, // 임시 값
       } as RecordBlock;
 
-      // 서버에 Insert 패치
-      if (draftId) {
+      const nextBlocks = normalizeLayout([...blocks, tempNewBlock]);
+
+      const normalizedNewBlock = nextBlocks.find((b) => b.id === newId);
+
+      if (draftId && normalizedNewBlock) {
+        // 정규화 후 블록 전송
         applyPatch({
           type: 'BLOCK_INSERT',
-          block: newBlock,
+          block: {
+            ...normalizedNewBlock,
+            type: RecordFieldtypeMap[normalizedNewBlock.type],
+            //TODO: 현재는 프론트와 서버가 다른 필드 타입 형태로 전달중. 통일 시 any 제거 후 변경 예정
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any,
         });
       }
 
       // 로컬 상태 반영
-      setBlocks((prev) => normalizeLayout([...prev, newBlock]));
+      setBlocks(nextBlocks);
 
       if (meta.requiresDrawer) {
         if (draftId) requestLock(`block:${newId}`);

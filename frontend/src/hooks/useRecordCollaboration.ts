@@ -7,6 +7,7 @@ import {
   normalizeLayout,
 } from '@/app/(post)/_utils/recordLayoutHelper';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
+import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
 
 export function useRecordCollaboration(
   draftId: string | undefined,
@@ -38,6 +39,8 @@ export function useRecordCollaboration(
       ({ blockId, type, partialValue, sessionId }) => {
         if (sessionId === mySessionId) return;
 
+        const localType = ServerToFieldTypeMap[type] || 'content';
+
         // 임시 값 저장
         setStreamingValues((prev) => ({ ...prev, [blockId]: partialValue }));
 
@@ -45,15 +48,13 @@ export function useRecordCollaboration(
         setBlocks((prev) => {
           if (prev.some((b) => b.id === blockId)) return prev;
 
-          const targetType = type || 'content';
-
           const ghostBlock = {
             id: blockId,
-            type: targetType,
-            value: getDefaultValue(targetType),
+            type: localType,
+            value: getDefaultValue(localType),
             layout: { row: 0, col: 0, span: 2 },
             isOptimistic: true,
-          } as unknown as RecordBlock;
+          } as RecordBlock;
 
           // 기존 블록들 뒤에 배치
           return normalizeLayout([...prev, ghostBlock]);
@@ -72,17 +73,22 @@ export function useRecordCollaboration(
     //  패치 확정 반영
     socket.on('PATCH_COMMITTED', ({ version, patch, authorSessionId }) => {
       versionRef.current = version;
+      const commands = Array.isArray(patch) ? patch : [patch];
 
+      // 블록 데이터 반영
       if (authorSessionId !== mySessionId) {
-        const commands = Array.isArray(patch) ? patch : [patch];
         setBlocks((prev) => {
           let next = [...prev];
           commands.forEach((cmd) => {
             if (cmd.type === 'BLOCK_SET_TITLE') {
               setTitle(cmd.title);
             } else if (cmd.type === 'BLOCK_INSERT') {
-              if (!next.find((b) => b.id === cmd.block.id))
-                next.push(cmd.block);
+              const localType =
+                ServerToFieldTypeMap[cmd.block.type] || cmd.block.type;
+              const localBlock = { ...cmd.block, type: localType };
+              if (!next.find((b) => b.id === localBlock.id)) {
+                next.push(localBlock);
+              }
             } else if (cmd.type === 'BLOCK_DELETE') {
               next = next.filter((b) => b.id !== cmd.blockId);
             } else if (cmd.type === 'BLOCK_SET_VALUE') {
@@ -95,11 +101,26 @@ export function useRecordCollaboration(
               );
             }
           });
-          return next;
+          return normalizeLayout(next);
         });
       }
-      // 커밋 완료 시 해당 블록의 임시 값 제거
-      //setStreamingValues({});
+      // 커밋 완료 시 스티리밍 값 제거
+      setStreamingValues((prev) => {
+        const nextStreaming = { ...prev };
+
+        commands.forEach((cmd) => {
+          if (cmd.type === 'BLOCK_SET_TITLE') {
+            delete nextStreaming['title'];
+          } else {
+            const targetId = cmd.blockId || (cmd.block && cmd.block.id);
+            if (targetId) {
+              delete nextStreaming[targetId];
+            }
+          }
+        });
+
+        return nextStreaming;
+      });
     });
 
     socket.on('PATCH_REJECTED_STALE', () => window.location.reload());

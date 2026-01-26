@@ -61,12 +61,10 @@ import { useThrottle } from '@/lib/utils/useThrottle';
 export default function PostEditor({
   mode,
   initialPost,
-  groupId,
   draftId,
 }: {
   mode: 'add' | 'edit';
   initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
-  groupId?: string;
   draftId?: string;
 }) {
   const router = useRouter();
