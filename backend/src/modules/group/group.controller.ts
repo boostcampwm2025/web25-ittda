@@ -17,6 +17,10 @@ import { UpdateGroupDto } from './dto/update-group.dto';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { GetGroupMembersResponseDto } from './dto/get-group-members.dto';
 import { GetGroupsResponseDto } from './dto/get-groups.dto';
+import {
+  UpdateGroupCoverDto,
+  UpdateGroupCoverResponseDto,
+} from './dto/update-group-cover.dto';
 
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../auth/auth.type';
@@ -150,6 +154,27 @@ export class GroupController {
     @Body() dto: UpdateGroupDto,
   ) {
     return this.groupService.updateGroup(user.sub, groupId, dto.name);
+  }
+
+  @Patch(':groupId/cover')
+  @ApiOperation({
+    summary: '그룹 커버 이미지 수정',
+    description: '그룹의 커버 이미지를 특정 게시글의 이미지로 변경합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiBody({ type: UpdateGroupCoverDto })
+  @ApiWrappedOkResponse({ type: UpdateGroupCoverResponseDto })
+  async updateGroupCover(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+    @Body() dto: UpdateGroupCoverDto,
+  ) {
+    return this.groupService.updateGroupCover(
+      user.sub,
+      groupId,
+      dto.assetId,
+      dto.sourcePostId,
+    );
   }
 
   @Delete(':groupId/members/me')

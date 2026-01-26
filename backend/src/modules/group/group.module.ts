@@ -11,7 +11,7 @@ import { GroupRecordController } from './group-record.controller';
 import { User } from '../user/entity/user.entity';
 import { Post } from '../post/entity/post.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
-
+import { PostMedia } from '../post/entity/post-media.entity';
 import { GroupInvite } from './entity/group_invite.entity';
 import { AuthModule } from '../auth/auth.module';
 
@@ -25,6 +25,7 @@ import { AuthModule } from '../auth/auth.module';
       GroupInvite,
       Post,
       PostBlock,
+      PostMedia,
     ]),
     AuthModule,
   ],
