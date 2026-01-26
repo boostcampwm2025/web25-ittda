@@ -2,8 +2,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useApiPost } from './useApi';
 import { useRouter } from 'next/navigation';
 import { RecordDetail } from '@/lib/types/recordResponse';
-import { invalidateCache } from '@/lib/api/cache-actions';
-import { CACHE_TAGS } from '@/lib/api/cache';
+
 export const useCreateRecord = () => {
   const router = useRouter();
   const { userId } = useAuthStore();
@@ -14,7 +13,6 @@ export const useCreateRecord = () => {
     {
       onSuccess: (res) => {
         if (res.success && res.data?.id) {
-          invalidateCache(CACHE_TAGS.RECORDS);
           router.replace(`/record/${res.data?.id}`);
         }
       },

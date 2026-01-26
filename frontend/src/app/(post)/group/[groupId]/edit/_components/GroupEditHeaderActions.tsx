@@ -3,8 +3,6 @@
 import { useGroupEdit } from './GroupEditContext';
 import Back from '@/components/Back';
 import { useApiPatch } from '@/hooks/useApi';
-import { CACHE_TAGS } from '@/lib/api/cache';
-import { invalidateCaches } from '@/lib/api/cache-actions';
 import { GroupEditResponse } from '@/lib/types/groupResponse';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -23,7 +21,6 @@ export default function GroupEditHeaderActions({
     `/api/groups/${groupId}`,
     {
       onSuccess: () => {
-        invalidateCaches([CACHE_TAGS.SHARED, CACHE_TAGS.PROFILE]);
         queryClient.invalidateQueries({ queryKey: ['group', groupId] });
         toast.success('수정되었습니다.');
       },
