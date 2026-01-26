@@ -3,21 +3,18 @@
 import { useRouter } from 'next/navigation';
 import MonthlyPatternChart from '../../_components/MonthlyPatternChart';
 import { cn } from '@/lib/utils';
-import { useApiQuery } from '@/hooks/useApi';
-import { EmotionStatSummary } from '@/lib/types/profile';
 import { EMOTION_MAP } from '@/lib/constants/constants';
+import { useQuery } from '@tanstack/react-query';
+import { userProfileEmotionSummaryOptions } from '@/lib/api/profile';
 
 export default function EmotionDashboard() {
   const router = useRouter();
 
   const {
-    data: currentEmotions,
+    data: currentEmotions = [],
     isLoading,
     isError,
-  } = useApiQuery<EmotionStatSummary>(
-    ['emotion', 'summary'],
-    '/api/me/emotions',
-  );
+  } = useQuery(userProfileEmotionSummaryOptions());
 
   if (isLoading) {
     return (
@@ -47,7 +44,7 @@ export default function EmotionDashboard() {
       </div>
 
       <div className="w-full justify-between items-center">
-        <MonthlyPatternChart />
+        <MonthlyPatternChart emotions={currentEmotions} />
 
         {/* 리스트 형태로 감정 데이터 표시 */}
         <div className="mt-5 mb-6">
