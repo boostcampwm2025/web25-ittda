@@ -28,25 +28,17 @@ export class UserStatsDto {
 
   @ApiProperty({
     description: '최근 느낀 감정 명단',
-    example: ['HAPPY', 'SAD'],
+    example: ['행복', '슬픔'],
   })
   @Expose()
   recentEmotions: string[];
 
   @ApiProperty({
     description: '자주 느낀 감정 명단',
-    example: ['HAPPY', 'TIRED'],
+    example: ['행복', '피곤'],
   })
   @Expose()
   frequentEmotions: string[];
-
-  @ApiProperty({ description: '연속 작성 일수', example: 5 })
-  @Expose()
-  streak: number;
-
-  @ApiProperty({ description: '이번달 기록한 날짜 수', example: 12 })
-  @Expose()
-  monthlyRecordingDays: number;
 
   @ApiProperty({ description: '총 기록(게시글) 수', example: 150 })
   @Expose()

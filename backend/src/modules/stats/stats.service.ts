@@ -134,8 +134,6 @@ export class StatsService {
       recentTags,
       frequentEmotions,
       recentEmotions,
-      streak,
-      monthlyRecordingDays,
       totalStats,
       locationStats,
     ] = await Promise.all([
@@ -143,12 +141,6 @@ export class StatsService {
       this.getTags(userId, 'recent', 10),
       this.getEmotions(userId, 'frequent'),
       this.getEmotions(userId, 'recent'),
-      this.getStreak(userId),
-      this.getMonthlyRecordingDays(
-        userId,
-        DateTime.now().year,
-        DateTime.now().month,
-      ),
       this.getTotalStats(userId),
       this.getLocationStats(userId, 5),
     ]);
@@ -158,8 +150,6 @@ export class StatsService {
       frequentTags: frequentTags.map((t) => t.tag),
       recentEmotions: recentEmotions.slice(0, 10).map((e) => e.emotion),
       frequentEmotions: frequentEmotions.slice(0, 10).map((e) => e.emotion),
-      streak,
-      monthlyRecordingDays,
       totalPosts: totalStats.totalPosts,
       totalImages: totalStats.totalImages,
       frequentLocations: locationStats,
