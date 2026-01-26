@@ -50,6 +50,9 @@ export class StatsController {
   ): Promise<TagStatsResponseDto> {
     const userId = req.user.sub;
     const limit = query.limit;
+    if (limit !== undefined && limit < 1) {
+      throw new BadRequestException('limit must be at least 1.');
+    }
 
     const [recentTags, frequentTags] = await Promise.all([
       this.statsService.getTags(userId, 'recent', limit),
@@ -63,12 +66,12 @@ export class StatsController {
   }
 
   @Get('emotions')
-  @ApiOperation({ summary: '전체 감정 목록 조회' })
+  @ApiOperation({ summary: '감정 사용 통계 조회' })
   @ApiQuery({ name: 'sort', enum: ['recent', 'frequent'], required: false })
   @ApiWrappedOkResponse({ type: String, isArray: true })
   async getMyEmotions(
     @Req() req: RequestWithUser,
-    @Query('sort') sort: 'recent' | 'frequent' = 'recent',
+    @Query('sort') sort: 'recent' | 'frequent' = 'frequent',
   ): Promise<EmotionCount[]> {
     const userId = req.user.sub;
     return this.statsService.getEmotions(userId, sort);

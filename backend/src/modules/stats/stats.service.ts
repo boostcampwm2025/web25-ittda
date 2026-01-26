@@ -61,18 +61,34 @@ export class StatsService {
       const result = await this.postRepo.query<
         Array<{ emotion: string; count: string }>
       >(
-        `SELECT unnest(emotion) as emotion, COUNT(*) as count
-         FROM posts 
-         WHERE owner_user_id = $1 AND emotion IS NOT NULL
+        `SELECT emotion, COUNT(*) as count
+         FROM (
+           SELECT unnest(emotion) as emotion
+           FROM posts
+           WHERE owner_user_id = $1 AND emotion IS NOT NULL
+         ) t
          GROUP BY emotion
          ORDER BY count DESC`,
         [userId],
       );
 
-      return result.map((r) => ({
-        emotion: r.emotion,
-        count: parseInt(r.count, 10),
-      }));
+      const allowed = new Set(Object.values(PostMood));
+      const merged = new Map<PostMood, number>();
+      result.forEach((row) => {
+        const normalized = row.emotion?.trim().normalize('NFC') ?? '';
+        if (!allowed.has(normalized as PostMood)) {
+          return;
+        }
+        const count = parseInt(row.count, 10);
+        merged.set(
+          normalized as PostMood,
+          (merged.get(normalized as PostMood) ?? 0) + count,
+        );
+      });
+
+      return Array.from(merged.entries())
+        .map(([emotion, count]) => ({ emotion, count }))
+        .sort((a, b) => b.count - a.count);
     }
 
     const res = await this.postRepo.find({
