@@ -9,16 +9,21 @@ import type { Repository } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { PostScope } from '../src/enums/post-scope.enum';
 import { Post } from '../src/modules/post/entity/post.entity';
+import { PostDraft } from '../src/modules/post/entity/post-draft.entity';
 import { User } from '../src/modules/user/entity/user.entity';
 import { Group } from '../src/modules/group/entity/group.entity';
+import { GroupMember } from '../src/modules/group/entity/group_member.entity';
 import { GoogleStrategy } from '../src/modules/auth/strategies/google.strategy';
 import { KakaoStrategy } from '../src/modules/auth/strategies/kakao.strategy';
+import { GroupRoleEnum } from '../src/enums/group-role.enum';
 
 describe('PostController (e2e)', () => {
   let app: INestApplication<App>;
   let userRepository: Repository<User>;
   let postRepository: Repository<Post>;
+  let postDraftRepository: Repository<PostDraft>;
   let groupRepository: Repository<Group>;
+  let groupMemberRepository: Repository<GroupMember>;
   let owner: User;
   let otherUser: User;
   let accessToken: string;
@@ -46,7 +51,9 @@ describe('PostController (e2e)', () => {
 
     userRepository = app.get(getRepositoryToken(User));
     postRepository = app.get(getRepositoryToken(Post));
+    postDraftRepository = app.get(getRepositoryToken(PostDraft));
     groupRepository = app.get(getRepositoryToken(Group));
+    groupMemberRepository = app.get(getRepositoryToken(GroupMember));
     const jwtService = app.get(JwtService);
 
     owner = userRepository.create({
@@ -72,6 +79,7 @@ describe('PostController (e2e)', () => {
   afterAll(async () => {
     if (owner?.id) {
       await postRepository.delete({ ownerUserId: owner.id });
+      await postDraftRepository.delete({ ownerActorId: owner.id });
       await groupRepository.delete({ owner: { id: owner.id } });
       await userRepository.delete({ id: owner.id });
     }
@@ -330,6 +338,69 @@ describe('PostController (e2e)', () => {
     await groupRepository.delete({ id: group.id });
   });
 
+  it('GET /groups/:groupId/posts/new should reuse active draft', async () => {
+    const group = await groupRepository.save(
+      groupRepository.create({
+        name: 'draft 그룹',
+        owner: { id: owner.id } as User,
+      }),
+    );
+    await groupMemberRepository.save(
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: owner.nickname,
+      }),
+    );
+
+    const firstRes = await request(app.getHttpServer())
+      .get(`/groups/${group.id}/posts/new`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(302);
+
+    const firstLocation = firstRes.header.location;
+    const firstDraftId = firstLocation.split('/posts/')[1]?.split('/edit')[0];
+    expect(firstDraftId).toBeDefined();
+
+    const secondRes = await request(app.getHttpServer())
+      .get(`/groups/${group.id}/posts/new`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(302);
+
+    const secondLocation = secondRes.header.location;
+    const secondDraftId = secondLocation.split('/posts/')[1]?.split('/edit')[0];
+    expect(secondDraftId).toBe(firstDraftId);
+
+    const draftRes = await request(app.getHttpServer())
+      .get(`/groups/${group.id}/drafts/${firstDraftId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const draftBody = draftRes.body as {
+      snapshot: {
+        scope: PostScope;
+        groupId: string;
+        title: string;
+        blocks: unknown[];
+      };
+      version: number;
+      ownerActorId: string;
+    };
+
+    expect(draftBody.ownerActorId).toBe(owner.id);
+    expect(draftBody.version).toBe(0);
+    expect(draftBody.snapshot).toMatchObject({
+      scope: PostScope.GROUP,
+      groupId: group.id,
+      title: '',
+    });
+    expect(Array.isArray(draftBody.snapshot.blocks)).toBe(true);
+
+    await postDraftRepository.delete({ groupId: group.id });
+    await groupRepository.delete({ id: group.id });
+  });
+
   it('GET /posts/:id should return 403 for non-owner', async () => {
     const payload = {
       scope: PostScope.PERSONAL,
@@ -469,7 +540,7 @@ describe('PostController (e2e)', () => {
         },
         {
           type: 'MOOD',
-          value: { mood: '짜증' },
+          value: { mood: '설렘' },
           layout: { row: 3, col: 1, span: 1 },
         },
       ],
@@ -529,7 +600,7 @@ describe('PostController (e2e)', () => {
         },
         {
           type: 'MOOD',
-          value: { mood: '설렘' },
+          value: { mood: '보통' },
           layout: { row: 4, col: 1, span: 1 },
         },
         {
@@ -579,7 +650,7 @@ describe('PostController (e2e)', () => {
         },
         {
           type: 'MOOD',
-          value: { mood: '설렘' },
+          value: { mood: '보통' },
           layout: { row: 4, col: 1, span: 1 },
         },
         {

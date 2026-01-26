@@ -11,6 +11,7 @@ import { JwtStrategy } from './jwt/jwt.strategy';
 import { GuestModule } from '../guest/guest.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RefreshToken } from './refresh_token/refresh_token.entity';
+import { WsJwtGuard } from './ws/ws-jwt.guard';
 
 @Module({
   imports: [
@@ -27,6 +28,13 @@ import { RefreshToken } from './refresh_token/refresh_token.entity';
     GuestModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy, KakaoStrategy, JwtStrategy],
+  providers: [
+    AuthService,
+    GoogleStrategy,
+    KakaoStrategy,
+    JwtStrategy,
+    WsJwtGuard,
+  ],
+  exports: [WsJwtGuard, JwtModule],
 })
 export class AuthModule {}

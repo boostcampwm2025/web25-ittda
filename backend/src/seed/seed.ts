@@ -5,9 +5,13 @@ import { Post } from '../modules/post/entity/post.entity';
 import { PostBlock } from '../modules/post/entity/post-block.entity';
 import { PostContributor } from '../modules/post/entity/post-contributor.entity';
 import { User } from '../modules/user/entity/user.entity';
+import { PostDraft } from '../modules/post/entity/post-draft.entity';
+import { Group } from '../modules/group/entity/group.entity';
+import { GroupMember } from '../modules/group/entity/group_member.entity';
 import { PostBlockType } from '../enums/post-block-type.enum';
 import { PostScope } from '../enums/post-scope.enum';
 import { PostContributorRole } from '../enums/post-contributor-role.enum';
+import { GroupRoleEnum } from '../enums/group-role.enum';
 
 type SeedBlock = {
   type: (typeof PostBlockType)[keyof typeof PostBlockType];
@@ -29,6 +33,13 @@ const SEED_IMAGE_URLS = [
   'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=800',
   'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&q=80&w=800',
 ];
+
+// const DEV_USER = {
+//   provider: 'kakao' as const,
+//   providerId: 'dev-user-001',
+//   nickname: 'dev-user',
+//   email: 'dev@example.com',
+// };
 
 function makeSeedPosts(): SeedPost[] {
   return [
@@ -165,6 +176,72 @@ async function upsertSeedOwner() {
   return userRepository.save(owner);
 }
 
+// async function upsertDevUser() {
+//   const userRepository = dataSource.getRepository(User);
+//   const existing = await userRepository.findOne({
+//     where: { provider: DEV_USER.provider, providerId: DEV_USER.providerId },
+//   });
+//   if (existing) return existing;
+
+//   const user = userRepository.create({
+//     email: DEV_USER.email,
+//     nickname: DEV_USER.nickname,
+//     provider: DEV_USER.provider,
+//     providerId: DEV_USER.providerId,
+//   });
+//   return userRepository.save(user);
+// }
+
+async function upsertSeedGroup(owner: User) {
+  const groupRepository = dataSource.getRepository(Group);
+  const existing = await groupRepository.findOne({
+    where: { name: 'seed-group', owner: { id: owner.id } },
+  });
+  if (existing) return existing;
+
+  const group = groupRepository.create({
+    name: 'seed-group',
+    owner,
+  });
+  return groupRepository.save(group);
+}
+
+async function ensureGroupMember(group: Group, user: User) {
+  const memberRepository = dataSource.getRepository(GroupMember);
+  const existing = await memberRepository.findOne({
+    where: { groupId: group.id, userId: user.id },
+  });
+  if (existing) return existing;
+
+  const member = memberRepository.create({
+    groupId: group.id,
+    userId: user.id,
+    role: GroupRoleEnum.EDITOR,
+    nicknameInGroup: user.nickname,
+  });
+  return memberRepository.save(member);
+}
+
+async function upsertSeedDraft(owner: User, group: Group) {
+  const draftRepository = dataSource.getRepository(PostDraft);
+  const existing = await draftRepository.findOne({
+    where: { groupId: group.id, isActive: true },
+  });
+  if (existing) return existing;
+
+  const draft = draftRepository.create({
+    groupId: group.id,
+    ownerActorId: owner.id,
+    snapshot: {
+      scope: PostScope.GROUP,
+      groupId: group.id,
+      title: '',
+      blocks: [],
+    },
+  });
+  return draftRepository.save(draft);
+}
+
 async function createSeedPost(owner: User, seed: SeedPost) {
   return dataSource.manager.transaction(async (manager) => {
     const postRepo = manager.getRepository(Post);
@@ -226,6 +303,11 @@ async function run() {
 
   try {
     const owner = await upsertSeedOwner();
+    // const devUser = await upsertDevUser();
+    const group = await upsertSeedGroup(owner);
+    await ensureGroupMember(group, owner);
+    // await ensureGroupMember(group, devUser);
+    await upsertSeedDraft(owner, group);
     const seeds = makeSeedPosts();
 
     for (const seed of seeds) {
