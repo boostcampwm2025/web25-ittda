@@ -19,6 +19,15 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/groups/:groupId/settings', ({ params }) => {
+    const id = String(params.groupId);
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockGroupSettings(id),
+      error: null,
+    });
+  }),
   http.patch('/api/groups/:groupId', async ({ params, request }) => {
     const id = String(params.groupId);
 
@@ -68,7 +77,7 @@ export const handlers = [
       });
     },
   ),
-  http.get(`/api/groups/:groupId/archives/days`, ({ request }) => {
+  http.get('/api/groups/:groupId/archives/days', ({ request }) => {
     const url = new URL(request.url);
     const month = url.searchParams.get('month');
 
@@ -201,7 +210,7 @@ export const handlers = [
   }),
   http.get('/api/me/stats/summary', ({ request }) => {
     const url = new URL(request.url);
-    const date = url.searchParams.get('date') || new Date().toISOString();
+    const date = url.searchParams.get('month') || new Date().toISOString();
 
     const parts = date.split('-').map((s) => parseInt(s, 10));
 
