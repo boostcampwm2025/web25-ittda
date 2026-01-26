@@ -21,6 +21,7 @@ import MediaDrawer from './media/MediaDrawer';
 import {
   BlockValue,
   FieldType,
+  MoodValue,
   RatingValue,
   TagValue,
   TimeValue,
@@ -151,8 +152,9 @@ export default function PostEditor({
   const handleSave = () => {
     //개인 기록 저장만 보장
     //TODO: 그룹 기록 저장
+    const scope = draftId ? 'GROUP' : 'PERSONAL';
     const payload = {
-      scope: 'PERSONAL',
+      scope: scope,
       title,
       blocks: mapBlocksToPayload(blocks),
     };
@@ -336,7 +338,7 @@ export default function PostEditor({
         return (
           <EmotionDrawer
             isOpen={true}
-            selectedEmotion={initialValue as string}
+            selectedEmotion={initialValue as MoodValue}
             onSelect={(v) => handleDrawerDone({ mood: v })}
             onClose={() => handleCloseDrawer(id)}
           />

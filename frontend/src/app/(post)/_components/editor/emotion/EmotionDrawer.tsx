@@ -8,13 +8,14 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { EMOTIONS } from '@/lib/constants/constants';
+import { MoodValue } from '@/lib/types/record';
 import { Emotion } from '@/lib/types/recordField';
 
 interface EmotionDrawerProps {
   onClose: () => void;
   isOpen: boolean;
   onSelect: (emotion: string) => void;
-  selectedEmotion: string | string[] | null;
+  selectedEmotion: MoodValue | null;
   mode?: 'edit' | 'search';
   onReset?: () => void;
 }
@@ -44,12 +45,7 @@ export default function EmotionDrawer({
 
           <div className="grid grid-cols-5 gap-4 mb-8">
             {EMOTIONS.map((emo: Emotion) => {
-              let isSelected = false;
-              if (Array.isArray(selectedEmotion)) {
-                isSelected = selectedEmotion.includes(emo.label);
-              } else {
-                isSelected = selectedEmotion === emo.label;
-              }
+              const isSelected = selectedEmotion?.mood === emo.label;
 
               return (
                 <button
