@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocketStore } from '@/store/useSocketStore';
-import { RecordBlock, BlockValue } from '@/lib/types/recordField';
+import { RecordBlock, BlockValue, BlockLayout } from '@/lib/types/recordField';
 import { useRouter } from 'next/navigation';
 import {
   getDefaultValue,
@@ -97,9 +97,27 @@ export function useRecordCollaboration(
                 b.id === cmd.blockId ? { ...b, value: cmd.value } : b,
               );
             } else if (cmd.type === 'BLOCK_MOVE') {
-              next = next.map((b) =>
-                b.id === cmd.blockId ? { ...b, layout: cmd.layout } : b,
-              );
+              setBlocks((prev) => {
+                const nextBlocks = cmd.moves
+                  .map((moveItem: { blockId: string; layout: BlockLayout }) => {
+                    // 현재 로컬에서 해당하는 id 찾기
+                    const localBlock = prev.find(
+                      (b) => b.id === moveItem.blockId,
+                    );
+
+                    // 기존 값들은 유지. 레이아웃만 적용
+                    if (localBlock) {
+                      return {
+                        ...localBlock,
+                        layout: moveItem.layout,
+                      };
+                    }
+                    return null;
+                  })
+                  .filter((b: RecordBlock) => b !== null);
+                //정규화
+                return normalizeLayout(nextBlocks);
+              });
             }
           });
           return normalizeLayout(next);

@@ -51,9 +51,11 @@ export default function PostEditor({
   mode,
   initialPost,
   draftId,
+  groupId,
 }: {
   mode: 'add' | 'edit';
   initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
+  groupId: string;
   draftId?: string;
 }) {
   const router = useRouter();
@@ -97,11 +99,17 @@ export default function PostEditor({
   const {
     gridRef,
     isDraggingId,
-    setIsDraggingId,
     handleDragStart,
     handleDragOver,
     handleGridDragOver,
-  } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
+    handleDragEnd,
+  } = useRecordEditorDnD(
+    blocks,
+    setBlocks,
+    canBeHalfWidth,
+    applyPatch,
+    draftId,
+  );
 
   // 페이지 초기화/복구 및 위치 데이터 받기
   const resolvedInitialPost = initialPost
@@ -114,6 +122,9 @@ export default function PostEditor({
     onInitialized: ({ title, blocks }) => {
       setTitle(title);
       setBlocks(blocks);
+    },
+    onLocationUpdate: (locationData) => {
+      addOrShowBlock('location', locationData);
     },
   });
 
@@ -156,6 +167,7 @@ export default function PostEditor({
     const payload = {
       scope: scope,
       title,
+      groupId: groupId,
       blocks: mapBlocksToPayload(blocks),
     };
     createRecord(payload);
@@ -399,7 +411,7 @@ export default function PostEditor({
                 draggable
                 onDragStart={() => handleDragStart(block.id)}
                 onDragOver={(e) => handleDragOver(e, block.id)}
-                onDragEnd={() => setIsDraggingId(null)}
+                onDragEnd={handleDragEnd}
                 className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
               >
                 <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">

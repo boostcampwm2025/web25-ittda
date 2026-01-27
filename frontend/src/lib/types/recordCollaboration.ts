@@ -11,8 +11,10 @@ export type PatchApplyPayload =
     }
   | {
       type: 'BLOCK_MOVE';
-      blockId: string;
-      layout: BlockLayout;
+      moves: Array<{
+        blockId: string;
+        layout: BlockLayout;
+      }>;
     }
   | {
       type: 'BLOCK_SET_VALUE';

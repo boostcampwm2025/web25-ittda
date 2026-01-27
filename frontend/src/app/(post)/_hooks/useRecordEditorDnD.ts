@@ -2,11 +2,14 @@ import { useState, useRef } from 'react';
 import { RecordBlock } from '@/lib/types/recordField';
 import { FieldType } from '@/lib/types/record';
 import { normalizeLayout } from '../_utils/recordLayoutHelper';
+import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 
 export const useRecordEditorDnD = (
   blocks: RecordBlock[],
   setBlocks: React.Dispatch<React.SetStateAction<RecordBlock[]>>,
   canBeHalfWidth: (type: FieldType) => boolean,
+  applyPatch?: (patch: PatchApplyPayload) => void,
+  draftId?: string,
 ) => {
   const [isDraggingId, setIsDraggingId] = useState<string | null>(null);
   const lastUpdateRef = useRef<number>(0);
@@ -108,12 +111,32 @@ export const useRecordEditorDnD = (
     }
   };
 
+  const handleDragEnd = () => {
+    if (!isDraggingId || !draftId) {
+      setIsDraggingId(null);
+      return;
+    }
+    const movedBlocks = blocks.map((block) => ({
+      blockId: block.id,
+      layout: block.layout,
+    }));
+
+    if (movedBlocks) {
+      applyPatch?.({
+        type: 'BLOCK_MOVE',
+        moves: movedBlocks,
+      });
+    }
+
+    setIsDraggingId(null);
+  };
+
   return {
     gridRef,
     isDraggingId,
-    setIsDraggingId,
     handleDragStart,
     handleDragOver,
     handleGridDragOver,
+    handleDragEnd,
   };
 };
