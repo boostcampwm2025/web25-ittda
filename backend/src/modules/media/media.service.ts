@@ -1,14 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import {
   HeadObjectCommand,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { Cron } from '@nestjs/schedule';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { MediaAsset, MediaAssetStatus } from './entity/media-asset.entity';
@@ -19,6 +21,13 @@ export class MediaService {
   private readonly s3Client: S3Client;
   private readonly bucket: string;
   private readonly presignTtlSeconds = 300;
+  private readonly maxUploadSizeBytes = 10 * 1024 * 1024;
+  private readonly allowedContentTypes = new Set([
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+  ]);
+  private readonly pendingRetentionMs = 7 * 24 * 60 * 60 * 1000;
 
   constructor(
     private readonly configService: ConfigService,
@@ -49,6 +58,15 @@ export class MediaService {
     ownerUserId: string,
     files: PresignFileRequestDto[],
   ) {
+    // TODO: presign 단계에서는 요청 값 기반 검증만 가능함(실제 파일은 complete에서 검증).
+    files.forEach((file) => {
+      if (!this.allowedContentTypes.has(file.contentType)) {
+        throw new BadRequestException('Invalid contentType.');
+      }
+      if (file.size !== undefined && file.size > this.maxUploadSizeBytes) {
+        throw new BadRequestException('File size exceeds limit.');
+      }
+    });
     const assets = files.map((file) => {
       const id = randomUUID();
       const storageKey = this.buildStorageKey(ownerUserId, id);
@@ -196,6 +214,24 @@ export class MediaService {
             Key: asset.storageKey,
           }),
         );
+        const headSize =
+          typeof head.ContentLength === 'number'
+            ? head.ContentLength
+            : undefined;
+        const headType = head.ContentType ?? undefined;
+
+        if (headType && !this.allowedContentTypes.has(headType)) {
+          asset.status = MediaAssetStatus.FAILED;
+          await this.mediaAssetRepository.save(asset);
+          failed.push({ mediaId, reason: 'HEAD_FAILED' });
+          continue;
+        }
+        if (headSize !== undefined && headSize > this.maxUploadSizeBytes) {
+          asset.status = MediaAssetStatus.FAILED;
+          await this.mediaAssetRepository.save(asset);
+          failed.push({ mediaId, reason: 'HEAD_FAILED' });
+          continue;
+        }
 
         asset.status = MediaAssetStatus.READY;
         asset.uploadedAt = new Date();
@@ -203,11 +239,8 @@ export class MediaService {
           typeof head.ETag === 'string'
             ? head.ETag.replace(/"/g, '')
             : undefined;
-        asset.size =
-          typeof head.ContentLength === 'number'
-            ? head.ContentLength
-            : asset.size;
-        asset.mimeType = head.ContentType ?? asset.mimeType;
+        asset.size = headSize !== undefined ? headSize : asset.size;
+        asset.mimeType = headType ?? asset.mimeType;
 
         await this.mediaAssetRepository.save(asset);
         successIds.push(mediaId);
@@ -222,6 +255,35 @@ export class MediaService {
     }
 
     return { successIds, failed };
+  }
+
+  // 매일 오전 3시에 보류 중인 미디어 자산 정리
+  @Cron('0 3 * * *')
+  async cleanupPendingAssets() {
+    const cutoff = new Date(Date.now() - this.pendingRetentionMs);
+    const expired = await this.mediaAssetRepository.find({
+      where: {
+        status: MediaAssetStatus.PENDING,
+        createdAt: LessThan(cutoff),
+      },
+    });
+
+    if (expired.length === 0) return;
+
+    await Promise.all(
+      expired.map((asset) =>
+        this.s3Client
+          .send(
+            new DeleteObjectCommand({
+              Bucket: this.bucket,
+              Key: asset.storageKey,
+            }),
+          )
+          .catch(() => undefined),
+      ),
+    );
+
+    await this.mediaAssetRepository.delete(expired.map((asset) => asset.id));
   }
 
   private buildStorageKey(ownerUserId: string, mediaId: string) {
