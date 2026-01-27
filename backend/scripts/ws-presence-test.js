@@ -10,8 +10,12 @@
 // ACCESS_TOKEN=... PATCH_JSON='{"type":"BLOCK_INSERT","block":{"id":"<uuid>","type":"TEXT","value":{"text":"hello"},"layout":{"row":1,"col":1,"span":2}}}' node backend/scripts/ws-presence-test.js <draftId>
 // ACCESS_TOKEN=... PATCH_JSON='[{"type":"BLOCK_INSERT","block":{"id":"<uuid>","type":"DATE","value":{"date":"2025-01-14"},"layout":{"row":1,"col":1,"span":1}}},{"type":"BLOCK_INSERT","block":{"id":"<uuid>","type":"TIME","value":{"time":"13:30"},"layout":{"row":1,"col":2,"span":1}}}]' node backend/scripts/ws-presence-test.js <draftId>
 // ACCESS_TOKEN=... PATCH_JSON='{"type":"BLOCK_SET_VALUE","blockId":"<blockId>","value":{"text":"updated"}}' node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... PATCH_JSON='{"type":"BLOCK_MOVE","moves":[{"blockId":"<blockId>","layout":{"row":2,"col":1,"span":2}}]}' node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... PATCH_JSON='{"type":"BLOCK_MOVE","moves":[{"blockId":"<blockId1>","layout":{"row":2,"col":1,"span":2}},{"blockId":"<blockId2>","layout":{"row":1,"col":2,"span":1}}]}' node backend/scripts/ws-presence-test.js <draftId>
 // ACCESS_TOKEN=... STREAM_BLOCK_ID=<blockId> STREAM_VALUE='{"text":"typing..."}' node backend/scripts/ws-presence-test.js <draftId>
 // ACCESS_TOKEN=... STREAM_BLOCK_ID=<blockId> STREAM_VALUE='{"text":"typing..."}' STREAM_INTERVAL_MS=2500 node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... LEAVE_AFTER_MS=2000 node backend/scripts/ws-presence-test.js <draftId>
+// ACCESS_TOKEN=... PRESENCE_HEARTBEAT_MS=10000 node backend/scripts/ws-presence-test.js <draftId>
 // Block DTO 참고:
 // - 타입/값 구조: backend/src/modules/post/dto/post-block.dto.ts
 // - value 스키마: backend/src/modules/post/types/post-block.types.ts
@@ -28,9 +32,12 @@ const patchJson = process.env.PATCH_JSON;
 const streamBlockId = process.env.STREAM_BLOCK_ID;
 const streamValueRaw = process.env.STREAM_VALUE;
 const streamIntervalMs = Number(process.env.STREAM_INTERVAL_MS ?? 2500);
+const leaveAfterMs = Number(process.env.LEAVE_AFTER_MS ?? 0);
+const presenceHeartbeatMs = Number(process.env.PRESENCE_HEARTBEAT_MS ?? 0);
 let heartbeatTimer;
 let sessionReady = false;
 let streamTimer;
+let presenceHeartbeatTimer;
 
 if (!accessToken) {
   console.error('ACCESS_TOKEN is required.');
@@ -109,6 +116,17 @@ socket.onAny((event, ...args) => {
         });
       }, streamIntervalMs);
     }
+    if (leaveAfterMs > 0) {
+      setTimeout(() => {
+        console.log('[emit] LEAVE_DRAFT', draftId);
+        socket.emit('LEAVE_DRAFT', { draftId });
+      }, leaveAfterMs);
+    }
+    if (presenceHeartbeatMs > 0) {
+      presenceHeartbeatTimer = setInterval(() => {
+        socket.emit('PRESENCE_HEARTBEAT', { draftId });
+      }, presenceHeartbeatMs);
+    }
   }
 });
 
@@ -148,6 +166,10 @@ socket.on('disconnect', (reason) => {
   if (streamTimer) {
     clearInterval(streamTimer);
     streamTimer = undefined;
+  }
+  if (presenceHeartbeatTimer) {
+    clearInterval(presenceHeartbeatTimer);
+    presenceHeartbeatTimer = undefined;
   }
 });
 

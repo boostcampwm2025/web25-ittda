@@ -4,6 +4,7 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -27,8 +28,10 @@ import { acquireLockWithEmit, emitLockExpired } from './collab/lock-events';
 import type {
   DraftSocketData,
   JoinDraftPayload,
+  LeaveDraftPayload,
   LockPayload,
   PresenceMember,
+  PresenceHeartbeatPayload,
   PatchApplyPayload,
   StreamPayload,
 } from './collab/types';
@@ -41,9 +44,12 @@ import type {
 })
 @UseGuards(WsJwtGuard)
 export class PostDraftGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
   private readonly logger = new Logger(PostDraftGateway.name);
+  private static readonly PRESENCE_TTL_MS = 60_000;
+  private static readonly PRESENCE_SWEEP_MS = 10_000;
+  private presenceSweepTimer?: NodeJS.Timeout;
 
   constructor(
     @InjectRepository(PostDraft)
@@ -60,6 +66,15 @@ export class PostDraftGateway
 
   @WebSocketServer()
   private readonly server: Server;
+
+  afterInit() {
+    if (this.presenceSweepTimer) {
+      clearInterval(this.presenceSweepTimer);
+    }
+    this.presenceSweepTimer = setInterval(() => {
+      this.sweepStalePresence();
+    }, PostDraftGateway.PRESENCE_SWEEP_MS);
+  }
 
   @SubscribeMessage('JOIN_DRAFT')
   async handleJoinDraft(
@@ -215,6 +230,7 @@ export class PostDraftGateway
         ownerSessionId: result.ownerSessionId,
       });
     }
+    this.presenceService.updateLastSeenAt(draftId, sessionId);
   }
 
   @SubscribeMessage('BLOCK_VALUE_STREAM')
@@ -249,6 +265,36 @@ export class PostDraftGateway
       actorId,
       sessionId,
       payload,
+    );
+  }
+
+  @SubscribeMessage('LEAVE_DRAFT')
+  handleLeaveDraft(
+    @MessageBody() payload: LeaveDraftPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const socketData = this.getSocketData(socket);
+    if (payload?.draftId && payload.draftId !== socketData.draftId) {
+      throw new WsException('draftId mismatch.');
+    }
+    this.leaveCurrentDraft(socket);
+  }
+
+  @SubscribeMessage('PRESENCE_HEARTBEAT')
+  handlePresenceHeartbeat(
+    @MessageBody() payload: PresenceHeartbeatPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const socketData = this.getSocketData(socket);
+    if (payload?.draftId && payload.draftId !== socketData.draftId) {
+      throw new WsException('draftId mismatch.');
+    }
+    if (!socketData.draftId || !socketData.sessionId) {
+      throw new WsException('Session is not initialized.');
+    }
+    this.presenceService.updateLastSeenAt(
+      socketData.draftId,
+      socketData.sessionId,
     );
   }
 
@@ -294,6 +340,46 @@ export class PostDraftGateway
     this.presenceService.clearSessionActor(sessionId);
     if (socketData.actorId) {
       this.presenceService.clearSocketIdIfMatch(socketData.actorId, socket.id);
+    }
+  }
+
+  private sweepStalePresence() {
+    const draftIds = this.presenceService.getDraftIds();
+    draftIds.forEach((draftId) => {
+      const staleSessions = this.presenceService.getStaleSessionIds(
+        draftId,
+        PostDraftGateway.PRESENCE_TTL_MS,
+      );
+      staleSessions.forEach((sessionId) => {
+        this.evictStaleSession(draftId, sessionId);
+      });
+    });
+  }
+
+  private evictStaleSession(draftId: string, sessionId: string) {
+    const actorId = this.presenceService.getActorIdBySession(sessionId);
+    if (!actorId) return;
+    const socketId = this.presenceService.getSocketId(actorId);
+    if (socketId) {
+      const socket = this.server.sockets.sockets.get(socketId);
+      if (socket) {
+        this.leaveCurrentDraft(socket);
+        return;
+      }
+      this.presenceService.clearSocketIdIfMatch(actorId, socketId);
+    }
+
+    this.releaseLocksForSessionId(draftId, sessionId, true);
+    const removed = this.presenceService.removeMemberBySession(
+      draftId,
+      sessionId,
+    );
+    this.presenceService.clearReplaced(draftId, sessionId);
+    this.presenceService.clearSessionActor(sessionId);
+    if (removed.member) {
+      this.server.to(this.getDraftRoom(draftId)).emit('PRESENCE_LEFT', {
+        sessionId,
+      });
     }
   }
 

@@ -1,14 +1,23 @@
 // Usage:
 // ACCESS_TOKEN=... node backend/scripts/ws-flow-test.js <draftId> <groupId>
+// ACCESS_TOKEN=... OBSERVER_ACCESS_TOKEN=... node backend/scripts/ws-flow-test.js <draftId> <groupId>
+// - OBSERVER_ACCESS_TOKEN: PRESENCE_LEFT 확인용 (다른 계정 권장)
+// QUIET_WRITER_LOGS=1 -> writer 로그 숨김
 // ACCESS_TOKEN=... WS_URL=http://localhost:4000 API_URL=http://localhost:4000/v1 node backend/scripts/ws-flow-test.js <draftId> <groupId>
 const { io } = require('socket.io-client');
 const { randomUUID } = require('crypto');
 
-const draftId = process.argv[2] ?? ''; // 직접 입력하면 편함
-const groupId = process.argv[3] ?? ''; // 직접 입력하면 편함
+const draftId = process.argv[2] ?? '55609cd2-f4ec-4fd3-91c2-3c775b4a814c'; // 직접 입력하면 편함
+const groupId = process.argv[3] ?? '0e1019f6-52f9-4bf1-a6fd-dbf885c65898'; // 직접 입력하면 편함
 const serverUrl = process.env.WS_URL ?? 'http://localhost:4000';
 const apiBase = process.env.API_URL ?? 'http://localhost:4000/v1';
-const accessToken = process.env.ACCESS_TOKEN ?? ''; // 직접 입력하면 편함
+const accessToken =
+  process.env.ACCESS_TOKEN ??
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiODc2YzBhMi00ZmU0LTQ3YzgtOWJiZS0zNTY3MWE4NzhlZDgiLCJpYXQiOjE3Njk0ODUwOTEsImV4cCI6MTc2OTQ4NTk5MX0.f2PJHFzIagAoDOBLwaRMacgBGHLqKZ7Nkoj7E0lEjyU'; // 직접 입력하면 편함
+const observerAccessToken =
+  process.env.OBSERVER_ACCESS_TOKEN ??
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmUzOGU2Ni03NjNjLTRiYjAtYTZjYy1iYTY5NzVmODQ0NmMiLCJpYXQiOjE3Njk0ODUxNTMsImV4cCI6MTc2OTQ4NjA1M30.w1TmJ7_Bq6sW0HVQ3GVdOI92yC8et4I6Gi1Q3a7AifE';
+const quietWriterLogs = process.env.QUIET_WRITER_LOGS === '0';
 
 if (!draftId || !groupId) {
   console.error(
@@ -25,6 +34,11 @@ if (!accessToken) {
 const socket = io(serverUrl, {
   auth: { token: accessToken },
 });
+
+const observerSocket =
+  observerAccessToken && observerAccessToken !== accessToken
+    ? io(serverUrl, { auth: { token: observerAccessToken } })
+    : null;
 
 let sessionId;
 let currentVersion = 0;
@@ -46,6 +60,22 @@ const waitForEvent = (event, predicate, timeoutMs = 12000) =>
       }
     };
     socket.on(event, handler);
+  });
+
+const waitForEventOn = (targetSocket, event, predicate, timeoutMs = 12000) =>
+  new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      targetSocket.off(event, handler);
+      reject(new Error(`${event} timeout`));
+    }, timeoutMs);
+    const handler = (payload) => {
+      if (!predicate || predicate(payload)) {
+        clearTimeout(timeoutId);
+        targetSocket.off(event, handler);
+        resolve(payload);
+      }
+    };
+    targetSocket.on(event, handler);
   });
 
 const waitForLock = async (lockKey) => {
@@ -118,6 +148,25 @@ const buildBlock = (type, value, layout) => ({
 });
 
 const run = async () => {
+  if (observerSocket) {
+    observerSocket.on('connect', () => {
+      console.log('[observer_connect]', observerSocket.id);
+      observerSocket.emit('JOIN_DRAFT', { draftId });
+    });
+    observerSocket.on('connect_error', (err) => {
+      console.log('[observer_connect_error]', err?.message ?? err);
+    });
+    observerSocket.onAny((event, ...args) => {
+      console.log('[observer_event]', event, JSON.stringify(args, null, 2));
+    });
+  } else if (observerAccessToken) {
+    console.log('[observer] skipped (token matches ACCESS_TOKEN)');
+  } else {
+    console.log(
+      '[observer] disabled (set OBSERVER_ACCESS_TOKEN to verify LEAVE_DRAFT)',
+    );
+  }
+
   await waitForEvent('PRESENCE_SNAPSHOT', (payload) => {
     sessionId = payload?.sessionId;
     if (typeof payload?.version === 'number') {
@@ -158,7 +207,11 @@ const run = async () => {
   let text = blocks.find((block) => block.type === 'TEXT');
 
   if (!date) {
-    date = buildBlock('DATE', { date: '2025-01-14' }, { row: 1, col: 1, span: 1 });
+    date = buildBlock(
+      'DATE',
+      { date: '2025-01-14' },
+      { row: 1, col: 1, span: 1 },
+    );
     missingBlocks.push(date);
   }
   if (!time) {
@@ -166,7 +219,11 @@ const run = async () => {
     missingBlocks.push(time);
   }
   if (!text) {
-    text = buildBlock('TEXT', { text: '초안 텍스트' }, { row: 2, col: 1, span: 2 });
+    text = buildBlock(
+      'TEXT',
+      { text: '초안 텍스트' },
+      { row: 2, col: 1, span: 2 },
+    );
     missingBlocks.push(text);
   }
 
@@ -197,10 +254,22 @@ const run = async () => {
 
   await emitPatch({
     type: 'BLOCK_MOVE',
-    blockId: text.id,
-    layout: { row: 3, col: 1, span: 2 },
+    moves: blocks.map((block, index) => ({
+      blockId: block.id,
+      layout: {
+        row: index + 1,
+        col: 1,
+        span: block.layout?.span ?? 1,
+      },
+    })),
   });
-  text.layout = { row: 3, col: 1, span: 2 };
+  blocks.forEach((block, index) => {
+    block.layout = {
+      row: index + 1,
+      col: 1,
+      span: block.layout?.span ?? 1,
+    };
+  });
   socket.emit('LOCK_RELEASE', { lockKey: `block:${text.id}` });
 
   await acquireLock(`block:${date.id}`);
@@ -243,6 +312,20 @@ const run = async () => {
 
   const body = await res.json();
   console.log('[publish]', res.status, JSON.stringify(body, null, 2));
+  let waitLeft;
+  if (observerSocket) {
+    waitLeft = waitForEventOn(
+      observerSocket,
+      'PRESENCE_LEFT',
+      (payload) => payload?.sessionId === sessionId,
+    );
+  }
+  socket.emit('LEAVE_DRAFT', { draftId });
+  if (waitLeft) {
+    await waitLeft;
+    console.log('[observer] PRESENCE_LEFT confirmed');
+  }
+  observerSocket?.disconnect();
   socket.disconnect();
 };
 
@@ -252,7 +335,9 @@ socket.on('connect', () => {
 });
 
 socket.onAny((event, ...args) => {
-  console.log('[event]', event, JSON.stringify(args, null, 2));
+  if (!quietWriterLogs) {
+    console.log('[event]', event, JSON.stringify(args, null, 2));
+  }
   if (event === 'LOCK_CHANGED') {
     const payload = args[0];
     if (payload?.lockKey) {
@@ -273,6 +358,7 @@ socket.on('connect_error', (err) => {
 
 run().catch((error) => {
   console.error('[error]', error.message);
+  observerSocket?.disconnect();
   socket.disconnect();
   process.exit(1);
 });

@@ -11,17 +11,20 @@
 - 락 키는 `block:{uuid}` 형식만 허용 (table은 `table:{uuid}`, 제목은 `block:title`)
   - 현재는 실제 id가 아니더라도 lock 동작을 확인 가능하도록 구현
 - lock TTL: 30초, heartbeat 권장 주기: 10초
+- presence TTL: 60초, heartbeat 권장 주기: 10초
 - 초기 스냅샷으로 전체 동기화 후, 이후에는 delta 이벤트로 상태 갱신
-- 드래프트 최초 생성 시 기본 블록 3개(DATE/TIME/TEXT)가 포함됨 (서버에서 UUID 생성)
+- 드래프트 최초 생성 시 기본 블록 3개(DATE/TIME/TEXT)가 포함됨 (서버에서 UUID 생성, DATE/TIME은 UTC 기준)
 
 ## 이벤트 목록
 
 입장/Presence
 
 - `JOIN_DRAFT { draftId }`
+- `LEAVE_DRAFT { draftId? }`
 - `PRESENCE_SNAPSHOT { sessionId, members, locks, version }`
 - `PRESENCE_JOINED { member }`
 - `PRESENCE_LEFT { sessionId }`
+- `PRESENCE_HEARTBEAT { draftId? }`
 - `PRESENCE_REPLACED { previousSessionId, sessionId, displayName }`
 - `SESSION_REPLACED {}` (기존 세션에만 전송)
 
@@ -63,10 +66,22 @@ Stream/Patch/Publish
 - 누군가 방에 새로 들어왔을 때 브로드캐스트
 - UI에서 접속자 목록에 추가 처리
 
+### LEAVE_DRAFT
+
+- 클라이언트 → 서버, 명시적인 퇴장 요청
+- 서버는 방에서 세션을 제거하고 `PRESENCE_LEFT` 브로드캐스트
+- 퇴장한 본인 소켓은 룸을 떠났기 때문에 `PRESENCE_LEFT`를 수신하지 않음
+
 ### PRESENCE_LEFT
 
 - 누군가 정상적으로 나갔을 때 브로드캐스트
 - `PRESENCE_REPLACED`로 교체된 세션은 별도 처리됨
+
+### PRESENCE_HEARTBEAT
+
+- 클라이언트 → 서버, 세션 생존 신호
+- 서버는 `lastSeenAt`만 갱신하며 별도 이벤트는 보내지 않음
+- presence TTL(60초) 초과 시 세션을 정리하고 `PRESENCE_LEFT`를 브로드캐스트
 
 ### PRESENCE_REPLACED
 
@@ -141,7 +156,8 @@ Stream/Patch/Publish
 - 지원 명령
   - `BLOCK_INSERT { block }`
   - `BLOCK_DELETE { blockId }`
-  - `BLOCK_MOVE { blockId, layout }`
+  - `BLOCK_MOVE { blockId, layout }` (lock 없이 가능)
+  - `BLOCK_MOVE { moves: [{ blockId, layout }] }` (lock 없이 가능, 전체 레이아웃 동기화용 권장)
   - `BLOCK_SET_VALUE { blockId, value }`
   - `BLOCK_SET_TITLE { title }`
 
@@ -188,6 +204,8 @@ patch
 - `LOCK_RELEASE` 직전에 `PATCH_APPLY`를 호출해서 최종 저장
 - 세션 교체 시 `SESSION_REPLACED`를 받으면 모달로 재접속 안내
 - publish 중에는 PATCH/LOCK 요청이 거절될 수 있음 (서버가 임시 freeze)
+- `PATCH_REJECTED_STALE` 또는 `exception` 수신 시 로컬 레이아웃 변경은 롤백 처리
+- `BLOCK_MOVE`는 수신한 레이아웃 전체를 덮어쓴다고 가정하고 UI를 재배치
 
 ## TODO
 
