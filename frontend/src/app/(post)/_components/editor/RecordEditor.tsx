@@ -68,8 +68,7 @@ export default function PostEditor({
   const { mutate: createRecord } = useCreateRecord();
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
-  const { requestLock, releaseLock, pendingLockKey, setPendingLockKey } =
-    useLockManager(draftId);
+  const { requestLock, releaseLock } = useLockManager(draftId);
 
   const { streamingValues, emitStream, applyPatch } = useRecordCollaboration(
     draftId,
@@ -160,7 +159,7 @@ export default function PostEditor({
     return () => {
       socket.off('LOCK_CHANGED');
     };
-  }, [socket, pendingLockKey, mySessionId, setPendingLockKey]);
+  }, [socket, mySessionId]);
 
   // 메타데이터 선택 drawer가 열릴 때 필드 락 요청
   const metadataLocksRef = useRef<string[]>([]);
