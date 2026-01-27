@@ -1,17 +1,22 @@
 'use client';
 
-import { ProfileTag } from '@/lib/types/profile';
+import { TagStatSummary } from '@/lib/types/profile';
 import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface TagListProps {
-  tags: ProfileTag;
-  defaultTab?: 'recent' | 'frequent';
+  tags: TagStatSummary;
+  defaultTab?: 'recentTags' | 'frequentTags';
 }
 
-export default function TagList({ tags, defaultTab = 'recent' }: TagListProps) {
-  const [tagTab, setTagTab] = useState<'recent' | 'frequent'>(defaultTab);
+export default function TagList({
+  tags,
+  defaultTab = 'recentTags',
+}: TagListProps) {
+  const [tagTab, setTagTab] = useState<'recentTags' | 'frequentTags'>(
+    defaultTab,
+  );
   const router = useRouter();
 
   const handleSingleTagSearch = (tagName: string) => {
@@ -22,20 +27,20 @@ export default function TagList({ tags, defaultTab = 'recent' }: TagListProps) {
     <>
       <div className="flex border-b transition-colors dark:border-white/5 border-gray-50">
         <button
-          onClick={() => setTagTab('recent')}
-          className={`cursor-pointer flex-1 py-4 text-[14px] font-medium relative transition-colors ${tagTab === 'recent' ? 'dark:text-white text-itta-black' : 'text-gray-300'}`}
+          onClick={() => setTagTab('recentTags')}
+          className={`cursor-pointer flex-1 py-4 text-[14px] font-medium relative transition-colors ${tagTab === 'recentTags' ? 'dark:text-white text-itta-black' : 'text-gray-300'}`}
         >
           최근 사용한
-          {tagTab === 'recent' && (
+          {tagTab === 'recentTags' && (
             <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-itta-black dark:bg-white" />
           )}
         </button>
         <button
-          onClick={() => setTagTab('frequent')}
-          className={`cursor-pointer flex-1 py-4 text-[14px] font-medium relative transition-colors ${tagTab === 'frequent' ? 'dark:text-white text-itta-black' : 'text-gray-300'}`}
+          onClick={() => setTagTab('frequentTags')}
+          className={`cursor-pointer flex-1 py-4 text-[14px] font-medium relative transition-colors ${tagTab === 'frequentTags' ? 'dark:text-white text-itta-black' : 'text-gray-300'}`}
         >
           자주 사용한
-          {tagTab === 'frequent' && (
+          {tagTab === 'frequentTags' && (
             <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-itta-black dark:bg-white" />
           )}
         </button>

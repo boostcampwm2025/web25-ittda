@@ -22,13 +22,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   let monthlyRecordCount = 0;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    // unstable_cache로 캐시된 데이터 가져오기 (병렬 실행)
-    const recordStatsDate = formatDateISO(new Date());
-    const recordStatsMonth = recordStatsDate.slice(0, 7);
-    const [recordPreviews, streakData, monthlyData] = await Promise.all([
+    const [recordPreviews, streakData] = await Promise.all([
       getCachedRecordPreviewList(selectedDate),
-      getCachedUserRecordStats('date', recordStatsDate), // YYYY-MM-DD → 연속 작성 일수
-      getCachedUserRecordStats('month', recordStatsMonth), // YYYY-MM → 월간 기록 수
+      getCachedUserRecordStats(),
     ]);
 
     // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
@@ -37,8 +33,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       recordPreviews,
     );
 
-    currentStreak = 0; //streakData.count;
-    monthlyRecordCount = 0; //monthlyData.count;
+    currentStreak = streakData.streak;
+    monthlyRecordCount = streakData.monthlyRecordingDays;
   }
   return (
     <>
