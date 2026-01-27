@@ -13,18 +13,18 @@ export class TagCountDto {
 
 export class TagStatsResponseDto {
   @ApiProperty({
-    description: '최근 많이 사용한 태그 TOP 10',
+    description: '최근 많이 사용한 태그 목록',
     type: [TagCountDto],
   })
   @Expose()
   @Type(() => TagCountDto)
-  recentTop: TagCountDto[];
+  recentTags: TagCountDto[];
 
   @ApiProperty({
-    description: '누적 가장 많이 사용한 태그 TOP 10',
+    description: '누적 가장 많이 사용한 태그 목록',
     type: [TagCountDto],
   })
   @Expose()
   @Type(() => TagCountDto)
-  allTimeTop: TagCountDto[];
+  frequentTags: TagCountDto[];
 }

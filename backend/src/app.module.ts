@@ -12,6 +12,7 @@ import { GroupModule } from './modules/group/group.module';
 import { GuestModule } from './modules/guest/guest.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { MyPageModule } from './modules/mypage/mypage.module';
+import { StatsModule } from './modules/stats/stats.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MyPageModule } from './modules/mypage/mypage.module';
     GuestModule,
     FeedModule,
     MyPageModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

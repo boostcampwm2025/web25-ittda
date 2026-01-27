@@ -37,8 +37,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       recordPreviews,
     );
 
-    currentStreak = streakData.count;
-    monthlyRecordCount = monthlyData.count;
+    currentStreak = 0; //streakData.count;
+    monthlyRecordCount = 0; //monthlyData.count;
   }
   return (
     <>

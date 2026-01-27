@@ -22,5 +22,6 @@ export interface UserProfileResponse {
 }
 
 export interface RecordPatternResponse {
-  count: number;
+  streak: number;
+  monthlyRecordingDays: number;
 }
