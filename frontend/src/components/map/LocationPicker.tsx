@@ -71,11 +71,9 @@ export function LocationPicker({
   }, [geoLat, geoLng]);
 
   const handleSearch = async (keyword: string) => {
-    if (!keyword.trim() || !mapRef.current) return;
+    if (!keyword.trim() || !mapRef.current || !placesLib) return;
     if (!placesServiceRef.current) {
-      placesServiceRef.current = new google.maps.places.PlacesService(
-        mapRef.current,
-      );
+      placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
     }
     const currentPlacesServiceRef = placesServiceRef.current;
     const currentCenter = mapRef.current.getCenter();
@@ -92,6 +90,10 @@ export function LocationPicker({
 
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     return new Promise((resolve, reject) => {
+      if (!window.google?.maps?.Geocoder) {
+        reject(new Error('Google Maps API not loaded'));
+        return;
+      }
       const geocoder = new google.maps.Geocoder();
       geocoder.geocode(
         { location: { lat, lng }, language: 'ko' },
@@ -166,7 +168,7 @@ export function LocationPicker({
 
       if (mode === 'search') {
         const bounds = mapRef.current.getBounds();
-        if (bounds && geometryLib) {
+        if (bounds && geometryLib && window.google?.maps?.geometry?.spherical) {
           const ne = bounds.getNorthEast();
           const radiusInMeters =
             google.maps.geometry.spherical.computeDistanceBetween(center, ne);
