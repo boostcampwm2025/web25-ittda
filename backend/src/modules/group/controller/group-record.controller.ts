@@ -6,7 +6,6 @@ import {
   Body,
   Query,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,6 +29,7 @@ import { GetGroupMonthImagesQueryDto } from '../dto/get-group-month-images.query
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { GroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
 import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
+import { parseYearMonth } from '@/common/utils/parseDateValidator';
 
 @ApiTags('group-records')
 @ApiBearerAuth()
@@ -60,7 +60,7 @@ export class GroupRecordController {
     @Param('yyyy_mm') yyyy_mm: string,
     @Body() body: UpdateGroupMonthCoverDto,
   ) {
-    const { year, month } = this.parseYearMonth(yyyy_mm);
+    const { year, month } = parseYearMonth(yyyy_mm);
 
     const result = await this.groupRecordService.updateMonthCover(
       groupId,
@@ -116,7 +116,7 @@ export class GroupRecordController {
     @Param('groupId') groupId: string,
     @Query() query: GetGroupDailyArchiveQueryDto,
   ) {
-    const { year, month } = this.parseYearMonth(query.month);
+    const { year, month } = parseYearMonth(query.month);
 
     const data = await this.groupRecordService.getDailyArchive(
       groupId,
@@ -143,7 +143,7 @@ export class GroupRecordController {
     @Param('groupId') groupId: string,
     @Query() query: GetGroupMonthImagesQueryDto,
   ) {
-    const { year, month } = this.parseYearMonth(query.year);
+    const { year, month } = parseYearMonth(query.year);
 
     const data = await this.groupRecordService.getMonthImages(
       groupId,
@@ -170,7 +170,7 @@ export class GroupRecordController {
     @Param('groupId') groupId: string,
     @Query() query: GetGroupDailyArchiveQueryDto,
   ) {
-    const { year, month } = this.parseYearMonth(query.month);
+    const { year, month } = parseYearMonth(query.month);
 
     const data = await this.groupRecordService.getRecordedDays(
       groupId,
@@ -179,20 +179,5 @@ export class GroupRecordController {
     );
 
     return { data };
-  }
-
-  /**
-   * YYYY-MM 형식의 문자열을 year, month로 파싱
-   */
-  private parseYearMonth(yyyy_mm: string) {
-    const [yearStr, monthStr] = yyyy_mm.split('-');
-    const year = parseInt(yearStr, 10);
-    const month = parseInt(monthStr, 10);
-
-    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
-      throw new BadRequestException('Invalid date format. Use YYYY-MM.');
-    }
-
-    return { year, month };
   }
 }
