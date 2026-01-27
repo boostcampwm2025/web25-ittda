@@ -32,6 +32,15 @@ export class PresenceService {
     this.getMembersMap(draftId).set(actorId, member);
   }
 
+  updateLastSeenAt(draftId: string, sessionId: string) {
+    const actorId = this.sessionActorMap.get(sessionId);
+    if (!actorId) return false;
+    const member = this.presenceByDraft.get(draftId)?.get(actorId);
+    if (!member) return false;
+    member.lastSeenAt = new Date().toISOString();
+    return true;
+  }
+
   removeMemberBySession(draftId: string, sessionId: string) {
     const actorId = this.sessionActorMap.get(sessionId);
     if (!actorId) return { member: null, actorId: null };

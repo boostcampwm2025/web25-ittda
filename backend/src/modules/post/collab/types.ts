@@ -22,6 +22,10 @@ export type LeaveDraftPayload = {
   draftId?: string;
 };
 
+export type PresenceHeartbeatPayload = {
+  draftId?: string;
+};
+
 export type LockPayload = {
   lockKey: string;
 };

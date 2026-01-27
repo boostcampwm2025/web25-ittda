@@ -30,6 +30,7 @@ import type {
   LeaveDraftPayload,
   LockPayload,
   PresenceMember,
+  PresenceHeartbeatPayload,
   PatchApplyPayload,
   StreamPayload,
 } from './collab/types';
@@ -216,6 +217,7 @@ export class PostDraftGateway
         ownerSessionId: result.ownerSessionId,
       });
     }
+    this.presenceService.updateLastSeenAt(draftId, sessionId);
   }
 
   @SubscribeMessage('BLOCK_VALUE_STREAM')
@@ -263,6 +265,24 @@ export class PostDraftGateway
       throw new WsException('draftId mismatch.');
     }
     this.leaveCurrentDraft(socket);
+  }
+
+  @SubscribeMessage('PRESENCE_HEARTBEAT')
+  handlePresenceHeartbeat(
+    @MessageBody() payload: PresenceHeartbeatPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const socketData = this.getSocketData(socket);
+    if (payload?.draftId && payload.draftId !== socketData.draftId) {
+      throw new WsException('draftId mismatch.');
+    }
+    if (!socketData.draftId || !socketData.sessionId) {
+      throw new WsException('Session is not initialized.');
+    }
+    this.presenceService.updateLastSeenAt(
+      socketData.draftId,
+      socketData.sessionId,
+    );
   }
 
   handleDisconnect(socket: Socket) {

@@ -23,6 +23,7 @@
 - `PRESENCE_SNAPSHOT { sessionId, members, locks, version }`
 - `PRESENCE_JOINED { member }`
 - `PRESENCE_LEFT { sessionId }`
+- `PRESENCE_HEARTBEAT { draftId? }`
 - `PRESENCE_REPLACED { previousSessionId, sessionId, displayName }`
 - `SESSION_REPLACED {}` (기존 세션에만 전송)
 
@@ -74,6 +75,11 @@ Stream/Patch/Publish
 
 - 누군가 정상적으로 나갔을 때 브로드캐스트
 - `PRESENCE_REPLACED`로 교체된 세션은 별도 처리됨
+
+### PRESENCE_HEARTBEAT
+
+- 클라이언트 → 서버, 세션 생존 신호
+- 서버는 `lastSeenAt`만 갱신하며 별도 이벤트는 보내지 않음
 
 ### PRESENCE_REPLACED
 
