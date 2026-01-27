@@ -11,6 +11,16 @@ export class LocationStatDto {
   count: number;
 }
 
+export class MonthlyCountDto {
+  @ApiProperty({ description: '월 (YYYY-MM)', example: '2026-01' })
+  @Expose()
+  month: string;
+
+  @ApiProperty({ description: '해당 월 기록 수', example: 11 })
+  @Expose()
+  count: number;
+}
+
 export class UserStatsDto {
   @ApiProperty({
     description: '최근 사용한 태그 명단',
@@ -28,25 +38,17 @@ export class UserStatsDto {
 
   @ApiProperty({
     description: '최근 느낀 감정 명단',
-    example: ['HAPPY', 'SAD'],
+    example: ['행복', '슬픔'],
   })
   @Expose()
   recentEmotions: string[];
 
   @ApiProperty({
     description: '자주 느낀 감정 명단',
-    example: ['HAPPY', 'TIRED'],
+    example: ['행복', '피곤'],
   })
   @Expose()
   frequentEmotions: string[];
-
-  @ApiProperty({ description: '연속 작성 일수', example: 5 })
-  @Expose()
-  streak: number;
-
-  @ApiProperty({ description: '이번달 기록한 날짜 수', example: 12 })
-  @Expose()
-  monthlyRecordingDays: number;
 
   @ApiProperty({ description: '총 기록(게시글) 수', example: 150 })
   @Expose()
@@ -63,6 +65,14 @@ export class UserStatsDto {
   @Expose()
   @Type(() => LocationStatDto)
   frequentLocations: LocationStatDto[];
+
+  @ApiProperty({
+    description: '최근 12개월 기록 수',
+    type: [MonthlyCountDto],
+  })
+  @Expose()
+  @Type(() => MonthlyCountDto)
+  monthlyCounts: MonthlyCountDto[];
 }
 
 export class UserSummaryResponse {

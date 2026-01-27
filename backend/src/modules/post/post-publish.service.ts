@@ -130,7 +130,9 @@ export class PostPublishService {
           });
 
           const touchedBy = this.draftStateService.getTouchedBy(draftId);
-          const contributorIds = Array.from(new Set(touchedBy));
+          const contributorIds = Array.from(
+            new Set([draft.ownerActorId, ...touchedBy]),
+          );
           if (contributorIds.length > 0) {
             const contributors = contributorIds.map((userId) =>
               contributorRepo.create({

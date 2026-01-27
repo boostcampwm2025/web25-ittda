@@ -405,7 +405,7 @@ export const createMockMyCoverList = (
 };
 
 export const createMockTagStats = (): TagStatSummary => ({
-  recentTop: [
+  recentTags: [
     {
       tag: '아침',
       count: 3,
@@ -427,7 +427,7 @@ export const createMockTagStats = (): TagStatSummary => ({
       count: 1,
     },
   ],
-  allTimeTop: [
+  frequentTags: [
     {
       tag: '팀프로젝트',
       count: 12,
