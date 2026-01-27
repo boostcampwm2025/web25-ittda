@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GROUP_ROLE_KEY } from './group-roles.decorator';
-import { GroupService } from '../group.service';
+import { GroupService } from '../service/group.service';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 
 import type { Request } from 'express';
