@@ -316,18 +316,37 @@ export default function PostEditor({
   // 명시적으로 드로어를 닫을 때
   const handleCloseDrawer = (id?: string) => {
     if (id && draftId) {
+      const streamingValue = streamingValues[id];
       const currentBlock = blocks.find((b) => b.id === id);
-
       //여기서 커밋하기
       if (currentBlock) {
         applyPatch({
           type: 'BLOCK_SET_VALUE',
           blockId: id,
-          value: currentBlock.value,
+          value: streamingValue || currentBlock.value,
         });
       }
 
       // 락 해제
+      releaseLock(`block:${id}`);
+    }
+
+    setActiveDrawer(null);
+  };
+
+  // 선택과 동시에 커밋되도록 하는 드로어
+  const handleImmediateCommit = (newValue: BlockValue) => {
+    if (!activeDrawer || !activeDrawer.id) return;
+    const id = activeDrawer.id;
+    updateFieldValue(newValue, id);
+
+    if (draftId) {
+      applyPatch({
+        type: 'BLOCK_SET_VALUE',
+        blockId: id,
+        value: newValue,
+      });
+
       releaseLock(`block:${id}`);
     }
 
@@ -370,7 +389,7 @@ export default function PostEditor({
           <DateDrawer
             mode="single"
             currentDate={initialValue as string}
-            onSelectDate={(v) => handleDrawerDone({ date: v })}
+            onSelectDate={(v) => handleImmediateCommit({ date: v })}
             onClose={() => handleCloseDrawer(id)}
           />
         );
@@ -378,7 +397,7 @@ export default function PostEditor({
         return (
           <TimePickerDrawer
             currentTime={initialValue as TimeValue}
-            onSave={(v) => handleDrawerDone({ time: v })}
+            onSave={(v) => handleImmediateCommit({ time: v })}
             onClose={() => handleCloseDrawer(id)}
           />
         );

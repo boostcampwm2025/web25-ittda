@@ -67,7 +67,6 @@ export default function DateDrawer({
   const handleDateClick = (dateStr: string) => {
     if (mode === 'single') {
       onSelectDate?.(dateStr);
-      onClose();
     } else {
       // Range 모드 로직
       if (!tempRange.start || (tempRange.start && tempRange.end)) {

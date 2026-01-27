@@ -75,7 +75,6 @@ export default function TimePickerDrawer({
     const time24String = convertTo24Hour(time12String);
 
     onSave(time24String);
-    onClose();
   };
 
   return (
