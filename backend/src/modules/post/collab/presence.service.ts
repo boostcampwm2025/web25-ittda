@@ -24,6 +24,23 @@ export class PresenceService {
     return members ? Array.from(members.values()) : [];
   }
 
+  getDraftIds() {
+    return Array.from(this.presenceByDraft.keys());
+  }
+
+  getStaleSessionIds(draftId: string, cutoffMs: number) {
+    const members = this.presenceByDraft.get(draftId);
+    if (!members) return [];
+    const threshold = Date.now() - cutoffMs;
+    return Array.from(members.values())
+      .filter((member) => {
+        const lastSeen = Date.parse(member.lastSeenAt);
+        if (Number.isNaN(lastSeen)) return true;
+        return lastSeen < threshold;
+      })
+      .map((member) => member.sessionId);
+  }
+
   getMemberByActor(draftId: string, actorId: string) {
     return this.presenceByDraft.get(draftId)?.get(actorId) ?? null;
   }
