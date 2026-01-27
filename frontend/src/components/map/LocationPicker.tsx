@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Locate } from 'lucide-react';
 import {
   APIProvider,
   Map,
@@ -33,8 +33,27 @@ export function LocationPicker({
   initialCenter,
   className,
 }: LocationPickerProps) {
-  const { theme } = useTheme();
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string;
+
+  return (
+    <APIProvider apiKey={apiKey}>
+      <LocationPickerContent
+        mode={mode}
+        onSelect={onSelect}
+        initialCenter={initialCenter}
+        className={className}
+      />
+    </APIProvider>
+  );
+}
+
+function LocationPickerContent({
+  mode,
+  onSelect,
+  initialCenter,
+  className,
+}: LocationPickerProps) {
+  const { theme } = useTheme();
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(
@@ -43,7 +62,7 @@ export function LocationPicker({
   const isSelectedFromSearch = useRef(false);
 
   const { latitude: geoLat, longitude: geoLng } = useGeolocation({
-    reverseGeocode: false,
+    reverseGeocode: true,
   });
 
   const placesLib = useMapsLibrary('places');
@@ -56,19 +75,103 @@ export function LocationPicker({
   const [centerAddress, setCenterAddress] = useState<string>('');
   const [centerPlaceName, setCenterPlaceName] = useState<string>('');
   const [isAddressLoading, setIsAddressLoading] = useState(false);
+  const hasInitializedAddress = useRef(false);
 
   useEffect(() => {
     if (!mapRef.current || !placesLib) return;
     if (!placesServiceRef.current) {
       placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
     }
-  }, [placesLib]);
+  }, [placesLib, mapRef.current]);
 
   useEffect(() => {
     if (geoLat && geoLng && mapRef.current) {
       mapRef.current.panTo({ lat: geoLat, lng: geoLng });
     }
   }, [geoLat, geoLng]);
+
+  // 맨 처음 렌더링될 때 중심 위치의 주소를 가져옴
+  useEffect(() => {
+    const initializeAddress = async () => {
+      if (
+        !mapRef.current ||
+        !placesServiceRef.current ||
+        hasInitializedAddress.current ||
+        !placesLib
+      )
+        return;
+
+      const center = mapRef.current.getCenter();
+      if (!center) return;
+
+      hasInitializedAddress.current = true;
+      setIsAddressLoading(true);
+
+      try {
+        // 먼저 근처 POI 찾기
+        const placeName = await findNearbyPlace(center.lat(), center.lng());
+
+        // 주소 가져오기
+        if (!window.google?.maps?.Geocoder) {
+          setCenterAddress('주소를 불러올 수 없습니다.');
+          setIsAddressLoading(false);
+          return;
+        }
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode(
+          {
+            location: { lat: center.lat(), lng: center.lng() },
+            language: 'ko',
+          },
+          (results, status) => {
+            if (status === 'OK' && results?.[0]) {
+              // address_components에서 동/구 수준까지만 조합
+              const components = results[0].address_components;
+              const country =
+                components.find((c) => c.types.includes('country'))
+                  ?.long_name || '';
+              const level1 =
+                components.find((c) =>
+                  c.types.includes('administrative_area_level_1'),
+                )?.long_name || '';
+              const sublocalityLevel1 =
+                components.find((c) => c.types.includes('sublocality_level_1'))
+                  ?.long_name || '';
+              const sublocalityLevel2 =
+                components.find((c) => c.types.includes('sublocality_level_2'))
+                  ?.long_name || '';
+
+              const address = [
+                country,
+                level1,
+                sublocalityLevel1,
+                sublocalityLevel2,
+              ]
+                .filter(Boolean)
+                .join(' ');
+
+              setCenterAddress(address || results[0].formatted_address);
+              if (placeName) {
+                setCenterPlaceName(placeName);
+              }
+            } else {
+              setCenterAddress('주소를 불러올 수 없습니다.');
+            }
+            setIsAddressLoading(false);
+          },
+        );
+      } catch (error) {
+        console.error('Error initializing address:', error);
+        setCenterAddress('주소를 불러올 수 없습니다.');
+        setIsAddressLoading(false);
+      }
+    };
+
+    // 지도가 완전히 로드된 후 실행
+    if (mapRef.current && placesServiceRef.current && placesLib) {
+      initializeAddress();
+    }
+  }, [placesLib]);
 
   const handleSearch = async (keyword: string) => {
     if (!keyword.trim() || !mapRef.current || !placesLib) return;
@@ -99,7 +202,32 @@ export function LocationPicker({
         { location: { lat, lng }, language: 'ko' },
         (results, status) => {
           if (status === 'OK' && results?.[0]) {
-            resolve(results[0].formatted_address);
+            // address_components에서 동/구 수준까지만 조합
+            const components = results[0].address_components;
+            const country =
+              components.find((c) => c.types.includes('country'))?.long_name ||
+              '';
+            const level1 =
+              components.find((c) =>
+                c.types.includes('administrative_area_level_1'),
+              )?.long_name || '';
+            const sublocalityLevel1 =
+              components.find((c) => c.types.includes('sublocality_level_1'))
+                ?.long_name || '';
+            const sublocalityLevel2 =
+              components.find((c) => c.types.includes('sublocality_level_2'))
+                ?.long_name || '';
+
+            const address = [
+              country,
+              level1,
+              sublocalityLevel1,
+              sublocalityLevel2,
+            ]
+              .filter(Boolean)
+              .join(' ');
+
+            resolve(address || results[0].formatted_address);
           } else {
             reject(new Error(`Geocoding failed: ${status}`));
           }
@@ -109,10 +237,77 @@ export function LocationPicker({
   };
 
   /**
+   * 중심 위치 근처의 POI(장소) 찾기
+   */
+  const findNearbyPlace = async (
+    lat: number,
+    lng: number,
+  ): Promise<string | null> => {
+    // placesServiceRef가 null이면 생성
+    if (!placesServiceRef.current) {
+      if (!mapRef.current || !placesLib) {
+        return null;
+      }
+      placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
+    }
+
+    return new Promise((resolve) => {
+      const center = new google.maps.LatLng(lat, lng);
+      const request: google.maps.places.PlaceSearchRequest = {
+        location: center,
+        radius: 50,
+        type: 'point_of_interest',
+      };
+
+      try {
+        placesServiceRef.current!.nearbySearch(request, (results, status) => {
+          // status가 OK가 아니거나 결과가 빈 배열일 경우 모두 resolve(null)
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            results &&
+            results.length > 0
+          ) {
+            const nearestPlace = results[0];
+            const placeLoc = nearestPlace.geometry?.location;
+
+            if (placeLoc && geometryLib) {
+              const distance =
+                google.maps.geometry.spherical.computeDistanceBetween(
+                  center,
+                  placeLoc,
+                );
+              if (distance <= 15) {
+                return resolve(nearestPlace.name || null);
+              }
+            }
+          }
+
+          // 어떤 조건에도 해당하지 않으면 null 반환 (여기서 무한 로딩 방지)
+          resolve(null);
+        });
+      } catch (error) {
+        console.error('NearbySearch Error:', error);
+        resolve(null);
+      }
+    });
+  };
+
+  const getPlacesService = () => {
+    if (placesServiceRef.current) return placesServiceRef.current;
+
+    if (mapRef.current && placesLib) {
+      placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
+      return placesServiceRef.current;
+    }
+    return null;
+  };
+
+  /**
    * 지도가 멈췄을 때(Idle) 중심 좌표의 주소를 갱신
    */
   const handleMapIdle = async () => {
-    if (!mapRef.current) return;
+    const service = getPlacesService();
+    if (!service || !mapRef.current) return;
     if (isSelectedFromSearch.current) {
       isSelectedFromSearch.current = false;
       return;
@@ -123,12 +318,24 @@ export function LocationPicker({
 
     setIsAddressLoading(true);
     try {
-      const addr = await reverseGeocode(center.lat(), center.lng());
-      setCenterAddress(addr);
-      setCenterPlaceName('');
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // 먼저 근처 POI 찾기
+      const placeName = await findNearbyPlace(center.lat(), center.lng());
+
+      if (placeName) {
+        setCenterPlaceName(placeName);
+        // 주소도 함께 가져오기
+        const addr = await reverseGeocode(center.lat(), center.lng());
+        setCenterAddress(addr);
+      } else {
+        // POI가 없으면 주소만 표시
+        const addr = await reverseGeocode(center.lat(), center.lng());
+        setCenterAddress(addr);
+        setCenterPlaceName('');
+      }
     } catch (error) {
+      console.error('Error in handleMapIdle:', error);
       setCenterAddress('주소를 불러올 수 없습니다.');
+      setCenterPlaceName('');
     } finally {
       setIsAddressLoading(false);
     }
@@ -184,10 +391,16 @@ export function LocationPicker({
     }
   };
 
+  const handleMyLocation = () => {
+    if (!mapRef.current || !geoLat || !geoLng) return;
+    mapRef.current.panTo({ lat: geoLat, lng: geoLng });
+    mapRef.current.setZoom(17);
+  };
+
   return (
     <div
       className={cn(
-        'w-full h-[500px] md:h-[600px] flex flex-col relative overflow-hidden bg-white',
+        'w-full h-125 md:h-150 flex flex-col relative overflow-hidden bg-white',
         className,
       )}
     >
@@ -204,33 +417,39 @@ export function LocationPicker({
 
       {/* 지도 */}
       <div className="flex-1 relative z-10">
-        <APIProvider apiKey={apiKey}>
-          <Map
-            colorScheme={
-              theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT
-            }
-            mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
-            defaultCenter={initialCenter || { lat: 37.5665, lng: 126.978 }}
-            defaultZoom={15}
-            disableDefaultUI
-            gestureHandling="greedy"
-            onDragstart={() => {
-              setIsAddressLoading(true); // 드래그 시작 시 로딩 상태로 변경
+        <Map
+          colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
+          mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
+          defaultCenter={initialCenter || { lat: 37.5665, lng: 126.978 }}
+          defaultZoom={17}
+          disableDefaultUI
+          gestureHandling="greedy"
+          onDragstart={() => {
+            setIsAddressLoading(true); // 드래그 시작 시 로딩 상태로 변경
+          }}
+          onIdle={handleMapIdle} // 지도가 멈추면 주소 갱신
+        >
+          <MapHandler
+            setMap={(map) => {
+              mapRef.current = map;
             }}
-            onIdle={handleMapIdle} // 지도가 멈추면 주소 갱신
-          >
-            <MapHandler
-              setMap={(map) => {
-                mapRef.current = map;
-              }}
-            />
-          </Map>
-        </APIProvider>
+          />
+        </Map>
+
+        {/* 내 위치로 가기 버튼 */}
+        <button
+          onClick={handleMyLocation}
+          disabled={!geoLat || !geoLng}
+          className="absolute bottom-6 right-4 z-30 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="내 위치로 이동"
+        >
+          <Locate size={20} className="text-gray-700 dark:text-gray-200" />
+        </button>
 
         {/* 중앙 핀 및 주소 표시 라벨 */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(100%+4px)] pointer-events-none z-20 flex flex-col items-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(100%-43px)] pointer-events-none z-20 flex flex-col items-center">
           {/* 주소 표시 버블 */}
-          <div className="mb-2 bg-white/90 dark:bg-gray-800/90 px-2 py-1.5 rounded-full shadow-lg border border-gray-100 dark:border-gray-700 flex items-center gap-2 max-w-[300px]">
+          <div className="mb-2 bg-white/90 dark:bg-gray-800/90 px-2 py-1.5 rounded-full shadow-lg border border-gray-100 dark:border-gray-700 flex items-center gap-2 max-w-75">
             {isAddressLoading ? (
               <Loader2 className="w-3 h-3 animate-spin text-primary" />
             ) : (
@@ -246,6 +465,7 @@ export function LocationPicker({
             alt="location pin"
             width={40}
             height={40}
+            // className="-translate-y-[85%]"
           />
 
           <div className="mt-4 pointer-events-auto">
