@@ -22,6 +22,7 @@ import MetadataSelectionDrawer from './metadata/MetadataSelectionDrawer';
 import {
   BlockValue,
   FieldType,
+  LocationValue,
   MoodValue,
   RatingValue,
   TagValue,
@@ -102,6 +103,29 @@ export default function PostEditor({
     applyPatch,
   });
 
+  const handleLocationUpdate = (locationData: LocationValue) => {
+    const existingBlock = blocks.find((b) => b.type === 'location');
+
+    if (existingBlock) {
+      // 블록이 이미 있으면 업데이트 후 커밋 + 락 해제
+      updateFieldValue(locationData, existingBlock.id);
+
+      if (draftId) {
+        applyPatch({
+          type: 'BLOCK_SET_VALUE',
+          blockId: existingBlock.id,
+          value: locationData,
+        });
+        releaseLock(`block:${existingBlock.id}`);
+      }
+    } else {
+      addOrShowBlock('location', locationData);
+    }
+
+    // 세션 스토리지 정리
+    sessionStorage.removeItem('selected_location');
+  };
+
   const {
     gridRef,
     isDraggingId,
@@ -129,9 +153,7 @@ export default function PostEditor({
       setTitle(title);
       setBlocks(blocks);
     },
-    onLocationUpdate: (locationData) => {
-      addOrShowBlock('location', locationData);
-    },
+    onLocationUpdate: handleLocationUpdate,
   });
 
   const { members } = useDraftPresence(draftId);
