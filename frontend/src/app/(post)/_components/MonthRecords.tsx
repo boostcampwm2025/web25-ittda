@@ -116,7 +116,7 @@ export default function MonthRecords({
         <button
           type="button"
           onClick={() => router.push('/add')}
-          className="mt-2 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#10B981] shadow-lg shadow-[#10B981]/20 hover:bg-[#0ea472] active:scale-95 transition-all"
+          className="mt-2 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-itta-black shadow-lg shadow-itta-black/20 hover:bg-itta-black/80 active:scale-95 transition-all"
         >
           <Plus className="w-4 h-4" />
           기록 추가하기
