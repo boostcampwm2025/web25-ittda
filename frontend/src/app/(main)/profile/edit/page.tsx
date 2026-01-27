@@ -1,7 +1,8 @@
 import ProfileEditClient from './_components/ProfileEditClient';
 
 const profile = {
-  image: '/profile-ex.jpeg',
+  id: 'uuid',
+  profileImageId: '/profile-ex.jpeg',
   nickname: '도비',
   email: 'wndqhr__@naver.com',
 };

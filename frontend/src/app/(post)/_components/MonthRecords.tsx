@@ -14,19 +14,22 @@ import {
 import { BookOpen, Plus, X } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  MyCoverUpdateResponse,
-  MyMonthlyRecordListResponse,
+  MontlyCoverUpdateResponse,
+  MonthlyRecordList,
 } from '@/lib/types/recordResponse';
 import { useApiPatch } from '@/hooks/useApi';
 import { myMonthlyRecordListOptions } from '@/lib/api/my';
 import { convertMontRecords } from '../_utils/convertMonthRecords';
+import { groupMonthlyRecordListOptions } from '@/lib/api/group';
 
 interface MonthRecordsProps {
-  monthRecords: MyMonthlyRecordListResponse[];
+  monthRecords?: MonthlyRecordList[];
   cardRoute: string;
+  groupId?: string;
 }
 
 export default function MonthRecords({
+  groupId,
   monthRecords,
   cardRoute,
 }: MonthRecordsProps) {
@@ -34,12 +37,18 @@ export default function MonthRecords({
   const router = useRouter();
   const [activeMonthId, setActiveMonthId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { groupId, year } = useParams();
+
+  const params = useParams() as { year?: string };
+  const year = params.year || new Date().getFullYear().toString();
+
+  const options = groupId
+    ? groupMonthlyRecordListOptions(groupId)
+    : myMonthlyRecordListOptions(year);
 
   const { data: months = [] } = useQuery({
-    ...myMonthlyRecordListOptions(),
-    initialData: monthRecords,
-    select: (data: MyMonthlyRecordListResponse[]) => convertMontRecords(data),
+    ...options,
+    ...(monthRecords && { initialData: monthRecords }),
+    select: (data: MonthlyRecordList[]) => convertMontRecords(data),
   });
 
   const openGallery = (monthId: string) => {
@@ -47,38 +56,31 @@ export default function MonthRecords({
     setIsDrawerOpen(true);
   };
 
-  const { mutate: updateGroupCover } = useApiPatch<MyCoverUpdateResponse>(
-    `/api/user/archives/months/${activeMonthId}/cover`,
+  const cacheKey = groupId
+    ? ['group', groupId, 'records', 'month', year]
+    : ['my', 'records', 'month', year];
+
+  const coverEndpoint = groupId
+    ? `/api/groups/${groupId}/archives/months/${activeMonthId}/cover`
+    : `/api/user/archives/months/${activeMonthId}/cover`;
+
+  const { mutate: updateCover } = useApiPatch<MontlyCoverUpdateResponse>(
+    coverEndpoint,
     {
       onSuccess: (response) => {
         if (!response.data) return;
         const coverInfo = response.data;
-        // 서버 응답 데이터를 캐시에 즉시 수정
-        queryClient.setQueryData<MyMonthlyRecordListResponse[]>(
-          year
-            ? ['my', 'records', 'month', new Date().getFullYear().toString()]
-            : ['my', 'records', 'month'],
-          (old) => {
-            if (!old) return [];
-            return old.map((my) => {
-              if (my.month === activeMonthId) {
-                return {
-                  ...my,
-                  coverAssetId: coverInfo.coverAssetId,
-                };
-              }
-              return my;
-            });
-          },
-        );
+        queryClient.setQueryData<MonthlyRecordList[]>(cacheKey, (old) => {
+          if (!old) return [];
+          return old.map((item) =>
+            item.month === activeMonthId
+              ? { ...item, coverAssetId: coverInfo.coverAssetId }
+              : item,
+          );
+        });
       },
       onSettled: () => {
-        // 백그라운드에서 서버와 동기화
-        queryClient.invalidateQueries({
-          queryKey: year
-            ? ['my', 'records', 'month', year]
-            : ['my', 'records', 'month'],
-        });
+        queryClient.invalidateQueries({ queryKey: cacheKey });
       },
     },
   );
@@ -86,23 +88,17 @@ export default function MonthRecords({
   const handleCoverSelect = (assetId: string, recordId: string) => {
     if (!activeMonthId) return;
 
-    // 낙관적 업데이트: 캐시 직접 수정
-    queryClient.setQueryData<MyMonthlyRecordListResponse[]>(
-      year ? ['my', 'records', 'month', year] : ['my', 'records', 'month'],
-      (oldData) => {
-        if (!oldData) return oldData;
-        return oldData.map((my) =>
-          my.month === activeMonthId
-            ? {
-                ...my,
-                coverAssetId: assetId,
-              }
-            : my,
-        );
-      },
-    );
+    // 낙관적 업데이트
+    queryClient.setQueryData<MonthlyRecordList[]>(cacheKey, (oldData) => {
+      if (!oldData) return oldData;
+      return oldData.map((item) =>
+        item.month === activeMonthId
+          ? { ...item, coverAssetId: assetId }
+          : item,
+      );
+    });
 
-    updateGroupCover({ assetId: assetId, sourcePostId: recordId });
+    updateCover({ assetId, sourcePostId: recordId });
   };
 
   if (months.length === 0) {
@@ -167,6 +163,8 @@ export default function MonthRecords({
           </DrawerHeader>
 
           <GalleryDrawer
+            groupId={groupId}
+            month={activeMonthId!}
             type={groupId ? 'group' : 'personal'}
             currentAssetId={
               months.find((m) => m.id === activeMonthId)?.cover?.assetId

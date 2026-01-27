@@ -1,8 +1,8 @@
 import { useAuthStore } from '@/store/useAuthStore';
 import { useApiPost } from './useApi';
 import { useRouter } from 'next/navigation';
-import { SuccessResponse } from '@/lib/types/response';
 import { RecordDetail } from '@/lib/types/recordResponse';
+
 export const useCreateRecord = () => {
   const router = useRouter();
   const { userId } = useAuthStore();

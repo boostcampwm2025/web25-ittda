@@ -1,38 +1,13 @@
 import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
 import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
-
-const initialDays = [
-  {
-    date: '2025-12-21',
-    dayName: '일',
-    title: '엄마의 팥죽',
-    emoji: '🥣',
-    author: '엄마',
-    count: 1,
-    coverUrl:
-      'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    date: '2025-12-18',
-    dayName: '목',
-    title: '성수동 카페 나들이',
-    emoji: '☕',
-    author: '나',
-    count: 3,
-    coverUrl:
-      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    date: '2025-12-10',
-    dayName: '수',
-    title: '눈 내린 아침 산책',
-    emoji: '❄️',
-    author: '아빠',
-    count: 1,
-    coverUrl:
-      'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=600',
-  },
-];
+import { getCachedGroupDailyRecordList } from '@/lib/api/group';
+import { createMockGroupDailyRecords } from '@/lib/mocks/mock';
+import { DailyRecordList } from '@/lib/types/recordResponse';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 
 interface GroupMonthlyDetailPageProps {
   params: Promise<{ month: string; groupId: string }>;
@@ -43,6 +18,21 @@ export default async function GroupMonthlyDetailPage({
 }: GroupMonthlyDetailPageProps) {
   const { groupId, month } = await params;
 
+  let dailyRecords: DailyRecordList[];
+  const queryClient = new QueryClient();
+
+  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
+    dailyRecords = createMockGroupDailyRecords();
+  } else {
+    dailyRecords = await getCachedGroupDailyRecordList(groupId, month);
+
+    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    queryClient.setQueryData(
+      ['group', groupId, 'records', 'daily', month],
+      dailyRecords,
+    );
+  }
+
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <div className="py-6 px-6 sticky top-0 z-50 transition-colors duration-300 dark:bg-[#121212] bg-white">
@@ -52,11 +42,24 @@ export default async function GroupMonthlyDetailPage({
       </div>
 
       <div className="p-6 pb-40">
-        <MonthlyDetailRecords
-          dayRecords={initialDays}
-          routePath={`/group/${groupId}/detail`}
-          viewMapRoutePath={`/group/${groupId}/map/month/${month}`}
-        />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
+            <MonthlyDetailRecords
+              groupId={groupId}
+              month={month}
+              serverSideData={dailyRecords}
+              routePath={`/group/${groupId}/detail`}
+              viewMapRoutePath={`/group/${groupId}/map/month/${month}`}
+            />
+          ) : (
+            <MonthlyDetailRecords
+              groupId={groupId}
+              month={month}
+              routePath={`/group/${groupId}/detail`}
+              viewMapRoutePath={`/group/${groupId}/map/month/${month}`}
+            />
+          )}
+        </HydrationBoundary>
       </div>
     </div>
   );

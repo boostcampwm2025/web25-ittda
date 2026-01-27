@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { isUUID } from 'class-validator';
 import type { Server, Socket } from 'socket.io';
@@ -71,6 +71,10 @@ export class PatchStreamService {
       if (command.type === 'BLOCK_INSERT') {
         continue;
       }
+      if (command.type === 'BLOCK_MOVE') {
+        // Layout moves are allowed without locks.
+        continue;
+      }
       if (command.type === 'BLOCK_SET_TITLE') {
         this.ensureTitleLockOwner(draftId, sessionId);
         continue;
@@ -83,11 +87,30 @@ export class PatchStreamService {
       this.ensureLockOwner(draftId, sessionId, blockId);
     }
 
-    const result = await this.postDraftService.applyPatch(
-      draftId,
-      payload.baseVersion,
-      payload.patch,
-    );
+    type ApplyPatchResult = Awaited<ReturnType<PostDraftService['applyPatch']>>;
+    let result: ApplyPatchResult;
+    try {
+      result = await this.postDraftService.applyPatch(
+        draftId,
+        payload.baseVersion,
+        payload.patch,
+      );
+    } catch (error) {
+      if (error instanceof WsException) {
+        throw error;
+      }
+      if (error instanceof HttpException) {
+        const response = error.getResponse();
+        const message =
+          typeof response === 'string'
+            ? response
+            : ((response as { message?: string }).message ??
+              error.message ??
+              'Bad request');
+        throw new WsException(message);
+      }
+      throw new WsException('Internal server error');
+    }
     if (result.status === 'stale') {
       socket.emit('PATCH_REJECTED_STALE', {
         currentVersion: result.currentVersion,

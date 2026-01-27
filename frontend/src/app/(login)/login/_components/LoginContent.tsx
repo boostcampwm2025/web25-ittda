@@ -6,7 +6,7 @@ import { GuestInfo } from '@/lib/types/profile';
 import { getRedirectUri } from '@/lib/utils/getRedirectUri';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
@@ -18,9 +18,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   login_failed: '로그인에 실패했습니다. 다시 시도해주세요.',
 };
 
-export default function LoginContent() {
+export default function LoginContent({
+  error,
+}: {
+  error?: string | undefined;
+}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const inviteCode = getCookie('invite-code') || '';
 
   const { setGuestInfo } = useAuthStore();
@@ -54,7 +57,6 @@ export default function LoginContent() {
   );
 
   useEffect(() => {
-    const error = searchParams.get('error');
     if (error) {
       const message = ERROR_MESSAGES[error] || '로그인 중 오류가 발생했습니다.';
       toast.error(message);
@@ -62,7 +64,7 @@ export default function LoginContent() {
       // URL에서 error 파라미터 제거
       router.replace('/login');
     }
-  }, [searchParams, router]);
+  }, [router, error]);
 
   const handleLoginGuest = async () => {
     guestLogin({});

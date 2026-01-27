@@ -1,3 +1,5 @@
+'use client';
+
 import { formatDotDateString } from '@/lib/date';
 import { MapPostItem } from '@/lib/types/record';
 import { cn } from '@/lib/utils';

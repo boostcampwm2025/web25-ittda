@@ -13,4 +13,8 @@ export interface UserStats {
   frequentTags: string[];
   recentEmotions: string[];
   frequentEmotions: string[];
+  totalPosts: number;
+  totalImages: number;
+  frequentLocations: { placeName: string; count: number }[];
+  monthlyCounts: { month: string; count: number }[];
 }

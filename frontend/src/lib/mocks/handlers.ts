@@ -4,8 +4,13 @@ import {
   createMockDailyRecord,
   createMockEmotionStats,
   createMockGroupCoverList,
+  createMockGroupDailyRecords,
   createMockGroupList,
+  createMockGroupMembers,
+  createMockGroupMonthlyRecords,
+  createMockGroupSettings,
   createMockMonthlyRecord,
+  createMockMyCoverList,
   createMockRecordPreviews,
   createMockTagStats,
 } from './mock';
@@ -14,6 +19,136 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/groups/:groupId/settings', ({ params }) => {
+    const id = String(params.groupId);
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockGroupSettings(id),
+      error: null,
+    });
+  }),
+  http.patch('/api/groups/:groupId', async ({ params, request }) => {
+    const id = String(params.groupId);
+
+    const body = (await request.json()) as {
+      groupName: string;
+      coverAssetId: string;
+    };
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockGroupSettings(id),
+      error: null,
+    });
+  }),
+  http.patch(
+    '/api/groups/:groupId/archives/months/:month/cover',
+    async ({ params, request }) => {
+      const groupId = String(params.groupId);
+      const month = String(params.month);
+
+      const body = (await request.json()) as {
+        coverAssetId: string;
+      };
+
+      return HttpResponse.json({
+        success: true,
+        data: {
+          coverAssetId: body.coverAssetId,
+        },
+        error: null,
+      });
+    },
+  ),
+  http.get(
+    '/api/groups/:groupId/archives/monthcover',
+    ({ request, params }) => {
+      const url = new URL(request.url);
+      const groupId = String(params.groupId);
+      const month = url.searchParams.get('year');
+      const cursor = url.searchParams.get('cursor');
+
+      const mockImgs = createMockGroupCoverList(groupId, cursor);
+      return HttpResponse.json({
+        success: true,
+        data: mockImgs,
+        error: null,
+      });
+    },
+  ),
+  http.get('/api/groups/:groupId/archives/days', ({ request }) => {
+    const url = new URL(request.url);
+    const month = url.searchParams.get('month');
+
+    HttpResponse.json({
+      success: true,
+      data: createMockGroupDailyRecords(),
+      error: null,
+    });
+  }),
+  http.get('/api/groups/:groupId/archives/months', ({ request }) => {
+    const url = new URL(request.url);
+    const year = url.searchParams.get('year');
+    const sort = url.searchParams.get('sort');
+
+    HttpResponse.json({
+      success: true,
+      data: createMockGroupMonthlyRecords(),
+      error: null,
+    });
+  }),
+  http.get('/api/groups/:groupId/current-members', ({ params }) => {
+    const groupId = String(params.groupId);
+
+    HttpResponse.json({
+      success: true,
+      data: createMockGroupMembers(),
+      error: null,
+    });
+  }),
+  http.get(
+    '/api/groups/:groupId/archives/record-days',
+    ({ request, params }) => {
+      const groupId = String(params.groupId);
+      const url = new URL(request.url);
+      const month = url.searchParams.get('month');
+
+      HttpResponse.json({
+        success: true,
+        data: [
+          '2026-01-02',
+          '2026-01-10',
+          '2025-12-21',
+          '2025-12-20',
+          '2025-12-15',
+          '2025-12-10',
+          '2025-11-15',
+          '2025-11-02',
+        ],
+        error: null,
+      });
+    },
+  ),
+  http.get('/api/user/archives/record-days', ({ request }) => {
+    const url = new URL(request.url);
+    const month = url.searchParams.get('month');
+
+    HttpResponse.json({
+      success: true,
+      data: [
+        '2026-01-02',
+        '2026-01-10',
+        '2025-12-21',
+        '2025-12-20',
+        '2025-12-15',
+        '2025-12-10',
+        '2025-11-15',
+        '2025-11-02',
+      ],
+      error: null,
+    });
+  }),
   http.patch(
     '/api/user/archives/months/:month/cover',
     async ({ params, request }) => {
@@ -35,18 +170,12 @@ export const handlers = [
   http.get('/api/user/archives/monthcover', ({ request }) => {
     const url = new URL(request.url);
     const month = url.searchParams.get('year');
+    const cursor = url.searchParams.get('cursor');
 
+    const mockImgs = createMockMyCoverList(cursor);
     return HttpResponse.json({
       success: true,
-      data: [
-        '/base.png',
-        '/profile-ex.jpeg',
-        '/base.png',
-        '/profile-ex.jpeg',
-        '/base.png',
-        '/profile-ex.jpeg',
-      ],
-      meta: {},
+      data: mockImgs,
       error: null,
     });
   }),
@@ -79,31 +208,17 @@ export const handlers = [
       error: null,
     });
   }),
-  http.get('/api/me/stats/summary', ({ request }) => {
-    const url = new URL(request.url);
-    const date = url.searchParams.get('date') || new Date().toISOString();
-
-    const parts = date.split('-').map((s) => parseInt(s, 10));
-
-    if (parts.length === 2) {
-      return HttpResponse.json({
-        success: true,
-        data: {
-          count: 2,
-        },
-        error: null,
-      });
-    } else {
-      return HttpResponse.json({
-        success: true,
-        data: {
-          count: 16,
-        },
-        error: null,
-      });
-    }
+  http.get('/api/stats/summary', ({ request }) => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        streak: 3,
+        monthlyRecordingDays: 12,
+      },
+      error: null,
+    });
   }),
-  http.get('/api/me/emotions/summary', ({ request }) => {
+  http.get('/api/stats/emotions/summary', ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit');
 
@@ -113,7 +228,7 @@ export const handlers = [
       error: null,
     });
   }),
-  http.get('/api/me/tags/stats', ({ request }) => {
+  http.get('/api/stats/tags', ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit');
 

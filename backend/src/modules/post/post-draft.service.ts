@@ -10,14 +10,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { isUUID, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
+import { randomUUID } from 'crypto';
+import { DateTime } from 'luxon';
 
 import { PostDraft } from './entity/post-draft.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostScope } from '@/enums/post-scope.enum';
-import type { PatchCommand } from './collab/types';
+import type { BlockMoveListCommand, PatchCommand } from './collab/types';
 import { PostBlockDto } from './dto/post-block.dto';
+import { PostBlockType } from '@/enums/post-block-type.enum';
 
 @Injectable()
 export class PostDraftService {
@@ -113,11 +116,31 @@ export class PostDraftService {
   }
 
   private buildDefaultDraftSnapshot(groupId: string) {
+    const now = DateTime.utc();
     const snapshot: Omit<CreatePostDto, 'thumbnailMediaId'> = {
       scope: PostScope.GROUP,
       groupId,
       title: '',
-      blocks: [],
+      blocks: [
+        {
+          id: randomUUID(),
+          type: PostBlockType.DATE,
+          value: { date: now.toISODate() ?? '' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          id: randomUUID(),
+          type: PostBlockType.TIME,
+          value: { time: now.toFormat('HH:mm') },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          id: randomUUID(),
+          type: PostBlockType.TEXT,
+          value: { text: '' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
     };
     return snapshot;
   }
@@ -135,6 +158,18 @@ export class PostDraftService {
   private ensureNoDuplicateBlockIds(commands: PatchCommand[]) {
     const seen = new Set<string>();
     for (const command of commands) {
+      if (this.isBlockMoveList(command)) {
+        command.moves.forEach((move) => {
+          const blockId = move.blockId;
+          if (seen.has(blockId)) {
+            throw new BadRequestException(
+              'Duplicate blockId in patch payload.',
+            );
+          }
+          seen.add(blockId);
+        });
+        continue;
+      }
       const blockId =
         command.type === 'BLOCK_INSERT'
           ? command.block?.id
@@ -199,20 +234,29 @@ export class PostDraftService {
           break;
         }
         case 'BLOCK_MOVE': {
-          if (!isUUID(command.blockId)) {
-            throw new BadRequestException('blockId must be a UUID.');
+          const moves = this.isBlockMoveList(command)
+            ? command.moves
+            : [command];
+          if (!Array.isArray(moves) || moves.length === 0) {
+            throw new BadRequestException('moves must be a non-empty array.');
           }
-          const target = next.blocks.find(
-            (item) => item.id === command.blockId,
-          );
-          if (!target) {
-            throw new NotFoundException('Block not found.');
+          for (const move of moves) {
+            const blockId = move.blockId;
+            if (!blockId || !isUUID(blockId)) {
+              throw new BadRequestException(
+                `blockId must be a UUID: ${String(blockId)}`,
+              );
+            }
+            const target = next.blocks.find((item) => item.id === blockId);
+            if (!target) {
+              throw new NotFoundException('Block not found.');
+            }
+            this.ensureBlockValueValid({
+              ...target,
+              layout: move.layout,
+            });
+            target.layout = move.layout;
           }
-          this.ensureBlockValueValid({
-            ...target,
-            layout: command.layout,
-          });
-          target.layout = command.layout;
           break;
         }
         case 'BLOCK_SET_VALUE': {
@@ -238,6 +282,16 @@ export class PostDraftService {
     }
 
     return next;
+  }
+
+  private isBlockMoveList(
+    command: PatchCommand,
+  ): command is BlockMoveListCommand {
+    return (
+      command.type === 'BLOCK_MOVE' &&
+      'moves' in command &&
+      Array.isArray(command.moves)
+    );
   }
 
   private parseSnapshot(snapshot: Record<string, unknown>): CreatePostDto {

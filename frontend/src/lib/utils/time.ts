@@ -49,3 +49,17 @@ export const convertTo24Hour = (time12: string): string => {
 
   return `${hour.toString().padStart(2, '0')}:${minute}`;
 };
+
+// mock 데이터를 위한 임시 유틸 함수
+export const getPastDate = (currentDate: string, daysAgo: number) => {
+  const date = new Date(currentDate);
+  // 현재 날짜에서 daysAgo만큼 차감
+  date.setDate(date.getDate() - daysAgo);
+
+  // YYYY-MM-DD 형식으로 변환 (로컬 시간 기준)
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};

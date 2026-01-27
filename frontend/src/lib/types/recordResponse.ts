@@ -95,7 +95,9 @@ export interface GroupCoverUpdateResponse {
   updatedAt: string;
 }
 
-export interface MyMonthlyRecordListResponse {
+export type GroupDailyRecordedDatesResponse = string[];
+
+export interface MonthlyRecordList {
   month: string;
   count: number;
   coverAssetId: string | null;
@@ -103,16 +105,23 @@ export interface MyMonthlyRecordListResponse {
   latestLocation: string | null;
 }
 
-export interface MyDailyRecordListResponse {
+export interface DailyRecordList {
   date: string;
   postCount: number;
-  coverThumbnailUrl: string | null;
+  coverAssetId: string | null;
   latestPostTitle: string;
   latestPlaceName: string | null;
 }
 
-export type MyCoverListResponse = string[];
+export interface MyCoverListResponse {
+  sections: CoverSection[];
+  pageInfo: {
+    hasNext: boolean;
+    nextCursor: string | null;
+  };
+}
 
-export interface MyCoverUpdateResponse {
+export interface MontlyCoverUpdateResponse {
   coverAssetId: string;
 }
+export type MyDailyRecordedDatesResponse = string[];

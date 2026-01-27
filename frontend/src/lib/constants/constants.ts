@@ -1,5 +1,8 @@
 import type { TemplateType } from '@/lib/types/record';
 
+// 개인 영역 캐싱: 본인만 수정 가능하므로 staleTime 설정
+export const PERSONAL_STALE_TIME = 5 * 60 * 1000; // 5분
+
 export const TEMPLATE_LABEL: Record<TemplateType, string> = {
   diary: '일기',
   travel: '여행',

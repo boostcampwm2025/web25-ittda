@@ -1,61 +1,38 @@
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 import DailyDetailRecords from '@/components/DailyDetailRecords';
-import { ActiveMember } from '@/lib/types/group';
 import Back from '@/components/Back';
-import { formatDateISO } from '@/lib/date';
-import { QueryClient } from '@tanstack/react-query';
-import { recordPreviewListOptions } from '@/lib/api/records';
-import { RecordPreview } from '@/lib/types/recordResponse';
 import { createMockRecordPreviews } from '@/lib/mocks/mock';
+import { RecordPreview } from '@/lib/types/recordResponse';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+import { getCachedRecordPreviewList } from '@/lib/api/records';
 
 interface GroupDailyDetailPageProps {
   params: Promise<{ date: string; groupId: string }>;
 }
 
-const members: ActiveMember[] = [
-  {
-    recordId: '1',
-    id: 1,
-    name: '나',
-    avatar: '/profile-ex.jpeg',
-  },
-  {
-    recordId: '2',
-    id: 2,
-    name: '엄마',
-    avatar: '/profile-ex.jpeg',
-  },
-  {
-    recordId: '3',
-    id: 3,
-    name: '아빠',
-    avatar: '/profile-ex.jpeg',
-  },
-  {
-    recordId: '4',
-    id: 4,
-    name: '언니',
-    avatar: '/profile-ex.jpeg',
-  },
-];
-
 export default async function GroupDailyDetailPage({
   params,
 }: GroupDailyDetailPageProps) {
   const { date, groupId } = await params;
-  const selectedDate = date || formatDateISO();
-
   const queryClient = new QueryClient();
 
-  // group 일 때의 쿼리 파라미터 전달 필요
-  // const records = await queryClient.fetchQuery(
-  //   recordPreviewListOptions(selectedDate),
-  // );
+  let records: RecordPreview[];
 
-  const records = createMockRecordPreviews(date);
+  if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
+    records = await getCachedRecordPreviewList(date, 'group', groupId);
 
-  // TODO: 서버로부터 데이터 받아와야 함
-  const recordedDates = ['2025-12-20', '2025-12-21', '2025-12-15'];
+    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    queryClient.setQueryData(
+      ['records', 'preview', date, 'group', groupId],
+      records,
+    );
+  } else {
+    records = createMockRecordPreviews(date);
+  }
 
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -73,12 +50,14 @@ export default async function GroupDailyDetailPage({
       </header>
 
       <div className="p-6">
-        <DailyDetailRecords memories={records} members={members} />
-        <DailyDetailFloatingActions
-          date={date}
-          groupId={groupId}
-          recordedDates={recordedDates}
-        />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
+            <DailyDetailRecords memories={records} date={date} scope="group" />
+          ) : (
+            <DailyDetailRecords date={date} scope="group" />
+          )}
+        </HydrationBoundary>
+        <DailyDetailFloatingActions date={date} groupId={groupId} />
       </div>
     </div>
   );

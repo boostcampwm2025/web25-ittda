@@ -2,7 +2,7 @@ import { Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class EmotionSummaryResponseDto {
-  @ApiProperty({ description: '감정 종류', example: 'HAPPY' })
+  @ApiProperty({ description: '감정 종류', example: '행복' })
   @Expose()
   emotion: string;
 

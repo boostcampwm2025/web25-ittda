@@ -19,11 +19,15 @@ import {
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { groupDailyRecordedDatesOption } from '@/lib/api/group';
+import { myDailyRecordedDatesOption } from '@/lib/api/my';
 
 interface DateSelectorDrawerProps {
   dayRoute: string;
   monthRoute: string;
   yearRoute: string;
+  groupId?: string;
   className?: string;
 }
 
@@ -31,22 +35,23 @@ export default function DateSelectorDrawer({
   dayRoute,
   monthRoute,
   yearRoute,
+  groupId,
   className,
 }: DateSelectorDrawerProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isPickingMonth, setIsPickingMonth] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  // 개인 기록이 있는 날짜들
-  // TODO: props로 데이터를 받아 출력
-  const recordedDates = [
-    '2025-12-21',
-    '2025-12-20',
-    '2025-12-15',
-    '2025-12-10',
-    '2025-11-15',
-    '2025-11-02',
-  ];
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+
+  const { data: recordedDates = [] } = useQuery({
+    ...(groupId
+      ? groupDailyRecordedDatesOption(groupId, year, month)
+      : myDailyRecordedDatesOption(year, month)),
+    enabled: isOpen,
+  });
 
   // 캘린더 날짜 계산 로직
   const getDaysInMonth = (year: number, month: number) => {
@@ -74,7 +79,7 @@ export default function DateSelectorDrawer({
 
   return (
     <>
-      <Drawer>
+      <Drawer open={isOpen} onOpenChange={setIsOpen}>
         <DrawerTrigger asChild>
           <button
             onClick={() => {

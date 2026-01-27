@@ -46,3 +46,7 @@ storybook-static
 
 # storybook
 */stories
+
+# AI
+.agents/*
+.claude/*

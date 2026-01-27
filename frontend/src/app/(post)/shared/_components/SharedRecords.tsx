@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
@@ -22,6 +22,10 @@ import {
 import { GroupSortOption } from './SharedHeaderActions';
 import { useApiPatch } from '@/hooks/useApi';
 
+interface SharedRecordProps {
+  searchParams: string;
+}
+
 const sortGroups = (
   groups: GroupSummary[],
   sortBy: GroupSortOption,
@@ -39,10 +43,9 @@ const sortGroups = (
   }
 };
 
-export default function SharedRecords() {
+export default function SharedRecords({ searchParams }: SharedRecordProps) {
   const queryClient = useQueryClient();
-  const searchParams = useSearchParams();
-  const sortBy = (searchParams.get('sort') as GroupSortOption) || 'latest';
+  const sortBy = (searchParams as GroupSortOption) || 'latest';
 
   const { data: groups = [] } = useQuery(groupListOptions());
 

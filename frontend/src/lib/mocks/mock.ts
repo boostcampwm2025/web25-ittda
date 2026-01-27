@@ -1,10 +1,16 @@
+import {
+  GroupEditResponse,
+  GroupMemberProfileResponse,
+  GroupMembersResponse,
+} from '../types/groupResponse';
 import { EmotionStatSummary, TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
   GroupListResponse,
-  MyDailyRecordListResponse,
-  MyMonthlyRecordListResponse,
+  DailyRecordList,
+  MonthlyRecordList,
   RecordPreview,
+  MyCoverListResponse,
 } from '../types/recordResponse';
 
 // 요청된 날짜에 맞는 mock 데이터를 생성하는 함수
@@ -379,8 +385,27 @@ export const createMockGroupCoverList = (
   };
 };
 
+export const createMockMyCoverList = (
+  cursor: string | null,
+): MyCoverListResponse => {
+  // cursor는 시작 인덱스를 나타냄
+  const startIndex = cursor ? parseInt(cursor, 10) : 0;
+  const endIndex = startIndex + PAGE_SIZE;
+
+  const sections = allCoverSections.slice(startIndex, endIndex);
+  const hasNext = endIndex < allCoverSections.length;
+
+  return {
+    sections,
+    pageInfo: {
+      hasNext,
+      nextCursor: hasNext ? String(endIndex) : null,
+    },
+  };
+};
+
 export const createMockTagStats = (): TagStatSummary => ({
-  recentTop: [
+  recentTags: [
     {
       tag: '아침',
       count: 3,
@@ -402,7 +427,7 @@ export const createMockTagStats = (): TagStatSummary => ({
       count: 1,
     },
   ],
-  allTimeTop: [
+  frequentTags: [
     {
       tag: '팀프로젝트',
       count: 12,
@@ -437,7 +462,7 @@ export const createMockEmotionStats = (): EmotionStatSummary => [
   { emotion: '화남', count: 4 },
 ];
 
-export const createMockMonthlyRecord = (): MyMonthlyRecordListResponse[] => [
+export const createMockMonthlyRecord = (): MonthlyRecordList[] => [
   {
     month: '2025-12',
     count: 52,
@@ -468,26 +493,175 @@ export const createMockMonthlyRecord = (): MyMonthlyRecordListResponse[] => [
   },
 ];
 
-export const createMockDailyRecord = (): MyDailyRecordListResponse[] => [
+export const createMockDailyRecord = (): DailyRecordList[] => [
   {
     date: '2025-11-21',
     postCount: 1,
-    coverThumbnailUrl: '/base.png',
+    coverAssetId: '/base.png',
     latestPostTitle: '도쿄 축제',
     latestPlaceName: '도쿄',
   },
   {
     date: '2025-11-18',
     postCount: 3,
-    coverThumbnailUrl: '/base.png',
+    coverAssetId: '/base.png',
     latestPostTitle: '사슴을 주의해',
     latestPlaceName: '도쿄',
   },
   {
     date: '2025-11-10',
     postCount: 1,
-    coverThumbnailUrl: '/base.png',
+    coverAssetId: '/base.png',
     latestPostTitle: '일본은 굉장히 더워',
     latestPlaceName: '도쿄',
   },
 ];
+
+export const createMockGroupMembers = (): GroupMembersResponse => ({
+  groupName: '고3 전우들',
+  groupMemberCount: 4,
+  members: [
+    {
+      memberId: '1',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '2',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '3',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '4',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '5',
+      profileImageId: '/profile-ex.jpeg',
+    },
+    {
+      memberId: '6',
+      profileImageId: '/profile-ex.jpeg',
+    },
+  ],
+});
+
+export const createMockGroupMonthlyRecords = (): MonthlyRecordList[] => [
+  {
+    month: '2025-12',
+    coverAssetId: '/base.png',
+    count: 12,
+    latestTitle: '카카오 아지트 탐방',
+    latestLocation: '판교',
+  },
+  {
+    month: '2025-11',
+    coverAssetId: '/base.png',
+    count: 8,
+    latestTitle: '일본 나라 여행',
+    latestLocation: '일본 나라',
+  },
+  {
+    month: '2025-10',
+    coverAssetId: '/base.png',
+    count: 15,
+    latestTitle: '카페 탐방',
+    latestLocation: '광주 첨단',
+  },
+];
+
+export const createMockGroupDailyRecords = (): DailyRecordList[] => [
+  {
+    date: '2025-12-21',
+    coverAssetId: '/base.png',
+    postCount: 1,
+    latestPostTitle: '친구와 함께 먹부림',
+    latestPlaceName: '판교',
+  },
+  {
+    date: '2025-12-18',
+    coverAssetId: '/base.png',
+    postCount: 3,
+    latestPostTitle: '신기한 고구마 티라미수',
+    latestPlaceName: '일본 나라',
+  },
+  {
+    date: '2025-12-10',
+    coverAssetId: '/base.png',
+    postCount: 1,
+    latestPostTitle: '오랜만에 친구와의 약속',
+    latestPlaceName: '광주 첨단',
+  },
+];
+
+export const createMockGroupSettings = (id: string): GroupEditResponse => ({
+  group: {
+    groupId: id,
+    name: '우리들의 기록',
+    createdAt: '2025-12-01T03:12:00Z',
+    ownerUserId: 'uuid',
+    cover: {
+      assetId: '/profile-ex.jpeg',
+      sourcePostId: 'uuid',
+    },
+  },
+
+  me: {
+    userId: 'uuid',
+    name: '',
+    profileImage: {
+      assetId: '/profile-ex.jpeg',
+    },
+    role: 'ADMIN',
+    nicknameInGroup: '민영',
+    joinedAt: '2025-12-01T03:12:00Z',
+  },
+
+  members: [
+    {
+      userId: 'usr_owner_001',
+      name: '김하민',
+      profileImage: {
+        assetId: '/profile-ex.jpeg',
+      },
+      role: 'ADMIN',
+      nicknameInGroup: '하민',
+      joinedAt: '2025-12-01T03:12:00Z',
+    },
+    {
+      userId: 'usr_002',
+      name: '두리',
+      profileImage: {
+        assetId: '/profile-ex.jpeg',
+      },
+      role: 'EDITOR',
+      nicknameInGroup: '두리',
+      joinedAt: '2025-12-05T07:20:10Z',
+    },
+    {
+      userId: 'usr_003',
+      name: '도비',
+      profileImage: null,
+      role: 'VIEWER',
+      nicknameInGroup: '도비',
+      joinedAt: '2025-12-07T09:10:00Z',
+    },
+  ],
+});
+
+export const createMockGroupMyProfile = (
+  groupId: string,
+): GroupMemberProfileResponse => ({
+  groupId: groupId,
+  userId: 'uuid-user',
+  name: '수연',
+  nicknameInGroup: '도비',
+  cover: {
+    assetId: '/profile-ex.jpeg',
+    sourcePostId: 'post-uuid',
+  },
+  role: 'ADMIN',
+  updatedAt: new Date().toISOString(),
+});

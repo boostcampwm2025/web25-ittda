@@ -1,19 +1,16 @@
+'use client';
+
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import Image from 'next/image';
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { DrawerClose } from '../../../components/ui/drawer';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { groupRecordCoverOptions } from '@/lib/api/group';
-import { myMonthlyRecordCoverOption } from '@/lib/api/my';
-
-// 1. 공통으로 사용할 아이템 타입 정의
-interface UnifiedGalleryItem {
-  assetId: string;
-  mediaId: string;
-  postId: string;
-  postTitle: string;
-}
+import { useInfiniteQuery } from '@tanstack/react-query';
+import {
+  groupRecordCoverOptions,
+  groupMonthlyRecordCoverOptions,
+} from '@/lib/api/group';
+import { myMonthlyRecordCoverOptions } from '@/lib/api/my';
 
 interface GalleryDrawerProps {
   type: 'group' | 'personal' | 'other';
@@ -30,47 +27,43 @@ export default function GalleryDrawer({
   currentAssetId,
   onSelect,
 }: GalleryDrawerProps) {
-  // --- 함께 기록함 데이터 (무한 스크롤) ---
-  const {
-    data: groupData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
-    ...groupRecordCoverOptions(groupId ?? ''),
-    enabled: type === 'group' && !!groupId,
+  // 그룹 쿼리
+  const groupQuery = useInfiniteQuery({
+    ...groupRecordCoverOptions(groupId!),
+    enabled: type === 'group' && !!groupId && !month,
   });
 
-  // --- 내 기록함 데이터 ---
-  const { data: personalData } = useQuery({
-    ...myMonthlyRecordCoverOption(month ?? ''),
+  // 그룹 웗별 쿼리
+  const groupMonthlyQuery = useInfiniteQuery({
+    ...groupMonthlyRecordCoverOptions(groupId!, month!),
+    enabled: type === 'group' && !!groupId && !!month,
+  });
+
+  // 개인 월별 쿼리
+  const personalQuery = useInfiniteQuery({
+    ...myMonthlyRecordCoverOptions(month!),
     enabled: type === 'personal',
   });
 
-  // 타입에 따른 데이터 정제
-  const items: UnifiedGalleryItem[] = (() => {
-    if (type === 'group' && groupData) {
-      return groupData.pages.flatMap((page) =>
-        page.sections.flatMap((section) => section.items),
-      );
+  const currentQuery = useMemo(() => {
+    if (type === 'group') {
+      return month ? groupMonthlyQuery : groupQuery;
     }
-    if (type === 'personal' && personalData) {
-      return personalData.map((item) => ({
-        assetId: item,
-        mediaId: item,
-        postId: item,
-        postTitle: '내 기록함 기록 이미지',
-      }));
-    }
-    return [];
-  })();
+    return personalQuery;
+  }, [type, month, groupMonthlyQuery, groupQuery, personalQuery]);
 
-  // 무한 스크롤 관찰자 (type이 group일 때만 동작하게 처리)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = currentQuery;
+
+  const items = (data?.pages ?? []).flatMap((page) =>
+    page.sections.flatMap((section) => section.items),
+  );
+
+  // 무한 스크롤 관찰자
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastItemRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (type !== 'group' || isFetchingNextPage) return;
+      if (isFetchingNextPage) return;
       if (observerRef.current) observerRef.current.disconnect();
 
       observerRef.current = new IntersectionObserver(
@@ -84,7 +77,7 @@ export default function GalleryDrawer({
 
       if (node) observerRef.current.observe(node);
     },
-    [type, isFetchingNextPage, hasNextPage, fetchNextPage],
+    [isFetchingNextPage, hasNextPage, fetchNextPage],
   );
 
   return (
@@ -140,8 +133,7 @@ export default function GalleryDrawer({
               </div>
             );
           })}
-          {/* group 타입일 때만 로딩 인디케이터 표시 */}
-          {type === 'group' && isFetchingNextPage && (
+          {isFetchingNextPage && (
             <div className="col-span-full flex justify-center py-4">
               <div className="w-6 h-6 border-2 border-[#10B981] border-t-transparent rounded-full animate-spin" />
             </div>
