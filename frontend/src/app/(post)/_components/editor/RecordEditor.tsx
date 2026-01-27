@@ -55,7 +55,7 @@ export default function PostEditor({
 }: {
   mode: 'add' | 'edit';
   initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
-  groupId: string;
+  groupId?: string;
   draftId?: string;
 }) {
   const router = useRouter();
