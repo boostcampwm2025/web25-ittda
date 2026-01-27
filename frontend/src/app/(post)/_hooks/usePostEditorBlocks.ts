@@ -11,9 +11,9 @@ import {
   isRecordBlockEmpty,
   normalizeLayout,
 } from '../_utils/recordLayoutHelper';
-import { toast } from 'sonner';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 import { RecordFieldtypeMap } from '@/lib/utils/mapBlocksToPayload';
+import { toast } from 'sonner';
 
 // 개수 제한
 const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
@@ -112,7 +112,16 @@ export function usePostEditorBlocks({
         return id;
       }
     },
-    [blocks, draftId, mySessionId, locks, applyPatch, requestLock, setBlocks],
+    [
+      blocks,
+      draftId,
+      setBlocks,
+      applyPatch,
+      activeDrawer?.id,
+      locks,
+      mySessionId,
+      requestLock,
+    ],
   );
 
   // 드로어 내에서 아이템 클릭 시 호출
@@ -138,26 +147,37 @@ export function usePostEditorBlocks({
   };
 
   const addOrShowBlock = useCallback(
-    (type: FieldType) => {
+    (type: FieldType, initialValue?: BlockValue) => {
       const meta = FIELD_META[type];
       const existing = blocks.find((b) => b.type === type);
-
-      // 한 블록만 추가할 수 있는 애는
-      // 기존 블록이 있다면 열 때 바로 락 요청
+      // 단일 블록이고 이미 존재하는 경우
       if (meta.isSingle && existing) {
-        if (draftId) requestLock(`block:${existing.id}`);
-        setActiveDrawer({ type, id: existing.id });
+        if (initialValue) {
+          updateFieldValue(initialValue, existing.id);
+        } else {
+          // 그냥 클릭은 락 걸고 드로어 오픈
+          if (draftId) requestLock(`block:${existing.id}`);
+          setActiveDrawer({ type, id: existing.id });
+        }
         return;
       }
 
+      // 받아온 데이터 있는데 블록 없는 경우
+      if (initialValue) {
+        const newId = updateFieldValue(initialValue, undefined, type);
+
+        if (draftId && newId) {
+          releaseLock(`block:${newId}`);
+        }
+        return;
+      }
       if (meta.requiresDrawer) {
         setActiveDrawer({ type, id: undefined });
       } else {
-        //TEXT,TABLE 바로 생성
         updateFieldValue(getDefaultValue(type), undefined, type);
       }
     },
-    [blocks, draftId, requestLock, updateFieldValue],
+    [blocks, draftId, releaseLock, requestLock, updateFieldValue],
   );
   //사진 업로드
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,8 +198,7 @@ export function usePostEditorBlocks({
     const limit = MULTI_INSTANCE_LIMITS['photos'] || 10;
     const available = limit - currentCount;
 
-    //TODO: 추후 toast 도입
-    if (available <= 0) return alert('최대 개수를 초과했습니다.');
+    if (available <= 0) return toast.warning('최대 개수를 초과했습니다.');
 
     const filesToRead = Array.from(files).slice(0, available);
     const promises = filesToRead.map(
@@ -207,11 +226,10 @@ export function usePostEditorBlocks({
   //지금해야할거
   // 여기서 타입이 필드면 락 걸고 삭제하고 락 풀고
   // 여기서 타입이 드로어라면, 바로 삭제만하고(삭제전에 락 검증해야할까?)
-  const removeBlock = (id: string, type?: string) => {
+  const removeBlock = (id: string) => {
     if (draftId) {
       const lockKey = `block:${id}`;
       requestLock(lockKey);
-      // 서버 사양에 맞춘 BLOCK_DELETE 명령 전송
       applyPatch({
         type: 'BLOCK_DELETE',
         blockId: id,
