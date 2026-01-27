@@ -90,3 +90,9 @@ export interface InviteJoinResponse {
   lastReadAt: string | null;
   joinedAt: string;
 }
+
+export interface GroupMembersResponse {
+  groupName: string;
+  groupMemberCount: number;
+  members: { memberId: string; profileImageId: string }[];
+}

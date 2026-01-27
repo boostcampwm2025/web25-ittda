@@ -1,10 +1,11 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import { createApiError } from '../utils/errorHandler';
 import {
   MyCoverListResponse,
-  MyDailyRecordListResponse,
-  MyMonthlyRecordListResponse,
+  MyDailyRecordedDatesResponse,
+  DailyRecordList,
+  MonthlyRecordList,
 } from '../types/recordResponse';
 import {
   convertDayRecords,
@@ -20,7 +21,7 @@ export const myMonthlyRecordListOptions = (year?: string) =>
       const query = year
         ? `?year=${year}`
         : `?year=${new Date().getFullYear()}`;
-      const response = await get<MyMonthlyRecordListResponse[]>(
+      const response = await get<MonthlyRecordList[]>(
         `/api/user/archives/months${query}`,
       );
 
@@ -29,7 +30,7 @@ export const myMonthlyRecordListOptions = (year?: string) =>
       }
       return response.data;
     },
-    select: (data: MyMonthlyRecordListResponse[]) => convertMontRecords(data),
+    select: (data: MonthlyRecordList[]) => convertMontRecords(data),
     retry: false,
   });
 
@@ -39,7 +40,7 @@ export const myDailyRecordListOptions = (month?: string) =>
       ? ['my', 'records', 'daily', month]
       : ['my', 'records', 'daily'],
     queryFn: async () => {
-      const response = await get<MyDailyRecordListResponse[]>(
+      const response = await get<DailyRecordList[]>(
         `/api/user/archives/days?month=${month}`,
       );
 
@@ -48,16 +49,43 @@ export const myDailyRecordListOptions = (month?: string) =>
       }
       return response.data;
     },
-    select: (data: MyDailyRecordListResponse[]) => convertDayRecords(data),
+    select: (data: DailyRecordList[]) => convertDayRecords(data),
     retry: false,
   });
 
-export const myMonthlyRecordCoverOption = (month: string) =>
-  queryOptions({
+export const myMonthlyRecordCoverOptions = (month: string) =>
+  infiniteQueryOptions({
     queryKey: ['cover', 'my', month],
+    queryFn: async ({ pageParam }) => {
+      const url = pageParam
+        ? `/api/user/archives/monthcover?year=${month}&cursor=${pageParam}`
+        : `/api/user/archives/monthcover?year=${month}`;
+
+      const response = await get<MyCoverListResponse>(url);
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    retry: false,
+  });
+
+export const myDailyRecordedDatesOption = (
+  year: number | string,
+  month: number | string,
+) =>
+  queryOptions({
+    queryKey: [
+      'recordedDates',
+      `/api/user/archives/record-days?month=${year}-${month}`,
+    ],
     queryFn: async () => {
-      const response = await get<MyCoverListResponse>(
-        `/api/user/archives/monthcover?year=${month}`,
+      const response = await get<MyDailyRecordedDatesResponse>(
+        `/api/user/archives/record-days?month=${year}-${month}`,
       );
 
       if (!response.success) {

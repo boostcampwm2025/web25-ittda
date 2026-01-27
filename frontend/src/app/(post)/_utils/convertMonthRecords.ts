@@ -1,13 +1,8 @@
-import {
-  MyDailyRecordListResponse,
-  MyMonthlyRecordListResponse,
-} from '@/lib/types/recordResponse';
+import { DailyRecordList, MonthlyRecordList } from '@/lib/types/recordResponse';
 
 const dayNames = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-export const convertMontRecords = (
-  monthlyRecords: MyMonthlyRecordListResponse[],
-) =>
+export const convertMontRecords = (monthlyRecords: MonthlyRecordList[]) =>
   monthlyRecords.map((record) => {
     const [y, m] = record.month.split('-');
     return {
@@ -27,7 +22,7 @@ export const convertMontRecords = (
     };
   });
 
-export const convertDayRecords = (dailyRecords: MyDailyRecordListResponse[]) =>
+export const convertDayRecords = (dailyRecords: DailyRecordList[]) =>
   dailyRecords.map((record) => {
     const dayIndex = new Date(record.date).getDay();
 
@@ -36,6 +31,6 @@ export const convertDayRecords = (dailyRecords: MyDailyRecordListResponse[]) =>
       dayName: dayNames[dayIndex],
       title: record.latestPostTitle,
       count: record.postCount,
-      coverUrl: record.coverThumbnailUrl || '/base.png',
+      coverUrl: record.coverAssetId || '/base.png',
     };
   });

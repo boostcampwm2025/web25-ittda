@@ -104,36 +104,65 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+// 서버 사이드 토큰 갱신 동시 요청 방지용 mutex
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let serverRefreshPromise: Promise<any> | null = null;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function refreshServerAccessToken(token: any) {
+  // 이미 갱신 중이면 진행 중인 요청의 결과를 재사용
+  if (serverRefreshPromise) {
+    const result = await serverRefreshPromise;
+    return { ...token, ...result };
+  }
+
+  serverRefreshPromise = (async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/refresh`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: `refreshToken=${token.refreshToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw data;
+      }
+
+      const newAccessToken = response.headers
+        .get('Authorization')
+        ?.replace('Bearer ', '');
+
+      const setCookie = response.headers.get('set-cookie');
+      const refreshCookiePart = setCookie
+        ?.split(';')
+        .find((c) => c.trim().startsWith('refreshToken='));
+      const newRefreshToken = refreshCookiePart
+        ?.trim()
+        .substring('refreshToken='.length);
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken || token.refreshToken,
+        // 백엔드 토큰 만료(2분)보다 약간 일찍 갱신하도록 설정
+        accessTokenExpires: Date.now() + 2 * 60 * 1000 - 10000,
+      };
+    } catch (error) {
+      console.error('서버 토큰 갱신 실패', error);
+      return { error: 'RefreshAccessTokenError' };
+    }
+  })();
+
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/refresh`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      },
-    );
-
-    const data = await response.json();
-    if (!response.ok) throw data;
-
-    const newAccessToken = response.headers
-      .get('Authorization')
-      ?.replace('Bearer ', '');
-
-    return {
-      ...token,
-      accessToken: newAccessToken,
-      accessTokenExpires: Date.now() + 14 * 60 * 1000,
-    };
-  } catch (error) {
-    console.error('서버 토큰 갱신 실패', error);
-    return {
-      ...token,
-      error: 'RefreshAccessTokenError',
-    };
+    const result = await serverRefreshPromise;
+    return { ...token, ...result };
+  } finally {
+    serverRefreshPromise = null;
   }
 }
 

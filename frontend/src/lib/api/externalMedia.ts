@@ -7,7 +7,7 @@ const KOPIS_API_KEY = process.env.NEXT_PUBLIC_KOPIS_API_KEY;
 export const searchMovies = async (query: string): Promise<MediaValue[]> => {
   try {
     const response = await fetch(
-      `https://api.themoviedb.org/3/search/movie?api_key=${MOVIE_API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR`,
+      `/api/tmdb/search/movie?api_key=${MOVIE_API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR`,
     );
     const data = await response.json();
 
@@ -49,6 +49,7 @@ export const searchKopis = async (
     const xml = parser.parseFromString(str, 'text/xml');
     const dbElements = xml.getElementsByTagName('db');
 
+    // TODO: externalId 추가 필요
     return Array.from(dbElements).map((db) => ({
       externalId: db.getElementsByTagName('mt20id')[0]?.textContent || '',
       title: db.getElementsByTagName('prfnm')[0]?.textContent || '',

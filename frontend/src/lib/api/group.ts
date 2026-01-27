@@ -1,15 +1,23 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import {
+  DailyRecordList,
   GroupCoverListResponse,
+  GroupDailyRecordedDatesResponse,
   GroupListResponse,
+  MonthlyRecordList,
 } from '../types/recordResponse';
 import {
   GroupEditResponse,
   GroupMemberProfileResponse,
+  GroupMembersResponse,
 } from '../types/groupResponse';
 import { createApiError } from '../utils/errorHandler';
 import { ROLE_MAP } from '../types/group';
+import {
+  convertDayRecords,
+  convertMontRecords,
+} from '@/app/(post)/_utils/convertMonthRecords';
 
 export const groupListOptions = () =>
   queryOptions({
@@ -140,6 +148,110 @@ export const groupRecordCoverOptions = (groupId: string) =>
       const url = pageParam
         ? `/api/groups/${groupId}/cover-candidates?cursor=${pageParam}`
         : `/api/groups/${groupId}/cover-candidates`;
+
+      const response = await get<GroupCoverListResponse>(url);
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    retry: false,
+  });
+
+export const groupDailyRecordedDatesOption = (
+  groupId: string,
+  year: number | string,
+  month: number | string,
+) =>
+  queryOptions({
+    queryKey: [
+      'recordedDates',
+      `/api/groups/${groupId}/archives/record-days?month=${year}-${month}`,
+    ],
+    queryFn: async () => {
+      const response = await get<GroupDailyRecordedDatesResponse>(
+        `/api/groups/${groupId}/archives/record-days?month=${year}-${month}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    retry: false,
+  });
+
+export const groupCurrentMembersOption = (groupId: string) =>
+  queryOptions({
+    queryKey: ['currentMembers', groupId],
+    queryFn: async () => {
+      const response = await get<GroupMembersResponse>(
+        `/api/groups/${groupId}/current-members`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    retry: false,
+  });
+
+export const groupMonthlyRecordListOptions = (groupId: string, year?: string) =>
+  queryOptions({
+    queryKey: year
+      ? ['group', 'records', 'month', year]
+      : ['group', 'records', 'month'],
+    queryFn: async () => {
+      const query = year
+        ? `?year=${year}&sort=latest`
+        : `?year=${new Date().getFullYear()}&sort=latest`;
+      const response = await get<MonthlyRecordList[]>(
+        `/api/groups/${groupId}/archives/months${query}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    select: (data: MonthlyRecordList[]) => convertMontRecords(data),
+    retry: false,
+  });
+
+export const groupDailyRecordListOptions = (groupId: string, month: string) =>
+  queryOptions({
+    queryKey: month
+      ? ['group', groupId, 'records', 'daily', month]
+      : ['group', groupId, 'records', 'daily'],
+    queryFn: async () => {
+      const response = await get<DailyRecordList[]>(
+        `/api/groups/${groupId}/archives/days?month=${month}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    select: (data: DailyRecordList[]) => convertDayRecords(data),
+    retry: false,
+  });
+
+export const groupMonthlyRecordCoverOptions = (
+  groupId: string,
+  month: string,
+) =>
+  infiniteQueryOptions({
+    queryKey: ['cover', groupId, month],
+    queryFn: async ({ pageParam }) => {
+      const url = pageParam
+        ? `/api/groups/${groupId}/archives/monthcover?year=${month}&cursor=${pageParam}`
+        : `/api/groups/${groupId}/archives/monthcover?year=${month}`;
 
       const response = await get<GroupCoverListResponse>(url);
 

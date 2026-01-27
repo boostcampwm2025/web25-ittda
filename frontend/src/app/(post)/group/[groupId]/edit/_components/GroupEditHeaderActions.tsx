@@ -1,8 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useGroupEdit } from './GroupEditContext';
 import Back from '@/components/Back';
+import { useApiPatch } from '@/hooks/useApi';
+import { GroupEditResponse } from '@/lib/types/groupResponse';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface GroupEditHeaderActionsProps {
   groupId: string;
@@ -11,22 +14,27 @@ interface GroupEditHeaderActionsProps {
 export default function GroupEditHeaderActions({
   groupId,
 }: GroupEditHeaderActionsProps) {
-  const router = useRouter();
   const { getEditData } = useGroupEdit();
+  const queryClient = useQueryClient();
+
+  const { mutate: updateGroup } = useApiPatch<GroupEditResponse>(
+    `/api/groups/${groupId}`,
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+        toast.success('수정되었습니다.');
+      },
+    },
+  );
 
   const handleSave = async () => {
     const editData = getEditData();
 
-    // FormData를 사용하여 파일과 데이터를 함께 전송
-    const formData = new FormData();
-    formData.append('groupName', editData.groupName);
-    formData.append('members', JSON.stringify(editData.members));
-    if (editData.groupThumbnail) {
-      formData.append('groupThumbnail', editData.groupThumbnail);
-    }
-
-    // TODO: 서버로 그룹 정보 저장 요청 API 호출
-    router.push(`/group/${groupId}`);
+    updateGroup({
+      groupName: editData.groupName,
+      coverAssetId: editData.groupThumbnail?.assetId,
+      postId: editData.groupThumbnail?.postId,
+    });
   };
 
   return (
