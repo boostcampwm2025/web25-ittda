@@ -32,6 +32,8 @@
     "db:mig:show:test": "cross-env NODE_ENV=test ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d ./src/data-source.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.888.0",
+    "@aws-sdk/s3-request-presigner": "^3.888.0",
     "@faker-js/faker": "^9.3.0",
     "@nestjs/common": "11.1.9",
     "@nestjs/config": "^4.0.2",
