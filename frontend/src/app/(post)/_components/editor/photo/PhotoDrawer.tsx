@@ -18,7 +18,13 @@ interface PhotoDrawerProps {
   onRemovePhoto: (index: number) => void;
   onRemoveAll: () => void;
   onEditMetadata?: () => void;
-  appliedMetadataImageUrls?: string[];
+  appliedMetadata?: {
+    [imageUrl: string]: {
+      date: boolean;
+      time: boolean;
+      location: boolean;
+    };
+  };
 }
 
 export default function PhotoDrawer({
@@ -28,7 +34,7 @@ export default function PhotoDrawer({
   onRemovePhoto,
   onRemoveAll,
   onEditMetadata,
-  appliedMetadataImageUrls = [],
+  appliedMetadata = {},
 }: PhotoDrawerProps) {
   const allPhotos = [...(photos.mediaIds || []), ...(photos.tempUrls || [])];
   return (
@@ -61,7 +67,13 @@ export default function PhotoDrawer({
               </button>
 
               {allPhotos.map((url, idx) => {
-                const isMetadataApplied = appliedMetadataImageUrls.includes(url);
+                // 해당 이미지에 적용된 필드가 하나라도 있는지 확인
+                const appliedFields = appliedMetadata[url];
+                const isMetadataApplied =
+                  appliedFields &&
+                  (appliedFields.date ||
+                    appliedFields.time ||
+                    appliedFields.location);
                 return (
                   <div
                     key={`${url}-${idx}`}

@@ -402,7 +402,7 @@ export default function PostEditor({
               else handleDrawerDone(emptyValue);
             }}
             onEditMetadata={handleEditMetadata}
-            appliedMetadataImageUrls={pendingMetadata?.appliedImageUrls || []}
+            appliedMetadata={pendingMetadata?.appliedMetadata || {}}
             onClose={() => {
               handleCloseDrawer(id);
             }}

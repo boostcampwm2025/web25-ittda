@@ -76,7 +76,14 @@ export function usePostEditorBlocks({
     images: ImageWithMetadata[];
     newImageUrls: string[];
     selectedMetadata?: SelectedMetadata;
-    appliedImageUrls?: string[]; // 메타데이터가 적용된 모든 이미지 URL들
+    appliedMetadata?: {
+      // 이미지 URL별로 어떤 필드가 적용되었는지 추적
+      [imageUrl: string]: {
+        date: boolean;
+        time: boolean;
+        location: boolean;
+      };
+    };
   } | null>(null);
 
   //필드 값 업데이트 및 삭제
@@ -132,6 +139,35 @@ export function usePostEditorBlocks({
           requestLock(lockKey);
         }
 
+        // 블록 타입 확인하여 메타데이터 적용 상태 업데이트
+        const block = blocks.find((b) => b.id === id);
+        if (block && pendingMetadata?.appliedMetadata) {
+          const fieldType = block.type;
+          if (
+            fieldType === 'date' ||
+            fieldType === 'time' ||
+            fieldType === 'location'
+          ) {
+            // 해당 필드가 수동으로 수정되면 모든 이미지의 해당 필드 적용 상태 제거
+            setPendingMetadata((prev) => {
+              if (!prev?.appliedMetadata) return prev;
+
+              const updatedAppliedMetadata = { ...prev.appliedMetadata };
+              Object.keys(updatedAppliedMetadata).forEach((imageUrl) => {
+                updatedAppliedMetadata[imageUrl] = {
+                  ...updatedAppliedMetadata[imageUrl],
+                  [fieldType]: false,
+                };
+              });
+
+              return {
+                ...prev,
+                appliedMetadata: updatedAppliedMetadata,
+              };
+            });
+          }
+        }
+
         setBlocks(
           (prev) =>
             prev.map((b) =>
@@ -141,7 +177,17 @@ export function usePostEditorBlocks({
         return id;
       }
     },
-    [blocks, draftId, mySessionId, locks, applyPatch, requestLock, setBlocks],
+    [
+      blocks,
+      draftId,
+      mySessionId,
+      locks,
+      applyPatch,
+      requestLock,
+      setBlocks,
+      pendingMetadata,
+      setPendingMetadata,
+    ],
   );
 
   // 드로어 내에서 아이템 클릭 시 호출
@@ -259,7 +305,7 @@ export function usePostEditorBlocks({
         setPendingMetadata((prev) => ({
           images: allImagesWithMetadata,
           newImageUrls: newImages,
-          appliedImageUrls: prev?.appliedImageUrls || [], // 기존 적용된 이미지 URL 유지
+          appliedMetadata: prev?.appliedMetadata || {}, // 기존 적용된 메타데이터 유지
         }));
       } else {
         // 메타데이터가 없으면 바로 사진만 추가
@@ -415,17 +461,48 @@ export function usePostEditorBlocks({
       });
 
       // 메타데이터 선택 드로어를 닫음
-      // 적용된 이미지 URL을 추가 (중복 제거)
-      const currentAppliedUrls = pendingMetadata.appliedImageUrls || [];
-      const newAppliedUrls = currentAppliedUrls.includes(imageUrl)
-        ? currentAppliedUrls
-        : [...currentAppliedUrls, imageUrl];
+      // 적용된 메타데이터 정보 업데이트
+      const currentAppliedMetadata = pendingMetadata.appliedMetadata || {};
+      const updatedAppliedMetadata: typeof currentAppliedMetadata = {};
+
+      // 기존 메타데이터 복사하면서 새로 적용하는 필드는 다른 이미지에서 제거
+      Object.keys(currentAppliedMetadata).forEach((url) => {
+        updatedAppliedMetadata[url] = {
+          date:
+            url === imageUrl
+              ? fields.applyDate && !!metadata.date
+              : fields.applyDate
+                ? false
+                : currentAppliedMetadata[url].date,
+          time:
+            url === imageUrl
+              ? fields.applyTime && !!metadata.time
+              : fields.applyTime
+                ? false
+                : currentAppliedMetadata[url].time,
+          location:
+            url === imageUrl
+              ? fields.applyLocation && !!metadata.location
+              : fields.applyLocation
+                ? false
+                : currentAppliedMetadata[url].location,
+        };
+      });
+
+      // 새 이미지인 경우 추가
+      if (!updatedAppliedMetadata[imageUrl]) {
+        updatedAppliedMetadata[imageUrl] = {
+          date: fields.applyDate && !!metadata.date,
+          time: fields.applyTime && !!metadata.time,
+          location: fields.applyLocation && !!metadata.location,
+        };
+      }
 
       setPendingMetadata({
         images: [],
         newImageUrls: [],
         selectedMetadata: { metadata, imageUrl, fields },
-        appliedImageUrls: newAppliedUrls,
+        appliedMetadata: updatedAppliedMetadata,
       });
     },
     [
@@ -481,8 +558,7 @@ export function usePostEditorBlocks({
         }
       }
 
-      // 메타데이터 적용 완료
-      setPendingMetadata(null);
+      // 메타데이터 적용 완료 - setPendingMetadata는 호출하는 쪽에서 관리
     },
     [blocks, updateFieldValue],
   );
@@ -499,7 +575,7 @@ export function usePostEditorBlocks({
       tempUrls: [],
     };
 
-    // 사진만 추가
+    // 사진만 추가 (메타데이터는 적용하지 않음)
     const updatedPhotoValue: PhotoValue = {
       ...currentPhotoValue,
       tempUrls: [
@@ -507,11 +583,15 @@ export function usePostEditorBlocks({
         ...pendingMetadata.newImageUrls,
       ],
     };
-    applyPendingMetadata(pendingMetadata);
 
-    requestAnimationFrame(() => {
-      handleDone(updatedPhotoValue, false);
-      setPendingMetadata(null);
+    handleDone(updatedPhotoValue, false);
+
+    // 메타데이터 drawer는 닫지만 적용된 메타데이터 정보는 유지
+    setPendingMetadata({
+      images: [],
+      newImageUrls: [],
+      appliedMetadata: pendingMetadata.appliedMetadata || {},
+      selectedMetadata: pendingMetadata.selectedMetadata,
     });
   };
 
@@ -519,6 +599,35 @@ export function usePostEditorBlocks({
   // 여기서 타입이 필드면 락 걸고 삭제하고 락 풀고
   // 여기서 타입이 드로어라면, 바로 삭제만하고(삭제전에 락 검증해야할까?)
   const removeBlock = (id: string, type?: string) => {
+    // 블록 타입 확인하여 메타데이터 적용 상태 업데이트
+    const block = blocks.find((b) => b.id === id);
+    if (block && pendingMetadata?.appliedMetadata) {
+      const fieldType = block.type;
+      if (
+        fieldType === 'date' ||
+        fieldType === 'time' ||
+        fieldType === 'location'
+      ) {
+        // 해당 필드가 삭제되면 모든 이미지의 해당 필드 적용 상태 제거
+        setPendingMetadata((prev) => {
+          if (!prev?.appliedMetadata) return prev;
+
+          const updatedAppliedMetadata = { ...prev.appliedMetadata };
+          Object.keys(updatedAppliedMetadata).forEach((imageUrl) => {
+            updatedAppliedMetadata[imageUrl] = {
+              ...updatedAppliedMetadata[imageUrl],
+              [fieldType]: false,
+            };
+          });
+
+          return {
+            ...prev,
+            appliedMetadata: updatedAppliedMetadata,
+          };
+        });
+      }
+    }
+
     if (draftId) {
       const lockKey = `block:${id}`;
       requestLock(lockKey);
@@ -577,7 +686,7 @@ export function usePostEditorBlocks({
         setPendingMetadata((prev) => ({
           images: imagesWithMetadata,
           newImageUrls: [], // 새 이미지 없음
-          appliedImageUrls: prev?.appliedImageUrls || [], // 기존 적용된 이미지 URL 유지
+          appliedMetadata: prev?.appliedMetadata || {}, // 기존 적용된 메타데이터 유지
         }));
       } else {
         toast.error('메타데이터가 있는 이미지가 없습니다.');
