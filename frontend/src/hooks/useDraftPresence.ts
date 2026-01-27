@@ -83,6 +83,7 @@ export function useDraftPresence(draftId?: string) {
       socket.off('PRESENCE_LEFT');
       socket.off('PRESENCE_REPLACED');
       socket.off('SESSION_REPLACED');
+      socket.emit('LEAVE_DRAFT', { draftId });
     };
   }, [socket, isConnected, draftId, setSessionId, router]);
 
