@@ -27,6 +27,7 @@ import { acquireLockWithEmit, emitLockExpired } from './collab/lock-events';
 import type {
   DraftSocketData,
   JoinDraftPayload,
+  LeaveDraftPayload,
   LockPayload,
   PresenceMember,
   PatchApplyPayload,
@@ -250,6 +251,18 @@ export class PostDraftGateway
       sessionId,
       payload,
     );
+  }
+
+  @SubscribeMessage('LEAVE_DRAFT')
+  handleLeaveDraft(
+    @MessageBody() payload: LeaveDraftPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const socketData = this.getSocketData(socket);
+    if (payload?.draftId && payload.draftId !== socketData.draftId) {
+      throw new WsException('draftId mismatch.');
+    }
+    this.leaveCurrentDraft(socket);
   }
 
   handleDisconnect(socket: Socket) {

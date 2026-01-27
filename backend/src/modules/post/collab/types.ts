@@ -18,6 +18,10 @@ export type JoinDraftPayload = {
   draftId: string;
 };
 
+export type LeaveDraftPayload = {
+  draftId?: string;
+};
+
 export type LockPayload = {
   lockKey: string;
 };
@@ -27,17 +31,30 @@ export type StreamPayload = {
   partialValue: unknown;
 };
 
+export type BlockMoveItem = {
+  blockId: string;
+  layout: import('../dto/block-layout.dto').BlockLayoutDto;
+};
+
+export type BlockMoveCommand = {
+  type: 'BLOCK_MOVE';
+  blockId: string;
+  layout: import('../dto/block-layout.dto').BlockLayoutDto;
+};
+
+export type BlockMoveListCommand = {
+  type: 'BLOCK_MOVE';
+  moves: BlockMoveItem[];
+};
+
 export type PatchCommand =
   | {
       type: 'BLOCK_INSERT';
       block: import('../dto/post-block.dto').PostBlockDto;
     }
   | { type: 'BLOCK_DELETE'; blockId: string }
-  | {
-      type: 'BLOCK_MOVE';
-      blockId: string;
-      layout: import('../dto/block-layout.dto').BlockLayoutDto;
-    }
+  | BlockMoveCommand
+  | BlockMoveListCommand
   | { type: 'BLOCK_SET_VALUE'; blockId: string; value: unknown }
   | { type: 'BLOCK_SET_TITLE'; title: string };
 
