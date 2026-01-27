@@ -1,9 +1,13 @@
 import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
 import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
-import { groupDailyRecordListOptions } from '@/lib/api/group';
+import { getCachedGroupDailyRecordList } from '@/lib/api/group';
 import { createMockGroupDailyRecords } from '@/lib/mocks/mock';
 import { DailyRecordList } from '@/lib/types/recordResponse';
-import { QueryClient } from '@tanstack/react-query';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 
 interface GroupMonthlyDetailPageProps {
   params: Promise<{ month: string; groupId: string }>;
@@ -15,13 +19,17 @@ export default async function GroupMonthlyDetailPage({
   const { groupId, month } = await params;
 
   let dailyRecords: DailyRecordList[];
+  const queryClient = new QueryClient();
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
     dailyRecords = createMockGroupDailyRecords();
   } else {
-    const queryClient = new QueryClient();
-    dailyRecords = await queryClient.fetchQuery(
-      groupDailyRecordListOptions(groupId, month),
+    dailyRecords = await getCachedGroupDailyRecordList(groupId, month);
+
+    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    queryClient.setQueryData(
+      ['group', groupId, 'records', 'daily', month],
+      dailyRecords,
     );
   }
 
@@ -34,13 +42,24 @@ export default async function GroupMonthlyDetailPage({
       </div>
 
       <div className="p-6 pb-40">
-        <MonthlyDetailRecords
-          groupId={groupId}
-          serverSideData={dailyRecords}
-          month={month}
-          routePath={`/group/${groupId}/detail`}
-          viewMapRoutePath={`/group/${groupId}/map/month/${month}`}
-        />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
+            <MonthlyDetailRecords
+              groupId={groupId}
+              month={month}
+              serverSideData={dailyRecords}
+              routePath={`/group/${groupId}/detail`}
+              viewMapRoutePath={`/group/${groupId}/map/month/${month}`}
+            />
+          ) : (
+            <MonthlyDetailRecords
+              groupId={groupId}
+              month={month}
+              routePath={`/group/${groupId}/detail`}
+              viewMapRoutePath={`/group/${groupId}/map/month/${month}`}
+            />
+          )}
+        </HydrationBoundary>
       </div>
     </div>
   );

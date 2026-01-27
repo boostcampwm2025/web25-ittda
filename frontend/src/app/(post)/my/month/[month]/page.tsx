@@ -1,9 +1,13 @@
 import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
 import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
-import { myDailyRecordListOptions } from '@/lib/api/my';
+import { getCachedMyDailyRecordList } from '@/lib/api/my';
 import { createMockDailyRecord } from '@/lib/mocks/mock';
 import { DailyRecordList } from '@/lib/types/recordResponse';
-import { QueryClient } from '@tanstack/react-query';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 
 interface MyMonthlyDetailPageProps {
   params: Promise<{ month: string }>;
@@ -15,14 +19,15 @@ export default async function MyMonthlyDetailPage({
   const { month } = await params;
 
   let dailyRecords: DailyRecordList[];
+  const queryClient = new QueryClient();
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
     dailyRecords = createMockDailyRecord();
   } else {
-    const queryClient = new QueryClient();
-    dailyRecords = await queryClient.fetchQuery(
-      myDailyRecordListOptions(month),
-    );
+    dailyRecords = await getCachedMyDailyRecordList(month);
+
+    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    queryClient.setQueryData(['my', 'records', 'daily', month], dailyRecords);
   }
 
   return (
@@ -34,12 +39,22 @@ export default async function MyMonthlyDetailPage({
       </div>
 
       <div className="py-6 pb-40">
-        <MonthlyDetailRecords
-          month={month}
-          serverSideData={dailyRecords}
-          routePath="/my/detail"
-          viewMapRoutePath={`my/map/month/${month}`}
-        />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
+            <MonthlyDetailRecords
+              month={month}
+              serverSideData={dailyRecords}
+              routePath="/my/detail"
+              viewMapRoutePath={`my/map/month/${month}`}
+            />
+          ) : (
+            <MonthlyDetailRecords
+              month={month}
+              routePath="/my/detail"
+              viewMapRoutePath={`my/map/month/${month}`}
+            />
+          )}
+        </HydrationBoundary>
       </div>
     </div>
   );

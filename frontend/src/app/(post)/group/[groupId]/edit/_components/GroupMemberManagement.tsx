@@ -131,7 +131,7 @@ export default function GroupMemberManagement({
               <Image
                 width={50}
                 height={50}
-                src={member.profileImage?.assetId || ''}
+                src={member.profileImage?.assetId || '/profile-ex.jpeg'}
                 className="w-10 h-10 rounded-full border bg-white"
                 alt=""
               />

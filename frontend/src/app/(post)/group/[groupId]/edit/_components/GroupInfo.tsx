@@ -35,7 +35,7 @@ export default function GroupInfo({ groupId, nickname }: GroupInfoProps) {
                 <Image
                   width={100}
                   height={100}
-                  src={groupThumbnail.assetId}
+                  src={groupThumbnail.assetId || '/base.png'}
                   className="w-full h-full object-cover opacity-80"
                   alt="그룹 썸네일"
                 />
