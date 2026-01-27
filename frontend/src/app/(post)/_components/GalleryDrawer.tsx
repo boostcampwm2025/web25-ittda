@@ -81,7 +81,7 @@ export default function GalleryDrawer({
   );
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full gap-2.5">
       {items.length === 0 ? (
         <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 rounded-2xl dark:bg-white/5 bg-white">
           <p className="font-bold text-[#10B981] text-xs">
