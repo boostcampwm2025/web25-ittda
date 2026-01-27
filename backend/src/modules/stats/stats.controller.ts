@@ -17,7 +17,6 @@ import { DateTime } from 'luxon';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { StatsService } from './stats.service';
-import { GetEmotionSummaryQueryDto } from './dto/get-emotion-summary.query.dto';
 import { GetEmotionStatsQueryDto } from './dto/get-emotion-stats.query.dto';
 import { EmotionSummaryResponseDto } from './dto/emotion-summary.response.dto';
 import { StatsSummaryResponseDto } from './dto/stats-summary.response.dto';
@@ -26,7 +25,6 @@ import { TagStatsResponseDto } from './dto/tag-stats.response.dto';
 
 import type { Request } from 'express';
 import type { MyJwtPayload } from '../auth/auth.type';
-import type { EmotionCount } from './stats.interface';
 
 interface RequestWithUser extends Request {
   user: MyJwtPayload;
@@ -71,31 +69,19 @@ export class StatsController {
   async getMyEmotions(
     @Req() req: RequestWithUser,
     @Query() query: GetEmotionStatsQueryDto,
-  ): Promise<{ data: EmotionCount[]; meta: { totalCount: number } }> {
+  ): Promise<{
+    data: EmotionSummaryResponseDto[];
+    meta: { totalCount: number };
+  }> {
     const userId = req.user.sub;
-    const sort = query.sort ?? 'frequent';
     const { items, totalCount } = await this.statsService.getEmotionStats(
       userId,
-      sort,
       query.limit,
     );
     return {
       data: items,
       meta: { totalCount },
     };
-  }
-
-  @Get('emotions/summary')
-  @ApiOperation({ summary: '월별 감정 요약' })
-  @ApiWrappedOkResponse({ type: EmotionSummaryResponseDto, isArray: true })
-  async getEmotionSummary(
-    @Req() req: RequestWithUser,
-    @Query() query: GetEmotionSummaryQueryDto,
-  ): Promise<{ emotion: string; count: number }[]> {
-    const userId = req.user.sub;
-    const { year, month } = this.parseYearMonth(query.month);
-
-    return this.statsService.getEmotionSummary(userId, year, month);
   }
 
   @Get('summary')

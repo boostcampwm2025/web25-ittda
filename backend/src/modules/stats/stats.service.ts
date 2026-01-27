@@ -122,10 +122,9 @@ export class StatsService {
 
   async getEmotionStats(
     userId: string,
-    sort: 'recent' | 'frequent',
     limit?: number,
   ): Promise<{ items: EmotionCount[]; totalCount: number }> {
-    const items = await this.getEmotions(userId, sort);
+    const items = await this.getEmotions(userId, 'frequent');
     const totalCount = items.reduce((sum, item) => sum + item.count, 0);
     const limited = limit !== undefined ? items.slice(0, limit) : items;
     return { items: limited, totalCount };
