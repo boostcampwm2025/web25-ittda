@@ -17,6 +17,8 @@ export enum PostMediaKind {
 }
 
 @Entity('post_media')
+@Index(['postId']) // post_id는 post와 조인할 때 자주 사용
+@Index(['mediaId']) // media_id도 media_assets와 조인할 때 필수
 @Index(['post', 'kind'])
 @Index(['block', 'sortOrder'])
 export class PostMedia {
