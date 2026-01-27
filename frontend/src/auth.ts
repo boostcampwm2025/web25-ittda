@@ -63,7 +63,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       // 토큰 만료 시 새 토큰으로 갱신
-      console.log('토큰 갱신!', token);
+      //console.log('토큰 갱신!', token);
       return refreshServerAccessToken(token);
     },
     async session({ session, token }) {

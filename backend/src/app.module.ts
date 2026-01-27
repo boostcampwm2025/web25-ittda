@@ -13,6 +13,7 @@ import { GuestModule } from './modules/guest/guest.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { MyPageModule } from './modules/mypage/mypage.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { StatsModule } from './modules/stats/stats.module';
     FeedModule,
     MyPageModule,
     StatsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],
