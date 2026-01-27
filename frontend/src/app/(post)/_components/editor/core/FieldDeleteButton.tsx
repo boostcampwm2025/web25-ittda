@@ -18,7 +18,7 @@ export const FieldDeleteButton = ({
       e.stopPropagation();
       onRemove();
     }}
-    className="flex items-center text-itta-gray2 hover:text-rose-500 transition-colors active:scale-90 flex-shrink-0"
+    className="flex items-center text-itta-gray2  hover:text-rose-500 dark:text-white transition-colors active:scale-90 flex-shrink-0"
     aria-label={ariaLabel}
   >
     <X className="w-3.5 h-3.5" />
