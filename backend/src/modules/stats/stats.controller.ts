@@ -22,6 +22,7 @@ import { EmotionSummaryResponseDto } from './dto/emotion-summary.response.dto';
 import { StatsSummaryResponseDto } from './dto/stats-summary.response.dto';
 import { GetTagStatsQueryDto } from './dto/get-tag-stats.query.dto';
 import { TagStatsResponseDto } from './dto/tag-stats.response.dto';
+import { ApiEmotionStatsOkResponse } from './stats.swagger';
 
 import type { Request } from 'express';
 import type { MyJwtPayload } from '../auth/auth.type';
@@ -63,9 +64,8 @@ export class StatsController {
 
   @Get('emotions')
   @ApiOperation({ summary: '감정 사용 통계 조회' })
-  @ApiQuery({ name: 'sort', enum: ['recent', 'frequent'], required: false })
   @ApiQuery({ name: 'limit', required: false })
-  @ApiWrappedOkResponse({ type: String, isArray: true })
+  @ApiEmotionStatsOkResponse()
   async getMyEmotions(
     @Req() req: RequestWithUser,
     @Query() query: GetEmotionStatsQueryDto,
