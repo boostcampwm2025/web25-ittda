@@ -12,6 +12,8 @@ import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '@/modules/auth/auth.type';
 import { MediaService } from './media.service';
 import {
+  MediaCompleteRequestDto,
+  MediaCompleteResponseDto,
   MediaPresignRequestDto,
   MediaPresignResponseDto,
 } from './dto/presign-media.dto';
@@ -38,5 +40,22 @@ export class MediaController {
     }
 
     return this.mediaService.createPresignedUploads(requesterId, body.files);
+  }
+
+  @Post('complete')
+  @ApiWrappedOkResponse({
+    type: MediaCompleteResponseDto,
+    description: 'Confirms uploads and records object metadata.',
+  })
+  async complete(
+    @User() user: MyJwtPayload,
+    @Body() body: MediaCompleteRequestDto,
+  ) {
+    const requesterId = user?.sub;
+    if (!requesterId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    return this.mediaService.completeUploads(requesterId, body.mediaIds);
   }
 }

@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { MediaAsset, MediaAssetStatus } from './entity/media-asset.entity';
@@ -83,6 +87,68 @@ export class MediaService {
     );
 
     return { items };
+  }
+
+  async completeUploads(ownerUserId: string, mediaIds: string[]) {
+    const assets = await this.mediaAssetRepository.find({
+      where: mediaIds.map((id) => ({ id })),
+    });
+    const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
+
+    const successIds: string[] = [];
+    const failed: Array<{
+      mediaId: string;
+      reason:
+        | 'NOT_FOUND'
+        | 'FORBIDDEN'
+        | 'NOT_FOUND_IN_STORAGE'
+        | 'HEAD_FAILED';
+    }> = [];
+
+    for (const mediaId of mediaIds) {
+      const asset = assetMap.get(mediaId);
+      if (!asset) {
+        failed.push({ mediaId, reason: 'NOT_FOUND' });
+        continue;
+      }
+      if (asset.ownerUserId !== ownerUserId) {
+        failed.push({ mediaId, reason: 'FORBIDDEN' });
+        continue;
+      }
+
+      try {
+        const head = await this.s3Client.send(
+          new HeadObjectCommand({
+            Bucket: this.bucket,
+            Key: asset.storageKey,
+          }),
+        );
+
+        asset.status = MediaAssetStatus.READY;
+        asset.uploadedAt = new Date();
+        asset.etag =
+          typeof head.ETag === 'string'
+            ? head.ETag.replace(/"/g, '')
+            : undefined;
+        asset.size =
+          typeof head.ContentLength === 'number'
+            ? head.ContentLength
+            : asset.size;
+        asset.mimeType = head.ContentType ?? asset.mimeType;
+
+        await this.mediaAssetRepository.save(asset);
+        successIds.push(mediaId);
+      } catch (error) {
+        const name = (error as { name?: string }).name;
+        if (name === 'NotFound' || name === 'NoSuchKey') {
+          failed.push({ mediaId, reason: 'NOT_FOUND_IN_STORAGE' });
+        } else {
+          failed.push({ mediaId, reason: 'HEAD_FAILED' });
+        }
+      }
+    }
+
+    return { successIds, failed };
   }
 
   private buildStorageKey(ownerUserId: string, mediaId: string) {

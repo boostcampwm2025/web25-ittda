@@ -51,3 +51,29 @@ export class MediaPresignResponseDto {
   @ApiProperty({ type: [MediaPresignItemDto] })
   items: MediaPresignItemDto[];
 }
+
+export class MediaCompleteRequestDto {
+  @ApiProperty({ type: [String], format: 'uuid' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  mediaIds: string[];
+}
+
+export class MediaCompleteFailureDto {
+  @ApiProperty({ format: 'uuid' })
+  mediaId: string;
+
+  @ApiProperty({
+    enum: ['NOT_FOUND', 'FORBIDDEN', 'NOT_FOUND_IN_STORAGE', 'HEAD_FAILED'],
+  })
+  reason: 'NOT_FOUND' | 'FORBIDDEN' | 'NOT_FOUND_IN_STORAGE' | 'HEAD_FAILED';
+}
+
+export class MediaCompleteResponseDto {
+  @ApiProperty({ type: [String], format: 'uuid' })
+  successIds: string[];
+
+  @ApiProperty({ type: [MediaCompleteFailureDto] })
+  failed: MediaCompleteFailureDto[];
+}
