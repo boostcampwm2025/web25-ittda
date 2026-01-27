@@ -257,10 +257,10 @@ describe('FeedController (e2e)', () => {
     expect(contributedCard?.blocks.length).toBe(0);
   });
 
-  it('GET /feed should filter by PERSONAL scope', async () => {
+  it('GET /feed/personal should return personal posts only', async () => {
     const res = await request(app.getHttpServer())
-      .get('/feed')
-      .query({ date: '2026-01-16', tz: 'Asia/Seoul', scope: 'personal' })
+      .get('/feed/personal')
+      .query({ date: '2026-01-16', tz: 'Asia/Seoul' })
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
@@ -270,10 +270,10 @@ describe('FeedController (e2e)', () => {
     expect(postIds).not.toContain(groupPost.id);
   });
 
-  it('GET /feed should filter by GROUP scope', async () => {
+  it('GET /feed/groups/:groupId should return group posts', async () => {
     const res = await request(app.getHttpServer())
-      .get('/feed')
-      .query({ date: '2026-01-16', tz: 'Asia/Seoul', scope: 'group' })
+      .get(`/feed/groups/${group.id}`)
+      .query({ date: '2026-01-16', tz: 'Asia/Seoul' })
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 

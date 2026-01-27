@@ -4,14 +4,20 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { FeedController } from './feed.controller';
 import { FeedQueryService } from './feed.query.service';
+import { FeedPersonalQueryService } from './feed.personal.query.service';
+import { FeedGroupQueryService } from './feed.group.query.service';
 
 import { Post } from '../post/entity/post.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
-import { GroupMember } from '../group/entity/group_member.entity';
+import { GroupModule } from '../group/group.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, PostBlock, GroupMember])],
+  imports: [TypeOrmModule.forFeature([Post, PostBlock]), GroupModule],
   controllers: [FeedController],
-  providers: [FeedQueryService],
+  providers: [
+    FeedQueryService,
+    FeedPersonalQueryService,
+    FeedGroupQueryService,
+  ],
 })
 export class FeedModule {}
