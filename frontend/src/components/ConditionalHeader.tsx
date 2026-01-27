@@ -17,6 +17,7 @@ export default function ConditionalHeader() {
     '/profile/all-emotions',
     '/location-picker',
     '/invite',
+    '/onboarding',
   ];
   const isDetail =
     pathname.includes('/record/') ||

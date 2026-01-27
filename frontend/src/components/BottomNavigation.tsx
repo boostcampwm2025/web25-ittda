@@ -46,6 +46,7 @@ export default function BottomNavigation() {
     '/profile/edit',
     '/location-picker',
     '/invite',
+    '/onboarding',
   ];
   const isDetail =
     pathname.includes('/record/') ||
