@@ -474,12 +474,16 @@ export default function PostEditor({
           {blocks.map((block) => {
             const lockKey = `block:${block.id}`;
             const ownerSessionId = locks[lockKey];
+
+            const isMyLock = !!ownerSessionId && ownerSessionId === mySessionId;
+            const isLockedByOther = !!ownerSessionId && !isMyLock;
+
             const owner = members.find((m) => m.sessionId === ownerSessionId);
+
             const contentBlockCount = blocks.filter(
               (b) => b.type === 'content',
             ).length;
             const isLastContentBlock = contentBlockCount === 1;
-            //const isLockedByOther = ownerSessionId && ownerSessionId !== mySessionId;
             return (
               <div
                 key={block.id}
@@ -494,19 +498,20 @@ export default function PostEditor({
                 </div>
 
                 <div className="w-full flex flex-row gap-2 items-center">
-                  {owner && (
-                    <Image
-                      src="/profile-ex.jpeg"
-                      className="w-6 h-6 rounded-full"
-                      width={8}
-                      height={8}
-                      alt="현재 유저 프로필"
-                    />
+                  {isLockedByOther && owner && (
+                    <div>
+                      <Image
+                        src="/profile-ex.jpeg"
+                        className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
+                        width={24}
+                        height={24}
+                        alt={`${owner.displayName} 편집 중`}
+                        title={owner.displayName}
+                      />
+                    </div>
                   )}
                   <RecordFieldRenderer
                     block={block}
-                    locks={locks}
-                    mySessionId={mySessionId}
                     streamingValue={streamingValues[block.id]}
                     requestLock={requestLock}
                     onUpdate={handleFieldUpdate}
@@ -515,6 +520,11 @@ export default function PostEditor({
                     onOpenDrawer={(type, id) => setActiveDrawer({ type, id })}
                     goToLocationPicker={goToLocationPicker}
                     isLastContentBlock={isLastContentBlock}
+                    lock={{
+                      lockKey,
+                      isMyLock,
+                      isLockedByOther,
+                    }}
                   />
                 </div>
               </div>
