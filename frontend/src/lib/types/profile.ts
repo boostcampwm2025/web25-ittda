@@ -11,10 +11,23 @@ export interface TagStatSummary {
   frequentTags: Tag[];
 }
 
-export type EmotionStatSummary = Emotion[];
+export type EmotionStatSummary = {
+  emotion: Emotion[];
+  totalCount: number;
+};
 
 export interface Emotion {
   emotion: string;
+  count: number;
+}
+
+export interface Location {
+  placeName: string;
+  count: number;
+}
+
+export interface MonthlyCart {
+  month: string;
   count: number;
 }
 

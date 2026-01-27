@@ -1,4 +1,4 @@
-import { BaseUser } from './profile';
+import { BaseUser, Location, MonthlyCart } from './profile';
 
 export interface UserProfileResponse {
   userId: string;
@@ -13,11 +13,15 @@ export interface UserProfileResponse {
     settings: Record<string, unknown>;
     createdAt: string;
   };
-  stat: {
+  stats: {
     recentTags: string[];
     frequentTags: string[];
     recentEmotions: string[];
     frequentEmotions: string[];
+    totalPosts: number;
+    totalImages: number;
+    frequentLocations: Location[];
+    monthlyCounts: MonthlyCart[];
   };
 }
 

@@ -1,13 +1,13 @@
 'use client';
 
 import { EMOTION_MAP } from '@/lib/constants/constants';
-import { ProfileEmotion } from '@/lib/types/profile';
+import { EmotionStatSummary } from '@/lib/types/profile';
 import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface EmotionListProps {
-  emotions: ProfileEmotion;
+  emotions: EmotionStatSummary['emotion'];
   defaultTab?: 'recent' | 'frequent';
 }
 
@@ -19,6 +19,10 @@ export default function EmotionList({
     defaultTab,
   );
   const router = useRouter();
+  const sortedEmotions = {
+    recent: emotions,
+    frequent: emotions.sort((a, b) => b.count - a.count),
+  };
 
   const handleSingleTagSearch = (tagName: string) => {
     router.push(`/search?emotion=${tagName}`);
@@ -48,14 +52,14 @@ export default function EmotionList({
       </div>
 
       <div className="flex-1 overflow-y-auto hide-scrollbar">
-        {emotions[emotionTab].length === 0 ? (
+        {sortedEmotions[emotionTab].length === 0 ? (
           <div className="flex px-3 py-10 items-center justify-center h-full">
             <p className="text-sm font-medium text-gray-400">
               사용된 감정이 없습니다.
             </p>
           </div>
         ) : (
-          emotions[emotionTab].map((emotion) => (
+          sortedEmotions[emotionTab].map((emotion) => (
             <button
               key={emotion.emotion}
               onClick={() => handleSingleTagSearch(emotion.emotion)}
