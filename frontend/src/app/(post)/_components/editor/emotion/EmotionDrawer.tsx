@@ -45,17 +45,15 @@ export default function EmotionDrawer({
 
           <div className="grid grid-cols-5 gap-4 mb-8">
             {EMOTIONS.map((emo: Emotion) => {
-              const isSelected =
-                selectedEmotion &&
-                !Array.isArray(selectedEmotion) &&
-                (selectedEmotion as MoodValue).mood === emo.label;
-
+              const isSelected = Array.isArray(selectedEmotion)
+                ? selectedEmotion.includes(emo.label)
+                : selectedEmotion &&
+                  !Array.isArray(selectedEmotion) &&
+                  (selectedEmotion as MoodValue).mood === emo.label;
               return (
                 <button
                   key={emo.label}
-                  onClick={() => {
-                    onSelect(emo.label);
-                  }}
+                  onClick={() => onSelect(emo.label)}
                   className={`flex flex-col items-center gap-2 p-2 rounded-2xl transition-all active:scale-90 ${
                     isSelected
                       ? 'bg-[#10B981]/10 ring-1 ring-[#10B981]'
