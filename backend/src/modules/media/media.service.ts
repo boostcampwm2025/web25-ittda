@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import {
   HeadObjectCommand,
   PutObjectCommand,
+  GetObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -87,6 +88,78 @@ export class MediaService {
     );
 
     return { items };
+  }
+
+  async resolveUrls(ownerUserId: string, mediaIds: string[]) {
+    const assets = await this.mediaAssetRepository.find({
+      where: mediaIds.map((id) => ({ id })),
+    });
+    const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
+
+    const expiresAt = new Date(
+      Date.now() + this.presignTtlSeconds * 1000,
+    ).toISOString();
+
+    const items: Array<{ mediaId: string; url: string; expiresAt: string }> =
+      [];
+    const failed: Array<{
+      mediaId: string;
+      reason: 'NOT_FOUND' | 'FORBIDDEN' | 'NOT_READY';
+    }> = [];
+
+    for (const mediaId of mediaIds) {
+      const asset = assetMap.get(mediaId);
+      if (!asset) {
+        failed.push({ mediaId, reason: 'NOT_FOUND' });
+        continue;
+      }
+      if (asset.ownerUserId !== ownerUserId) {
+        failed.push({ mediaId, reason: 'FORBIDDEN' });
+        continue;
+      }
+      if (asset.status !== MediaAssetStatus.READY) {
+        failed.push({ mediaId, reason: 'NOT_READY' });
+        continue;
+      }
+
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: asset.storageKey,
+      });
+      const url = await getSignedUrl(this.s3Client, command, {
+        expiresIn: this.presignTtlSeconds,
+      });
+      items.push({ mediaId, url, expiresAt });
+    }
+
+    return { items, failed };
+  }
+
+  async resolveUrl(ownerUserId: string, mediaId: string) {
+    const asset = await this.mediaAssetRepository.findOne({
+      where: { id: mediaId },
+    });
+    if (!asset) {
+      return { ok: false as const, reason: 'NOT_FOUND' as const };
+    }
+    if (asset.ownerUserId !== ownerUserId) {
+      return { ok: false as const, reason: 'FORBIDDEN' as const };
+    }
+    if (asset.status !== MediaAssetStatus.READY) {
+      return { ok: false as const, reason: 'NOT_READY' as const };
+    }
+
+    const expiresAt = new Date(
+      Date.now() + this.presignTtlSeconds * 1000,
+    ).toISOString();
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: asset.storageKey,
+    });
+    const url = await getSignedUrl(this.s3Client, command, {
+      expiresIn: this.presignTtlSeconds,
+    });
+    return { ok: true as const, url, expiresAt };
   }
 
   async completeUploads(ownerUserId: string, mediaIds: string[]) {

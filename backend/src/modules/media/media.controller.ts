@@ -1,6 +1,11 @@
 import {
   Body,
   Controller,
+  ConflictException,
+  ForbiddenException,
+  Get,
+  NotFoundException,
+  Param,
   Post,
   UnauthorizedException,
   UseGuards,
@@ -16,6 +21,9 @@ import {
   MediaCompleteResponseDto,
   MediaPresignRequestDto,
   MediaPresignResponseDto,
+  MediaResolveRequestDto,
+  MediaResolveResponseDto,
+  MediaResolveSingleResponseDto,
 } from './dto/presign-media.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 
@@ -57,5 +65,50 @@ export class MediaController {
     }
 
     return this.mediaService.completeUploads(requesterId, body.mediaIds);
+  }
+
+  @Post('resolve')
+  @ApiWrappedOkResponse({
+    type: MediaResolveResponseDto,
+    description: 'Returns presigned GET URLs for media assets.',
+  })
+  async resolveBatch(
+    @User() user: MyJwtPayload,
+    @Body() body: MediaResolveRequestDto,
+  ) {
+    const requesterId = user?.sub;
+    if (!requesterId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    return this.mediaService.resolveUrls(requesterId, body.mediaIds);
+  }
+
+  @Get(':mediaId/url')
+  @ApiWrappedOkResponse({
+    type: MediaResolveSingleResponseDto,
+    description: 'Returns a presigned GET URL for a media asset.',
+  })
+  async resolveSingle(
+    @User() user: MyJwtPayload,
+    @Param('mediaId') mediaId: string,
+  ) {
+    const requesterId = user?.sub;
+    if (!requesterId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    const result = await this.mediaService.resolveUrl(requesterId, mediaId);
+    if (!result.ok) {
+      if (result.reason === 'NOT_FOUND') {
+        throw new NotFoundException('Media not found.');
+      }
+      if (result.reason === 'FORBIDDEN') {
+        throw new ForbiddenException('Not allowed to access this media.');
+      }
+      throw new ConflictException('Media is not ready.');
+    }
+
+    return { url: result.url, expiresAt: result.expiresAt };
   }
 }

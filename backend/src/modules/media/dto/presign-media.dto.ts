@@ -77,3 +77,48 @@ export class MediaCompleteResponseDto {
   @ApiProperty({ type: [MediaCompleteFailureDto] })
   failed: MediaCompleteFailureDto[];
 }
+
+export class MediaResolveRequestDto {
+  @ApiProperty({ type: [String], format: 'uuid' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  mediaIds: string[];
+}
+
+export class MediaResolveItemDto {
+  @ApiProperty({ format: 'uuid' })
+  mediaId: string;
+
+  @ApiProperty()
+  url: string;
+
+  @ApiProperty({ example: '2026-01-27T12:34:56.000Z' })
+  expiresAt: string;
+}
+
+export class MediaResolveFailureDto {
+  @ApiProperty({ format: 'uuid' })
+  mediaId: string;
+
+  @ApiProperty({
+    enum: ['NOT_FOUND', 'FORBIDDEN', 'NOT_READY'],
+  })
+  reason: 'NOT_FOUND' | 'FORBIDDEN' | 'NOT_READY';
+}
+
+export class MediaResolveResponseDto {
+  @ApiProperty({ type: [MediaResolveItemDto] })
+  items: MediaResolveItemDto[];
+
+  @ApiProperty({ type: [MediaResolveFailureDto] })
+  failed: MediaResolveFailureDto[];
+}
+
+export class MediaResolveSingleResponseDto {
+  @ApiProperty()
+  url: string;
+
+  @ApiProperty({ example: '2026-01-27T12:34:56.000Z' })
+  expiresAt: string;
+}
