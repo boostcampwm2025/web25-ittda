@@ -31,10 +31,9 @@ export default async function ProfilePage() {
     tagStats = createMockTagStats();
   } else {
     const year = String(new Date().getFullYear());
-    // TODO: 방문 장소 통계, 작성 기록 통계 추가, 모든 태그/모든 감정 보기 추가
     [tagStats, emotionStats, monthlyRecordList] = await Promise.all([
-      getCachedUserTagSummary(),
-      getCachedUserEmotionSummary(),
+      getCachedUserTagSummary(10),
+      getCachedUserEmotionSummary(10),
       getCachedMyMonthlyRecordList(year),
     ]);
 
@@ -47,10 +46,16 @@ export default async function ProfilePage() {
     );
   }
 
+  const allTags = [...tagStats.recentTags, ...tagStats.frequentTags];
+
+  const uniqueAll = Array.from(
+    new Map(allTags.map((item) => [item.tag, item])).values(),
+  );
+
   const tags: ProfileTag = {
     recent: tagStats.recentTags,
     frequent: tagStats.frequentTags,
-    all: [...tagStats.recentTags, ...tagStats.frequentTags],
+    all: uniqueAll,
   };
 
   return (

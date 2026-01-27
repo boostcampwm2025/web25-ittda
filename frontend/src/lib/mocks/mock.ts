@@ -3,7 +3,7 @@ import {
   GroupMemberProfileResponse,
   GroupMembersResponse,
 } from '../types/groupResponse';
-import { EmotionStatSummary, TagStatSummary } from '../types/profile';
+import { Emotion, TagStatSummary } from '../types/profile';
 import {
   GroupCoverListResponse,
   GroupListResponse,
@@ -451,7 +451,7 @@ export const createMockTagStats = (): TagStatSummary => ({
   ],
 });
 
-export const createMockEmotionStats = (): EmotionStatSummary => [
+export const createMockEmotionStats = (): Emotion[] => [
   { emotion: '행복', count: 3 },
   { emotion: '좋음', count: 2 },
   { emotion: '만족', count: 10 },
