@@ -27,8 +27,6 @@ import { useParams } from 'next/navigation';
 
 interface FieldRendererProps {
   block: RecordBlock;
-  locks: Record<string, string>;
-  mySessionId: string | null;
   streamingValue?: BlockValue;
   requestLock: (key: string) => void;
   onUpdate: (blockId: string, val: BlockValue) => void;
@@ -40,12 +38,15 @@ interface FieldRendererProps {
   ) => void;
   goToLocationPicker: () => void;
   isLastContentBlock: boolean;
+  lock: {
+    lockKey: string;
+    isMyLock: boolean;
+    isLockedByOther: boolean;
+  };
 }
 
 export function RecordFieldRenderer({
   block,
-  locks,
-  mySessionId,
   streamingValue,
   requestLock,
   onUpdate,
@@ -54,22 +55,27 @@ export function RecordFieldRenderer({
   onOpenDrawer,
   goToLocationPicker,
   isLastContentBlock,
+  lock,
 }: FieldRendererProps) {
   const params = useParams();
   const draftId = params.draftId as string | undefined;
 
-  const lockKey = `block:${block.id}`;
-  const ownerSessionId = locks[lockKey];
-  const isLockedByOther = !!ownerSessionId && ownerSessionId !== mySessionId;
-  const isMyLock = !!ownerSessionId && ownerSessionId === mySessionId;
   const displayValue = streamingValue ?? block.value;
 
-  const handleFocus = () => draftId && requestLock(lockKey);
-  const handleCommit = () => onCommit(block.id, displayValue);
+  const handleFocus = () => {
+    if (!lock.isLockedByOther) {
+      requestLock(lock.lockKey);
+    }
+  };
 
+  const handleCommit = () => {
+    if (lock.isMyLock) {
+      onCommit(block.id, displayValue);
+    }
+  };
   const handleLockAndAction = () => {
-    if (isLockedByOther) return;
-    if (draftId) requestLock(lockKey);
+    if (lock.isLockedByOther) return;
+    if (draftId) requestLock(lock.lockKey);
     if (block.type === 'location') goToLocationPicker();
     else onOpenDrawer(block.type, block.id);
   };
@@ -95,8 +101,8 @@ export function RecordFieldRenderer({
           value={displayValue as TextValue}
           onChange={(v) => onUpdate(block.id, { text: v })}
           onRemove={() => onRemove(block.id)}
-          isLocked={isLockedByOther}
-          isMyLock={isMyLock}
+          isLocked={lock?.isLockedByOther}
+          isMyLock={lock.isMyLock}
           onFocus={handleFocus}
           onBlur={handleCommit}
           isLastContentBlock={isLastContentBlock}
@@ -138,7 +144,7 @@ export function RecordFieldRenderer({
         <TableField
           data={displayValue as TableValue}
           onUpdate={(d) => (d ? onUpdate(block.id, d) : onRemove(block.id))}
-          isLocked={isLockedByOther}
+          isLocked={lock.isLockedByOther}
           onFocus={handleFocus}
           onBlur={handleCommit}
         />
@@ -155,7 +161,7 @@ export function RecordFieldRenderer({
       return (
         <LocationField
           location={displayValue as LocationValue}
-          onClick={goToLocationPicker}
+          onClick={handleLockAndAction}
           onRemove={() => onRemove(block.id)}
         />
       );
