@@ -185,7 +185,7 @@ export function LocationPicker({
   return (
     <div
       className={cn(
-        'w-full h-[500px] md:h-[600px] flex flex-col relative overflow-hidden bg-white',
+        'w-full h-[500px] flex flex-col relative overflow-hidden bg-white',
         className,
       )}
     >
