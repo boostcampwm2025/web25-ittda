@@ -12,7 +12,7 @@ export default function BlockContent({ block }: { block: Block }) {
     case 'DATE':
       if ('date' in block.value) {
         return (
-          <div className="flex items-center gap-1.5 text-[13px] font-medium text-gray-400 dark:text-gray-300">
+          <div className="flex items-center gap-1.5 text-[13px] font-medium text-gray-500 dark:text-gray-400">
             <Calendar className="w-4 h-4" />
             {block.value.date}
           </div>
@@ -23,7 +23,7 @@ export default function BlockContent({ block }: { block: Block }) {
     case 'TIME':
       if ('time' in block.value) {
         return (
-          <div className="flex items-center gap-1.5 text-[13px] font-medium text-gray-400 dark:text-gray-300">
+          <div className="flex items-center gap-1.5 text-[13px] font-medium text-gray-500 dark:text-gray-400">
             <Clock className="w-4 h-4" />
             {block.value.time}
           </div>
@@ -34,7 +34,7 @@ export default function BlockContent({ block }: { block: Block }) {
     case 'TEXT':
       if ('text' in block.value) {
         return (
-          <p className="text-[15px] leading-relaxed font-normal dark:text-gray-300 text-[#555555] whitespace-pre-wrap">
+          <p className="text-[14px] leading-relaxed font-normal dark:text-gray-300 text-[#555555] whitespace-pre-wrap">
             {block.value.text}
           </p>
         );
@@ -97,10 +97,10 @@ export default function BlockContent({ block }: { block: Block }) {
     case 'MOOD':
       if ('mood' in block.value) {
         return (
-          <div className="flex items-center gap-2">
-            <span className="text-2xl leading-none flex justify-center items-center">
+          <div className="flex items-center gap-1">
+            <span className="text-xl leading-none flex justify-center items-center">
               {EMOTION_MAP[block.value.mood]}&nbsp;
-              <span className="text-sm ml-2">{block.value.mood}</span>
+              <span className="text-xs ml-1">{block.value.mood}</span>
             </span>
           </div>
         );
