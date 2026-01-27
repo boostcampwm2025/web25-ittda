@@ -26,12 +26,14 @@ export default function MonthlyPatternChart({
     return () => clearTimeout(timer);
   }, []);
 
-  const emotionData = emotions.map((emotion) => {
+  const emotionData = emotions.emotion.map((emotion) => {
     return {
       subject: emotion.emotion,
       A: emotion.count,
     };
   });
+
+  if (emotionData.length < 1) return null;
 
   return (
     <>
