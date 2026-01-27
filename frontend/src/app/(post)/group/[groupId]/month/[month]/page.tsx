@@ -1,6 +1,9 @@
 import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
 import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
-import { createMockDailyRecord } from '@/lib/mocks/mock';
+import { groupDailyRecordListOptions } from '@/lib/api/group';
+import { createMockGroupDailyRecords } from '@/lib/mocks/mock';
+import { DailyRecordList } from '@/lib/types/recordResponse';
+import { QueryClient } from '@tanstack/react-query';
 
 interface GroupMonthlyDetailPageProps {
   params: Promise<{ month: string; groupId: string }>;
@@ -10,6 +13,17 @@ export default async function GroupMonthlyDetailPage({
   params,
 }: GroupMonthlyDetailPageProps) {
   const { groupId, month } = await params;
+
+  let dailyRecords: DailyRecordList[];
+
+  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
+    dailyRecords = createMockGroupDailyRecords();
+  } else {
+    const queryClient = new QueryClient();
+    dailyRecords = await queryClient.fetchQuery(
+      groupDailyRecordListOptions(groupId, month),
+    );
+  }
 
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -21,7 +35,8 @@ export default async function GroupMonthlyDetailPage({
 
       <div className="p-6 pb-40">
         <MonthlyDetailRecords
-          serverSideData={createMockDailyRecord()}
+          groupId={groupId}
+          serverSideData={dailyRecords}
           month={month}
           routePath={`/group/${groupId}/detail`}
           viewMapRoutePath={`/group/${groupId}/map/month/${month}`}

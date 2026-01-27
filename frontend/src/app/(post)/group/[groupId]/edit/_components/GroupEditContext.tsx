@@ -6,13 +6,19 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface GroupEditData {
   groupName: string;
-  groupThumbnail: File | null;
+  groupThumbnail: { assetId: string; postId: string } | null;
   members: GroupMember[];
 }
 
 type GroupEditContextType = GroupEditData & {
   setGroupName: (name: string) => void;
-  setGroupThumbnail: (file: File | null) => void;
+  setGroupThumbnail: ({
+    assetId,
+    postId,
+  }: {
+    assetId: string;
+    postId: string;
+  }) => void;
   setMembers: (
     members: GroupMember[] | ((prev: GroupMember[]) => GroupMember[]),
   ) => void;
@@ -42,7 +48,10 @@ export function GroupEditProvider({
   initialMembers,
 }: GroupEditProviderProps) {
   const [groupName, setGroupName] = useState(initialName);
-  const [groupThumbnail, setGroupThumbnail] = useState<File | null>(null);
+  const [groupThumbnail, setGroupThumbnail] = useState<{
+    assetId: string;
+    postId: string;
+  } | null>(null);
   const [members, setMembers] = useState<GroupMember[]>(initialMembers);
 
   const getEditData = (): GroupEditData => ({

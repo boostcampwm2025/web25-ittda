@@ -387,7 +387,7 @@ export class UserService {
     }
 
     // 3. 각 일별 대표 포스트(최신) 추출
-    const dayKeys = Array.from(postsByDay.keys()).sort(); // 날짜 오름차순
+    const dayKeys = Array.from(postsByDay.keys()).sort().reverse(); // 날짜 내림차순(최신순)
     const representativePostIds: string[] = [];
     const resultFromDay = new Map<
       string,

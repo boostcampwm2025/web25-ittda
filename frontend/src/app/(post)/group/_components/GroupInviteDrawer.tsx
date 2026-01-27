@@ -20,12 +20,11 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { useCreateInviteCode } from '@/hooks/useGroupInvite';
-import { GroupInfo, GroupRoleType } from '@/lib/types/group';
+import { GroupRoleType } from '@/lib/types/group';
 import { cn } from '@/lib/utils';
 
 interface GroupInviteDrawerProps {
   groupId: string;
-  groupInfo: GroupInfo;
 }
 
 type CopyStatus = 'idle' | 'success' | 'error';
@@ -72,10 +71,7 @@ const roles = [
   },
 ] as const;
 
-export default function GroupInviteDrawer({
-  groupId,
-  groupInfo,
-}: GroupInviteDrawerProps) {
+export default function GroupInviteDrawer({ groupId }: GroupInviteDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle');
   const [selectedInviteRole, setSelectedInviteRole] =
@@ -99,7 +95,7 @@ export default function GroupInviteDrawer({
   };
 
   const handleCopyCode = async () => {
-    const code = inviteResult?.code || groupInfo.inviteCode;
+    const code = inviteResult?.code || '잇다-';
     try {
       await navigator.clipboard.writeText(getFullInviteUrl(code));
       setCopyStatus('success');
@@ -112,7 +108,7 @@ export default function GroupInviteDrawer({
   const handleKakaoShare = () => {
     if (!window.Kakao || !window.Kakao?.Share) return;
 
-    const code = inviteResult?.code || groupInfo.inviteCode;
+    const code = inviteResult?.code || '잇다-';
 
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
@@ -206,7 +202,7 @@ export default function GroupInviteDrawer({
             <div className="p-6 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 dark:bg-black/20 dark:border-white/10 bg-gray-50 border-gray-100">
               <div className="flex flex-col items-center">
                 <span className="text-lg font-bold tracking-widest text-[#10B981] break-all text-center">
-                  {getFullInviteUrl(inviteResult?.code || groupInfo.inviteCode)}
+                  {getFullInviteUrl(inviteResult?.code || '잇다-')}
                 </span>
                 <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
                   {selectedInviteRole} LEVEL

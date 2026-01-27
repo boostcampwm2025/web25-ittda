@@ -3,9 +3,6 @@ import DailyDetailRecords from '@/components/DailyDetailRecords';
 import { ActiveMember } from '@/lib/types/group';
 import Back from '@/components/Back';
 import { formatDateISO } from '@/lib/date';
-import { QueryClient } from '@tanstack/react-query';
-import { recordPreviewListOptions } from '@/lib/api/records';
-import { RecordPreview } from '@/lib/types/recordResponse';
 import { createMockRecordPreviews } from '@/lib/mocks/mock';
 
 interface GroupDailyDetailPageProps {
@@ -45,17 +42,8 @@ export default async function GroupDailyDetailPage({
   const { date, groupId } = await params;
   const selectedDate = date || formatDateISO();
 
-  const queryClient = new QueryClient();
-
-  // group 일 때의 쿼리 파라미터 전달 필요
-  // const records = await queryClient.fetchQuery(
-  //   recordPreviewListOptions(selectedDate),
-  // );
-
+  // TODO: 그룹 기록함 타임라인 데이터 서버로부터 받아오기
   const records = createMockRecordPreviews(date);
-
-  // TODO: 서버로부터 데이터 받아와야 함
-  const recordedDates = ['2025-12-20', '2025-12-21', '2025-12-15'];
 
   return (
     <div className="min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -74,11 +62,7 @@ export default async function GroupDailyDetailPage({
 
       <div className="p-6">
         <DailyDetailRecords memories={records} members={members} />
-        <DailyDetailFloatingActions
-          date={date}
-          groupId={groupId}
-          recordedDates={recordedDates}
-        />
+        <DailyDetailFloatingActions date={date} groupId={groupId} />
       </div>
     </div>
   );

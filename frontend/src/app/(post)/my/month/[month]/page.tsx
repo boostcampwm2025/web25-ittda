@@ -2,7 +2,7 @@ import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHe
 import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
 import { myDailyRecordListOptions } from '@/lib/api/my';
 import { createMockDailyRecord } from '@/lib/mocks/mock';
-import { MyDailyRecordListResponse } from '@/lib/types/recordResponse';
+import { DailyRecordList } from '@/lib/types/recordResponse';
 import { QueryClient } from '@tanstack/react-query';
 
 interface MyMonthlyDetailPageProps {
@@ -14,7 +14,7 @@ export default async function MyMonthlyDetailPage({
 }: MyMonthlyDetailPageProps) {
   const { month } = await params;
 
-  let dailyRecords: MyDailyRecordListResponse[];
+  let dailyRecords: DailyRecordList[];
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
     dailyRecords = createMockDailyRecord();

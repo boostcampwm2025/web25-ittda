@@ -32,9 +32,7 @@ export function setCookie(
  * 클라이언트 사이드에서 쿠키를 가져오기
  */
 export function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') {
-    return null; // 서버에서는 실행하지 않음
-  }
+  if (typeof document === 'undefined') return null;
 
   const nameEQ = encodeURIComponent(name) + '=';
   const cookies = document.cookie.split(';');

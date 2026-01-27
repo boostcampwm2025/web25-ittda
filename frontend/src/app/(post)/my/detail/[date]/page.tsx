@@ -1,7 +1,6 @@
 import DailyDetailRecords from '../../../../../components/DailyDetailRecords';
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 import Back from '@/components/Back';
-import { QueryClient } from '@tanstack/react-query';
 import { formatDateISO } from '@/lib/date';
 import { createMockRecordPreviews } from '@/lib/mocks/mock';
 
@@ -15,16 +14,12 @@ export default async function MyDateDetailPage({
   const { date } = await params;
   const selectedDate = date || formatDateISO();
 
-  const queryClient = new QueryClient();
-
+  // TODO: 내 기록함 타임라인 데이터 서버로부터 받아오기
   // const records = await queryClient.fetchQuery(
   //   recordPreviewListOptions(selectedDate),
   // );
-
+  //
   const records = createMockRecordPreviews(date);
-
-  // TODO: 서버로부터 데이터 받아와야 함
-  const recordedDates = ['2025-12-20', '2025-12-21', '2025-12-15'];
 
   return (
     <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -43,7 +38,7 @@ export default async function MyDateDetailPage({
 
       <div className="py-6">
         <DailyDetailRecords memories={records} />
-        <DailyDetailFloatingActions date={date} recordedDates={recordedDates} />
+        <DailyDetailFloatingActions date={date} />
       </div>
     </div>
   );

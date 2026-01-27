@@ -3,9 +3,17 @@
 import { Group } from '@/lib/types/group';
 import { Camera, ChevronRight, Users, X } from 'lucide-react';
 import Image from 'next/image';
-import React, { useRef } from 'react';
 import { useGroupEdit } from './GroupEditContext';
 import { useRouter } from 'next/navigation';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
+import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 
 type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
   groupId: string;
@@ -15,52 +23,57 @@ type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
 export default function GroupInfo({ groupId, nickname }: GroupInfoProps) {
   const { groupName, setGroupName, groupThumbnail, setGroupThumbnail } =
     useGroupEdit();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-
-  const handleImageClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      setGroupThumbnail(files[0]);
-    }
-  };
 
   return (
     <section className="space-y-4">
       <div className="flex flex-col items-center mb-6">
-        <button onClick={handleImageClick} className="relative cursor-pointer">
-          <div className="w-24 h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
+        <Drawer>
+          <DrawerTrigger className="relative cursor-pointer">
+            <div className="w-24 h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
+              {groupThumbnail ? (
+                <Image
+                  width={100}
+                  height={100}
+                  src={groupThumbnail.assetId}
+                  className="w-full h-full object-cover opacity-80"
+                  alt="그룹 썸네일"
+                />
+              ) : (
+                <Users className="w-1/3 h-1/3 text-gray-400" />
+              )}
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
+              <Camera className="w-4 h-4" />
+            </div>
+          </DrawerTrigger>
+
+          <DrawerContent className="w-full px-8 py-4 pb-10">
+            <DrawerHeader>
+              <div className="pt-4 flex justify-between items-center mb-6">
+                <DrawerTitle className="flex flex-col">
+                  <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                    CHOOSE COVER
+                  </span>
+                  <span className="text-lg font-bold dark:text-white text-itta-black">
+                    커버 사진 선택
+                  </span>
+                </DrawerTitle>
+                <DrawerClose className="p-2 text-gray-400 cursor-pointer">
+                  <X className="w-6 h-6" />
+                </DrawerClose>
+              </div>
+            </DrawerHeader>
+
+            <GalleryDrawer
+              type="group"
+              groupId={groupId}
+              onSelect={(assetId, postId) =>
+                setGroupThumbnail({ assetId, postId })
+              }
             />
-            {groupThumbnail ? (
-              <Image
-                width={100}
-                height={100}
-                src={
-                  typeof groupThumbnail === 'object' && groupThumbnail !== null
-                    ? URL.createObjectURL(groupThumbnail)
-                    : groupThumbnail
-                }
-                className="w-full h-full object-cover opacity-80"
-                alt="그룹 썸네일"
-              />
-            ) : (
-              <Users className="w-1/3 h-1/3 text-gray-400" />
-            )}
-          </div>
-          <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
-            <Camera className="w-4 h-4" />
-          </div>
-        </button>
+          </DrawerContent>
+        </Drawer>
       </div>
 
       <div className="space-y-2">

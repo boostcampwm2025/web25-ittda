@@ -1,5 +1,4 @@
-// import Header from '@/components/Header';
-
+import Header from '@/components/Header';
 import { Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
 
@@ -10,9 +9,9 @@ export default function MapLayout({
 }>) {
   return (
     <div className="w-full h-screen flex flex-col">
-      {/* <Header>
-        <Header.Title>지도</Header.Title>
-      </Header> */}
+      <div className="hidden md:block">
+        <Header />
+      </div>
 
       <div className="flex flex-1 min-h-0 w-full justify-center">
         <Suspense

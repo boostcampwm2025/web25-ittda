@@ -1,7 +1,7 @@
 'use client';
 
 import { useApiQuery } from '@/hooks/useApi';
-import { MyMonthlyRecordListResponse } from '@/lib/types/recordResponse';
+import { MonthlyRecordList } from '@/lib/types/recordResponse';
 import { useTheme } from 'next-themes';
 import {
   Bar,
@@ -20,7 +20,7 @@ export default function MonthlyUsageChart() {
     data: monthlyRecords,
     isLoading,
     isError,
-  } = useApiQuery<MyMonthlyRecordListResponse[]>(
+  } = useApiQuery<MonthlyRecordList[]>(
     ['my', 'records', 'month', year],
     `/api/user/archives/months?year=${year}`,
   );
