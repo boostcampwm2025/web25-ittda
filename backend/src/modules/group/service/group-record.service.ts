@@ -3,14 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { DateTime } from 'luxon';
 
-import { Group } from './entity/group.entity';
-import { GroupMonthCover } from './entity/group-month-cover.entity';
-import { Post } from '../post/entity/post.entity';
-import { PostBlock } from '../post/entity/post-block.entity';
+import { Group } from '../entity/group.entity';
+import { GroupMonthCover } from '../entity/group-month-cover.entity';
+import { Post } from '../../post/entity/post.entity';
+import { PostBlock } from '../../post/entity/post-block.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
-import { GroupMonthRecordResponseDto } from './dto/group-month-record.response.dto';
-import { GroupArchiveSortEnum } from './dto/get-group-monthly-archive.query.dto';
-import { GroupDayRecordResponseDto } from './dto/group-day-record.response.dto';
+import { GroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
+import { GroupArchiveSortEnum } from '../dto/get-group-monthly-archive.query.dto';
+import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
 
 @Injectable()
 export class GroupRecordService {

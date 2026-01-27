@@ -4,15 +4,23 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Group } from './entity/group.entity';
 import { GroupMember } from './entity/group_member.entity';
 import { GroupMonthCover } from './entity/group-month-cover.entity';
-import { GroupService } from './group.service';
-import { GroupController } from './group.controller';
-import { GroupRecordService } from './group-record.service';
-import { GroupRecordController } from './group-record.controller';
+
+import { GroupController } from './controller/group.controller';
+import { GroupManagementController } from './controller/group-management.controller';
+import { GroupInviteController } from './controller/group-invite.controller';
+import { GroupRecordController } from './controller/group-record.controller';
+
+import { GroupService } from './service/group.service';
+import { GroupRecordService } from './service/group-record.service';
+import { GroupInviteService } from './service/group-invite.service';
+import { GroupManagementService } from './service/group-management.service';
+
 import { User } from '../user/entity/user.entity';
 import { Post } from '../post/entity/post.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
 import { PostMedia } from '../post/entity/post-media.entity';
 import { GroupInvite } from './entity/group_invite.entity';
+
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -29,8 +37,18 @@ import { AuthModule } from '../auth/auth.module';
     ]),
     AuthModule,
   ],
-  providers: [GroupService, GroupRecordService],
-  controllers: [GroupController, GroupRecordController],
+  providers: [
+    GroupService,
+    GroupRecordService,
+    GroupInviteService,
+    GroupManagementService,
+  ],
+  controllers: [
+    GroupController,
+    GroupRecordController,
+    GroupManagementController,
+    GroupInviteController,
+  ],
   exports: [GroupService], // GroupRoleGuard에서 사용
 })
 export class GroupModule {}

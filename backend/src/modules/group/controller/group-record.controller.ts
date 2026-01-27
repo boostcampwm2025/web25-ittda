@@ -15,21 +15,21 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
-import { GroupRecordService } from './group-record.service';
-import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
-import { GroupRoleGuard } from './guards/group-roles.guard';
-import { GroupRoles } from './guards/group-roles.decorator';
+import { GroupRecordService } from '../service/group-record.service';
+import { JwtAuthGuard } from '../../auth/jwt/jwt.guard';
+import { GroupRoleGuard } from '../guards/group-roles.guard';
+import { GroupRoles } from '../guards/group-roles.decorator';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
-import { UpdateGroupMonthCoverDto } from './dto/update-group-month-cover.dto';
+import { UpdateGroupMonthCoverDto } from '../dto/update-group-month-cover.dto';
 import {
   GetGroupMonthlyArchiveQueryDto,
   GroupArchiveSortEnum,
-} from './dto/get-group-monthly-archive.query.dto';
-import { GetGroupDailyArchiveQueryDto } from './dto/get-group-daily-archive.query.dto';
-import { GetGroupMonthImagesQueryDto } from './dto/get-group-month-images.query.dto';
+} from '../dto/get-group-monthly-archive.query.dto';
+import { GetGroupDailyArchiveQueryDto } from '../dto/get-group-daily-archive.query.dto';
+import { GetGroupMonthImagesQueryDto } from '../dto/get-group-month-images.query.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
-import { GroupMonthRecordResponseDto } from './dto/group-month-record.response.dto';
-import { GroupDayRecordResponseDto } from './dto/group-day-record.response.dto';
+import { GroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
+import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
 
 @ApiTags('group-records')
 @ApiBearerAuth()
