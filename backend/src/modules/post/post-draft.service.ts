@@ -11,6 +11,7 @@ import { QueryFailedError, Repository } from 'typeorm';
 import { isUUID, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { randomUUID } from 'crypto';
+import { DateTime } from 'luxon';
 
 import { PostDraft } from './entity/post-draft.entity';
 import { Group } from '@/modules/group/entity/group.entity';
@@ -115,6 +116,7 @@ export class PostDraftService {
   }
 
   private buildDefaultDraftSnapshot(groupId: string) {
+    const now = DateTime.utc();
     const snapshot: Omit<CreatePostDto, 'thumbnailMediaId'> = {
       scope: PostScope.GROUP,
       groupId,
@@ -123,13 +125,13 @@ export class PostDraftService {
         {
           id: randomUUID(),
           type: PostBlockType.DATE,
-          value: { date: '' },
+          value: { date: now.toISODate() ?? '' },
           layout: { row: 1, col: 1, span: 1 },
         },
         {
           id: randomUUID(),
           type: PostBlockType.TIME,
-          value: { time: '' },
+          value: { time: now.toFormat('HH:mm') },
           layout: { row: 1, col: 2, span: 1 },
         },
         {

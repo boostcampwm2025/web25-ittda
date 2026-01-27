@@ -12,7 +12,7 @@
   - 현재는 실제 id가 아니더라도 lock 동작을 확인 가능하도록 구현
 - lock TTL: 30초, heartbeat 권장 주기: 10초
 - 초기 스냅샷으로 전체 동기화 후, 이후에는 delta 이벤트로 상태 갱신
-- 드래프트 최초 생성 시 기본 블록 3개(DATE/TIME/TEXT)가 포함됨 (서버에서 UUID 생성)
+- 드래프트 최초 생성 시 기본 블록 3개(DATE/TIME/TEXT)가 포함됨 (서버에서 UUID 생성, DATE/TIME은 UTC 기준)
 
 ## 이벤트 목록
 
