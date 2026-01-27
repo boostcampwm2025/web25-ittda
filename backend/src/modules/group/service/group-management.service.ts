@@ -21,6 +21,11 @@ import { UpdateGroupCoverResponseDto } from '../dto/update-group-cover.dto';
 import { GetGroupSettingsResponseDto } from '../dto/get-group-settings.dto';
 import { GetGroupMemberMeResponseDto } from '../dto/get-group-member-me.dto';
 import { UpdateGroupMemberMeDto } from '../dto/update-group-member-me.dto';
+import {
+  GetGroupCoverCandidatesQueryDto,
+  GetGroupCoverCandidatesResponseDto,
+  CoverCandidateItemDto,
+} from '../dto/get-group-cover-candidates.dto';
 
 const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
 
@@ -428,6 +433,135 @@ export class GroupManagementService {
 
     // 6. 업데이트된 정보 재조회 (관련 필드 포함)
     return this.getGroupMemberMe(userId, groupId);
+  }
+
+  /** 그룹 커버 후보 조회 (월 단위, 커서 페이지네이션) */
+  async getGroupCoverCandidates(
+    userId: string,
+    groupId: string,
+    query: GetGroupCoverCandidatesQueryDto,
+  ): Promise<GetGroupCoverCandidatesResponseDto> {
+    const { month, cursor, limit = 20 } = query;
+
+    // 1. 그룹 멤버십 확인
+    const member = await this.groupMemberRepo.findOne({
+      where: { groupId, userId },
+    });
+    if (!member) {
+      throw new ForbiddenException('그룹 멤버가 아닙니다.');
+    }
+
+    // 2. 날짜 범위 계산 (UTC 기준)
+    // month string: "YYYY-MM"
+    const [yearStr, monthStr] = month.split('-');
+    const year = parseInt(yearStr, 10);
+    const m = parseInt(monthStr, 10);
+
+    const startOfMonth = new Date(Date.UTC(year, m - 1, 1, 0, 0, 0));
+    const endOfMonth = new Date(Date.UTC(year, m, 0, 23, 59, 59, 999));
+
+    // 3. 커서 디코딩
+    // Cursor format: Base64(timestamp__id)
+    let cursorTime: Date | null = null;
+    let cursorId: string | null = null;
+
+    if (cursor) {
+      try {
+        const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+        const parts = decoded.split('__');
+        if (parts.length === 2) {
+          const timestamp = parseInt(parts[0], 10);
+          cursorTime = new Date(timestamp);
+          cursorId = parts[1];
+        }
+      } catch {
+        // 커서 형식이 잘못된 경우 무시하고 첫 페이지 조회
+      }
+    }
+
+    // 4. Query Builder 생성
+    const qb = this.postRepo.createQueryBuilder('post');
+
+    qb.leftJoinAndSelect('post.group', 'group')
+      .leftJoinAndSelect('post.postMedia', 'postMedia') // 모든 media load
+      .leftJoinAndSelect('postMedia.media', 'media')
+      .where('post.groupId = :groupId', { groupId })
+      .andWhere('post.eventAt >= :startOfMonth', { startOfMonth })
+      .andWhere('post.eventAt <= :endOfMonth', { endOfMonth });
+
+    // 커서 조건 적용 (eventAt DESC, id DESC)
+    if (cursorTime && cursorId) {
+      qb.andWhere(
+        '(post.eventAt < :cursorTime OR (post.eventAt = :cursorTime AND post.id < :cursorId))',
+        { cursorTime, cursorId },
+      );
+    }
+
+    // 정렬 및 제한
+    qb.orderBy('post.eventAt', 'DESC').addOrderBy('post.id', 'DESC');
+    qb.take(limit + 1); // 다음 페이지 확인용으로 +1
+
+    // 5. 실행
+    const posts = await qb.getMany();
+    const hasNext = posts.length > limit;
+    const resultPosts = hasNext ? posts.slice(0, limit) : posts;
+
+    // 6. 결과 변환
+    // 각 post 내에서 postMedia 필터링 (BLOCK && media 존재)
+    const groupedMap = new Map<string, CoverCandidateItemDto[]>(); // date -> items
+
+    for (const post of resultPosts) {
+      const dateKey = post.eventAt
+        ? post.eventAt.toISOString().split('T')[0]
+        : post.createdAt.toISOString().split('T')[0];
+
+      const validMedia =
+        post.postMedia?.filter(
+          (pm) => pm.kind === PostMediaKind.BLOCK && pm.media,
+        ) || [];
+
+      if (validMedia.length === 0) continue;
+
+      const items = validMedia.map((pm) => ({
+        mediaId: pm.id,
+        assetId: pm.media.id,
+        postId: post.id,
+        postTitle: post.title,
+        eventAt: post.eventAt || post.createdAt,
+        width: pm.media.width,
+        height: pm.media.height,
+        mimeType: pm.media.mimeType,
+      }));
+
+      const existing = groupedMap.get(dateKey) || [];
+      groupedMap.set(dateKey, [...existing, ...items]);
+    }
+
+    // Map -> Array 변환
+    const sections = Array.from(groupedMap.entries()).map(([date, items]) => ({
+      date,
+      items,
+    }));
+
+    // 7. 다음 커서 생성
+    let nextCursor: string | null = null;
+    if (hasNext) {
+      const lastPost = resultPosts[resultPosts.length - 1];
+      const timestamp = lastPost.eventAt
+        ? lastPost.eventAt.getTime()
+        : lastPost.createdAt.getTime(); // eventAt fallback
+      const rawCursor = `${timestamp}__${lastPost.id}`;
+      nextCursor = Buffer.from(rawCursor, 'utf-8').toString('base64');
+    }
+
+    return {
+      groupId,
+      sections,
+      pageInfo: {
+        hasNext,
+        nextCursor,
+      },
+    };
   }
 
   private validateGroupNickname(nickname: string): string {

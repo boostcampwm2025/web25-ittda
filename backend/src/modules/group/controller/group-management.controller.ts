@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { GroupManagementService } from '../service/group-management.service';
 import { JwtAuthGuard } from '../../auth/jwt/jwt.guard';
@@ -22,6 +23,10 @@ import { GetGroupSettingsResponseDto } from '../dto/get-group-settings.dto';
 import { GetGroupMembersResponseDto } from '../dto/get-group-members.dto';
 import { GetGroupMemberMeResponseDto } from '../dto/get-group-member-me.dto';
 import { UpdateGroupMemberMeDto } from '../dto/update-group-member-me.dto';
+import {
+  GetGroupCoverCandidatesQueryDto,
+  GetGroupCoverCandidatesResponseDto,
+} from '../dto/get-group-cover-candidates.dto';
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../../auth/auth.type';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -172,6 +177,28 @@ export class GroupManagementController {
       user.sub,
       groupId,
       dto,
+    );
+  }
+
+  @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.VIEWER)
+  @Get(':groupId/cover-candidates')
+  @ApiOperation({
+    summary: '그룹 커버 후보 조회',
+    description:
+      '그룹 내 게시글 중 커버로 사용할 수 있는 이미지들을 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: GetGroupCoverCandidatesResponseDto })
+  async getGroupCoverCandidates(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+    @Query() query: GetGroupCoverCandidatesQueryDto,
+  ): Promise<GetGroupCoverCandidatesResponseDto> {
+    return this.groupManagementService.getGroupCoverCandidates(
+      user.sub,
+      groupId,
+      query,
     );
   }
 
