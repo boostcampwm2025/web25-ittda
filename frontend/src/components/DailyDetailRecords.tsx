@@ -10,7 +10,7 @@ interface DailyDetailRecordsProps {
   memories?: RecordPreview[];
   members?: ActiveMember[];
   date: string;
-  scope: 'personal' | 'group';
+  scope: 'personal' | 'groups';
   groupId?: string;
 }
 

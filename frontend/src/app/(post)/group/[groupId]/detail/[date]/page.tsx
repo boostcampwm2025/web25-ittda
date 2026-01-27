@@ -23,7 +23,7 @@ export default async function GroupDailyDetailPage({
   let records: RecordPreview[];
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    records = await getCachedRecordPreviewList(date, 'group', groupId);
+    records = await getCachedRecordPreviewList(date, 'groups', groupId);
 
     // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
     queryClient.setQueryData(
@@ -52,9 +52,9 @@ export default async function GroupDailyDetailPage({
       <div className="p-6">
         <HydrationBoundary state={dehydrate(queryClient)}>
           {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
-            <DailyDetailRecords memories={records} date={date} scope="group" />
+            <DailyDetailRecords memories={records} date={date} scope="groups" />
           ) : (
-            <DailyDetailRecords date={date} scope="group" />
+            <DailyDetailRecords date={date} scope="groups" />
           )}
         </HydrationBoundary>
         <DailyDetailFloatingActions date={date} groupId={groupId} />

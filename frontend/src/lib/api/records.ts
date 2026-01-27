@@ -26,10 +26,12 @@ export const getCachedRecordDetail = cache(async (recordId: string) => {
  * 서버 컴포넌트에서 사용하는 캐시된 기록 프리뷰 목록 조회
  */
 export const getCachedRecordPreviewList = cache(
-  async (date: string, scope?: 'group' | 'personal', groupId?: string) => {
-    const endpoint = scope
-      ? `/api/feed?date=${date}&scope=${scope}`
-      : `/api/feed?date=${date}`;
+  async (date: string, scope?: 'groups' | 'personal', groupId?: string) => {
+    const endpoint = !scope
+      ? `/api/feed?date=${date}`
+      : groupId
+        ? `/api/feed/${scope}/${groupId}?date=${date}`
+        : `/api/feed/${scope}?date=${date}`;
 
     const response = await get<RecordPreview[]>(endpoint);
     if (!response.success) {
@@ -62,18 +64,20 @@ export const recordDetailOptions = (recordId: string) =>
 
 export const recordPreviewListOptions = (
   date: string,
-  scope?: 'group' | 'personal',
+  scope?: 'groups' | 'personal',
   groupId?: string,
 ) =>
   queryOptions({
     queryKey:
-      scope === 'group'
+      scope === 'groups'
         ? ['group', groupId, 'records', 'daily', date]
         : ['records', 'preview', date, 'personal'],
     queryFn: async () => {
-      const endpoint = scope
-        ? `/api/feed?date=${date}&scope=${scope}`
-        : `/api/feed?date=${date}`;
+      const endpoint = !scope
+        ? `/api/feed?date=${date}`
+        : groupId
+          ? `/api/feed/${scope}/${groupId}?date=${date}`
+          : `/api/feed/${scope}?date=${date}`;
 
       const response = await get<RecordPreview[]>(endpoint);
       if (!response.success) {
