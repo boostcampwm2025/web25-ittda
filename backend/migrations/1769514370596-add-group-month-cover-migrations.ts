@@ -33,9 +33,25 @@ export class GroupMonthCover1769514370596 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "group_month_covers" ADD CONSTRAINT "FK_ce3314a26d74909c7b670c21bcd" FOREIGN KEY ("cover_media_asset_id") REFERENCES "media_assets"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
     );
+    // 7. posts 인덱스 추가
+    await queryRunner.query(
+      `CREATE INDEX "IDX_posts_group_event_id" ON "posts" ("group_id", "event_at", "id" DESC)`,
+    );
+    // 8. post_media 인덱스 추가
+    await queryRunner.query(
+      `CREATE INDEX "IDX_post_media_post_id" ON "post_media" ("post_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_post_media_media_id" ON "post_media" ("media_id")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    // 8. post_media 인덱스 삭제
+    await queryRunner.query(`DROP INDEX "IDX_post_media_post_id"`);
+    await queryRunner.query(`DROP INDEX "IDX_post_media_media_id"`);
+    // 7. posts 인덱스 삭제
+    await queryRunner.query(`DROP INDEX "IDX_posts_group_event_id"`);
     // 6. 외래키 제약조건 제거 (역순)
     await queryRunner.query(
       `ALTER TABLE "group_month_covers" DROP CONSTRAINT "FK_ce3314a26d74909c7b670c21bcd"`,

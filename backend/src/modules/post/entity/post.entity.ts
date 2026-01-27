@@ -20,6 +20,7 @@ import { PostMedia } from './post-media.entity';
 
 @Entity('posts')
 @Index('IDX_posts_location_gist', ['location'], { spatial: true })
+@Index('IDX_posts_group_event_id', ['groupId', 'eventAt', 'id']) // 그룹별 커버 조인/정렬 최적화용
 export class Post {
   @PrimaryGeneratedColumn('uuid')
   id: string;
