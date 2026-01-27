@@ -10,7 +10,6 @@ import {
 import { GetFeedQueryDto } from './dto/get-feed.query.dto';
 import { ApiParam, ApiTags } from '@nestjs/swagger';
 import { FeedCardResponseDto } from './dto/feed-card.response.dto';
-import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { User } from '@/common/decorators/user.decorator';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import type { MyJwtPayload } from '../auth/auth.type';
@@ -20,6 +19,7 @@ import { FeedGroupQueryService } from './feed.group.query.service';
 import { GroupRoleGuard } from '../group/guards/group-roles.guard';
 import { GroupRoles } from '../group/guards/group-roles.decorator';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
+import { ApiFeedOkResponse } from './feed.swagger';
 
 @ApiTags('feed')
 @UseGuards(JwtAuthGuard)
@@ -32,7 +32,7 @@ export class FeedController {
   ) {}
 
   @Get()
-  @ApiWrappedOkResponse({ type: FeedCardResponseDto, isArray: true })
+  @ApiFeedOkResponse()
   async getFeed(
     @User() user: MyJwtPayload,
     @Query() query: GetFeedQueryDto,
@@ -52,7 +52,7 @@ export class FeedController {
   }
 
   @Get('personal')
-  @ApiWrappedOkResponse({ type: FeedCardResponseDto, isArray: true })
+  @ApiFeedOkResponse()
   async getPersonalFeed(
     @User() user: MyJwtPayload,
     @Query() query: GetFeedQueryDto,
@@ -73,7 +73,7 @@ export class FeedController {
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN, GroupRoleEnum.EDITOR, GroupRoleEnum.VIEWER)
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
-  @ApiWrappedOkResponse({ type: FeedCardResponseDto, isArray: true })
+  @ApiFeedOkResponse()
   async getGroupFeed(
     @Param('groupId') groupId: string,
     @Query() query: GetFeedQueryDto,
