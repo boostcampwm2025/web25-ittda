@@ -17,6 +17,10 @@ export class SearchService {
   // TODO: Migrate to Redis for production (persistent storage across server restarts)
   private recentSearches = new Map<string, string[]>();
 
+  // userId -> (tag -> count)
+  // TODO: Migrate to Redis (ZSET or HASH with INCRBY)
+  private tagFrequencies = new Map<string, Map<string, number>>();
+
   constructor(
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
@@ -30,6 +34,9 @@ export class SearchService {
   ): Promise<PaginatedSearchResponseDto> {
     if (dto.keyword) {
       this.saveRecentSearch(userId, dto.keyword);
+    }
+    if (dto.tags && dto.tags.length > 0) {
+      this.trackTags(userId, dto.tags);
     }
     const query = this.postRepository
       .createQueryBuilder('post')
@@ -205,5 +212,32 @@ export class SearchService {
 
     // TODO: Save to Redis
     this.recentSearches.set(userId, keywords);
+  }
+
+  getTopTags(userId: string, limit: number = 10): string[] {
+    // TODO: Fetch from Redis (ZREVRANGE)
+    const frequencies = this.tagFrequencies.get(userId);
+    if (!frequencies) return [];
+
+    return Array.from(frequencies.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([tag]) => tag);
+  }
+
+  private trackTags(userId: string, tags: string[]) {
+    // TODO: Use Redis INCRBY for each tag
+    let userFrequencies = this.tagFrequencies.get(userId);
+    if (!userFrequencies) {
+      userFrequencies = new Map<string, number>();
+      this.tagFrequencies.set(userId, userFrequencies);
+    }
+
+    for (const tag of tags) {
+      const trimmedTag = tag.trim();
+      if (!trimmedTag) continue;
+      const count = userFrequencies.get(trimmedTag) || 0;
+      userFrequencies.set(trimmedTag, count + 1);
+    }
   }
 }

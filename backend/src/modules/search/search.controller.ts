@@ -5,6 +5,7 @@ import {
   SearchPostsDto,
   PaginatedSearchResponseDto,
   RecentSearchKeywordsResponseDto,
+  FrequentTagsResponseDto,
 } from './dto/search.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { User } from '@/common/decorators/user.decorator';
@@ -48,5 +49,21 @@ export class SearchController {
   ): RecentSearchKeywordsResponseDto {
     const keywords = this.searchService.getRecentSearches(user.sub);
     return { keywords };
+  }
+
+  @Get('tags/stats')
+  @ApiOperation({ summary: '자주 쓰는 태그 조회 (누적 Top 10)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: '조회 개수 (기본 10)',
+  })
+  @ApiResponse({ type: FrequentTagsResponseDto })
+  getFrequentTags(
+    @User() user: MyJwtPayload,
+    @Query('limit') limit: number = 10,
+  ): FrequentTagsResponseDto {
+    const tags = this.searchService.getTopTags(user.sub, Number(limit));
+    return { tags };
   }
 }

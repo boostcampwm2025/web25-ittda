@@ -87,3 +87,8 @@ export class RecentSearchKeywordsResponseDto {
   @ApiProperty({ type: [String], description: '최근 검색어 목록' })
   keywords: string[];
 }
+
+export class FrequentTagsResponseDto {
+  @ApiProperty({ type: [String], description: '자주 쓰는 태그 목록' })
+  tags: string[];
+}
