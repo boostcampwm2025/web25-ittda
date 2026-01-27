@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import {
   Drawer,
@@ -46,7 +46,20 @@ export default function TagDrawer({
   }, [showWarning]);
 
   // 태그 추가 로직
-  const addTag = () => {
+  const addTag = (
+    e:
+      | React.KeyboardEvent<HTMLInputElement>
+      | React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    // 한글 입력 시 중복 이벤트 방지
+    if (
+      e &&
+      'nativeEvent' in e &&
+      e.nativeEvent instanceof KeyboardEvent &&
+      e.nativeEvent.isComposing
+    ) {
+      return;
+    }
     const trimmedValue = inputValue.trim();
 
     if (isLimitReached) {
@@ -91,7 +104,7 @@ export default function TagDrawer({
 
           {/* 현재 선택된 태그 리스트 */}
           {prevTags.length !== 0 && (
-            <div className="flex flex-wrap gap-2 mb-3 min-h-[32px]">
+            <div className="flex flex-wrap gap-2 mb-3 min-h-8">
               {prevTags.map((tag) => (
                 <span
                   key={tag}
@@ -122,7 +135,7 @@ export default function TagDrawer({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    addTag();
+                    addTag(e);
                   }
                 }}
                 className="w-full pl-8 pr-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 outline-none focus:ring-2 focus:ring-itta-point text-sm dark:text-white"
@@ -176,7 +189,7 @@ export default function TagDrawer({
             )}
           </div>
 
-          <DrawerClose className="w-full py-4 rounded-2xl font-bold bg-[#333333] text-white active:scale-95 transition-all shadow-lg shadow-black/10">
+          <DrawerClose className="w-full py-4 rounded-2xl font-bold bg-itta-black text-white active:scale-95 transition-all shadow-lg shadow-black/10">
             확인
           </DrawerClose>
         </div>
