@@ -68,17 +68,19 @@ export function RecordCard({
         <div className="space-y-1">
           <PostCard.Description>{latestTitle}</PostCard.Description>
           <div className="flex justify-between items-center flex-wrap">
-            <PostCard.Meta
-              className="pr-3"
-              icon={
-                <MapPin
-                  className="w-2.5 h-2.5 text-[#10B981]"
-                  strokeWidth={2.5}
-                />
-              }
-            >
-              {latestLocation}
-            </PostCard.Meta>
+            {latestLocation && (
+              <PostCard.Meta
+                className="pr-3"
+                icon={
+                  <MapPin
+                    className="w-2.5 h-2.5 text-[#10B981]"
+                    strokeWidth={2.5}
+                  />
+                }
+              >
+                {latestLocation}
+              </PostCard.Meta>
+            )}
             <span className="font-semibold p-1 text-[8px] pl-0 text-white/70">
               {createdAt}
             </span>
