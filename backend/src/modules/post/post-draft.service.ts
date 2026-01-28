@@ -14,6 +14,7 @@ import { randomUUID } from 'crypto';
 import { DateTime } from 'luxon';
 
 import { PostDraft } from './entity/post-draft.entity';
+import { PostDraftMedia } from './entity/post-draft-media.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -107,6 +108,16 @@ export class PostDraftService {
       draft.snapshot = snapshot as unknown as Record<string, unknown>;
       draft.version += 1;
       await repo.save(draft);
+
+      const mediaRepo = manager.getRepository(PostDraftMedia);
+      const mediaIds = this.collectDraftMediaIds(snapshot);
+      await mediaRepo.delete({ draftId });
+      const entries = Array.from(new Set(mediaIds)).map((mediaId) =>
+        mediaRepo.create({ draftId, mediaId }),
+      );
+      if (entries.length > 0) {
+        await mediaRepo.save(entries);
+      }
       return {
         status: 'committed',
         version: draft.version,
@@ -319,5 +330,18 @@ export class PostDraftService {
         .flatMap((error) => Object.values(error.constraints ?? {}))
         .find((value) => value.length > 0) ?? 'block value is invalid.';
     throw new BadRequestException(message);
+  }
+
+  private collectDraftMediaIds(snapshot: CreatePostDto): string[] {
+    const mediaIds: string[] = [];
+    for (const block of snapshot.blocks) {
+      if (block.type !== PostBlockType.IMAGE) continue;
+      const value = block.value as { mediaIds?: unknown } | undefined;
+      if (!value || !Array.isArray(value.mediaIds)) continue;
+      value.mediaIds.forEach((id) => {
+        if (typeof id === 'string') mediaIds.push(id);
+      });
+    }
+    return mediaIds;
   }
 }

@@ -12,6 +12,7 @@ import type { Point } from 'geojson';
 import { isUUID } from 'class-validator';
 
 import { PostDraft } from './entity/post-draft.entity';
+import { PostDraftMedia } from './entity/post-draft-media.entity';
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
@@ -54,6 +55,7 @@ export class PostPublishService {
       const postId = await this.postRepository.manager.transaction(
         async (manager) => {
           const draftRepo = manager.getRepository(PostDraft);
+          const draftMediaRepo = manager.getRepository(PostDraftMedia);
           const postRepo = manager.getRepository(Post);
           const blockRepo = manager.getRepository(PostBlock);
           const contributorRepo = manager.getRepository(PostContributor);
@@ -202,6 +204,7 @@ export class PostPublishService {
 
           draft.isActive = false;
           await draftRepo.save(draft);
+          await draftMediaRepo.delete({ draftId: draft.id });
 
           return saved.id;
         },
