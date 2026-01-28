@@ -48,15 +48,19 @@ import { useRecordCollaboration } from '@/hooks/useRecordCollaboration';
 import { useThrottle } from '@/lib/utils/useThrottle';
 import { RecordFieldRenderer } from './RecordFieldRender';
 
+interface PostEditorProps {
+  mode: 'add' | 'edit';
+  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
+  draftId?: string;
+  groupId?: string;
+}
+
 export default function PostEditor({
   mode,
   initialPost,
   draftId,
-}: {
-  mode: 'add' | 'edit';
-  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
-  draftId?: string;
-}) {
+  groupId,
+}: PostEditorProps) {
   const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
