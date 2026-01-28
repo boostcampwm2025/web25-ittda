@@ -21,10 +21,12 @@ import MetadataSelectionDrawer from './metadata/MetadataSelectionDrawer';
 // 타입
 import {
   BlockValue,
+  CreateRecordRequest,
   FieldType,
   LocationValue,
   MoodValue,
   RatingValue,
+  RecordScope,
   TagValue,
   TimeValue,
 } from '@/lib/types/record';
@@ -66,17 +68,18 @@ export default function PostEditor({
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const [blocks, setBlocks] = useState<RecordBlock[]>([]);
-  const { mutate: createRecord } = useCreateRecord();
+  const { execute } = useCreateRecord(groupId);
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
   const { requestLock, releaseLock } = useLockManager(draftId);
 
-  const { streamingValues, emitStream, applyPatch } = useRecordCollaboration(
-    draftId,
-    setBlocks,
-    setTitle,
-    initialPost?.version, // 초기 버전 주입
-  );
+  const { streamingValues, emitStream, applyPatch, versionRef } =
+    useRecordCollaboration(
+      draftId,
+      setBlocks,
+      setTitle,
+      initialPost?.version, // 초기 버전 주입
+    );
 
   const {
     activeDrawer,
@@ -254,16 +257,28 @@ export default function PostEditor({
   };
 
   const handleSave = () => {
-    //개인 기록 저장만 보장
-    //TODO: 그룹 기록 저장
-    const scope = draftId ? 'GROUP' : 'PERSONAL';
-    const payload = {
+    const scope = (groupId ? 'GROUP' : 'PERSONAL') as RecordScope;
+
+    const isDraft = !!draftId;
+
+    const postPayload: CreateRecordRequest = {
       scope: scope,
       title,
-      groupId: groupId,
-      blocks: mapBlocksToPayload(blocks),
+      blocks: mapBlocksToPayload(blocks, isDraft),
+      ...(groupId ? { groupId } : {}),
     };
-    createRecord(payload);
+
+    if (draftId && groupId) {
+      execute({
+        draftId,
+        draftVersion: versionRef.current,
+        payload: postPayload,
+      });
+    } else {
+      execute({
+        payload: postPayload,
+      });
+    }
   };
 
   const throttledEmitStream = useThrottle(

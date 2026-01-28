@@ -154,9 +154,18 @@ export function useRecordCollaboration(
         window.location.reload();
       }, 2_000);
     });
-    socket.on('DRAFT_PUBLISHED', ({ postId }) =>
-      router.push(`/post/${postId}`),
-    );
+    socket.on('DRAFT_PUBLISHED', ({ postId }) => {
+      toast.success(
+        '공동 기록이 저장되었습니다.\n저장된 내용을 함께 확인할 수 있어요.',
+        {
+          duration: 3000,
+        },
+      );
+
+      setTimeout(() => {
+        router.replace(`/record/${postId}`);
+      }, 3_000);
+    });
 
     return () => {
       socket.off('BLOCK_VALUE_STREAM');
@@ -190,5 +199,5 @@ export function useRecordCollaboration(
     [socket, draftId],
   );
 
-  return { streamingValues, emitStream, applyPatch };
+  return { streamingValues, emitStream, applyPatch, versionRef };
 }
