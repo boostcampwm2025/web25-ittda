@@ -54,8 +54,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       // 이전 갱신에서 에러가 발생했다면, 더 이상 갱신 시도하지 않음
-      if (token.error) {
-        return token;
+      if (token.error === 'RefreshAccessTokenError') {
+        return { ...token, accessToken: null };
       }
 
       if (Date.now() < (token.accessTokenExpires as number)) {
@@ -63,7 +63,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       // 토큰 만료 시 새 토큰으로 갱신
-      console.log('토큰 갱신!', token);
       return refreshServerAccessToken(token);
     },
     async session({ session, token }) {
