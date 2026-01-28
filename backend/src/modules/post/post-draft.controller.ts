@@ -4,7 +4,6 @@ import {
   Get,
   Param,
   Post,
-  Redirect,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -32,15 +31,8 @@ export class PostDraftController {
   ) {}
 
   @Get('posts/new')
-  @Redirect('', 302)
-  @ApiOperation({
-    summary: '그룹 새 게시글 작성 진입',
-    description:
-      '활성화된 드래프트가 있으면 해당 드래프트로, 없으면 새로 생성하여 드래프트 편집 URL로 리다이렉트합니다.',
-  })
-  @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiResponse({
-    status: 302,
+    status: 200,
     description: 'Redirects to the active draft edit URL.',
     headers: {
       Location: {
@@ -61,7 +53,7 @@ export class PostDraftController {
       groupId,
       requesterId,
     );
-    return { url: `/groups/${groupId}/posts/${draft.id}/edit` };
+    return { redirectUrl: `/group/${groupId}/post/${draft.id}` };
   }
 
   @Get('drafts/:draftId')

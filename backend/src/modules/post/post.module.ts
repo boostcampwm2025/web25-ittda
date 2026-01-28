@@ -32,6 +32,7 @@ import { AuthModule } from '../auth/auth.module';
       GroupMember,
     ]),
     AuthModule,
+    AuthModule,
   ],
   controllers: [PostController, PostDraftController],
   providers: [

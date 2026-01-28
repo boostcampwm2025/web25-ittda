@@ -8,9 +8,10 @@ import {
   FieldDefaultButtonIcon,
   FieldDefaultButtonLabel,
 } from '../core/FieldDefaultButton';
+import { EmotionValue } from '@/lib/types/recordField';
 
 interface EmotionFieldProps {
-  emotion: string | null;
+  emotion: EmotionValue | null;
   onClick: () => void;
   onRemove: () => void;
 }
@@ -39,10 +40,10 @@ export const EmotionField = ({
         className="flex items-center gap-1 active:scale-95 transition-transform"
       >
         <span className="flex items-center text-lg leading-none select-none">
-          {EMOTION_MAP[emotion]}
+          {EMOTION_MAP[emotion.mood]}
         </span>
         <span className="flex items-center text-xs font-bold text-itta-black dark:text-gray-300 leading-none">
-          {emotion}
+          {emotion.mood}
         </span>
       </button>
       <FieldDeleteButton onRemove={onRemove} ariaLabel="감정 필드 삭제" />

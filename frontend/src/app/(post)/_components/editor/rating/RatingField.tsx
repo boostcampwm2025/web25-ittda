@@ -6,17 +6,17 @@ import {
   FieldDefaultButtonLabel,
 } from '../core/FieldDefaultButton';
 import { FieldDeleteButton } from '../core/FieldDeleteButton';
+import { RatingValue } from '@/lib/types/record';
 
 interface Props {
-  value: number;
-  max: number;
+  value: RatingValue;
   onClick: () => void;
   onRemove: () => void;
 }
-
-export const RatingField = ({ value, max, onClick, onRemove }: Props) => {
+const MAX_VALUE = 5;
+export const RatingField = ({ value, onClick, onRemove }: Props) => {
   //데이터가 없을 때
-  if (value === 0)
+  if (value.rating === 0)
     return (
       <div className="flex items-center gap-2 w-full py-1 group">
         <FieldDefaultButton onClick={onClick}>
@@ -36,7 +36,7 @@ export const RatingField = ({ value, max, onClick, onRemove }: Props) => {
       >
         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
         <span className="flex items-center text-xs font-bold text-itta-black dark:text-gray-300 leading-none">
-          {value} / {max}
+          {value.rating} / {MAX_VALUE}
         </span>
       </button>
       <FieldDeleteButton onRemove={onRemove} ariaLabel="별점 필드 삭제" />

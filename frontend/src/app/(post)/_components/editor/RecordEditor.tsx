@@ -1,20 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { GripVertical } from 'lucide-react';
 
 // 컴포넌트 및 필드 임포트
 import RecordEditorHeader from './RecordEditorHeader';
 import RecordTitleInput from './RecordTitleInput';
 import Toolbar from './Toolbar';
-import { DateField, TimeField, ContentField } from './core/CoreField';
-import { PhotoField } from './photo/PhotoField';
-import { EmotionField } from './emotion/EmotionField';
-import { TagField } from './tag/TagField';
-import { TableField } from './table/TableField';
-import { RatingField } from './rating/RatingField';
-import { LocationField } from '@/components/map/LocationField';
-import MediaField from './media/MediaField';
 
 // 드로어
 import DateDrawer from '@/components/DateDrawer';
@@ -24,17 +16,18 @@ import RatingDrawer from './rating/RatingPickerDrawer';
 import PhotoDrawer from './photo/PhotoDrawer';
 import EmotionDrawer from './emotion/EmotionDrawer';
 import MediaDrawer from './media/MediaDrawer';
+import MetadataSelectionDrawer from './metadata/MetadataSelectionDrawer';
 
 // 타입
-import { FieldType } from '@/lib/types/record';
 import {
-  RecordBlock,
-  MediaValue,
-  TagsValue,
+  BlockValue,
+  FieldType,
+  MoodValue,
   RatingValue,
+  TagValue,
   TimeValue,
-  PhotoValue,
-} from '@/lib/types/recordField';
+} from '@/lib/types/record';
+import { RecordBlock } from '@/lib/types/recordField';
 import {
   canBeHalfWidth,
   getDefaultValue,
@@ -47,22 +40,41 @@ import { useCreateRecord } from '@/hooks/useCreateRecord';
 import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
 import { useRouter } from 'next/navigation';
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
+import Image from 'next/image';
+import { useDraftPresence } from '@/hooks/useDraftPresence';
+import { LockResponsePayload, useLockManager } from '@/hooks/useLockManager';
+import { useSocketStore } from '@/store/useSocketStore';
+import { useRecordCollaboration } from '@/hooks/useRecordCollaboration';
+import { useThrottle } from '@/lib/utils/useThrottle';
+import { RecordFieldRenderer } from './RecordFieldRender';
 
 export default function PostEditor({
   mode,
   initialPost,
+  draftId,
 }: {
   mode: 'add' | 'edit';
-  initialPost?: { title: string; blocks: RecordBlock[] };
+  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
+  draftId?: string;
 }) {
   const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
+  const [blocks, setBlocks] = useState<RecordBlock[]>([]);
   const { mutate: createRecord } = useCreateRecord();
+  const { socket, sessionId: mySessionId } = useSocketStore();
+  const [locks, setLocks] = useState<Record<string, string>>({});
+  const { requestLock, releaseLock, pendingLockKey, setPendingLockKey } =
+    useLockManager(draftId);
+
+  const { streamingValues, emitStream, applyPatch } = useRecordCollaboration(
+    draftId,
+    setBlocks,
+    setTitle,
+    initialPost?.version, // 초기 버전 주입
+  );
 
   const {
-    blocks,
-    setBlocks,
     activeDrawer,
     setActiveDrawer,
     fileInputRef,
@@ -72,7 +84,20 @@ export default function PostEditor({
     removeBlock,
     handleApplyTemplate,
     handlePhotoUpload,
-  } = usePostEditorBlocks();
+    pendingMetadata,
+    handleApplyMetadata,
+    handleSkipMetadata,
+    handleEditMetadata,
+  } = usePostEditorBlocks({
+    blocks,
+    setBlocks,
+    draftId,
+    mySessionId: mySessionId || undefined,
+    locks,
+    requestLock,
+    releaseLock,
+    applyPatch,
+  });
 
   const {
     gridRef,
@@ -84,14 +109,110 @@ export default function PostEditor({
   } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
 
   // 페이지 초기화/복구 및 위치 데이터 받기
-  // TODO: 이후 키 형태로 변경
+  const resolvedInitialPost = initialPost
+    ? { title: initialPost?.title, blocks: initialPost?.blocks }
+    : undefined;
+
+  // 에디터 초기화
   usePostEditorInitializer({
-    initialPost,
+    initialPost: resolvedInitialPost,
     onInitialized: ({ title, blocks }) => {
       setTitle(title);
       setBlocks(blocks);
     },
   });
+
+  const { members } = useDraftPresence(draftId);
+
+  // 서버의 LOCK_CHANGED 브로드캐스트 수신
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(
+      'LOCK_CHANGED',
+      ({ lockKey, ownerSessionId }: LockResponsePayload) => {
+        setLocks((prev) => {
+          const newLocks = { ...prev };
+
+          if (ownerSessionId) {
+            // 소유자가 있으면 새로운 락 추가
+            newLocks[lockKey] = ownerSessionId;
+          } else {
+            // 소유자가 없으면 락 해제 = 해당 키 삭제
+            delete newLocks[lockKey];
+          }
+          return newLocks;
+        });
+      },
+    );
+    return () => {
+      socket.off('LOCK_CHANGED');
+    };
+  }, [socket, pendingLockKey, mySessionId, setPendingLockKey]);
+
+  // 메타데이터 선택 drawer가 열릴 때 필드 락 요청
+  const metadataLocksRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (!draftId) return;
+
+    // drawer가 열릴 때 락 요청
+    if (pendingMetadata?.images.length) {
+      const locksToRequest: string[] = [];
+
+      // 날짜 블록 락 확인 및 요청
+      const dateBlock = blocks.find((b) => b.type === 'date');
+      if (dateBlock) {
+        const lockKey = `block:${dateBlock.id}`;
+        const ownerSessionId = locks[lockKey];
+        const isLockedByOther =
+          !!ownerSessionId && ownerSessionId !== mySessionId;
+
+        if (!isLockedByOther) {
+          requestLock(lockKey);
+          locksToRequest.push(lockKey);
+        }
+      }
+
+      // 시간 블록 락 확인 및 요청
+      const timeBlock = blocks.find((b) => b.type === 'time');
+      if (timeBlock) {
+        const lockKey = `block:${timeBlock.id}`;
+        const ownerSessionId = locks[lockKey];
+        const isLockedByOther =
+          !!ownerSessionId && ownerSessionId !== mySessionId;
+
+        if (!isLockedByOther) {
+          requestLock(lockKey);
+          locksToRequest.push(lockKey);
+        }
+      }
+
+      // 위치 블록 락 확인 및 요청
+      const locationBlock = blocks.find((b) => b.type === 'location');
+      if (locationBlock) {
+        const lockKey = `block:${locationBlock.id}`;
+        const ownerSessionId = locks[lockKey];
+        const isLockedByOther =
+          !!ownerSessionId && ownerSessionId !== mySessionId;
+
+        if (!isLockedByOther) {
+          requestLock(lockKey);
+          locksToRequest.push(lockKey);
+        }
+      }
+
+      metadataLocksRef.current = locksToRequest;
+    }
+
+    // cleanup: drawer가 닫힐 때 또는 컴포넌트가 unmount될 때 락 해제
+    return () => {
+      metadataLocksRef.current.forEach((lockKey) => {
+        releaseLock(lockKey);
+      });
+      metadataLocksRef.current = [];
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingMetadata?.images.length, draftId]);
 
   const goToLocationPicker = () => {
     sessionStorage.setItem('editor_draft', JSON.stringify({ title, blocks }));
@@ -99,114 +220,83 @@ export default function PostEditor({
   };
 
   const handleSave = () => {
+    //개인 기록 저장만 보장
+    //TODO: 그룹 기록 저장
+    const scope = draftId ? 'GROUP' : 'PERSONAL';
     const payload = {
-      scope: 'PERSONAL',
+      scope: scope,
       title,
       blocks: mapBlocksToPayload(blocks),
     };
     createRecord(payload);
   };
 
-  const renderField = (block: RecordBlock) => {
-    switch (block.type) {
-      case 'date':
-        return (
-          <DateField
-            date={block.value.date}
-            onClick={() => setActiveDrawer({ type: 'date', id: block.id })}
-          />
-        );
-      case 'time':
-        return (
-          <TimeField
-            time={block.value.time}
-            onClick={() => setActiveDrawer({ type: 'time', id: block.id })}
-          />
-        );
-      case 'content':
-        const contentBlockCount = blocks.filter(
-          (b) => b.type === 'content',
-        ).length;
-        const isLastContentBlock = contentBlockCount === 1;
-        return (
-          <ContentField
-            value={block.value.text}
-            onChange={(v) => updateFieldValue({ text: v }, block.id)}
-            onRemove={() => removeBlock(block.id)}
-            isLastContentBlock={isLastContentBlock}
-          />
-        );
-      case 'photos':
-        return (
-          <PhotoField
-            photos={block.value as PhotoValue}
-            onClick={() => setActiveDrawer({ type: 'photos', id: block.id })}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      case 'emotion':
-        return (
-          <EmotionField
-            emotion={block.value.mood}
-            onClick={() => setActiveDrawer({ type: 'emotion', id: block.id })}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      case 'tags':
-        return (
-          <TagField
-            tags={block.value.tags}
-            onRemove={(tag) =>
-              updateFieldValue(
-                { tags: block.value.tags.filter((t) => t !== tag) },
-                block.id,
-              )
-            }
-            onAdd={() => setActiveDrawer({ type: 'tags', id: block.id })}
-            onRemoveField={() => removeBlock(block.id)}
-          />
-        );
-      case 'table':
-        return (
-          <TableField
-            data={block.value}
-            onUpdate={(d) => {
-              if (d) {
-                updateFieldValue(d, block.id);
-              } else {
-                removeBlock(block.id);
-              }
-            }}
-          />
-        );
-      case 'rating':
-        return (
-          <RatingField
-            value={block.value.rating}
-            max={5}
-            onClick={() => setActiveDrawer({ type: 'rating', id: block.id })}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      case 'location':
-        return (
-          <LocationField
-            location={block.value}
-            onClick={() => goToLocationPicker()}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      case 'media':
-        return (
-          <MediaField
-            data={block.value as MediaValue}
-            onClick={() => setActiveDrawer({ type: 'media', id: block.id })}
-            onRemove={() => removeBlock(block.id)}
-          />
-        );
-      default:
-        return null;
+  const throttledEmitStream = useThrottle(
+    (blockId: string, newValue: BlockValue) => {
+      if (draftId) emitStream(blockId, newValue);
+    },
+    3000,
+  ); // 3초 간격
+
+  const handleFieldUpdate = (blockId: string, newValue: BlockValue) => {
+    // 내 화면 업데이트
+    updateFieldValue(newValue, blockId);
+
+    // 다른 사람 스트리밍
+    throttledEmitStream(blockId, newValue);
+  };
+
+  // 공통 커밋 함수
+  const handleFieldCommit = (id: string, value: BlockValue) => {
+    if (!draftId) return;
+
+    const lockKey = `block:${id}`;
+    const ownerSessionId = locks[lockKey];
+
+    // 내가 락을 갖고있는지 확인
+    const isMine = ownerSessionId === mySessionId;
+
+    // 없으면 락 먼저 받기
+    if (!isMine) {
+      requestLock(lockKey);
     }
+    applyPatch({
+      type: 'BLOCK_SET_VALUE',
+      blockId: id,
+      value: value,
+    });
+    releaseLock(lockKey);
+  };
+
+  const handleDrawerDone = (newValue: BlockValue) => {
+    if (!activeDrawer) return;
+    if (activeDrawer.id && draftId) {
+      emitStream(activeDrawer.id, newValue);
+    }
+
+    //ID 없을 때 생성 및 락 획득
+    handleDone(newValue);
+  };
+
+  // 명시적으로 드로어를 닫을 때
+  const handleCloseDrawer = (id?: string) => {
+    if (id && draftId) {
+      const currentBlock = blocks.find((b) => b.id === id);
+
+      //여기서 커밋하기
+      if (currentBlock) {
+        applyPatch({
+          type: 'BLOCK_SET_VALUE',
+          blockId: id,
+          value: currentBlock.value,
+        });
+      }
+
+      // 락 해제
+      releaseLock(`block:${id}`);
+    }
+
+    setActiveDrawer(null);
   };
 
   const renderActiveDrawer = () => {
@@ -245,33 +335,33 @@ export default function PostEditor({
           <DateDrawer
             mode="single"
             currentDate={initialValue as string}
-            onSelectDate={(v) => handleDone({ date: v })}
-            onClose={() => setActiveDrawer(null)}
+            onSelectDate={(v) => handleDrawerDone({ date: v })}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'time':
         return (
           <TimePickerDrawer
             currentTime={initialValue as TimeValue}
-            onSave={(v) => handleDone({ time: v })}
-            onClose={() => setActiveDrawer(null)}
+            onSave={(v) => handleDrawerDone({ time: v })}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'tags':
         return (
           <TagDrawer
-            onClose={() => setActiveDrawer(null)}
-            tags={initialValue as TagsValue}
+            onClose={() => handleCloseDrawer(id)}
+            tags={initialValue as TagValue}
             previousTags={['식단', '운동']} //TODO: 실제 최근 사용 태그 리스트
-            onUpdateTags={(nt) => handleDone({ tags: nt }, false)}
+            onUpdateTags={(nt) => handleDrawerDone({ tags: nt })}
           />
         );
       case 'rating':
         return (
           <RatingDrawer
             rating={initialValue as RatingValue}
-            onUpdateRating={(nr) => handleDone({ rating: nr.rating })}
-            onClose={() => setActiveDrawer(null)}
+            onUpdateRating={(nr) => handleDrawerDone({ rating: nr.rating })}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'photos':
@@ -304,30 +394,36 @@ export default function PostEditor({
               }
 
               if (id) updateFieldValue(nextValue, id);
-              else handleDone(nextValue);
+              else handleDrawerDone(nextValue);
             }}
             onRemoveAll={() => {
               const emptyValue = { mediaIds: [], tempUrls: [] };
               if (id) updateFieldValue(emptyValue, id);
-              else handleDone(emptyValue);
+              else handleDrawerDone(emptyValue);
             }}
-            onClose={() => setActiveDrawer(null)}
+            onEditMetadata={handleEditMetadata}
+            appliedMetadata={pendingMetadata?.appliedMetadata || {}}
+            onClose={() => {
+              handleCloseDrawer(id);
+            }}
           />
         );
       case 'emotion':
         return (
           <EmotionDrawer
             isOpen={true}
-            selectedEmotion={initialValue as string}
-            onSelect={(v) => handleDone({ mood: v })}
-            onClose={() => setActiveDrawer(null)}
+            selectedEmotion={initialValue as MoodValue}
+            onSelect={(v) => handleDrawerDone({ mood: v })}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       case 'media':
         return (
           <MediaDrawer
-            onSelect={handleDone}
-            onClose={() => setActiveDrawer(null)}
+            onSelect={(v) => {
+              handleDrawerDone(v);
+            }}
+            onClose={() => handleCloseDrawer(id)}
           />
         );
       default:
@@ -343,31 +439,74 @@ export default function PostEditor({
       addOrShowBlock(type);
     }
   };
+
   return (
-    <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
-      <RecordEditorHeader mode={mode} onSave={handleSave} />
+    <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
+      <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
-        <RecordTitleInput value={title} onChange={setTitle} />
+        <RecordTitleInput
+          title={title}
+          setTitle={setTitle}
+          draftId={draftId}
+          mySessionId={mySessionId}
+          members={members}
+          applyPatch={applyPatch}
+          lockManager={{ locks, requestLock, releaseLock }}
+        />
         <div
           ref={gridRef}
           onDragOver={handleGridDragOver}
           className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300"
         >
-          {blocks.map((block) => (
-            <div
-              key={block.id}
-              draggable
-              onDragStart={() => handleDragStart(block.id)}
-              onDragOver={(e) => handleDragOver(e, block.id)}
-              onDragEnd={() => setIsDraggingId(null)}
-              className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
-            >
-              <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
-                <GripVertical className="w-4 h-4 text-gray-500" />
+          {blocks.map((block) => {
+            const lockKey = `block:${block.id}`;
+            const ownerSessionId = locks[lockKey];
+            const owner = members.find((m) => m.sessionId === ownerSessionId);
+            const contentBlockCount = blocks.filter(
+              (b) => b.type === 'content',
+            ).length;
+            const isLastContentBlock = contentBlockCount === 1;
+            //const isLockedByOther = ownerSessionId && ownerSessionId !== mySessionId;
+            return (
+              <div
+                key={block.id}
+                draggable
+                onDragStart={() => handleDragStart(block.id)}
+                onDragOver={(e) => handleDragOver(e, block.id)}
+                onDragEnd={() => setIsDraggingId(null)}
+                className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
+              >
+                <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
+                  <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
+                </div>
+
+                <div className="w-full flex flex-row gap-2 items-center">
+                  {owner && (
+                    <Image
+                      src="/profile-ex.jpeg"
+                      className="w-6 h-6 rounded-full"
+                      width={8}
+                      height={8}
+                      alt="현재 유저 프로필"
+                    />
+                  )}
+                  <RecordFieldRenderer
+                    block={block}
+                    locks={locks}
+                    mySessionId={mySessionId}
+                    streamingValue={streamingValues[block.id]}
+                    requestLock={requestLock}
+                    onUpdate={handleFieldUpdate}
+                    onCommit={handleFieldCommit}
+                    onRemove={removeBlock}
+                    onOpenDrawer={(type, id) => setActiveDrawer({ type, id })}
+                    goToLocationPicker={goToLocationPicker}
+                    isLastContentBlock={isLastContentBlock}
+                  />
+                </div>
               </div>
-              <div className="w-full">{renderField(block)}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </main>
       <Toolbar
@@ -384,6 +523,39 @@ export default function PostEditor({
         onChange={handlePhotoUpload}
       />
       {renderActiveDrawer()}
+
+      {/* 메타데이터 선택 드로어 */}
+      {pendingMetadata && pendingMetadata.images.length > 0 && (
+        <MetadataSelectionDrawer
+          isOpen={true}
+          onClose={handleSkipMetadata}
+          images={pendingMetadata.images}
+          onApplyMetadata={handleApplyMetadata}
+          lockedFields={{
+            date: (() => {
+              const dateBlock = blocks.find((b) => b.type === 'date');
+              if (!dateBlock) return false;
+              const lockKey = `block:${dateBlock.id}`;
+              const ownerSessionId = locks[lockKey];
+              return !!ownerSessionId && ownerSessionId !== mySessionId;
+            })(),
+            time: (() => {
+              const timeBlock = blocks.find((b) => b.type === 'time');
+              if (!timeBlock) return false;
+              const lockKey = `block:${timeBlock.id}`;
+              const ownerSessionId = locks[lockKey];
+              return !!ownerSessionId && ownerSessionId !== mySessionId;
+            })(),
+            location: (() => {
+              const locationBlock = blocks.find((b) => b.type === 'location');
+              if (!locationBlock) return false;
+              const lockKey = `block:${locationBlock.id}`;
+              const ownerSessionId = locks[lockKey];
+              return !!ownerSessionId && ownerSessionId !== mySessionId;
+            })(),
+          }}
+        />
+      )}
     </div>
   );
 }
