@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { DateTime } from 'luxon';
@@ -18,6 +22,11 @@ import {
   PostMedia,
   PostMediaKind,
 } from '@/modules/post/entity/post-media.entity';
+import {
+  GroupCoverCandidatesResponseDto,
+  GroupCoverCandidateSectionDto,
+  GroupCoverCandidateItemDto,
+} from '../dto/group-cover-candidates.response.dto';
 import { PaginatedGroupMonthCoverCandidateResponseDto } from '../dto/group-month-cover-candidates-response.dto';
 
 @Injectable()
@@ -64,6 +73,16 @@ export class GroupRecordService {
     });
     if (!post) {
       throw new NotFoundException('해당 그룹의 게시글을 찾을 수 없습니다.');
+    }
+
+    // 추가: 게시글 날짜가 해당 월인지 확인 (보안 강화)
+    if (post.eventAt) {
+      const postDate = DateTime.fromJSDate(post.eventAt).setZone('Asia/Seoul');
+      if (postDate.year !== year || postDate.month !== month) {
+        throw new ForbiddenException(
+          '게시글의 날짜가 해당 월과 일치하지 않습니다.',
+        );
+      }
     }
 
     // 3. Asset 존재 및 게시글 내 포함 여부 확인
@@ -483,7 +502,8 @@ export class GroupRecordService {
     const blocks = await qb.getMany();
 
     const hasNext = blocks.length > limit;
-    const items = blocks.slice(0, limit).flatMap((b) => {
+    const currentBatch = blocks.slice(0, limit);
+    const items = currentBatch.flatMap((b) => {
       const val = b.value as { mediaIds?: string[] };
       const eventAt = b.post.eventAt;
       if (!eventAt) return [];
@@ -496,7 +516,7 @@ export class GroupRecordService {
 
     let nextCursor: string | null = null;
     if (hasNext) {
-      const lastBlock = blocks[limit - 1];
+      const lastBlock = currentBatch[currentBatch.length - 1];
       const lastEventAt = lastBlock.post.eventAt;
       if (lastEventAt) {
         const rawCursor = `${lastEventAt.toISOString()}__${lastBlock.id}`;
@@ -504,7 +524,139 @@ export class GroupRecordService {
       }
     }
 
-    return { items, nextCursor };
+    return {
+      items,
+      nextCursor,
+    };
+  }
+
+  /**
+   * 그룹 커버 후보 조회 (Refactored)
+   */
+  async getCoverCandidates(
+    groupId: string,
+    year: number,
+    month: number,
+    cursor?: string,
+    limit: number = 20,
+  ): Promise<GroupCoverCandidatesResponseDto> {
+    // 1. 그룹 존재 확인
+    const group = await this.groupRepo.findOne({ where: { id: groupId } });
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    // 2. 조회 기간 설정
+    const from = DateTime.fromObject({ year, month, day: 1 })
+      .setZone('Asia/Seoul')
+      .startOf('month');
+    const to = from.endOf('month');
+
+    // 3. PostMedia 조회 (IMAGE 블록에 속한 미디어들)
+    const qb = this.postMediaRepo.createQueryBuilder('pm');
+    qb.innerJoin('pm.post', 'p');
+    qb.leftJoin('pm.media', 'ma');
+
+    qb.select([
+      'pm.id',
+      'pm.mediaId',
+      'pm.kind',
+      'p.id',
+      'p.title',
+      'p.eventAt',
+      'ma.width',
+      'ma.height',
+      'ma.mimeType',
+    ]);
+
+    qb.where('p.groupId = :groupId', { groupId });
+    qb.andWhere('pm.kind = :kind', { kind: PostMediaKind.BLOCK });
+    qb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate: from.toJSDate(),
+      toDate: to.toJSDate(),
+    });
+
+    // Cursor Pagination
+    if (cursor) {
+      try {
+        const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+        const [eventAtStr, id] = decoded.split('__');
+        if (eventAtStr && id) {
+          qb.andWhere(
+            '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND pm.id < :cursorId))',
+            {
+              cursorEventAt: new Date(eventAtStr),
+              cursorId: id,
+            },
+          );
+        }
+      } catch {
+        // invalid cursor ignore
+      }
+    }
+
+    qb.orderBy('p.eventAt', 'DESC');
+    qb.addOrderBy('pm.id', 'DESC');
+    qb.take(limit + 1);
+
+    const pmList = await qb.getMany();
+
+    const hasNext = pmList.length > limit;
+    const currentBatch = pmList.slice(0, limit);
+
+    // 4. 그룹화 (Date별)
+    const sectionsMap = new Map<string, GroupCoverCandidateItemDto[]>();
+
+    for (const pm of currentBatch) {
+      const dateStr = pm.post.eventAt
+        ? DateTime.fromJSDate(pm.post.eventAt)
+            .setZone('Asia/Seoul')
+            .toFormat('yyyy-MM-dd')
+        : 'Unknown';
+
+      const item: GroupCoverCandidateItemDto = {
+        mediaId: pm.id,
+        assetId: pm.mediaId,
+        postId: pm.post.id,
+        postTitle: pm.post.title,
+        eventAt: pm.post.eventAt!,
+        width: pm.media?.width,
+        height: pm.media?.height,
+        mimeType: pm.media?.mimeType,
+      };
+
+      if (!sectionsMap.has(dateStr)) {
+        sectionsMap.set(dateStr, []);
+      }
+      sectionsMap.get(dateStr)!.push(item);
+    }
+
+    const sections: GroupCoverCandidateSectionDto[] = Array.from(
+      sectionsMap.entries(),
+    ).map(([date, items]) => ({
+      date,
+      items,
+    }));
+
+    // 5. Next Cursor 생성
+    let nextCursor: string | null = null;
+    if (hasNext) {
+      const lastItem = currentBatch[currentBatch.length - 1];
+      const lastEventAt = lastItem.post?.eventAt;
+      if (lastEventAt) {
+        const payload = `${lastEventAt.toISOString()}__${lastItem.id}`;
+        nextCursor = Buffer.from(payload).toString('base64');
+      }
+    }
+
+    return {
+      groupId,
+      sections,
+      pageInfo: {
+        hasNext,
+        nextCursor,
+      },
+    };
   }
 
   /**
