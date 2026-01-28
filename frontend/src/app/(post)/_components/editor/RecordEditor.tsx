@@ -268,6 +268,9 @@ export default function PostEditor({
     // locaion 처음 만들어진다면
     if (!existing) {
       addOrShowBlock('location');
+    } else {
+      const lockKey = `block:${existing.id}`;
+      requestLock(lockKey);
     }
 
     router.push('/location-picker');

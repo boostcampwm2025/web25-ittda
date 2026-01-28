@@ -75,7 +75,7 @@ export function RecordFieldRenderer({
   };
   const handleLockAndAction = () => {
     if (lock.isLockedByOther) return;
-    if (draftId) requestLock(lock.lockKey);
+    if (draftId && block.type !== 'location') requestLock(lock.lockKey);
     if (block.type === 'location') goToLocationPicker();
     else onOpenDrawer(block.type, block.id);
   };
