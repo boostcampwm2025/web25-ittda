@@ -17,12 +17,12 @@ export class GroupDayRecordResponseDto {
   postCount: number;
 
   @ApiProperty({
-    description: '커버 썸네일 이미지 ID',
+    description: '커버 에셋 이미지 ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
     nullable: true,
   })
   @Expose()
-  coverThumbnailId: string | null;
+  coverAssetId: string | null;
 
   @ApiProperty({
     description: '최신 기록 제목',

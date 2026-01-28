@@ -9,5 +9,5 @@ export class GetGroupMonthImagesQueryDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^\d{4}-\d{2}$/, { message: 'year must be YYYY-MM format' })
-  year: string;
+  yearMonth: string;
 }

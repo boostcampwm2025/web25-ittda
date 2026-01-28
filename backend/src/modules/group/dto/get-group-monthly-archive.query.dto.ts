@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min, IsEnum } from 'class-validator';
+import { IsInt, IsOptional, Max, Min, IsEnum, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum GroupArchiveSortEnum {
@@ -37,4 +37,17 @@ export class GetGroupMonthlyArchiveQueryDto {
   })
   @IsOptional()
   sort?: GroupArchiveSortEnum;
+
+  @ApiProperty({ description: '페이지네이션 커서 (YYYY-MM)', required: false })
+  @IsString()
+  @IsOptional()
+  cursor?: string;
+
+  @ApiProperty({ description: '페이지당 개수', default: 12, required: false })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  limit?: number = 12;
 }
