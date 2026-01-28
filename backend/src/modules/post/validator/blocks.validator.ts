@@ -64,6 +64,49 @@ function validateSingleMetaBlocks(counts: Map<PostBlockType, number>) {
   }
 }
 
+function validateImageMediaIds(blocks: BlockDto[]) {
+  const mediaIds: string[] = [];
+  for (const block of blocks) {
+    if (block.type !== PostBlockType.IMAGE) continue;
+    const value = block.value as unknown;
+    if (!value || typeof value !== 'object') {
+      throw new BadRequestException('IMAGE.mediaIds is required.');
+    }
+    const candidate = value as { mediaIds?: unknown };
+    if (candidate.mediaIds === undefined) {
+      throw new BadRequestException('IMAGE.mediaIds is required.');
+    }
+    if (!Array.isArray(candidate.mediaIds)) {
+      throw new BadRequestException('IMAGE.mediaIds must be an array.');
+    }
+    if (candidate.mediaIds.length === 0) {
+      throw new BadRequestException('IMAGE.mediaIds must not be empty.');
+    }
+    const ids = candidate.mediaIds as unknown[];
+    let hasNonString = false;
+    for (const id of ids) {
+      if (typeof id !== 'string') {
+        hasNonString = true;
+        break;
+      }
+    }
+    if (hasNonString) {
+      throw new BadRequestException('IMAGE.mediaIds must be strings.');
+    }
+    mediaIds.push(...(ids as string[]));
+  }
+
+  if (mediaIds.length === 0) return;
+
+  const unique = new Set(mediaIds);
+  if (unique.size !== mediaIds.length) {
+    throw new BadRequestException('IMAGE.mediaIds must be unique.');
+  }
+  if (mediaIds.length > 15) {
+    throw new BadRequestException('IMAGE.mediaIds must be at most 15.');
+  }
+}
+
 function validateLayout(blocks: BlockDto[]) {
   // 레이아웃 점유 셀 충돌 검사 준비
   const used = new Map<string, number>(); // cellKey -> blockIndex
@@ -148,6 +191,8 @@ export function validateBlocks(
   if (enforceSingleMetaBlocks) {
     validateSingleMetaBlocks(counts);
   }
+
+  validateImageMediaIds(blocks);
 
   validateLayout(blocks);
 }

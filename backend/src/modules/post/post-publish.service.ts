@@ -15,6 +15,7 @@ import { PostDraft } from './entity/post-draft.entity';
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
+import { PostMedia, PostMediaKind } from './entity/post-media.entity';
 import { User } from '@/modules/user/entity/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
@@ -24,7 +25,9 @@ import { PublishDraftDto } from './dto/publish-draft.dto';
 import { PostScope } from '@/enums/post-scope.enum';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { PostContributorRole } from '@/enums/post-contributor-role.enum';
+import { PostBlockType } from '@/enums/post-block-type.enum';
 import { validateBlocks } from './validator/blocks.validator';
+import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 
@@ -54,6 +57,7 @@ export class PostPublishService {
           const postRepo = manager.getRepository(Post);
           const blockRepo = manager.getRepository(PostBlock);
           const contributorRepo = manager.getRepository(PostContributor);
+          const mediaRepo = manager.getRepository(PostMedia);
           const groupRepo = manager.getRepository(Group);
           const memberRepo = manager.getRepository(GroupMember);
           const userRepo = manager.getRepository(User);
@@ -159,6 +163,41 @@ export class PostPublishService {
           );
           if (blocks.length > 0) {
             await blockRepo.save(blocks);
+          }
+
+          const mediaEntries: PostMedia[] = [];
+          if (post.thumbnailMediaId) {
+            mediaEntries.push(
+              mediaRepo.create({
+                postId: saved.id,
+                post: saved,
+                mediaId: post.thumbnailMediaId,
+                kind: PostMediaKind.THUMBNAIL,
+              }),
+            );
+          }
+
+          post.blocks.forEach((block) => {
+            if (block.type !== PostBlockType.IMAGE) return;
+            const mediaIds = (block.value as BlockValueMap['IMAGE'])?.mediaIds;
+            if (!Array.isArray(mediaIds) || mediaIds.length === 0) return;
+            mediaIds.forEach((mediaId, sortIndex) => {
+              if (typeof mediaId !== 'string') return;
+              mediaEntries.push(
+                mediaRepo.create({
+                  postId: saved.id,
+                  post: saved,
+                  mediaId,
+                  kind: PostMediaKind.BLOCK,
+                  blockId: block.id,
+                  sortOrder: sortIndex + 1,
+                }),
+              );
+            });
+          });
+
+          if (mediaEntries.length > 0) {
+            await mediaRepo.save(mediaEntries);
           }
 
           draft.isActive = false;

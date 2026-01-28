@@ -12,14 +12,17 @@ import type { Point } from 'geojson';
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
+import { PostMedia, PostMediaKind } from './entity/post-media.entity';
 import { User } from '@/modules/user/entity/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
 import { PostScope } from '@/enums/post-scope.enum';
+import { PostBlockType } from '@/enums/post-block-type.enum';
 import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { validateBlocks } from './validator/blocks.validator';
+import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 
@@ -86,6 +89,7 @@ export class PostService {
         const postRepo = manager.getRepository(Post);
         const blockRepo = manager.getRepository(PostBlock);
         const contributorRepo = manager.getRepository(PostContributor);
+        const mediaRepo = manager.getRepository(PostMedia);
         const groupRepo = manager.getRepository(Group);
 
         const post = postRepo.create({
@@ -131,8 +135,47 @@ export class PostService {
           }),
         );
 
+        const mediaEntries: PostMedia[] = [];
+        if (dto.thumbnailMediaId) {
+          mediaEntries.push(
+            mediaRepo.create({
+              postId: saved.id,
+              post: saved,
+              mediaId: dto.thumbnailMediaId,
+              kind: PostMediaKind.THUMBNAIL,
+            }),
+          );
+        }
+
         if (blocks.length > 0) {
-          await blockRepo.save(blocks);
+          const savedBlocks = await blockRepo.save(blocks);
+
+          savedBlocks.forEach((savedBlock, index) => {
+            if (savedBlock.type !== PostBlockType.IMAGE) return;
+            const inputBlock = dto.blocks[index];
+            if (!inputBlock || inputBlock.type !== PostBlockType.IMAGE) return;
+            const mediaIds = (inputBlock.value as BlockValueMap['IMAGE'])
+              ?.mediaIds;
+            if (!Array.isArray(mediaIds) || mediaIds.length === 0) return;
+            mediaIds.forEach((mediaId, sortIndex) => {
+              if (typeof mediaId !== 'string') return;
+              mediaEntries.push(
+                mediaRepo.create({
+                  postId: saved.id,
+                  post: saved,
+                  mediaId,
+                  kind: PostMediaKind.BLOCK,
+                  blockId: savedBlock.id,
+                  block: savedBlock,
+                  sortOrder: sortIndex + 1,
+                }),
+              );
+            });
+          });
+        }
+
+        if (mediaEntries.length > 0) {
+          await mediaRepo.save(mediaEntries);
         }
 
         return saved.id;
