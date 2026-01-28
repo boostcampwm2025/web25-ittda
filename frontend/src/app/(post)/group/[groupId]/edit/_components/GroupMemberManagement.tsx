@@ -20,13 +20,15 @@ import Image from 'next/image';
 import { ReactNode, useState } from 'react';
 import { useGroupEdit } from './GroupEditContext';
 import { cn } from '@/lib/utils';
-import { useApiDelete } from '@/hooks/useApi';
-import { GroupMember } from '@/lib/types/groupResponse';
+import { useApiDelete, useApiPatch } from '@/hooks/useApi';
+import { GroupEditResponse, GroupMember } from '@/lib/types/groupResponse';
 import { GroupRoleType } from '@/lib/types/group';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface GroupMemberManagementProps {
   groupId: string;
   className?: string;
+  me: GroupEditResponse['me'];
 }
 
 interface Role {
@@ -35,14 +37,6 @@ interface Role {
   desc: string;
   icon: ReactNode;
 }
-
-// TODO: 유저 정보는 로그인 후 서버로부터 받아옴 (전역 상태로 관리 필요)
-const user = {
-  userId: '123',
-  nickname: '도비',
-  profileImageUrl: '/profile-ex.jpeg',
-  email: 'test@naver.com',
-};
 
 const ROLE: Role[] = [
   {
@@ -62,7 +56,9 @@ const ROLE: Role[] = [
 export default function GroupMemberManagement({
   groupId,
   className,
+  me,
 }: GroupMemberManagementProps) {
+  const queryClient = useQueryClient();
   const { members, setMembers } = useGroupEdit();
   const [showDeleteDrawer, setShowDeleteDrawer] = useState(false);
   const [showRoleDrawer, setShowRoleDrawer] = useState(false);
@@ -71,6 +67,7 @@ export default function GroupMemberManagement({
     name: string;
   } | null>(null);
   const [editingMember, setEditingMember] = useState<GroupMember | null>(null);
+  const [tempRole, setTempRole] = useState<GroupRoleType | null>(null);
 
   const { mutate: removeMember } = useApiDelete(
     `/api/${groupId}/members/${deleteMember?.userId}`,
@@ -78,6 +75,26 @@ export default function GroupMemberManagement({
       onSuccess: () => {
         setMembers(members.filter((m) => m.userId !== deleteMember?.userId));
         setDeleteMember(null);
+      },
+    },
+  );
+
+  const { mutate: updateRole } = useApiPatch(
+    `/api/groups/${groupId}/members/${editingMember?.userId}/role`,
+    {
+      onSuccess: () => {
+        if (!tempRole || !editingMember) return;
+
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.userId === editingMember.userId ? { ...m, role: tempRole } : m,
+          ),
+        );
+        queryClient.invalidateQueries({ queryKey: ['group', groupId, 'edit'] });
+
+        setShowRoleDrawer(false);
+        setEditingMember(null);
+        setTempRole(null);
       },
     },
   );
@@ -99,18 +116,18 @@ export default function GroupMemberManagement({
 
   const openRoleDrawer = (member: GroupMember) => {
     setEditingMember(member);
+    setTempRole(member.role); // 열 때 현재 멤버의 역할을 초기값으로 설정
     setShowRoleDrawer(true);
   };
 
-  const handleRoleChange = (newRole: Role['userId']) => {
-    if (!editingMember) return;
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.userId === editingMember.userId ? { ...m, role: newRole } : m,
-      ),
-    );
-    setShowRoleDrawer(false);
-    setEditingMember(null);
+  const handleRoleSelect = (role: GroupRoleType) => {
+    setTempRole(role);
+  };
+
+  const handleFinalSubmit = () => {
+    if (!editingMember || !tempRole) return;
+
+    updateRole({ role: tempRole });
   };
 
   return (
@@ -146,22 +163,24 @@ export default function GroupMemberManagement({
                 </div>
                 <button
                   onClick={() =>
-                    user.userId !== member.userId && openRoleDrawer(member)
+                    me.userId !== member.userId &&
+                    me.role === 'ADMIN' &&
+                    openRoleDrawer(member)
                   }
                   className="cursor-pointer flex items-center gap-1 group transition-all dark:text-gray-500 dark:hover:text-gray-300 text-gray-400 hover:text-gray-600"
                 >
                   <span className="text-[10px] text-gray-400">
                     {member.role === 'ADMIN' ? '관리자' : '멤버'}
                   </span>
-                  {/* TODO: 내가 관리자가 아닐 경우의 조건 추가 */}
-                  {user.userId !== member.userId && (
+
+                  {me.userId !== member.userId && me.role === 'ADMIN' && (
                     <ChevronRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                   )}
                 </button>
               </div>
             </div>
-            {/* TODO: 내가 아닐 경우, 내가 관리자 권한이 아닐 경우의 조건 추가 */}
-            {member.role !== 'ADMIN' && (
+
+            {me.role === 'ADMIN' && me.userId !== member.userId && (
               <button
                 onClick={() => confirmRemoveMember(member.userId, member.name)}
                 className="cursor-pointer p-2 rounded-xl transition-colors dark:hover:bg-red-500/10 dark:text-gray-500 hover:bg-red-50 text-gray-400"
@@ -230,10 +249,10 @@ export default function GroupMemberManagement({
               {ROLE.map((role) => (
                 <button
                   key={role.userId}
-                  onClick={() => handleRoleChange(role.userId)}
+                  onClick={() => handleRoleSelect(role.userId)}
                   className={cn(
                     'cursor-pointer w-full flex items-center justify-between p-5 rounded-2xl border text-left transition-all active:scale-[0.98]',
-                    editingMember?.role === role.userId
+                    tempRole === role.userId
                       ? 'bg-[#10B981]/10 border-[#10B981] text-[#10B981]'
                       : 'dark:bg-white/5 dark:border-white/5 dark:text-gray-400 bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100',
                   )}
@@ -242,7 +261,7 @@ export default function GroupMemberManagement({
                     <div
                       className={cn(
                         'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                        editingMember?.role === role.userId
+                        tempRole === role.userId
                           ? 'bg-[#10B981] text-white'
                           : 'dark:bg-black/20 dark:text-gray-600 bg-white text-gray-300 shadow-sm',
                       )}
@@ -256,7 +275,7 @@ export default function GroupMemberManagement({
                       </p>
                     </div>
                   </div>
-                  {editingMember?.role === role.userId && (
+                  {tempRole === role.userId && (
                     <div className="w-6 h-6 rounded-full bg-[#10B981] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
                       <Check className="w-4 h-4 text-white" strokeWidth={3} />
                     </div>
@@ -266,7 +285,10 @@ export default function GroupMemberManagement({
             </div>
 
             <div className="mt-8">
-              <DrawerClose className="cursor-pointer w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-itta-black text-white">
+              <DrawerClose
+                onClick={handleFinalSubmit}
+                className="cursor-pointer w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-itta-black text-white"
+              >
                 닫기
               </DrawerClose>
             </div>

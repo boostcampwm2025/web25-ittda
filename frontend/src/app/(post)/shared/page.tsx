@@ -16,7 +16,7 @@ export default async function SharedPage({ searchParams }: SharedPageProps) {
   const sortBy = params.sort;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    const groupList = getCachedGroupList();
+    const groupList = await getCachedGroupList();
 
     // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
     queryClient.setQueryData(['shared'], groupList);
