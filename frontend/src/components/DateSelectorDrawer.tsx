@@ -19,7 +19,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useApiQuery } from '@/hooks/useApi';
+import { useQuery } from '@tanstack/react-query';
+import { groupDailyRecordedDatesOption } from '@/lib/api/group';
+import { myDailyRecordedDatesOption } from '@/lib/api/my';
 
 interface DateSelectorDrawerProps {
   dayRoute: string;
@@ -44,15 +46,12 @@ export default function DateSelectorDrawer({
   const year = currentDate.getFullYear();
   const month = String(currentDate.getMonth() + 1).padStart(2, '0');
 
-  const endpoint = groupId
-    ? `/api/groups/${groupId}/archives/record-days?month=${year}-${month}`
-    : `/api/user/archives/record-days?month=${year}-${month}`;
-
-  const { data: recordedDates = [] } = useApiQuery<string[]>(
-    ['recordedDates', endpoint],
-    endpoint,
-    { enabled: isOpen, retry: 1 },
-  );
+  const { data: recordedDates = [] } = useQuery({
+    ...(groupId
+      ? groupDailyRecordedDatesOption(groupId, year, month)
+      : myDailyRecordedDatesOption(year, month)),
+    enabled: isOpen,
+  });
 
   // 캘린더 날짜 계산 로직
   const getDaysInMonth = (year: number, month: number) => {

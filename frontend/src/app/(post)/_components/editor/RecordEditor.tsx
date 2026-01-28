@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { GripVertical } from 'lucide-react';
 
 // 컴포넌트 및 필드 임포트
@@ -16,6 +16,7 @@ import RatingDrawer from './rating/RatingPickerDrawer';
 import PhotoDrawer from './photo/PhotoDrawer';
 import EmotionDrawer from './emotion/EmotionDrawer';
 import MediaDrawer from './media/MediaDrawer';
+import MetadataSelectionDrawer from './metadata/MetadataSelectionDrawer';
 
 // 타입
 import {
@@ -85,6 +86,10 @@ export default function PostEditor({
     removeBlock,
     handleApplyTemplate,
     handlePhotoUpload,
+    pendingMetadata,
+    handleApplyMetadata,
+    handleSkipMetadata,
+    handleEditMetadata,
   } = usePostEditorBlocks({
     blocks,
     setBlocks,
@@ -175,6 +180,71 @@ export default function PostEditor({
       socket.off('LOCK_CHANGED');
     };
   }, [socket, mySessionId]);
+
+  // 메타데이터 선택 drawer가 열릴 때 필드 락 요청
+  const metadataLocksRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (!draftId) return;
+
+    // drawer가 열릴 때 락 요청
+    if (pendingMetadata?.images.length) {
+      const locksToRequest: string[] = [];
+
+      // 날짜 블록 락 확인 및 요청
+      const dateBlock = blocks.find((b) => b.type === 'date');
+      if (dateBlock) {
+        const lockKey = `block:${dateBlock.id}`;
+        const ownerSessionId = locks[lockKey];
+        const isLockedByOther =
+          !!ownerSessionId && ownerSessionId !== mySessionId;
+
+        if (!isLockedByOther) {
+          requestLock(lockKey);
+          locksToRequest.push(lockKey);
+        }
+      }
+
+      // 시간 블록 락 확인 및 요청
+      const timeBlock = blocks.find((b) => b.type === 'time');
+      if (timeBlock) {
+        const lockKey = `block:${timeBlock.id}`;
+        const ownerSessionId = locks[lockKey];
+        const isLockedByOther =
+          !!ownerSessionId && ownerSessionId !== mySessionId;
+
+        if (!isLockedByOther) {
+          requestLock(lockKey);
+          locksToRequest.push(lockKey);
+        }
+      }
+
+      // 위치 블록 락 확인 및 요청
+      const locationBlock = blocks.find((b) => b.type === 'location');
+      if (locationBlock) {
+        const lockKey = `block:${locationBlock.id}`;
+        const ownerSessionId = locks[lockKey];
+        const isLockedByOther =
+          !!ownerSessionId && ownerSessionId !== mySessionId;
+
+        if (!isLockedByOther) {
+          requestLock(lockKey);
+          locksToRequest.push(lockKey);
+        }
+      }
+
+      metadataLocksRef.current = locksToRequest;
+    }
+
+    // cleanup: drawer가 닫힐 때 또는 컴포넌트가 unmount될 때 락 해제
+    return () => {
+      metadataLocksRef.current.forEach((lockKey) => {
+        releaseLock(lockKey);
+      });
+      metadataLocksRef.current = [];
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingMetadata?.images.length, draftId]);
 
   const goToLocationPicker = () => {
     sessionStorage.setItem('editor_draft', JSON.stringify({ title, blocks }));
@@ -383,7 +453,11 @@ export default function PostEditor({
               if (id) updateFieldValue(emptyValue, id);
               else handleDrawerDone(emptyValue);
             }}
-            onClose={() => handleCloseDrawer(id)}
+            onEditMetadata={handleEditMetadata}
+            appliedMetadata={pendingMetadata?.appliedMetadata || {}}
+            onClose={() => {
+              handleCloseDrawer(id);
+            }}
           />
         );
       case 'emotion':
@@ -419,7 +493,7 @@ export default function PostEditor({
   };
 
   return (
-    <div className="w-full flex flex-col min-h-screen bg-white dark:bg-[#121212]">
+    <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput
@@ -459,7 +533,7 @@ export default function PostEditor({
                 className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
               >
                 <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
-                  <GripVertical className="w-4 h-4 text-gray-500" />
+                  <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
                 </div>
 
                 <div className="w-full flex flex-row gap-2 items-center">
@@ -511,6 +585,39 @@ export default function PostEditor({
         onChange={handlePhotoUpload}
       />
       {renderActiveDrawer()}
+
+      {/* 메타데이터 선택 드로어 */}
+      {pendingMetadata && pendingMetadata.images.length > 0 && (
+        <MetadataSelectionDrawer
+          isOpen={true}
+          onClose={handleSkipMetadata}
+          images={pendingMetadata.images}
+          onApplyMetadata={handleApplyMetadata}
+          lockedFields={{
+            date: (() => {
+              const dateBlock = blocks.find((b) => b.type === 'date');
+              if (!dateBlock) return false;
+              const lockKey = `block:${dateBlock.id}`;
+              const ownerSessionId = locks[lockKey];
+              return !!ownerSessionId && ownerSessionId !== mySessionId;
+            })(),
+            time: (() => {
+              const timeBlock = blocks.find((b) => b.type === 'time');
+              if (!timeBlock) return false;
+              const lockKey = `block:${timeBlock.id}`;
+              const ownerSessionId = locks[lockKey];
+              return !!ownerSessionId && ownerSessionId !== mySessionId;
+            })(),
+            location: (() => {
+              const locationBlock = blocks.find((b) => b.type === 'location');
+              if (!locationBlock) return false;
+              const lockKey = `block:${locationBlock.id}`;
+              const ownerSessionId = locks[lockKey];
+              return !!ownerSessionId && ownerSessionId !== mySessionId;
+            })(),
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { EmotionStatSummary } from '@/lib/types/profile';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import {
@@ -10,7 +11,13 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-export default function MonthlyPatternChart() {
+interface MonthlyPatternChartProps {
+  emotions: EmotionStatSummary;
+}
+
+export default function MonthlyPatternChart({
+  emotions,
+}: MonthlyPatternChartProps) {
   const [isInitialRender, setIsInitialRender] = useState(true);
   const { theme } = useTheme();
 
@@ -19,13 +26,12 @@ export default function MonthlyPatternChart() {
     return () => clearTimeout(timer);
   }, []);
 
-  const emotionData = [
-    { subject: '행복', A: 120 },
-    { subject: '슬픔', A: 40 },
-    { subject: '설렘', A: 150 },
-    { subject: '평온', A: 90 },
-    { subject: '기대', A: 110 },
-  ];
+  const emotionData = emotions.map((emotion) => {
+    return {
+      subject: emotion.emotion,
+      A: emotion.count,
+    };
+  });
 
   return (
     <>

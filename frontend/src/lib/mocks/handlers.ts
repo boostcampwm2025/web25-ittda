@@ -19,6 +19,15 @@ const DB = makeFakePosts(2000);
 
 // GET /api/posts?bbox=minLat,minLng,maxLat,maxLng&limit=50
 export const handlers = [
+  http.get('/api/groups/:groupId/settings', ({ params }) => {
+    const id = String(params.groupId);
+
+    return HttpResponse.json({
+      success: true,
+      data: createMockGroupSettings(id),
+      error: null,
+    });
+  }),
   http.patch('/api/groups/:groupId', async ({ params, request }) => {
     const id = String(params.groupId);
 
@@ -68,7 +77,7 @@ export const handlers = [
       });
     },
   ),
-  http.get(`/api/groups/:groupId/archives/days`, ({ request }) => {
+  http.get('/api/groups/:groupId/archives/days', ({ request }) => {
     const url = new URL(request.url);
     const month = url.searchParams.get('month');
 
@@ -199,31 +208,17 @@ export const handlers = [
       error: null,
     });
   }),
-  http.get('/api/me/stats/summary', ({ request }) => {
-    const url = new URL(request.url);
-    const date = url.searchParams.get('date') || new Date().toISOString();
-
-    const parts = date.split('-').map((s) => parseInt(s, 10));
-
-    if (parts.length === 2) {
-      return HttpResponse.json({
-        success: true,
-        data: {
-          count: 2,
-        },
-        error: null,
-      });
-    } else {
-      return HttpResponse.json({
-        success: true,
-        data: {
-          count: 16,
-        },
-        error: null,
-      });
-    }
+  http.get('/api/stats/summary', ({ request }) => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        streak: 3,
+        monthlyRecordingDays: 12,
+      },
+      error: null,
+    });
   }),
-  http.get('/api/me/emotions/summary', ({ request }) => {
+  http.get('/api/stats/emotions/summary', ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit');
 
@@ -233,7 +228,7 @@ export const handlers = [
       error: null,
     });
   }),
-  http.get('/api/me/tags/stats', ({ request }) => {
+  http.get('/api/stats/tags', ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get('limit');
 

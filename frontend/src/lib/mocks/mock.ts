@@ -1,5 +1,6 @@
 import {
   GroupEditResponse,
+  GroupMemberProfileResponse,
   GroupMembersResponse,
 } from '../types/groupResponse';
 import { EmotionStatSummary, TagStatSummary } from '../types/profile';
@@ -404,7 +405,7 @@ export const createMockMyCoverList = (
 };
 
 export const createMockTagStats = (): TagStatSummary => ({
-  recentTop: [
+  recentTags: [
     {
       tag: '아침',
       count: 3,
@@ -426,7 +427,7 @@ export const createMockTagStats = (): TagStatSummary => ({
       count: 1,
     },
   ],
-  allTimeTop: [
+  frequentTags: [
     {
       tag: '팀프로젝트',
       count: 12,
@@ -602,7 +603,7 @@ export const createMockGroupSettings = (id: string): GroupEditResponse => ({
     createdAt: '2025-12-01T03:12:00Z',
     ownerUserId: 'uuid',
     cover: {
-      assetId: 'asset_cover_001',
+      assetId: '/profile-ex.jpeg',
       sourcePostId: 'uuid',
     },
   },
@@ -611,7 +612,7 @@ export const createMockGroupSettings = (id: string): GroupEditResponse => ({
     userId: 'uuid',
     name: '',
     profileImage: {
-      assetId: 'asset_profile_01',
+      assetId: '/profile-ex.jpeg',
     },
     role: 'ADMIN',
     nicknameInGroup: '민영',
@@ -623,7 +624,7 @@ export const createMockGroupSettings = (id: string): GroupEditResponse => ({
       userId: 'usr_owner_001',
       name: '김하민',
       profileImage: {
-        assetId: 'asset_profile_01',
+        assetId: '/profile-ex.jpeg',
       },
       role: 'ADMIN',
       nicknameInGroup: '하민',
@@ -633,7 +634,7 @@ export const createMockGroupSettings = (id: string): GroupEditResponse => ({
       userId: 'usr_002',
       name: '두리',
       profileImage: {
-        assetId: 'asset_profile_02',
+        assetId: '/profile-ex.jpeg',
       },
       role: 'EDITOR',
       nicknameInGroup: '두리',
@@ -648,4 +649,19 @@ export const createMockGroupSettings = (id: string): GroupEditResponse => ({
       joinedAt: '2025-12-07T09:10:00Z',
     },
   ],
+});
+
+export const createMockGroupMyProfile = (
+  groupId: string,
+): GroupMemberProfileResponse => ({
+  groupId: groupId,
+  userId: 'uuid-user',
+  name: '수연',
+  nicknameInGroup: '도비',
+  cover: {
+    assetId: '/profile-ex.jpeg',
+    sourcePostId: 'post-uuid',
+  },
+  role: 'ADMIN',
+  updatedAt: new Date().toISOString(),
 });

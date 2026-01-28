@@ -9,14 +9,15 @@ import { User } from '../user/entity/user.entity';
 
 import { GroupInvite } from './entity/group_invite.entity';
 import { AuthModule } from '../auth/auth.module';
+import { GroupRoleGuard } from './guards/group-roles.guard';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Group, GroupMember, User, GroupInvite]),
     AuthModule,
   ],
-  providers: [GroupService],
+  providers: [GroupService, GroupRoleGuard],
   controllers: [GroupController],
-  exports: [GroupService], // GroupRoleGuard에서 사용
+  exports: [GroupService, GroupRoleGuard], // GroupRoleGuard에서 사용
 })
 export class GroupModule {}

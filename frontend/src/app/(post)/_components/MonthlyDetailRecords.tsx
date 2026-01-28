@@ -13,7 +13,7 @@ import { groupDailyRecordListOptions } from '@/lib/api/group';
 
 interface MonthlyDetailRecordsProps {
   month: string;
-  serverSideData: DailyRecordList[];
+  serverSideData?: DailyRecordList[];
   routePath: string;
   viewMapRoutePath: string;
   groupId?: string;
@@ -44,9 +44,10 @@ export default function MonthlyDetailRecords({
   const option = groupId
     ? groupDailyRecordListOptions(groupId, month)
     : myDailyRecordListOptions(month);
+
   const { data: dayRecords = [] } = useQuery({
     ...option,
-    initialData: serverSideData,
+    ...(serverSideData && { initialData: serverSideData }),
   });
 
   const sortedGroups = useMemo(() => {

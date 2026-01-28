@@ -1,8 +1,12 @@
 import MonthRecords from '@/app/(post)/_components/MonthRecords';
-import { groupMonthlyRecordListOptions } from '@/lib/api/group';
+import { getCachedGroupMonthlyRecordList } from '@/lib/api/group';
 import { createMockGroupMonthlyRecords } from '@/lib/mocks/mock';
 import { MonthlyRecordList } from '@/lib/types/recordResponse';
-import { QueryClient } from '@tanstack/react-query';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 
 interface GroupYearPageProps {
   params: Promise<{ groupId: string; year: string }>;
@@ -12,24 +16,37 @@ export default async function GroupYearPage({ params }: GroupYearPageProps) {
   const { groupId, year } = await params;
 
   let monthlyRecords: MonthlyRecordList[];
+  const queryClient = new QueryClient();
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
     monthlyRecords = createMockGroupMonthlyRecords();
   } else {
-    const queryClient = new QueryClient();
-    monthlyRecords = await queryClient.fetchQuery(
-      groupMonthlyRecordListOptions(groupId, year),
+    monthlyRecords = await getCachedGroupMonthlyRecordList(groupId, year);
+
+    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    queryClient.setQueryData(
+      ['group', groupId, 'records', 'month', year],
+      monthlyRecords,
     );
   }
 
   return (
     <>
       {groupId && (
-        <MonthRecords
-          groupId={groupId}
-          monthRecords={monthlyRecords}
-          cardRoute={`/group/${groupId}/month`}
-        />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
+            <MonthRecords
+              groupId={groupId}
+              monthRecords={monthlyRecords}
+              cardRoute={`/group/${groupId}/month`}
+            />
+          ) : (
+            <MonthRecords
+              groupId={groupId}
+              cardRoute={`/group/${groupId}/month`}
+            />
+          )}
+        </HydrationBoundary>
       )}
     </>
   );

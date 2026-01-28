@@ -1,3 +1,6 @@
+import type { BlockLayoutDto } from '../dto/block-layout.dto';
+import type { PostBlockDto } from '../dto/post-block.dto';
+
 export type PresenceMember = {
   sessionId: string;
   displayName: string;
@@ -22,6 +25,10 @@ export type LeaveDraftPayload = {
   draftId?: string;
 };
 
+export type PresenceHeartbeatPayload = {
+  draftId?: string;
+};
+
 export type LockPayload = {
   lockKey: string;
 };
@@ -33,13 +40,13 @@ export type StreamPayload = {
 
 export type BlockMoveItem = {
   blockId: string;
-  layout: import('../dto/block-layout.dto').BlockLayoutDto;
+  layout: BlockLayoutDto;
 };
 
 export type BlockMoveCommand = {
   type: 'BLOCK_MOVE';
   blockId: string;
-  layout: import('../dto/block-layout.dto').BlockLayoutDto;
+  layout: BlockLayoutDto;
 };
 
 export type BlockMoveListCommand = {
@@ -50,7 +57,7 @@ export type BlockMoveListCommand = {
 export type PatchCommand =
   | {
       type: 'BLOCK_INSERT';
-      block: import('../dto/post-block.dto').PostBlockDto;
+      block: PostBlockDto;
     }
   | { type: 'BLOCK_DELETE'; blockId: string }
   | BlockMoveCommand

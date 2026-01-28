@@ -42,7 +42,9 @@ export default function DailyDetailRecordItem({
   const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.postId}`, {
     onSuccess: () => {
       toast.success('기록이 삭제되었습니다.');
-      queryClient.invalidateQueries({ queryKey: ['records'] });
+      queryClient.invalidateQueries({
+        queryKey: groupId ? ['group', groupId, 'records'] : ['my', 'records'],
+      });
 
       setTimeout(() => {
         router.back();

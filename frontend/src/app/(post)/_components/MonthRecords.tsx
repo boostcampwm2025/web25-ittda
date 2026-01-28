@@ -23,7 +23,7 @@ import { convertMontRecords } from '../_utils/convertMonthRecords';
 import { groupMonthlyRecordListOptions } from '@/lib/api/group';
 
 interface MonthRecordsProps {
-  monthRecords: MonthlyRecordList[];
+  monthRecords?: MonthlyRecordList[];
   cardRoute: string;
   groupId?: string;
 }
@@ -43,11 +43,11 @@ export default function MonthRecords({
 
   const options = groupId
     ? groupMonthlyRecordListOptions(groupId)
-    : myMonthlyRecordListOptions();
+    : myMonthlyRecordListOptions(year);
 
   const { data: months = [] } = useQuery({
     ...options,
-    initialData: monthRecords,
+    ...(monthRecords && { initialData: monthRecords }),
     select: (data: MonthlyRecordList[]) => convertMontRecords(data),
   });
 
@@ -57,7 +57,7 @@ export default function MonthRecords({
   };
 
   const cacheKey = groupId
-    ? ['group', 'records', 'month', year]
+    ? ['group', groupId, 'records', 'month', year]
     : ['my', 'records', 'month', year];
 
   const coverEndpoint = groupId

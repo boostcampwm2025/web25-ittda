@@ -141,7 +141,7 @@ export const ContentField = ({
       )}
     >
       <div className="relative flex-1 pl-3">
-        <div className="absolute left-0 top-1 bottom-1 w-[2.5px] rounded-full bg-gray-200 dark:bg-white/10 group-focus-within/content:bg-itta-point transition-colors duration-300" />
+        <div className="absolute left-0 top-1 bottom-1 w-[2.5px] rounded-full bg-gray-200 dark:bg-white/10 group-focus-within/content:bg-itta-point dark:group-focus-within/content:bg-itta-point transition-colors duration-300" />
 
         <textarea
           ref={textareaRef}
@@ -151,11 +151,11 @@ export const ContentField = ({
           onFocus={handleFocusWrapper}
           onBlur={onBlur}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full min-h-[120px] border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-700"
+          className="w-full min-h-30 border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
         />
       </div>
       {!isLastContentBlock && (
-        <div className="flex-shrink-0 flex items-center justify-center mr-4">
+        <div className="shrink-0 flex items-center justify-center mr-4">
           <FieldDeleteButton onRemove={onRemove} ariaLabel="텍스트 필드 삭제" />
         </div>
       )}

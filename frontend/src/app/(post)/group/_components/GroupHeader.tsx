@@ -1,8 +1,7 @@
 import Image from 'next/image';
 import GroupHeaderActions from './GroupHeaderActions';
 import { Users } from 'lucide-react';
-import { QueryClient } from '@tanstack/react-query';
-import { groupCurrentMembersOption } from '@/lib/api/group';
+import { getCachedGroupCurrentMembers } from '@/lib/api/group';
 import { GroupMembersResponse } from '@/lib/types/groupResponse';
 import { createMockGroupMembers } from '@/lib/mocks/mock';
 
@@ -13,15 +12,12 @@ export default async function GroupHeader({
   className?: string;
   groupId: string;
 }) {
-  const queryClient = new QueryClient();
   let groupInfo: GroupMembersResponse;
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
     groupInfo = createMockGroupMembers();
   } else {
-    groupInfo = await queryClient.fetchQuery(
-      groupCurrentMembersOption(groupId),
-    );
+    groupInfo = await getCachedGroupCurrentMembers(groupId);
   }
 
   return (

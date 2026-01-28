@@ -1,7 +1,7 @@
 'use client';
 
-import { useApiQuery } from '@/hooks/useApi';
-import { MonthlyRecordList } from '@/lib/types/recordResponse';
+import { myMonthlyRecordListOptions } from '@/lib/api/my';
+import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import {
   Bar,
@@ -17,17 +17,14 @@ export default function MonthlyUsageChart() {
   const year = new Date().getFullYear().toString();
 
   const {
-    data: monthlyRecords,
+    data: monthlyRecords = [],
     isLoading,
     isError,
-  } = useApiQuery<MonthlyRecordList[]>(
-    ['my', 'records', 'month', year],
-    `/api/user/archives/months?year=${year}`,
-  );
+  } = useQuery(myMonthlyRecordListOptions(year));
 
   // API 응답을 차트 데이터 형식으로 변환
-  const monthlyUsageData = (monthlyRecords ?? []).map((record) => {
-    const [year, month] = record.month.split('-');
+  const monthlyUsageData = monthlyRecords.map((record) => {
+    const [year, month] = record.id.split('-');
     return {
       name: `${year.slice(2)}.${month}`,
       value: record.count,
