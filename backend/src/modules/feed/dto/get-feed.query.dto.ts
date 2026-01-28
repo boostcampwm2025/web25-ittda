@@ -8,6 +8,7 @@ export class GetFeedQueryDto {
    */
   @ApiProperty({
     description: 'YYYY-MM-DD 형식의 날짜',
+    example: '2026-01-28',
   })
   @IsString()
   @IsNotEmpty()
@@ -17,6 +18,7 @@ export class GetFeedQueryDto {
   @ApiPropertyOptional({
     description:
       '타임존 (예: Asia/Seoul). 미지정 시 서버 기본 타임존 사용 (KST)',
+    example: 'Asia/Seoul',
   })
   @IsString()
   @IsOptional()
