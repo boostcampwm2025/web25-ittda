@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
   UnauthorizedException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
@@ -13,6 +14,7 @@ import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
 import { PostMedia, PostMediaKind } from './entity/post-media.entity';
+import { PostDraft } from './entity/post-draft.entity';
 import { User } from '@/modules/user/entity/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
@@ -25,6 +27,7 @@ import { validateBlocks } from './validator/blocks.validator';
 import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
+import { PresenceService } from './collab/presence.service';
 
 @Injectable()
 export class PostService {
@@ -35,12 +38,15 @@ export class PostService {
     private readonly postBlockRepository: Repository<PostBlock>,
     @InjectRepository(PostContributor)
     private readonly postContributorRepository: Repository<PostContributor>,
+    @InjectRepository(PostDraft)
+    private readonly postDraftRepository: Repository<PostDraft>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
+    private readonly presenceService: PresenceService,
   ) {}
 
   /**
@@ -55,6 +61,24 @@ export class PostService {
       where: { id: ownerUserId },
     });
     if (!owner) throw new UnauthorizedException('Owner not found');
+
+    if (dto.scope === PostScope.GROUP && dto.groupId) {
+      const activeDraft = await this.postDraftRepository.findOne({
+        where: { groupId: dto.groupId, isActive: true },
+        select: { id: true },
+      });
+      if (activeDraft) {
+        const member = this.presenceService.getMemberByActor(
+          activeDraft.id,
+          ownerUserId,
+        );
+        if (member) {
+          throw new ConflictException(
+            'Draft participant must publish via draft.',
+          );
+        }
+      }
+    }
 
     if (dto.scope === PostScope.GROUP && !dto.groupId) {
       throw new BadRequestException('groupId is required when scope=GROUP');
