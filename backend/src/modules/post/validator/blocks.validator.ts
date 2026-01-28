@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 
 type ValidateBlocksOptions = {
@@ -93,7 +94,12 @@ function validateImageMediaIds(blocks: BlockDto[]) {
     if (hasNonString) {
       throw new BadRequestException('IMAGE.mediaIds must be strings.');
     }
-    mediaIds.push(...(ids as string[]));
+    const idStrings = ids as string[];
+    const invalidUuid = idStrings.find((id) => !isUUID(id));
+    if (invalidUuid) {
+      throw new BadRequestException('IMAGE.mediaIds must be UUIDs.');
+    }
+    mediaIds.push(...idStrings);
   }
 
   if (mediaIds.length === 0) return;
