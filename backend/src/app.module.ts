@@ -14,6 +14,7 @@ import { FeedModule } from './modules/feed/feed.module';
 import { MyPageModule } from './modules/mypage/mypage.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { SearchModule } from './modules/search/search.module';
+import { MapModule } from './modules/map/map.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { SearchModule } from './modules/search/search.module';
     MyPageModule,
     StatsModule,
     SearchModule,
+    MapModule,
   ],
   controllers: [AppController],
   providers: [AppService],
