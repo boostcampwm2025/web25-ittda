@@ -37,7 +37,7 @@ export const useMediaUpload = () => {
           uploadFileToStorage(
             item.uploadUrl,
             files[index],
-            fileInfos[index].dimensions,
+            //fileInfos[index].dimensions,
           ),
         ),
       );

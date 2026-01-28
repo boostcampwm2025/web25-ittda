@@ -26,7 +26,7 @@ export const postMediaPresign = async (files: PresignRequestFile[]) => {
 export const uploadFileToStorage = async (
   uploadUrl: string,
   file: File,
-  dimensions: { width: number; height: number },
+  //dimensions: { width: number; height: number },
 ) => {
   const response = await fetch(uploadUrl, {
     method: 'PUT',
