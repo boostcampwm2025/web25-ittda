@@ -16,6 +16,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { MediaAsset, MediaAssetStatus } from './entity/media-asset.entity';
 import { PostDraftMedia } from '@/modules/post/entity/post-draft-media.entity';
 import { PostDraft } from '@/modules/post/entity/post-draft.entity';
+import { PostMedia } from '@/modules/post/entity/post-media.entity';
+import { Post } from '@/modules/post/entity/post.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import type { PresignFileRequestDto } from './dto/presign-media.dto';
 
@@ -40,6 +42,10 @@ export class MediaService {
     private readonly postDraftMediaRepository: Repository<PostDraftMedia>,
     @InjectRepository(PostDraft)
     private readonly postDraftRepository: Repository<PostDraft>,
+    @InjectRepository(PostMedia)
+    private readonly postMediaRepository: Repository<PostMedia>,
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
   ) {
@@ -68,6 +74,7 @@ export class MediaService {
     files: PresignFileRequestDto[],
   ) {
     // TODO: presign 단계에서는 요청 값 기반 검증만 가능함(실제 파일은 complete에서 검증).
+    // 추후 PUT -> POST 전환 시점에 contentType/size 재검증 로직 추가 필요.
     files.forEach((file) => {
       if (!this.allowedContentTypes.has(file.contentType)) {
         throw new BadRequestException('Invalid contentType.');
@@ -125,6 +132,11 @@ export class MediaService {
     const draftAccess = draftId
       ? await this.getDraftMediaAccess(requesterId, draftId, mediaIds)
       : null;
+    // TODO: resolveUrls용 그룹 권한 조회 최적화 필요.
+    // - post_media -> posts -> group_members 조인을 한 번의 쿼리로 합치거나,
+    // - (requesterId, mediaIds) 기준으로 짧은 캐시를 두는 방식 고려.
+    // - mediaIds가 많을 때 쿼리 비용이 커질 수 있으니 제한/배치 처리도 검토.
+    const groupAccess = await this.getGroupMediaAccess(requesterId, mediaIds);
 
     const expiresAt = new Date(
       Date.now() + this.presignTtlSeconds * 1000,
@@ -144,7 +156,9 @@ export class MediaService {
         continue;
       }
       if (asset.ownerUserId !== requesterId) {
-        if (!draftAccess?.has(mediaId)) {
+        const allowByDraft = draftAccess?.has(mediaId);
+        const allowByGroup = groupAccess.has(mediaId);
+        if (!allowByDraft && !allowByGroup) {
           failed.push({ mediaId, reason: 'FORBIDDEN' });
           continue;
         }
@@ -175,13 +189,15 @@ export class MediaService {
       return { ok: false as const, reason: 'NOT_FOUND' as const };
     }
     if (asset.ownerUserId !== requesterId) {
-      if (!draftId) {
-        return { ok: false as const, reason: 'FORBIDDEN' as const };
-      }
-      const draftAccess = await this.getDraftMediaAccess(requesterId, draftId, [
-        mediaId,
-      ]);
-      if (!draftAccess?.has(mediaId)) {
+      const allowByDraft = draftId
+        ? (
+            await this.getDraftMediaAccess(requesterId, draftId, [mediaId])
+          )?.has(mediaId)
+        : false;
+      const allowByGroup = (
+        await this.getGroupMediaAccess(requesterId, [mediaId])
+      ).has(mediaId);
+      if (!allowByDraft && !allowByGroup) {
         return { ok: false as const, reason: 'FORBIDDEN' as const };
       }
     }
@@ -279,6 +295,68 @@ export class MediaService {
     return { successIds, failed };
   }
 
+  private async getDraftMediaAccess(
+    requesterId: string,
+    draftId: string,
+    mediaIds: string[],
+  ) {
+    const draft = await this.postDraftRepository.findOne({
+      where: { id: draftId, isActive: true },
+      select: { id: true, groupId: true },
+    });
+    if (!draft?.groupId) return null;
+
+    const member = await this.groupMemberRepository.findOne({
+      where: { groupId: draft.groupId, userId: requesterId },
+      select: { id: true },
+    });
+    if (!member) return null;
+
+    const links = await this.postDraftMediaRepository.find({
+      where: { draftId, mediaId: In(mediaIds) },
+      select: { mediaId: true },
+    });
+    return new Set(links.map((link) => link.mediaId));
+  }
+
+  private async getGroupMediaAccess(requesterId: string, mediaIds: string[]) {
+    const links = await this.postMediaRepository.find({
+      where: { mediaId: In(mediaIds) },
+      select: { mediaId: true, postId: true },
+    });
+    if (links.length === 0) return new Set<string>();
+
+    const postIds = Array.from(new Set(links.map((link) => link.postId)));
+    const posts = await this.postRepository.find({
+      where: postIds.map((id) => ({ id })),
+      select: { id: true, groupId: true },
+    });
+    const groupIds = Array.from(
+      new Set(posts.map((post) => post.groupId).filter(Boolean) as string[]),
+    );
+    if (groupIds.length === 0) return new Set<string>();
+
+    const members = await this.groupMemberRepository.find({
+      where: groupIds.map((groupId) => ({ groupId, userId: requesterId })),
+      select: { groupId: true },
+    });
+    const allowedGroupIds = new Set(members.map((member) => member.groupId));
+    if (allowedGroupIds.size === 0) return new Set<string>();
+
+    const allowedPostIds = new Set(
+      posts
+        .filter((post) => post.groupId && allowedGroupIds.has(post.groupId))
+        .map((post) => post.id),
+    );
+    const allowed = new Set<string>();
+    links.forEach((link) => {
+      if (allowedPostIds.has(link.postId)) {
+        allowed.add(link.mediaId);
+      }
+    });
+    return allowed;
+  }
+
   // 매일 오전 3시에 보류 중인 미디어 자산 정리
   @Cron('0 3 * * *')
   async cleanupPendingAssets() {
@@ -310,29 +388,5 @@ export class MediaService {
 
   private buildStorageKey(ownerUserId: string, mediaId: string) {
     return `media/${ownerUserId}/${mediaId}`;
-  }
-
-  private async getDraftMediaAccess(
-    requesterId: string,
-    draftId: string,
-    mediaIds: string[],
-  ) {
-    const draft = await this.postDraftRepository.findOne({
-      where: { id: draftId, isActive: true },
-      select: { id: true, groupId: true },
-    });
-    if (!draft?.groupId) return null;
-
-    const member = await this.groupMemberRepository.findOne({
-      where: { groupId: draft.groupId, userId: requesterId },
-      select: { id: true },
-    });
-    if (!member) return null;
-
-    const links = await this.postDraftMediaRepository.find({
-      where: { draftId, mediaId: In(mediaIds) },
-      select: { mediaId: true },
-    });
-    return new Set(links.map((link) => link.mediaId));
   }
 }
