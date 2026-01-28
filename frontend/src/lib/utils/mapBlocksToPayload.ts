@@ -1,7 +1,7 @@
-import { RecordBlock, RecordBlockType } from '../types/recordField';
+import { FieldType, RecordBlock, RecordBlockType } from '../types/recordField';
 
 //프론트 editor 내부 타입 → 서버용 대문자 타입 매핑
-const RecordFieldtypeMap: Record<string, RecordBlockType> = {
+export const RecordFieldtypeMap: Record<string, RecordBlockType> = {
   text: RecordBlockType.TEXT,
   content: RecordBlockType.TEXT,
   mood: RecordBlockType.MOOD,
@@ -14,6 +14,20 @@ const RecordFieldtypeMap: Record<string, RecordBlockType> = {
   photos: RecordBlockType.IMAGE,
   media: RecordBlockType.MEDIA,
   table: RecordBlockType.TABLE,
+};
+
+// 서버 타입 -> 프론트 에디터 타입
+export const ServerToFieldTypeMap: Record<string, FieldType> = {
+  TEXT: 'content',
+  MOOD: 'emotion',
+  TAG: 'tags',
+  RATING: 'rating',
+  DATE: 'date',
+  TIME: 'time',
+  LOCATION: 'location',
+  IMAGE: 'photos',
+  TABLE: 'table',
+  MEDIA: 'media',
 };
 
 /**

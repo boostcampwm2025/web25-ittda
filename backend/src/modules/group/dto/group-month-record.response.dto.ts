@@ -14,6 +14,14 @@ export class GroupMonthRecordResponseDto {
   @Expose()
   coverAssetId: string | null;
 
+  @ApiProperty({
+    description: '커버 이미지 소스 게시글 ID',
+    example: '123e4567-e89b-12d3-a456-426614174001',
+    nullable: true,
+  })
+  @Expose()
+  sourcePostId: string | null;
+
   @ApiProperty({ description: '해당 월의 전체 기록 수', example: 15 })
   @Expose()
   count: number;
@@ -32,4 +40,12 @@ export class GroupMonthRecordResponseDto {
   })
   @Expose()
   latestLocation: string | null;
+}
+
+export class PaginatedGroupMonthRecordResponseDto {
+  @ApiProperty({ type: [GroupMonthRecordResponseDto] })
+  items: GroupMonthRecordResponseDto[];
+
+  @ApiProperty({ description: '다음 페이지 커서 (YYYY-MM)', nullable: true })
+  nextCursor: string | null;
 }

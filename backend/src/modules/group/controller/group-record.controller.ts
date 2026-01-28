@@ -27,8 +27,9 @@ import {
 import { GetGroupDailyArchiveQueryDto } from '../dto/get-group-daily-archive.query.dto';
 import { GetGroupMonthImagesQueryDto } from '../dto/get-group-month-images.query.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
-import { GroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
+import { PaginatedGroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
 import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
+import { PaginatedGroupMonthCoverCandidateResponseDto } from '../dto/group-month-cover-candidates-response.dto';
 import { parseYearMonth } from '@/common/utils/parseDateValidator';
 
 @ApiTags('group-records')
@@ -66,7 +67,8 @@ export class GroupRecordController {
       groupId,
       year,
       month,
-      body.coverAssetId,
+      body.assetId,
+      body.sourcePostId,
     );
 
     return { data: result };
@@ -83,18 +85,21 @@ export class GroupRecordController {
     description: '그룹의 월별 기록 요약 목록을 조회합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
-  @ApiWrappedOkResponse({ type: GroupMonthRecordResponseDto, isArray: true })
+  @ApiWrappedOkResponse({ type: PaginatedGroupMonthRecordResponseDto })
   async getMonthlyArchive(
     @Param('groupId') groupId: string,
     @Query() query: GetGroupMonthlyArchiveQueryDto,
   ) {
-    const year = query.year ?? new Date().getFullYear();
+    const year = query.year; // optional
     const sort = query.sort ?? GroupArchiveSortEnum.LATEST;
+    const { cursor, limit = 12 } = query;
 
     const data = await this.groupRecordService.getMonthlyArchive(
       groupId,
-      year,
+      year as number,
       sort,
+      cursor,
+      Number(limit),
     );
 
     return { data };
@@ -138,17 +143,20 @@ export class GroupRecordController {
     description: '특정 월의 모든 기록에서 사용된 이미지 목록을 조회합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
-  @ApiWrappedOkResponse({ type: String, isArray: true })
+  @ApiWrappedOkResponse({ type: PaginatedGroupMonthCoverCandidateResponseDto })
   async getMonthImages(
     @Param('groupId') groupId: string,
     @Query() query: GetGroupMonthImagesQueryDto,
   ) {
-    const { year, month } = parseYearMonth(query.year);
+    const { yearMonth, cursor, limit = 20 } = query;
+    const { year, month } = parseYearMonth(yearMonth);
 
     const data = await this.groupRecordService.getMonthImages(
       groupId,
       year,
       month,
+      cursor,
+      Number(limit),
     );
 
     return { data };

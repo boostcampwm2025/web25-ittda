@@ -8,5 +8,13 @@ export class UpdateGroupMonthCoverDto {
   })
   @IsString()
   @IsNotEmpty()
-  coverAssetId: string;
+  assetId: string;
+
+  @ApiProperty({
+    description: '해당 Asset이 포함된 게시글 ID',
+    example: '123e4567-e89b-12d3-a456-426614174001',
+  })
+  @IsString()
+  @IsNotEmpty()
+  sourcePostId: string;
 }

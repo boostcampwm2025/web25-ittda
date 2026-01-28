@@ -134,7 +134,7 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
  * Google Maps JavaScript API의 Geocoder를 사용하여 좌표를 주소로 변환
  * (리퍼러 제한이 있는 API 키로도 작동)
  */
-async function reverseGeocodeAddress(
+export async function reverseGeocodeAddress(
   latitude: number,
   longitude: number,
 ): Promise<string> {
