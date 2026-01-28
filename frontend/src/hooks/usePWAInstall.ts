@@ -28,7 +28,9 @@ export function usePWAInstall() {
         try {
           const relatedApps = await (
             navigator as Navigator & {
-              getInstalledRelatedApps: () => Promise<Array<{ platform: string }>>;
+              getInstalledRelatedApps: () => Promise<
+                Array<{ platform: string }>
+              >;
             }
           ).getInstalledRelatedApps();
 
