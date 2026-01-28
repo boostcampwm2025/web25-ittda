@@ -17,6 +17,7 @@ import {
   PostMedia,
   PostMediaKind,
 } from '@/modules/post/entity/post-media.entity';
+import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
 import { UpdateGroupCoverResponseDto } from '../dto/update-group-cover.dto';
 import { GetGroupSettingsResponseDto } from '../dto/get-group-settings.dto';
 import { GetGroupMemberMeResponseDto } from '../dto/get-group-member-me.dto';
@@ -46,6 +47,9 @@ export class GroupManagementService {
 
     @InjectRepository(PostMedia)
     private readonly postMediaRepo: Repository<PostMedia>,
+
+    @InjectRepository(MediaAsset)
+    private readonly mediaAssetRepo: Repository<MediaAsset>,
   ) {}
 
   /** 멤버 초대 (ADMIN만 가능하도록 Controller/Guard에서 제한) */
@@ -425,7 +429,20 @@ export class GroupManagementService {
 
     // 4. 프로필 미디어 수정
     if (profileMediaId !== undefined) {
-      member.profileMediaId = profileMediaId;
+      if (profileMediaId === null) {
+        member.profileMediaId = null;
+      } else {
+        // 보안 강화: 해당 미디어가 유저 소유인지 확인
+        const media = await this.mediaAssetRepo.findOne({
+          where: { id: profileMediaId, ownerUserId: userId },
+        });
+        if (!media) {
+          throw new ForbiddenException(
+            '본인의 이미지만 프로필로 설정할 수 있습니다.',
+          );
+        }
+        member.profileMediaId = profileMediaId;
+      }
     }
 
     // 5. 저장

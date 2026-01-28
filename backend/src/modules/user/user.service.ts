@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from './entity/user.entity';
@@ -306,7 +306,15 @@ export class UserService {
     month: number,
     coverAssetId: string,
   ) {
-    // Upsert
+    // 1. 유효한 커버 후보인지 검증
+    const validAssets = await this.getMonthImages(userId, year, month);
+    if (!validAssets.includes(coverAssetId)) {
+      throw new ForbiddenException(
+        '해당 월의 아카이브에 포함된 이미지가 아니거나, 권한이 없습니다.',
+      );
+    }
+
+    // 2. Upsert
     const exist = await this.userMonthCoverRepo.findOne({
       where: { userId, year, month },
     });
