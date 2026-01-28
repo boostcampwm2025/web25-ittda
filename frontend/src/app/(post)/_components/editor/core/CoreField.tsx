@@ -1,5 +1,9 @@
 'use client';
-import { formatDateDot, getWeekdayFromDotString } from '@/lib/date';
+import {
+  formatDateDot,
+  formatDateISO,
+  getWeekdayFromDotString,
+} from '@/lib/date';
 import { convertTo12Hour } from '@/lib/utils/time';
 import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
@@ -15,11 +19,9 @@ interface DateProps {
 export const DateField = ({ date, onClick }: DateProps) => {
   const isDefault = !date.date;
   // 기본값 생성
-  const targetDate = isDefault
-    ? new Date()
-    : new Date(date.date.replace(/\./g, '-'));
+  const targetDate = isDefault ? formatDateISO(new Date()) : date.date;
 
-  const formattedDate = formatDateDot(targetDate);
+  const formattedDate = formatDateDot(new Date(targetDate));
   const dayName = getWeekdayFromDotString(formattedDate);
   return (
     <button
