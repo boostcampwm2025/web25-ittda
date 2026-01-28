@@ -1,3 +1,4 @@
+import { BlockValue, CreateRecordBlock } from '../types/record';
 import { FieldType, RecordBlock, RecordBlockType } from '../types/recordField';
 
 //프론트 editor 내부 타입 → 서버용 대문자 타입 매핑
@@ -32,21 +33,31 @@ export const ServerToFieldTypeMap: Record<string, FieldType> = {
 
 /**
  * 내부 editor용 block 배열을 서버 전송용 block 배열로 변환
- * block 내부 id 제거 및 type 서버 형태로 변환
  * @param blocks
- * @returns RecordBlock[]
+ * @param includeId - id 포함 여부 (Draft 저장 시 true)
+ * @returns CreateRecordBlock[]
  */
-export function mapBlocksToPayload(blocks: RecordBlock[]) {
+export function mapBlocksToPayload(
+  blocks: RecordBlock[],
+  includeId: boolean = false,
+): CreateRecordBlock[] {
   return blocks.map((block) => {
     const serverType = RecordFieldtypeMap[block.type];
     if (!serverType) {
       throw new Error(`Unknown block type: ${block.type}`);
     }
 
-    return {
+    const payloadBlock: CreateRecordBlock = {
       type: serverType,
-      value: block.value,
+      value: block.value as BlockValue,
       layout: block.layout,
     };
+
+    // draft인 경우에만 id 추가
+    if (includeId) {
+      payloadBlock.id = block.id;
+    }
+
+    return payloadBlock;
   });
 }

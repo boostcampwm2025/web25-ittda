@@ -83,11 +83,11 @@ export interface RecordSearchItem {
 }
 
 export type RecordScope = 'PERSONAL' | 'GROUP';
-export type CreateRecordBlock = Omit<RecordBlock, 'id'>;
+export type CreateRecordBlock = Omit<Block, 'id'> & { id?: string };
 
 export interface CreateRecordRequest {
   scope: RecordScope;
-  groupId?: string;
+  groupId?: string | null;
   title: string;
   thumbnailMediaId?: string;
   blocks: CreateRecordBlock[];
