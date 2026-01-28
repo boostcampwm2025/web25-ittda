@@ -32,6 +32,7 @@ export class MediaService {
   private readonly allowedContentTypes = new Set([
     'image/png',
     'image/jpeg',
+    'image/jpg',
     'image/webp',
   ]);
   private readonly pendingRetentionMs = 7 * 24 * 60 * 60 * 1000;

@@ -8,7 +8,7 @@ presign -> PUT 업로드 -> complete -> resolve 흐름을 수동으로 확인합
 - 액세스 토큰(`ACCESS_TOKEN`)
 
 ## 현재 정책
-- 허용 contentType: `image/png`, `image/jpeg`, `image/webp`
+- 허용 contentType: `image/png`, `image/jpeg`, `image/jpg`, `image/webp`
 - 최대 용량: 10MB
 - presign 요청 전에 프론트에서 `contentType`/`size` 선검증 권장
 - 향후 PUT → POST presign 전환으로 용량 제한을 더 엄격하게 할 계획
