@@ -25,7 +25,7 @@ interface RequestWithUser extends Request {
 }
 
 @ApiTags('stats')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @UseGuards(JwtAuthGuard)
 @Controller({
   path: 'stats',

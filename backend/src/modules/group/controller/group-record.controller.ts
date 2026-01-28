@@ -32,7 +32,7 @@ import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto'
 import { parseYearMonth } from '@/common/utils/parseDateValidator';
 
 @ApiTags('group-records')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @Controller({
   path: 'groups',
   version: '1',

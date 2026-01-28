@@ -28,7 +28,7 @@ import {
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 
 @ApiTags('groups')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @Controller({
   path: 'groups',
   version: '1',
