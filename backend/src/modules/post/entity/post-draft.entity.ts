@@ -19,7 +19,7 @@ export class PostDraft {
   @Column({ name: 'group_id', type: 'uuid' })
   groupId: string;
 
-  @ManyToOne(() => Group)
+  @ManyToOne(() => Group, { onDelete: 'CASCADE', onUpdate: 'NO ACTION' })
   @JoinColumn({ name: 'group_id' })
   group: Group;
 

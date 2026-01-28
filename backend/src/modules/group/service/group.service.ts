@@ -96,6 +96,7 @@ export class GroupService {
       throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
     }
 
+    // TODO: 그룹 삭제 시 post_drafts는 CASCADE 대신 서비스 로직에서 정리(soft delete 고려).
     await this.groupRepo.remove(group);
   }
 
