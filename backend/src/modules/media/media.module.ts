@@ -9,6 +9,7 @@ import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
+import { User } from '@/modules/user/entity/user.entity';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { GroupMember } from '@/modules/group/entity/group_member.entity';
       PostMedia,
       Post,
       GroupMember,
+      User,
     ]),
   ],
   controllers: [MediaController],

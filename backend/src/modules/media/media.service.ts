@@ -19,6 +19,7 @@ import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
+import { User } from '@/modules/user/entity/user.entity';
 import type { PresignFileRequestDto } from './dto/presign-media.dto';
 
 @Injectable()
@@ -48,6 +49,8 @@ export class MediaService {
     private readonly postRepository: Repository<Post>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {
     const endpoint = this.configService.get<string>('S3_ENDPOINT');
     const region = this.configService.get<string>('S3_REGION') ?? 'us-east-1';
@@ -137,6 +140,7 @@ export class MediaService {
     // - (requesterId, mediaIds) 기준으로 짧은 캐시를 두는 방식 고려.
     // - mediaIds가 많을 때 쿼리 비용이 커질 수 있으니 제한/배치 처리도 검토.
     const groupAccess = await this.getGroupMediaAccess(requesterId, mediaIds);
+    const publicProfileAccess = await this.getPublicProfileAccess(mediaIds);
 
     const expiresAt = new Date(
       Date.now() + this.presignTtlSeconds * 1000,
@@ -158,7 +162,8 @@ export class MediaService {
       if (asset.ownerUserId !== requesterId) {
         const allowByDraft = draftAccess?.has(mediaId);
         const allowByGroup = groupAccess.has(mediaId);
-        if (!allowByDraft && !allowByGroup) {
+        const allowByProfile = publicProfileAccess.has(mediaId);
+        if (!allowByDraft && !allowByGroup && !allowByProfile) {
           failed.push({ mediaId, reason: 'FORBIDDEN' });
           continue;
         }
@@ -197,7 +202,10 @@ export class MediaService {
       const allowByGroup = (
         await this.getGroupMediaAccess(requesterId, [mediaId])
       ).has(mediaId);
-      if (!allowByDraft && !allowByGroup) {
+      const allowByProfile = (await this.getPublicProfileAccess([mediaId])).has(
+        mediaId,
+      );
+      if (!allowByDraft && !allowByGroup && !allowByProfile) {
         return { ok: false as const, reason: 'FORBIDDEN' as const };
       }
     }
@@ -353,6 +361,28 @@ export class MediaService {
       if (allowedPostIds.has(link.postId)) {
         allowed.add(link.mediaId);
       }
+    });
+    return allowed;
+  }
+
+  private async getPublicProfileAccess(mediaIds: string[]) {
+    if (mediaIds.length === 0) return new Set<string>();
+    const [users, members] = await Promise.all([
+      this.userRepository.find({
+        where: { profileImageId: In(mediaIds) },
+        select: { profileImageId: true },
+      }),
+      this.groupMemberRepository.find({
+        where: { profileMediaId: In(mediaIds) },
+        select: { profileMediaId: true },
+      }),
+    ]);
+    const allowed = new Set<string>();
+    users.forEach((user) => {
+      if (user.profileImageId) allowed.add(user.profileImageId);
+    });
+    members.forEach((member) => {
+      if (member.profileMediaId) allowed.add(member.profileMediaId);
     });
     return allowed;
   }
