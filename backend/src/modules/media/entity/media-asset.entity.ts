@@ -35,6 +35,12 @@ export class MediaAsset {
   @Column({ type: 'int', nullable: true })
   size?: number;
 
+  @Column({ type: 'int', nullable: true })
+  width?: number;
+
+  @Column({ type: 'int', nullable: true })
+  height?: number;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

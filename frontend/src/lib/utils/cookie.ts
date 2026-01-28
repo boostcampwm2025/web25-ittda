@@ -65,7 +65,7 @@ export function getCookieFromString(
   }
 
   return null;
-}
+} // 서버에서 쿠키를 읽으려면 next/headers 모듈을 사용
 
 /**
  * 쿠키를 삭제

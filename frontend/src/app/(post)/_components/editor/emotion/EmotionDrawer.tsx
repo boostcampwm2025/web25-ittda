@@ -15,7 +15,7 @@ interface EmotionDrawerProps {
   onClose: () => void;
   isOpen: boolean;
   onSelect: (emotion: string) => void;
-  selectedEmotion: MoodValue | null;
+  selectedEmotion: MoodValue | string[] | null;
   mode?: 'edit' | 'search';
   onReset?: () => void;
 }
@@ -45,7 +45,10 @@ export default function EmotionDrawer({
 
           <div className="grid grid-cols-5 gap-4 mb-8">
             {EMOTIONS.map((emo: Emotion) => {
-              const isSelected = selectedEmotion?.mood === emo.label;
+              const isSelected =
+                selectedEmotion &&
+                !Array.isArray(selectedEmotion) &&
+                (selectedEmotion as MoodValue).mood === emo.label;
 
               return (
                 <button

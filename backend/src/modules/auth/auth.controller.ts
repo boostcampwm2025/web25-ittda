@@ -10,11 +10,20 @@ import {
   NotFoundException,
   Body,
   Headers,
+  HttpCode,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './jwt/jwt.guard';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiNoContentResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 
 import type { Request, Response } from 'express';
 import type { OAuthUserType } from './auth.type';
@@ -28,6 +37,7 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+@ApiTags('auth')
 @Controller({
   path: 'auth',
   version: '1',
@@ -44,10 +54,18 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
+  @ApiOperation({
+    summary: 'Google 로그인',
+    description: 'Google OAuth2 로그인 페이지로 리다이렉트합니다.',
+  })
   async googleLogin() {}
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
+  @ApiOperation({
+    summary: 'Google 로그인 콜백',
+    description: 'Google 인증 완료 후 호출되며, FE로 리다이렉트합니다.',
+  })
   async googleCallback(
     @Req() req: Request & { user: OAuthUserType },
     @Res() res: Response,
@@ -72,10 +90,18 @@ export class AuthController {
 
   @Get('kakao')
   @UseGuards(AuthGuard('kakao'))
+  @ApiOperation({
+    summary: 'Kakao 로그인',
+    description: 'Kakao OAuth2 로그인 페이지로 리다이렉트합니다.',
+  })
   async kakaoLogin() {}
 
   @Get('kakao/callback')
   @UseGuards(AuthGuard('kakao'))
+  @ApiOperation({
+    summary: 'Kakao 로그인 콜백',
+    description: 'Kakao 인증 완료 후 호출되며, FE로 리다이렉트합니다.',
+  })
   async kakaoCallback(
     @Req() req: Request & { user: OAuthUserType },
     @Res() res: Response,
@@ -97,6 +123,22 @@ export class AuthController {
   }
 
   @Post('exchange')
+  @ApiOperation({
+    summary: '인증 코드 교환',
+    description:
+      'OAuth 콜백에서 받은 코드를 Access Token과 Refresh Token으로 교환합니다.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { code: { type: 'string', description: '인증 코드' } },
+      required: ['code'],
+    },
+  })
+  @HttpCode(204)
+  @ApiNoContentResponse({
+    description: '인증 성공 (토큰은 쿠키 및 헤더에 설정됨)',
+  })
   exchangeCode(
     @Body('code') code: string,
     @Res({ passthrough: true }) res: Response,
@@ -115,17 +157,22 @@ export class AuthController {
     });
 
     // 응답 헤더에 Access Token 설정
-    // 표준적인 방법은 Authorization 헤더에 Bearer 스키마를 사용하는 것입니다.
     res.set('Authorization', `Bearer ${accessToken}`);
-
-    // 만약 클라이언트(브라우저)에서 이 헤더에 접근해야 한다면 Access-Control-Expose-Headers 설정이 필요할 수 있습니다.
     res.set('Access-Control-Expose-Headers', 'Authorization');
 
-    // Body는 비워서 보냅니다.
     return;
   }
 
   @Post('refresh')
+  @ApiOperation({
+    summary: 'Access Token 갱신',
+    description:
+      'Refresh Token 쿠키를 사용하여 새로운 Access Token을 발급받습니다.',
+  })
+  @HttpCode(204)
+  @ApiNoContentResponse({
+    description: '갱신 성공 (새 토큰은 쿠키 및 헤더에 설정됨)',
+  })
   async refresh(
     @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
@@ -148,14 +195,9 @@ export class AuthController {
         maxAge: 1000 * 60 * 60 * 24 * 14,
       });
 
-      // 응답 헤더에 Access Token 설정
-      // 표준적인 방법은 Authorization 헤더에 Bearer 스키마를 사용하는 것입니다.
       res.set('Authorization', `Bearer ${accessToken}`);
-
-      // 만약 클라이언트(브라우저)에서 이 헤더에 접근해야 한다면 Access-Control-Expose-Headers 설정이 필요할 수 있습니다.
       res.set('Access-Control-Expose-Headers', 'Authorization');
 
-      // Body는 비워서 보냅니다.
       return;
     } catch (error) {
       // 재발급 실패시 refreshToken 쿠키 삭제
@@ -166,6 +208,13 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearerAuth')
+  @ApiOperation({
+    summary: '로그아웃',
+    description: '세션을 종료하고 Refresh Token 쿠키를 삭제합니다.',
+  })
+  @HttpCode(204)
+  @ApiNoContentResponse({ description: '로그아웃 성공' })
   async logout(
     @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
@@ -175,14 +224,18 @@ export class AuthController {
     res.clearCookie('refreshToken', {
       path: '/',
     });
-    // res.clearCookie를 할 때,
-    // 쿠키를 생성했을 때와 동일한 domain, path 옵션을 주어야
-    // 브라우저에서 정상적으로 삭제
 
     return;
   }
 
   @Post('dev/token')
+  @ApiOperation({
+    summary: '개발용 토큰 발급',
+    description:
+      '개발 또는 테스트 환경에서 특정 유저의 토큰을 간편하게 발급받습니다.',
+  })
+  @ApiBody({ type: DevTokenRequestDto })
+  @ApiWrappedOkResponse({ type: Object })
   async issueDevToken(
     @Body() dto: DevTokenRequestDto,
     @Headers('x-dev-key') devKey?: string,
