@@ -3,8 +3,13 @@
 import { useGroupEdit } from './GroupEditContext';
 import Back from '@/components/Back';
 import { useApiPatch } from '@/hooks/useApi';
-import { GroupEditResponse } from '@/lib/types/groupResponse';
+import {
+  GroupEditResponse,
+  GroupProfileCoverResponse,
+} from '@/lib/types/groupResponse';
 import { useQueryClient } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface GroupEditHeaderActionsProps {
@@ -16,25 +21,40 @@ export default function GroupEditHeaderActions({
 }: GroupEditHeaderActionsProps) {
   const { getEditData } = useGroupEdit();
   const queryClient = useQueryClient();
+  const [isPending, setIsPending] = useState(false);
 
-  const { mutate: updateGroup } = useApiPatch<GroupEditResponse>(
+  const { mutateAsync: updateGroup } = useApiPatch<GroupEditResponse>(
     `/api/groups/${groupId}`,
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-        toast.success('수정되었습니다.');
-      },
-    },
   );
+
+  const { mutateAsync: updateGroupCover } =
+    useApiPatch<GroupProfileCoverResponse>(`/api/groups/${groupId}/cover`);
 
   const handleSave = async () => {
     const editData = getEditData();
+    const tasks = [];
+    setIsPending(true);
 
-    updateGroup({
-      groupName: editData.groupName,
-      coverAssetId: editData.groupThumbnail?.assetId,
-      postId: editData.groupThumbnail?.postId,
-    });
+    try {
+      tasks.push(updateGroup({ groupName: editData.groupName }));
+
+      if (editData.groupThumbnail) {
+        tasks.push(
+          updateGroupCover({
+            assetId: editData.groupThumbnail.assetId,
+            sourcePostId: editData.groupThumbnail.postId,
+          }),
+        );
+      }
+
+      await Promise.all(tasks);
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      toast.success('수정되었습니다.');
+    } catch (error) {
+      console.error('update failed', error);
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -45,9 +65,10 @@ export default function GroupEditHeaderActions({
       </h2>
       <button
         onClick={handleSave}
+        disabled={isPending}
         className="cursor-pointer font-bold text-sm text-[#10B981] active:scale-95 transition-all"
       >
-        저장
+        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '저장'}
       </button>
     </>
   );
