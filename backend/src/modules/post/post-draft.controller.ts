@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { User } from '@/common/decorators/user.decorator';
@@ -18,6 +18,7 @@ import { PostPublishService } from './post-publish.service';
 import { PostService } from './post.service';
 import { PublishDraftDto } from './dto/publish-draft.dto';
 import { DraftSnapshotResponseDto } from './dto/post-draft-response.dto';
+import { PostDetailDto } from './dto/post-detail.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 
 @UseGuards(JwtAuthGuard)
@@ -32,6 +33,12 @@ export class PostDraftController {
 
   @Get('posts/new')
   @Redirect('', 302)
+  @ApiOperation({
+    summary: '그룹 새 게시글 작성 진입',
+    description:
+      '활성화된 드래프트가 있으면 해당 드래프트로, 없으면 새로 생성하여 드래프트 편집 URL로 리다이렉트합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiResponse({
     status: 302,
     description: 'Redirects to the active draft edit URL.',
@@ -58,6 +65,12 @@ export class PostDraftController {
   }
 
   @Get('drafts/:draftId')
+  @ApiOperation({
+    summary: '그룹 드래프트 스냅샷 조회',
+    description: '특정 드래프트의 최신 스냅샷과 버전을 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiParam({ name: 'draftId', description: '드래프트 ID' })
   @ApiWrappedOkResponse({
     type: DraftSnapshotResponseDto,
     description: 'Returns draft snapshot with version metadata.',
@@ -84,6 +97,12 @@ export class PostDraftController {
   }
 
   @Post('posts/publish')
+  @ApiOperation({
+    summary: '드래프트 발행',
+    description: '완성된 드래프트를 실제 게시글로 변환하여 발행합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: PostDetailDto })
   async publishGroupDraft(
     @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,

@@ -33,7 +33,7 @@ import type { MyJwtPayload } from '../auth/auth.type';
 
 // 내 기록함 포함 사용자 관련 api
 @ApiTags('user')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @UseGuards(JwtAuthGuard)
 @Controller({
   path: 'user',

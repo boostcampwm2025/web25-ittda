@@ -9,6 +9,8 @@ import cookieParser from 'cookie-parser';
 
 import 'reflect-metadata';
 
+import type { SwaggerCustomOptions } from '@nestjs/swagger';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -52,15 +54,26 @@ async function bootstrap() {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
+        in: 'header',
       },
       'bearerAuth',
+      // 이 이름은 컨트롤러의 @ApiBearerAuth('bearerAuth')와 일치해야 함
     )
     .build();
 
+  const swaggerCustomOptions: SwaggerCustomOptions = {
+    swaggerOptions: {
+      persistAuthorization: true,
+      // 페이지를 새로고침해도 입력한 토큰이 날아가지 않고 유지
+    },
+  };
+
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  swaggerDocument.security = [{ bearerAuth: [] }];
-  SwaggerModule.setup('docs', app, swaggerDocument);
+  swaggerDocument.security = [{ bearerAuth: [] }]; // 모든 API에 전역적으로 bearerAuth 인증을 적용하라
+  SwaggerModule.setup('docs', app, swaggerDocument, swaggerCustomOptions);
 
   await app.listen(process.env.PORT ?? 4000); // next랑 3000겹쳐서 4000함
 }
 void bootstrap();
+// swaggerDocument.security 설정을 지우고, 인증이 필요한 컨트롤러에만 @ApiBearerAuth()를 붙입니다. (추천: 직관적임)
+// 지금은 편의상 전역적으로 .addSecurityRequirements('bearerAuth') 설정한 상태입니다.

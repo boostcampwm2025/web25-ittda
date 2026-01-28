@@ -33,7 +33,7 @@ import { PaginatedGroupMonthCoverCandidateResponseDto } from '../dto/group-month
 import { parseYearMonth } from '@/common/utils/parseDateValidator';
 
 @ApiTags('group-records')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @Controller({
   path: 'groups',
   version: '1',
