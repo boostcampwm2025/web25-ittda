@@ -10,7 +10,7 @@ export const FIELD_META: Record<
   date: { isSingle: true, requiresDrawer: true },
   time: { isSingle: true, requiresDrawer: true },
   rating: { isSingle: true, requiresDrawer: true },
-  location: { isSingle: true, requiresDrawer: true },
+  location: { isSingle: true, requiresDrawer: false },
   tags: { isSingle: true, requiresDrawer: true },
   photos: { isSingle: true, requiresDrawer: true },
   media: { isSingle: true, requiresDrawer: true },
