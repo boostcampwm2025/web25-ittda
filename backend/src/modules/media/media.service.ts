@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
+import { In, LessThan, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import {
   HeadObjectCommand,
@@ -14,6 +14,9 @@ import { Cron } from '@nestjs/schedule';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { MediaAsset, MediaAssetStatus } from './entity/media-asset.entity';
+import { PostDraftMedia } from '@/modules/post/entity/post-draft-media.entity';
+import { PostDraft } from '@/modules/post/entity/post-draft.entity';
+import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import type { PresignFileRequestDto } from './dto/presign-media.dto';
 
 @Injectable()
@@ -33,6 +36,12 @@ export class MediaService {
     private readonly configService: ConfigService,
     @InjectRepository(MediaAsset)
     private readonly mediaAssetRepository: Repository<MediaAsset>,
+    @InjectRepository(PostDraftMedia)
+    private readonly postDraftMediaRepository: Repository<PostDraftMedia>,
+    @InjectRepository(PostDraft)
+    private readonly postDraftRepository: Repository<PostDraft>,
+    @InjectRepository(GroupMember)
+    private readonly groupMemberRepository: Repository<GroupMember>,
   ) {
     const endpoint = this.configService.get<string>('S3_ENDPOINT');
     const region = this.configService.get<string>('S3_REGION') ?? 'us-east-1';
@@ -108,11 +117,14 @@ export class MediaService {
     return { items };
   }
 
-  async resolveUrls(ownerUserId: string, mediaIds: string[]) {
+  async resolveUrls(requesterId: string, mediaIds: string[], draftId?: string) {
     const assets = await this.mediaAssetRepository.find({
       where: mediaIds.map((id) => ({ id })),
     });
     const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
+    const draftAccess = draftId
+      ? await this.getDraftMediaAccess(requesterId, draftId, mediaIds)
+      : null;
 
     const expiresAt = new Date(
       Date.now() + this.presignTtlSeconds * 1000,
@@ -131,9 +143,11 @@ export class MediaService {
         failed.push({ mediaId, reason: 'NOT_FOUND' });
         continue;
       }
-      if (asset.ownerUserId !== ownerUserId) {
-        failed.push({ mediaId, reason: 'FORBIDDEN' });
-        continue;
+      if (asset.ownerUserId !== requesterId) {
+        if (!draftAccess?.has(mediaId)) {
+          failed.push({ mediaId, reason: 'FORBIDDEN' });
+          continue;
+        }
       }
       if (asset.status !== MediaAssetStatus.READY) {
         failed.push({ mediaId, reason: 'NOT_READY' });
@@ -153,15 +167,23 @@ export class MediaService {
     return { items, failed };
   }
 
-  async resolveUrl(ownerUserId: string, mediaId: string) {
+  async resolveUrl(requesterId: string, mediaId: string, draftId?: string) {
     const asset = await this.mediaAssetRepository.findOne({
       where: { id: mediaId },
     });
     if (!asset) {
       return { ok: false as const, reason: 'NOT_FOUND' as const };
     }
-    if (asset.ownerUserId !== ownerUserId) {
-      return { ok: false as const, reason: 'FORBIDDEN' as const };
+    if (asset.ownerUserId !== requesterId) {
+      if (!draftId) {
+        return { ok: false as const, reason: 'FORBIDDEN' as const };
+      }
+      const draftAccess = await this.getDraftMediaAccess(requesterId, draftId, [
+        mediaId,
+      ]);
+      if (!draftAccess?.has(mediaId)) {
+        return { ok: false as const, reason: 'FORBIDDEN' as const };
+      }
     }
     if (asset.status !== MediaAssetStatus.READY) {
       return { ok: false as const, reason: 'NOT_READY' as const };
@@ -288,5 +310,29 @@ export class MediaService {
 
   private buildStorageKey(ownerUserId: string, mediaId: string) {
     return `media/${ownerUserId}/${mediaId}`;
+  }
+
+  private async getDraftMediaAccess(
+    requesterId: string,
+    draftId: string,
+    mediaIds: string[],
+  ) {
+    const draft = await this.postDraftRepository.findOne({
+      where: { id: draftId, isActive: true },
+      select: { id: true, groupId: true },
+    });
+    if (!draft?.groupId) return null;
+
+    const member = await this.groupMemberRepository.findOne({
+      where: { groupId: draft.groupId, userId: requesterId },
+      select: { id: true },
+    });
+    if (!member) return null;
+
+    const links = await this.postDraftMediaRepository.find({
+      where: { draftId, mediaId: In(mediaIds) },
+      select: { mediaId: true },
+    });
+    return new Set(links.map((link) => link.mediaId));
   }
 }

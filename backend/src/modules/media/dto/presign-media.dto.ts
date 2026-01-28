@@ -6,10 +6,11 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
   ValidateNested,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PresignFileRequestDto {
   @ApiProperty({ example: 'image/png' })
@@ -84,6 +85,11 @@ export class MediaResolveRequestDto {
   @ArrayMinSize(1)
   @IsString({ each: true })
   mediaIds: string[];
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  draftId?: string;
 }
 
 export class MediaResolveItemDto {

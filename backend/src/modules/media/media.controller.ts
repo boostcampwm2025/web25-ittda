@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -81,7 +82,11 @@ export class MediaController {
       throw new UnauthorizedException('Access token is required.');
     }
 
-    return this.mediaService.resolveUrls(requesterId, body.mediaIds);
+    return this.mediaService.resolveUrls(
+      requesterId,
+      body.mediaIds,
+      body.draftId,
+    );
   }
 
   @Get(':mediaId/url')
@@ -92,13 +97,18 @@ export class MediaController {
   async resolveSingle(
     @User() user: MyJwtPayload,
     @Param('mediaId') mediaId: string,
+    @Query('draftId') draftId?: string,
   ) {
     const requesterId = user?.sub;
     if (!requesterId) {
       throw new UnauthorizedException('Access token is required.');
     }
 
-    const result = await this.mediaService.resolveUrl(requesterId, mediaId);
+    const result = await this.mediaService.resolveUrl(
+      requesterId,
+      mediaId,
+      draftId,
+    );
     if (!result.ok) {
       if (result.reason === 'NOT_FOUND') {
         throw new NotFoundException('Media not found.');
