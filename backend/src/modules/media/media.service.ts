@@ -18,6 +18,7 @@ import { PostDraftMedia } from '@/modules/post/entity/post-draft-media.entity';
 import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
+import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/entity/user.entity';
 import type { PresignFileRequestDto } from './dto/presign-media.dto';
@@ -47,6 +48,8 @@ export class MediaService {
     private readonly postMediaRepository: Repository<PostMedia>,
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+    @InjectRepository(PostContributor)
+    private readonly postContributorRepository: Repository<PostContributor>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
     @InjectRepository(User)
@@ -140,6 +143,10 @@ export class MediaService {
     // - (requesterId, mediaIds) 기준으로 짧은 캐시를 두는 방식 고려.
     // - mediaIds가 많을 때 쿼리 비용이 커질 수 있으니 제한/배치 처리도 검토.
     const groupAccess = await this.getGroupMediaAccess(requesterId, mediaIds);
+    const contributorAccess = await this.getContributorMediaAccess(
+      requesterId,
+      mediaIds,
+    );
     const publicProfileAccess = await this.getPublicProfileAccess(mediaIds);
 
     const expiresAt = new Date(
@@ -162,8 +169,14 @@ export class MediaService {
       if (asset.ownerUserId !== requesterId) {
         const allowByDraft = draftAccess?.has(mediaId);
         const allowByGroup = groupAccess.has(mediaId);
+        const allowByContributor = contributorAccess.has(mediaId);
         const allowByProfile = publicProfileAccess.has(mediaId);
-        if (!allowByDraft && !allowByGroup && !allowByProfile) {
+        if (
+          !allowByDraft &&
+          !allowByGroup &&
+          !allowByContributor &&
+          !allowByProfile
+        ) {
           failed.push({ mediaId, reason: 'FORBIDDEN' });
           continue;
         }
@@ -202,10 +215,18 @@ export class MediaService {
       const allowByGroup = (
         await this.getGroupMediaAccess(requesterId, [mediaId])
       ).has(mediaId);
+      const allowByContributor = (
+        await this.getContributorMediaAccess(requesterId, [mediaId])
+      ).has(mediaId);
       const allowByProfile = (await this.getPublicProfileAccess([mediaId])).has(
         mediaId,
       );
-      if (!allowByDraft && !allowByGroup && !allowByProfile) {
+      if (
+        !allowByDraft &&
+        !allowByGroup &&
+        !allowByContributor &&
+        !allowByProfile
+      ) {
         return { ok: false as const, reason: 'FORBIDDEN' as const };
       }
     }
@@ -356,6 +377,36 @@ export class MediaService {
         .filter((post) => post.groupId && allowedGroupIds.has(post.groupId))
         .map((post) => post.id),
     );
+    const allowed = new Set<string>();
+    links.forEach((link) => {
+      if (allowedPostIds.has(link.postId)) {
+        allowed.add(link.mediaId);
+      }
+    });
+    return allowed;
+  }
+
+  private async getContributorMediaAccess(
+    requesterId: string,
+    mediaIds: string[],
+  ) {
+    const links = await this.postMediaRepository.find({
+      where: { mediaId: In(mediaIds) },
+      select: { mediaId: true, postId: true },
+    });
+    if (links.length === 0) return new Set<string>();
+
+    const postIds = Array.from(new Set(links.map((link) => link.postId)));
+    const contributors = await this.postContributorRepository.find({
+      where: {
+        postId: In(postIds),
+        userId: requesterId,
+      },
+      select: { postId: true },
+    });
+    const allowedPostIds = new Set(contributors.map((c) => c.postId));
+    if (allowedPostIds.size === 0) return new Set<string>();
+
     const allowed = new Set<string>();
     links.forEach((link) => {
       if (allowedPostIds.has(link.postId)) {

@@ -8,6 +8,7 @@ import { PostDraftMedia } from '@/modules/post/entity/post-draft-media.entity';
 import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
+import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/entity/user.entity';
 
@@ -19,6 +20,7 @@ import { User } from '@/modules/user/entity/user.entity';
       PostDraft,
       PostMedia,
       Post,
+      PostContributor,
       GroupMember,
       User,
     ]),
