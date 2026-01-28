@@ -49,7 +49,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
           accessTokenExpires:
-            Date.now() + 2 * 60 * 1000 - Math.floor(Math.random() * 10000), // 서버 토큰 만료 시간보다 조금 이르게(14분) 잡아서 401 방지
+            Date.now() +
+            15 * 60 * 1000 -
+            60 * 1000 -
+            Math.floor(Math.random() * 10000), // 서버 토큰 만료 시간보다 조금 이르게(14분) 잡아서 401 방지
         };
       }
 
