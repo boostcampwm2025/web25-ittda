@@ -29,6 +29,7 @@ import { GetGroupMonthImagesQueryDto } from '../dto/get-group-month-images.query
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { PaginatedGroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
 import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
+import { PaginatedGroupMonthCoverCandidateResponseDto } from '../dto/group-month-cover-candidates-response.dto';
 import { parseYearMonth } from '@/common/utils/parseDateValidator';
 
 @ApiTags('group-records')
@@ -142,17 +143,20 @@ export class GroupRecordController {
     description: '특정 월의 모든 기록에서 사용된 이미지 목록을 조회합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
-  @ApiWrappedOkResponse({ type: String, isArray: true })
+  @ApiWrappedOkResponse({ type: PaginatedGroupMonthCoverCandidateResponseDto })
   async getMonthImages(
     @Param('groupId') groupId: string,
     @Query() query: GetGroupMonthImagesQueryDto,
   ) {
-    const { year, month } = parseYearMonth(query.yearMonth);
+    const { yearMonth, cursor, limit = 20 } = query;
+    const { year, month } = parseYearMonth(yearMonth);
 
     const data = await this.groupRecordService.getMonthImages(
       groupId,
       year,
       month,
+      cursor,
+      Number(limit),
     );
 
     return { data };

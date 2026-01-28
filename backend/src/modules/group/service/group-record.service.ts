@@ -18,6 +18,7 @@ import {
   PostMedia,
   PostMediaKind,
 } from '@/modules/post/entity/post-media.entity';
+import { PaginatedGroupMonthCoverCandidateResponseDto } from '../dto/group-month-cover-candidates-response.dto';
 
 @Injectable()
 export class GroupRecordService {
@@ -176,21 +177,27 @@ export class GroupRecordService {
     // 5. 페이지네이션 (Cursor)
     let startIndex = 0;
     if (cursor) {
-      startIndex = monthKeys.indexOf(cursor);
-      if (startIndex === -1)
+      const decodedCursor = Buffer.from(cursor, 'base64').toString('utf-8');
+      startIndex = monthKeys.indexOf(decodedCursor);
+      if (startIndex === -1) {
         startIndex = 0; // 커서를 못 찾으면 처음부터
-      else if (cursor === monthKeys[monthKeys.length - 1]) {
+      } else if (decodedCursor === monthKeys[monthKeys.length - 1]) {
         // 마지막이면 다음 페이지 없음
         return { items: [], nextCursor: null };
       } else {
-        // 커서 다음 요소부터 시작 (단, API 관례상 커서 포함 여부는 정의하기 나름인데 보통 미포함)
+        // 커서 다음 요소부터 시작
         startIndex += 1;
       }
     }
 
     const slicedKeys = monthKeys.slice(startIndex, startIndex + limit);
     const hasNext = monthKeys.length > startIndex + limit;
-    const nextCursor = hasNext ? slicedKeys[slicedKeys.length - 1] : null;
+    let nextCursor: string | null = null;
+
+    if (hasNext) {
+      const rawCursor = slicedKeys[slicedKeys.length - 1];
+      nextCursor = Buffer.from(rawCursor, 'utf-8').toString('base64');
+    }
 
     if (slicedKeys.length === 0) {
       return { items: [], nextCursor: null };
@@ -420,7 +427,9 @@ export class GroupRecordService {
     groupId: string,
     year: number,
     month: number,
-  ): Promise<string[]> {
+    cursor?: string,
+    limit: number = 20,
+  ): Promise<PaginatedGroupMonthCoverCandidateResponseDto> {
     // 1. 그룹 존재 확인
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
@@ -431,38 +440,71 @@ export class GroupRecordService {
     }
 
     // 2. 조회 기간 설정
-    const from = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const from = DateTime.fromObject({ year, month, day: 1 })
+      .setZone('Asia/Seoul')
+      .startOf('month');
     const to = from.endOf('month');
 
-    const fromDate = from.toJSDate();
-    const toDate = to.toJSDate();
-
-    // 3. 해당 월의 IMAGE 블록 조회 (Post와 JOIN)
+    // 3. IMAGE 블록 조회 (Pagination 적용)
     const qb = this.postBlockRepo.createQueryBuilder('b');
     qb.innerJoin('b.post', 'p');
+    qb.select(['b.id', 'b.value', 'p.id', 'p.eventAt']);
 
     qb.where('b.type = :type', { type: PostBlockType.IMAGE });
     qb.andWhere('p.groupId = :groupId', { groupId });
     qb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
-      fromDate,
-      toDate,
+      fromDate: from.toJSDate(),
+      toDate: to.toJSDate(),
     });
 
-    // 최신순
-    qb.orderBy('p.eventAt', 'DESC');
-
-    const blocks = await qb.getMany();
-
-    // 4. Asset IDs 추출
-    const assetIds: string[] = [];
-    for (const b of blocks) {
-      const val = b.value as { mediaIds?: string[] };
-      if (val.mediaIds) {
-        assetIds.push(...val.mediaIds);
+    // Cursor Pagination Logic
+    if (cursor) {
+      try {
+        const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+        const [eventAtStr, id] = decoded.split('__');
+        if (eventAtStr && id) {
+          qb.andWhere(
+            '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND b.id < :cursorId))',
+            {
+              cursorEventAt: new Date(eventAtStr),
+              cursorId: id,
+            },
+          );
+        }
+      } catch {
+        // Ignore invalid cursor
       }
     }
 
-    return assetIds;
+    qb.orderBy('p.eventAt', 'DESC');
+    qb.addOrderBy('b.id', 'DESC');
+    qb.take(limit + 1);
+
+    const blocks = await qb.getMany();
+
+    const hasNext = blocks.length > limit;
+    const items = blocks.slice(0, limit).flatMap((b) => {
+      const val = b.value as { mediaIds?: string[] };
+      const eventAt = b.post.eventAt;
+      if (!eventAt) return [];
+      return (val.mediaIds || []).map((assetId) => ({
+        assetId,
+        sourcePostId: b.post.id,
+        eventAt,
+      }));
+    });
+
+    let nextCursor: string | null = null;
+    if (hasNext) {
+      const lastBlock = blocks[limit - 1];
+      const lastEventAt = lastBlock.post.eventAt;
+      if (lastEventAt) {
+        const rawCursor = `${lastEventAt.toISOString()}__${lastBlock.id}`;
+        nextCursor = Buffer.from(rawCursor, 'utf-8').toString('base64');
+      }
+    }
+
+    return { items, nextCursor };
   }
 
   /**

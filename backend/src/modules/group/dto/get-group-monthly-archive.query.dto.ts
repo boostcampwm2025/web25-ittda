@@ -38,7 +38,11 @@ export class GetGroupMonthlyArchiveQueryDto {
   @IsOptional()
   sort?: GroupArchiveSortEnum;
 
-  @ApiProperty({ description: '페이지네이션 커서 (YYYY-MM)', required: false })
+  @ApiProperty({
+    description: '페이지네이션 커서 (Base64 인코딩)',
+    required: false,
+    example: 'WVlZWS1NTQ==',
+  })
   @IsString()
   @IsOptional()
   cursor?: string;
