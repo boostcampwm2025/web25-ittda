@@ -604,10 +604,10 @@ export function usePostEditorBlocks({
     });
   };
 
-  //지금해야할거
-  // 여기서 타입이 필드면 락 걸고 삭제하고 락 풀고
-  // 여기서 타입이 드로어라면, 바로 삭제만하고(삭제전에 락 검증해야할까?)
-  const removeBlock = (id: string, type?: string) => {
+  // TODO: 추후 고려해볼 사항
+  // 타입이 필드면 락 걸고 삭제하고 락 풀고
+  // 타입이 드로어라면, 바로 삭제만하고(삭제전에 락 검증해야할까?)
+  const removeBlock = (id: string) => {
     // 블록 타입 확인하여 메타데이터 적용 상태 업데이트
     const block = blocks.find((b) => b.id === id);
     if (block && pendingMetadata?.appliedMetadata) {

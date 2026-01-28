@@ -110,9 +110,10 @@ export default function PostEditor({
     const existingBlock = blocks.find((b) => b.type === 'location');
 
     if (existingBlock) {
-      // 블록이 이미 있으면 업데이트 후 커밋 + 락 해제
+      // 블록이 이미 있으면 업데이트
       updateFieldValue(locationData, existingBlock.id);
 
+      // 공동 기록인 경우에만 커밋 + 락 해제
       if (draftId) {
         applyPatch({
           type: 'BLOCK_SET_VALUE',
@@ -556,6 +557,7 @@ export default function PostEditor({
                 <div className="w-full flex flex-row gap-2 items-center">
                   {isLockedByOther && owner && (
                     <div>
+                      {/**TODO : 추후 유저 이미지 받아와서 추가 */}
                       <Image
                         src="/profile-ex.jpeg"
                         className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
