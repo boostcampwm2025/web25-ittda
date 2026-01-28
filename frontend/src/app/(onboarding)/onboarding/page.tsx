@@ -109,7 +109,7 @@ export default function OnboardingPage() {
 
         <Button
           onClick={nextStep}
-          className="w-full h-14 rounded-2xl text-lg font-bold shadow-sm bg-itta-black text-white"
+          className="w-full h-14 hover:bg-itta-black rounded-2xl text-lg font-bold shadow-sm bg-itta-black text-white"
         >
           {isLastStep ? '시작하기' : '다음'}
         </Button>
