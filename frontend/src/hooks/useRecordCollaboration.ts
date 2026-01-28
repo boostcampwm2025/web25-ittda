@@ -19,6 +19,7 @@ export function useRecordCollaboration(
   const { socket, sessionId: mySessionId } = useSocketStore();
   const router = useRouter();
   const versionRef = useRef(initialVersion);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     if (initialVersion > versionRef.current) {
@@ -154,17 +155,26 @@ export function useRecordCollaboration(
         window.location.reload();
       }, 2_000);
     });
-    socket.on('DRAFT_PUBLISHED', ({ postId }) => {
-      toast.success(
-        '공동 기록이 저장되었습니다.\n저장된 내용을 함께 확인할 수 있어요.',
-        {
-          duration: 3000,
-        },
-      );
 
+    socket.on('DRAFT_PUBLISH_STARTED', ({ draftId: id }) => {
+      if (id === draftId) setIsPublishing(true);
+    });
+    socket.on('DRAFT_PUBLISHED', ({ postId }) => {
       setTimeout(() => {
-        router.replace(`/record/${postId}`);
-      }, 3_000);
+        setIsPublishing(false);
+        toast.success(
+          '공동 기록이 저장되었습니다.\n저장된 내용을 확인해보세요.',
+          {
+            duration: 3000,
+            style: {
+              whiteSpace: 'pre-wrap',
+            },
+          },
+        );
+        setTimeout(() => {
+          router.replace(`/record/${postId}`);
+        }, 2_000);
+      }, 2_000);
     });
 
     return () => {
@@ -199,5 +209,12 @@ export function useRecordCollaboration(
     [socket, draftId],
   );
 
-  return { streamingValues, emitStream, applyPatch, versionRef };
+  return {
+    streamingValues,
+    emitStream,
+    applyPatch,
+    versionRef,
+    isPublishing,
+    setIsPublishing,
+  };
 }

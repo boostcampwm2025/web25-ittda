@@ -52,6 +52,7 @@ import { useSocketStore } from '@/store/useSocketStore';
 import { useRecordCollaboration } from '@/hooks/useRecordCollaboration';
 import { useThrottle } from '@/lib/utils/useThrottle';
 import { RecordFieldRenderer } from './RecordFieldRender';
+import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -70,18 +71,29 @@ export default function PostEditor({
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const [blocks, setBlocks] = useState<RecordBlock[]>([]);
-  const { execute } = useCreateRecord(groupId);
+
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
   const { requestLock, releaseLock } = useLockManager(draftId);
 
-  const { streamingValues, emitStream, applyPatch, versionRef } =
-    useRecordCollaboration(
-      draftId,
-      setBlocks,
-      setTitle,
-      initialPost?.version, // 초기 버전 주입
-    );
+  const {
+    streamingValues,
+    emitStream,
+    applyPatch,
+    versionRef,
+    isPublishing,
+    setIsPublishing,
+  } = useRecordCollaboration(
+    draftId,
+    setBlocks,
+    setTitle,
+    initialPost?.version, // 초기 버전 주입
+  );
+  const { execute } = useCreateRecord(groupId, {
+    onError: () => {
+      setIsPublishing(false);
+    },
+  });
 
   const {
     activeDrawer,
@@ -533,6 +545,9 @@ export default function PostEditor({
 
   return (
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
+      {isPublishing && (
+        <AuthLoadingScreen type="publish" className="fixed inset-0 z-[9999]" />
+      )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput

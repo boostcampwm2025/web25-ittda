@@ -3,6 +3,7 @@ import { useApiPost } from './useApi';
 import { useRouter } from 'next/navigation';
 import { RecordDetail } from '@/lib/types/recordResponse';
 import { CreateRecordRequest } from '@/lib/types/record';
+import { toast } from 'sonner';
 
 export interface PublishRecordRequest {
   draftId: string;
@@ -10,7 +11,12 @@ export interface PublishRecordRequest {
   post: CreateRecordRequest;
 }
 
-export const useCreateRecord = (groupId?: string) => {
+export const useCreateRecord = (
+  groupId?: string,
+  options?: {
+    onError?: (error: Error) => void;
+  },
+) => {
   const router = useRouter();
   const { userId } = useAuthStore();
 
@@ -36,6 +42,10 @@ export const useCreateRecord = (groupId?: string) => {
         if (res.success && res.data?.id) {
           router.replace(`/record/${res.data?.id}`);
         }
+      },
+      onError: (error) => {
+        toast.error('기록 저장 중 오류가 발생했습니다.');
+        options?.onError?.(error);
       },
     },
     false,
