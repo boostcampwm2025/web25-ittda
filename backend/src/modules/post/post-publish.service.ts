@@ -50,6 +50,7 @@ export class PostPublishService {
     if (!this.draftStateService.startPublishing(draftId)) {
       throw new ConflictException('Draft is already publishing.');
     }
+    this.postDraftGateway.broadcastDraftPublishStarted(draftId);
 
     try {
       const postId = await this.postRepository.manager.transaction(
