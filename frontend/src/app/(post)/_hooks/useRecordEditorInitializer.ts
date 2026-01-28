@@ -7,7 +7,7 @@ import { RecordBlock } from '@/lib/types/recordField';
 interface Params {
   initialPost?: { title: string; blocks: RecordBlock[] };
   onInitialized: (data: { title: string; blocks: RecordBlock[] }) => void;
-  onLocationUpdate?: (location: LocationValue) => void;
+  onLocationUpdate?: (location: LocationValue | null) => void;
 }
 
 export function usePostEditorInitializer({
@@ -79,7 +79,7 @@ export function usePostEditorInitializer({
   useEffect(() => {
     const handleLocationEvent = (event: Event) => {
       const locationData = (event as CustomEvent<LocationValue>).detail;
-      if (locationData && onLocationUpdate) {
+      if (onLocationUpdate) {
         onLocationUpdate(locationData);
       }
     };

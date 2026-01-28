@@ -34,6 +34,8 @@ import { RecordBlock } from '@/lib/types/recordField';
 import {
   canBeHalfWidth,
   getDefaultValue,
+  isRecordBlockEmpty,
+  normalizeLayout,
 } from '../../_utils/recordLayoutHelper';
 import SaveTemplateDrawer from './core/SaveTemplateDrawer';
 import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
@@ -104,27 +106,37 @@ export default function PostEditor({
     applyPatch,
   });
 
-  const handleLocationUpdate = (locationData: LocationValue) => {
+  const handleLocationUpdate = (locationData: LocationValue | null) => {
     const existingBlock = blocks.find((b) => b.type === 'location');
+    if (!existingBlock) return;
 
-    if (existingBlock) {
-      // 블록이 이미 있으면 업데이트
+    // 새로 추가된 데이터가 있다면
+    if (locationData) {
       updateFieldValue(locationData, existingBlock.id);
-
-      // 공동 기록인 경우에만 커밋 + 락 해제
       if (draftId) {
-        applyPatch({
-          type: 'BLOCK_SET_VALUE',
-          blockId: existingBlock.id,
-          value: locationData,
-        });
-        releaseLock(`block:${existingBlock.id}`);
+        handleFieldCommit(existingBlock.id, locationData);
       }
     } else {
-      addOrShowBlock('location', locationData);
+      const lockKey = `block:${existingBlock.id}`;
+      const isMine = locks[lockKey] === mySessionId;
+
+      if (!(isMine && draftId)) return;
+
+      // 값이 비어있는 블록이라면 아예 삭제
+      if (!existingBlock.value || isRecordBlockEmpty(existingBlock.value)) {
+        applyPatch({
+          type: 'BLOCK_DELETE',
+          blockId: existingBlock.id,
+        });
+        setBlocks((prev) =>
+          normalizeLayout(prev.filter((b) => b.id !== existingBlock.id)),
+        );
+      }
+      releaseLock(lockKey);
     }
 
     // 세션 스토리지 정리
+    sessionStorage.removeItem('editor_draft');
     sessionStorage.removeItem('selected_location');
   };
 
@@ -252,6 +264,12 @@ export default function PostEditor({
 
   const goToLocationPicker = () => {
     sessionStorage.setItem('editor_draft', JSON.stringify({ title, blocks }));
+    const existing = blocks.find((b) => b.type === 'location');
+    // locaion 처음 만들어진다면
+    if (!existing) {
+      addOrShowBlock('location');
+    }
+
     router.push('/location-picker');
   };
 
