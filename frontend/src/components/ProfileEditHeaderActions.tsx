@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 
 interface ProfileEditHeaderActionsProps {
   title?: string;
-  onSave: (data: { nickname: string; image: File | null }) => void;
+  onSave?: (data: { nickname: string; image: File | null }) => void;
   redirectPath?: string;
   isPending: boolean;
 }
@@ -24,7 +24,7 @@ export default function ProfileEditHeaderActions({
   const handleSave = () => {
     const editData = getEditData();
 
-    onSave(editData);
+    if (onSave) onSave(editData);
 
     if (redirectPath) {
       router.push(redirectPath);
