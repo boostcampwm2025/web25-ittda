@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { DateTime } from 'luxon';
@@ -69,6 +73,16 @@ export class GroupRecordService {
     });
     if (!post) {
       throw new NotFoundException('해당 그룹의 게시글을 찾을 수 없습니다.');
+    }
+
+    // 추가: 게시글 날짜가 해당 월인지 확인 (보안 강화)
+    if (post.eventAt) {
+      const postDate = DateTime.fromJSDate(post.eventAt).setZone('Asia/Seoul');
+      if (postDate.year !== year || postDate.month !== month) {
+        throw new ForbiddenException(
+          '게시글의 날짜가 해당 월과 일치하지 않습니다.',
+        );
+      }
     }
 
     // 3. Asset 존재 및 게시글 내 포함 여부 확인
