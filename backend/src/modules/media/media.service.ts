@@ -100,6 +100,8 @@ export class MediaService {
         status: MediaAssetStatus.PENDING,
         mimeType: file.contentType,
         size: file.size,
+        width: file.width,
+        height: file.height,
       });
     });
 
@@ -110,11 +112,20 @@ export class MediaService {
     ).toISOString();
 
     const items = await Promise.all(
-      assets.map(async (asset) => {
+      assets.map(async (asset, index) => {
+        const file = files[index];
+        const metadata: Record<string, string> = {};
+        if (typeof file.width === 'number') {
+          metadata.width = String(file.width);
+        }
+        if (typeof file.height === 'number') {
+          metadata.height = String(file.height);
+        }
         const command = new PutObjectCommand({
           Bucket: this.bucket,
           Key: asset.storageKey,
           ContentType: asset.mimeType ?? undefined,
+          Metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         });
         const uploadUrl = await getSignedUrl(this.s3Client, command, {
           expiresIn: this.presignTtlSeconds,
@@ -287,6 +298,8 @@ export class MediaService {
             ? head.ContentLength
             : undefined;
         const headType = head.ContentType ?? undefined;
+        const headWidth = head.Metadata?.width;
+        const headHeight = head.Metadata?.height;
 
         if (headType && !this.allowedContentTypes.has(headType)) {
           asset.status = MediaAssetStatus.FAILED;
@@ -309,6 +322,18 @@ export class MediaService {
             : undefined;
         asset.size = headSize !== undefined ? headSize : asset.size;
         asset.mimeType = headType ?? asset.mimeType;
+        if (headWidth) {
+          const parsedWidth = Number.parseInt(headWidth, 10);
+          if (Number.isFinite(parsedWidth) && parsedWidth > 0) {
+            asset.width = parsedWidth;
+          }
+        }
+        if (headHeight) {
+          const parsedHeight = Number.parseInt(headHeight, 10);
+          if (Number.isFinite(parsedHeight) && parsedHeight > 0) {
+            asset.height = parsedHeight;
+          }
+        }
 
         await this.mediaAssetRepository.save(asset);
         successIds.push(mediaId);

@@ -12,6 +12,9 @@ presign -> PUT 업로드 -> complete -> resolve 흐름을 수동으로 확인합
 - 최대 용량: 10MB
 - presign 요청 전에 프론트에서 `contentType`/`size` 선검증 권장
 - 향후 PUT → POST presign 전환으로 용량 제한을 더 엄격하게 할 계획
+- (선택) `width`/`height`를 presign에 보내면 PUT 업로드 시
+  `x-amz-meta-width`, `x-amz-meta-height` 헤더를 함께 전송해야 합니다.
+  complete 단계에서 HEAD 메타로 저장됩니다.
 
 ## 1) Presign 요청
 
@@ -34,6 +37,8 @@ curl -sS -X POST "http://localhost:4000/v1/media/presign" \
 ```bash
 curl -v --max-time 30 -X PUT \
   -H "Content-Type: image/png" \
+  -H "x-amz-meta-width: 1200" \
+  -H "x-amz-meta-height: 800" \
   --data-binary @./test.png \
   "PRESIGNED_URL"
 ```

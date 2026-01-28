@@ -23,6 +23,18 @@ export class PresignFileRequestDto {
   @IsInt()
   @Min(1)
   size?: number;
+
+  @ApiPropertyOptional({ example: 1200 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  width?: number;
+
+  @ApiPropertyOptional({ example: 800 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  height?: number;
 }
 
 export class MediaPresignRequestDto {
