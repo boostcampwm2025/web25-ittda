@@ -22,6 +22,7 @@ describe('PostController (e2e)', () => {
   let userRepository: Repository<User>;
   let postRepository: Repository<Post>;
   let postDraftRepository: Repository<PostDraft>;
+  let postDraftRepository: Repository<PostDraft>;
   let groupRepository: Repository<Group>;
   let groupMemberRepository: Repository<GroupMember>;
   let owner: User;
@@ -52,6 +53,7 @@ describe('PostController (e2e)', () => {
     userRepository = app.get(getRepositoryToken(User));
     postRepository = app.get(getRepositoryToken(Post));
     postDraftRepository = app.get(getRepositoryToken(PostDraft));
+    postDraftRepository = app.get(getRepositoryToken(PostDraft));
     groupRepository = app.get(getRepositoryToken(Group));
     groupMemberRepository = app.get(getRepositoryToken(GroupMember));
     const jwtService = app.get(JwtService);
@@ -79,6 +81,7 @@ describe('PostController (e2e)', () => {
   afterAll(async () => {
     if (owner?.id) {
       await postRepository.delete({ ownerUserId: owner.id });
+      await postDraftRepository.delete({ ownerActorId: owner.id });
       await postDraftRepository.delete({ ownerActorId: owner.id });
       await groupRepository.delete({ owner: { id: owner.id } });
       await userRepository.delete({ id: owner.id });

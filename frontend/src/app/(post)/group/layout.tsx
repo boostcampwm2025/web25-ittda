@@ -1,3 +1,5 @@
+import SocketManager from '@/components/SocketManager';
+
 export default function GroupMonthLayout({
   children,
 }: Readonly<{
@@ -5,6 +7,7 @@ export default function GroupMonthLayout({
 }>) {
   return (
     <div className="pt-0 w-full space-y-8 pb-32 transition-colors duration-300 min-h-full dark:bg-[#121212] bg-[#FDFDFD]">
+      <SocketManager />
       {children}
     </div>
   );

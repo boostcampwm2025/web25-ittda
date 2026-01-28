@@ -1,14 +1,24 @@
 'use client';
 
 import { TableValue } from '@/lib/types/recordField';
+import { cn } from '@/lib/utils';
 import { Plus, MinusCircle, X } from 'lucide-react';
 
 interface TableFieldProps {
   data: TableValue | null;
   onUpdate: (newData: TableValue | null) => void;
+  isLocked: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
-export const TableField = ({ data, onUpdate }: TableFieldProps) => {
+export const TableField = ({
+  data,
+  onUpdate,
+  isLocked,
+  onFocus,
+  onBlur,
+}: TableFieldProps) => {
   if (!data) return null;
 
   const { rows: rowCount, cols: colCount, cells } = data;
@@ -69,7 +79,12 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
   };
 
   return (
-    <div className="group/table relative w-full animate-in fade-in zoom-in-95 duration-300">
+    <div
+      className={cn(
+        'group/table relative w-full transition-opacity',
+        isLocked && 'opacity-60 pointer-events-none',
+      )}
+    >
       <div className="flex items-stretch gap-2">
         <div className="flex-1 min-w-0 relative overflow-x-auto hide-scrollbar rounded-xl border border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02] shadow-sm mb-2">
           <table className="w-full border-collapse">
@@ -106,6 +121,9 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
                         type="text"
                         value={cell}
                         onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
+                        disabled={isLocked}
+                        onFocus={onFocus}
+                        onBlur={onBlur}
                         placeholder={rIdx === 0 ? '항목명' : '내용'}
                         className={`w-full p-2.5 text-xs outline-none dark:focus:bg-white/5 transition-colors ${
                           rIdx === 0
@@ -117,6 +135,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
                   ))}
                   <td className="w-8 p-0 text-center bg-gray-50/20 dark:bg-white/[0.01]">
                     <button
+                      disabled={isLocked}
                       onClick={() => removeRow(rIdx)}
                       className="flex m-auto text-gray-300 hover:text-rose-500 transition-colors opacity-0 group-hover/row:opacity-100 active:scale-90"
                     >
@@ -131,6 +150,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
 
         <button
           title="열 추가"
+          disabled={isLocked}
           onClick={addColumn}
           className="shrink-0 mb-2 flex items-center p-2 rounded-lg border border-dashed border-itta-gray2 dark:border-white/10 text-xs font-bold text-gray-400 hover:text-itta-point hover:border-itta-point transition-all active:scale-95 bg-white dark:bg-transparent"
         >
@@ -140,6 +160,7 @@ export const TableField = ({ data, onUpdate }: TableFieldProps) => {
 
       <div className="flex items-start gap-2 ">
         <button
+          disabled={isLocked}
           title="행 추가"
           onClick={addRow}
           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-400 hover:text-itta-point hover:border-itta-point transition-all active:scale-95"

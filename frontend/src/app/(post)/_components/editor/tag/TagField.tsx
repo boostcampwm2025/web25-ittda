@@ -6,16 +6,17 @@ import {
   FieldDefaultButtonLabel,
 } from '../core/FieldDefaultButton';
 import { FieldDeleteButton } from '../core/FieldDeleteButton';
+import { TagValue } from '@/lib/types/record';
 
 interface Props {
-  tags: string[];
+  tags: TagValue;
   onRemove: (tag: string) => void;
   onAdd: () => void;
   onRemoveField: () => void;
 }
 
 export const TagField = ({ tags, onRemove, onAdd, onRemoveField }: Props) => {
-  if (tags.length <= 0)
+  if (tags.tags.length <= 0)
     return (
       <div className="flex items-center gap-2 w-full py-1 group">
         <FieldDefaultButton onClick={onAdd}>
@@ -29,10 +30,10 @@ export const TagField = ({ tags, onRemove, onAdd, onRemoveField }: Props) => {
       </div>
     );
   const MAX_TAGS = 4;
-  const isLimitReached = tags.length >= MAX_TAGS;
+  const isLimitReached = tags.tags.length >= MAX_TAGS;
   return (
     <div className="flex flex-wrap gap-1.5 items-center">
-      {tags.map((tag) => (
+      {tags.tags.map((tag) => (
         <div
           key={tag}
           onClick={onAdd}
