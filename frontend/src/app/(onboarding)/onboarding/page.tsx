@@ -43,7 +43,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white text-black overflow-hidden font-sans safe-area-bottom">
+    <div className="flex flex-col h-dvh bg-white text-black overflow-hidden font-sans safe-area-bottom">
       <div className="flex justify-end p-4">
         {!isLastStep ? (
           <button
@@ -57,7 +57,7 @@ export default function OnboardingPage() {
         )}
       </div>
 
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden flex flex-col">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -67,7 +67,7 @@ export default function OnboardingPage() {
             transition={{ duration: 0.4, ease: 'easeOut' }}
             className="h-full flex flex-col items-center px-8"
           >
-            <div className="flex-1 flex flex-col items-center pb-4 text-center space-y-4 w-full">
+            <div className="shrink-0 flex flex-col items-center py-6 text-center space-y-4 w-full">
               <h1 className="text-2xl font-bold leading-tight whitespace-pre-line">
                 {ONBOARDING_DATA[step].title}
               </h1>
@@ -76,7 +76,7 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <div className="flex-[1.5] w-full flex items-center justify-center">
+            <div className="flex-1 w-full min-h-0 flex items-center justify-center">
               <div className="w-full aspect-square max-h-80 bg-gray-50 rounded-3xl flex items-center justify-center relative overflow-hidden">
                 {/* {ONBOARDING_DATA[step].visual()} */}
                 <span className="text-gray-300 font-bold">Visual Area</span>
@@ -89,19 +89,27 @@ export default function OnboardingPage() {
       <div className="p-8 space-y-6 shrink-0">
         <div className="flex justify-center gap-2">
           {ONBOARDING_DATA.map((_, i) => (
-            <div
+            <button
               key={i}
-              className={cn(
-                'h-1.5 rounded-full transition-all duration-300',
-                i === step ? 'w-6 bg-primary' : 'w-1.5 bg-gray-200',
-              )}
-            />
+              onClick={() => setStep(i)}
+              className="group relative py-2"
+              aria-label={`${i + 1}번 페이지로 이동`}
+            >
+              <div
+                className={cn(
+                  'h-1.5 rounded-full transition-all duration-300',
+                  i === step
+                    ? 'w-6 bg-itta-black'
+                    : 'w-1.5 bg-gray-200 group-hover:bg-gray-300', // 호버 시 살짝 진해지는 효과
+                )}
+              />
+            </button>
           ))}
         </div>
 
         <Button
           onClick={nextStep}
-          className="w-full h-14 rounded-2xl text-lg font-bold shadow-sm"
+          className="w-full h-14 rounded-2xl text-lg font-bold shadow-sm bg-itta-black text-white"
         >
           {isLastStep ? '시작하기' : '다음'}
         </Button>
