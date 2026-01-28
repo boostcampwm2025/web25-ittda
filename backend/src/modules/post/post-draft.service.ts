@@ -34,7 +34,7 @@ export class PostDraftService {
     private readonly groupMemberRepository: Repository<GroupMember>,
   ) {}
 
-  async getOrCreateGroupDraft(groupId: string, actorId: string) {
+  async getOrCreateGroupCreateDraft(groupId: string, actorId: string) {
     const group = await this.groupRepository.findOne({
       where: { id: groupId },
       select: { id: true },
@@ -43,13 +43,14 @@ export class PostDraftService {
     await this.ensureGroupMember(groupId, actorId);
 
     const existing = await this.postDraftRepository.findOne({
-      where: { groupId, isActive: true },
+      where: { groupId, isActive: true, kind: 'CREATE' },
     });
     if (existing) return existing;
 
     const draft = this.postDraftRepository.create({
       groupId,
       ownerActorId: actorId,
+      kind: 'CREATE',
       snapshot: this.buildDefaultDraftSnapshot(groupId),
     });
 
@@ -59,7 +60,7 @@ export class PostDraftService {
       const dbError = error as { code?: string };
       if (error instanceof QueryFailedError && dbError.code === '23505') {
         const concurrent = await this.postDraftRepository.findOne({
-          where: { groupId, isActive: true },
+          where: { groupId, isActive: true, kind: 'CREATE' },
         });
         if (concurrent) return concurrent;
         throw new ConflictException(
