@@ -4,6 +4,7 @@ import { Clock, MapPin } from 'lucide-react';
 import { PostCard } from './PostCard';
 import { useRouter } from 'next/navigation';
 import { GroupCover } from '@/lib/types/group';
+import { randomBaseImage } from '@/lib/image';
 
 /**
  * MonthRecordCard - 월별 기록 카드
@@ -36,11 +37,11 @@ export function RecordCard({
   createdAt,
   height,
 }: RecordCardProps) {
-  /* TODO: image를 서버로부터 받아서 url 넣기 */
+  const baseImage = randomBaseImage(id);
   return (
     <PostCard
       height={height}
-      imageUrl={cover?.assetId || '/base.png'}
+      imageUrl={cover?.assetId || baseImage}
       imageAlt={name}
       onClick={onClick}
     >
