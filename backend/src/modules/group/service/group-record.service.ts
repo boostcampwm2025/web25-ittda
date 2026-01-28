@@ -8,9 +8,16 @@ import { GroupMonthCover } from '../entity/group-month-cover.entity';
 import { Post } from '../../post/entity/post.entity';
 import { PostBlock } from '../../post/entity/post-block.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
-import { GroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
+import {
+  GroupMonthRecordResponseDto,
+  PaginatedGroupMonthRecordResponseDto,
+} from '../dto/group-month-record.response.dto';
 import { GroupArchiveSortEnum } from '../dto/get-group-monthly-archive.query.dto';
 import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
+import {
+  PostMedia,
+  PostMediaKind,
+} from '@/modules/post/entity/post-media.entity';
 
 @Injectable()
 export class GroupRecordService {
@@ -26,6 +33,9 @@ export class GroupRecordService {
 
     @InjectRepository(PostBlock)
     private readonly postBlockRepo: Repository<PostBlock>,
+
+    @InjectRepository(PostMedia)
+    private readonly postMediaRepo: Repository<PostMedia>,
   ) {}
 
   /**
@@ -36,45 +46,8 @@ export class GroupRecordService {
     year: number,
     month: number,
     coverAssetId: string,
+    sourcePostId: string,
   ) {
-    // 그룹 존재 확인
-    const group = await this.groupRepo.findOne({
-      where: { id: groupId },
-    });
-
-    if (!group) {
-      throw new NotFoundException('그룹을 찾을 수 없습니다.');
-    }
-
-    // Upsert: 기존 커버가 있으면 업데이트, 없으면 생성
-    const exist = await this.groupMonthCoverRepo.findOne({
-      where: { groupId, year, month },
-    });
-
-    if (exist) {
-      exist.coverAssetId = coverAssetId;
-      await this.groupMonthCoverRepo.save(exist);
-    } else {
-      const newCover = this.groupMonthCoverRepo.create({
-        groupId,
-        year,
-        month,
-        coverAssetId,
-      });
-      await this.groupMonthCoverRepo.save(newCover);
-    }
-
-    return { coverAssetId };
-  }
-
-  /**
-   * 그룹 월별 아카이브 조회
-   */
-  async getMonthlyArchive(
-    groupId: string,
-    year: number,
-    sort: GroupArchiveSortEnum = GroupArchiveSortEnum.LATEST,
-  ): Promise<GroupMonthRecordResponseDto[]> {
     // 1. 그룹 존재 확인
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
@@ -84,81 +57,164 @@ export class GroupRecordService {
       throw new NotFoundException('그룹을 찾을 수 없습니다.');
     }
 
-    // 2. 조회 기간 설정 (YYYY-01-01 ~ YYYY-12-31)
-    const startDate = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
-      'year',
-    );
-    const endDate = startDate.endOf('year');
+    // 2. 게시글 존재 및 그룹 소속 확인
+    const post = await this.postRepo.findOne({
+      where: { id: sourcePostId, groupId },
+    });
+    if (!post) {
+      throw new NotFoundException('해당 그룹의 게시글을 찾을 수 없습니다.');
+    }
 
-    const from = startDate.toJSDate();
-    const to = endDate.toJSDate();
-
-    // 3. 해당 그룹의 포스트 조회
-    const posts = await this.postRepo.find({
+    // 3. Asset 존재 및 게시글 내 포함 여부 확인
+    const postMedia = await this.postMediaRepo.findOne({
       where: {
-        groupId,
+        postId: sourcePostId,
+        mediaId: coverAssetId,
+        kind: PostMediaKind.BLOCK,
       },
-      select: ['id', 'eventAt', 'title'],
-      order: { eventAt: 'DESC' },
     });
-
-    // eventAt이 해당 연도 범위 내에 있는 것만 필터링
-    const filteredPosts = posts.filter(
-      (p) => p.eventAt && p.eventAt >= from && p.eventAt <= to,
-    );
-
-    if (filteredPosts.length === 0) {
-      return [];
+    if (!postMedia) {
+      throw new NotFoundException(
+        '해당 게시글에 포함된 유효한 이미지가 아닙니다.',
+      );
     }
 
-    // 4. 월별 그룹핑 (YYYY-MM)
+    // 4. Upsert: 기존 커버가 있으면 업데이트, 없으면 생성
+    const exist = await this.groupMonthCoverRepo.findOne({
+      where: { groupId, year, month },
+    });
+
+    if (exist) {
+      exist.coverAssetId = coverAssetId;
+      exist.sourcePostId = sourcePostId;
+      await this.groupMonthCoverRepo.save(exist);
+    } else {
+      const newCover = this.groupMonthCoverRepo.create({
+        groupId,
+        year,
+        month,
+        coverAssetId,
+        sourcePostId,
+      });
+      await this.groupMonthCoverRepo.save(newCover);
+    }
+
+    return { coverAssetId, sourcePostId };
+  }
+
+  /**
+   * 그룹 월별 아카이브 조회
+   */
+  async getMonthlyArchive(
+    groupId: string,
+    year: number,
+    sort: GroupArchiveSortEnum = GroupArchiveSortEnum.LATEST,
+    cursor?: string,
+    limit: number = 12,
+  ): Promise<PaginatedGroupMonthRecordResponseDto> {
+    // 1. 그룹 존재 확인
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    // 2. 해당 그룹의 모든 게시글 요약 정보 조회
+    // (메모리 집계 방식 - 데이터가 아주 많으면 최적화 필요)
+    const qb = this.postRepo.createQueryBuilder('p');
+    qb.select(['p.id', 'p.eventAt', 'p.title', 'p.groupId'])
+      .where('p.groupId = :groupId', { groupId })
+      .andWhere('p.deletedAt IS NULL');
+
+    if (year) {
+      const start = DateTime.fromObject({ year, month: 1, day: 1 })
+        .startOf('year')
+        .toJSDate();
+      const end = DateTime.fromObject({ year, month: 1, day: 1 })
+        .endOf('year')
+        .toJSDate();
+      qb.andWhere('p.eventAt >= :start AND p.eventAt <= :end', { start, end });
+    }
+
+    const posts = await qb.orderBy('p.eventAt', 'DESC').getMany();
+
+    if (posts.length === 0) {
+      return { items: [], nextCursor: null };
+    }
+
+    // 3. 월별 그룹핑
     const postsByMonth = new Map<string, Post[]>();
-
-    for (const p of filteredPosts) {
+    for (const p of posts) {
       if (!p.eventAt) continue;
-      const dt = DateTime.fromJSDate(p.eventAt).setZone('Asia/Seoul');
-      const monthKey = dt.toFormat('yyyy-MM');
-
-      const list = postsByMonth.get(monthKey) ?? [];
+      const key = DateTime.fromJSDate(p.eventAt)
+        .setZone('Asia/Seoul')
+        .toFormat('yyyy-MM');
+      const list = postsByMonth.get(key) ?? [];
       list.push(p);
-      postsByMonth.set(monthKey, list);
+      postsByMonth.set(key, list);
     }
 
-    // 5. 커버 이미지 매핑 조회
+    const monthKeys = Array.from(postsByMonth.keys());
+
+    // 4. 정렬
+    if (sort === GroupArchiveSortEnum.OLDEST) {
+      monthKeys.sort((a, b) => a.localeCompare(b));
+    } else if (sort === GroupArchiveSortEnum.MOST_RECORDS) {
+      monthKeys.sort((a, b) => {
+        const countA = postsByMonth.get(a)!.length;
+        const countB = postsByMonth.get(b)!.length;
+        if (countB !== countA) return countB - countA;
+        return b.localeCompare(a); // 같은 개수면 최신순
+      });
+    } else {
+      // LATEST
+      monthKeys.sort((a, b) => b.localeCompare(a));
+    }
+
+    // 5. 페이지네이션 (Cursor)
+    let startIndex = 0;
+    if (cursor) {
+      startIndex = monthKeys.indexOf(cursor);
+      if (startIndex === -1)
+        startIndex = 0; // 커서를 못 찾으면 처음부터
+      else if (cursor === monthKeys[monthKeys.length - 1]) {
+        // 마지막이면 다음 페이지 없음
+        return { items: [], nextCursor: null };
+      } else {
+        // 커서 다음 요소부터 시작 (단, API 관례상 커서 포함 여부는 정의하기 나름인데 보통 미포함)
+        startIndex += 1;
+      }
+    }
+
+    const slicedKeys = monthKeys.slice(startIndex, startIndex + limit);
+    const hasNext = monthKeys.length > startIndex + limit;
+    const nextCursor = hasNext ? slicedKeys[slicedKeys.length - 1] : null;
+
+    if (slicedKeys.length === 0) {
+      return { items: [], nextCursor: null };
+    }
+
+    // 6. 필요한 데이터 일괄 조회 (커버, 대표 게시글 블록)
     const customCovers = await this.groupMonthCoverRepo.find({
-      where: { groupId, year },
+      where: { groupId },
     });
-    const customCoverMap = new Map<string, string>();
+    const coverMap = new Map<
+      string,
+      { assetId: string | null; sourcePostId: string | null }
+    >();
     for (const c of customCovers) {
       const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
-      customCoverMap.set(key, c.coverAssetId ?? '');
-    }
-
-    // 6. 각 월별 대표 포스트 ID 추출
-    const monthKeys = Array.from(postsByMonth.keys()).sort().reverse();
-    const representativePostIds: string[] = [];
-
-    const resultFromMonth = new Map<
-      string,
-      {
-        postCount: number;
-        latestPost: Post;
-      }
-    >();
-
-    for (const mKey of monthKeys) {
-      const monthPosts = postsByMonth.get(mKey)!;
-      const latestPost = monthPosts[0]; // 이미 DESC 정렬됨
-
-      resultFromMonth.set(mKey, {
-        postCount: monthPosts.length,
-        latestPost,
+      coverMap.set(key, {
+        assetId: c.coverAssetId,
+        sourcePostId: c.sourcePostId,
       });
-
-      representativePostIds.push(latestPost.id);
     }
 
-    // 7. 대표 포스트들의 블록 조회 (IMAGE, LOCATION)
+    const representativePostIds = slicedKeys.map(
+      (k) => postsByMonth.get(k)![0].id,
+    );
     const blocks = await this.postBlockRepo.find({
       where: {
         postId: In(representativePostIds),
@@ -173,19 +229,21 @@ export class GroupRecordService {
       blocksByPostId.set(b.postId, list);
     }
 
-    // 8. DTO 조립
-    const results: GroupMonthRecordResponseDto[] = [];
-    for (const mKey of monthKeys) {
-      const { postCount, latestPost } = resultFromMonth.get(mKey)!;
+    // 7. 결과 구성
+    const items: GroupMonthRecordResponseDto[] = [];
+    for (const mKey of slicedKeys) {
+      const monthPosts = postsByMonth.get(mKey)!;
+      const latestPost = monthPosts[0];
       const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
 
-      // 커버 이미지 찾기
       let coverAssetId: string | null = null;
-      const customId = customCoverMap.get(mKey);
-      if (customId) {
-        coverAssetId = customId;
+      let sourcePostId: string | null = null;
+
+      const custom = coverMap.get(mKey);
+      if (custom && (custom.assetId || custom.sourcePostId)) {
+        coverAssetId = custom.assetId;
+        sourcePostId = custom.sourcePostId;
       } else {
-        // 최신 포스트의 첫 번째 이미지 사용
         const imgBlock = relatedBlocks.find(
           (b) => b.type === PostBlockType.IMAGE,
         );
@@ -193,11 +251,11 @@ export class GroupRecordService {
           const val = imgBlock.value as { mediaIds?: string[] };
           if (val.mediaIds && val.mediaIds.length > 0) {
             coverAssetId = val.mediaIds[0];
+            sourcePostId = latestPost.id;
           }
         }
       }
 
-      // 장소명 찾기
       let placeName: string | null = null;
       const locBlock = relatedBlocks.find(
         (b) => b.type === PostBlockType.LOCATION,
@@ -207,29 +265,17 @@ export class GroupRecordService {
         placeName = val.placeName || val.address || null;
       }
 
-      results.push({
+      items.push({
         month: mKey,
         coverAssetId,
-        count: postCount,
+        sourcePostId,
+        count: monthPosts.length,
         latestTitle: latestPost.title,
         latestLocation: placeName,
       });
     }
 
-    // 9. 정렬 적용
-    if (sort === GroupArchiveSortEnum.OLDEST) {
-      results.sort((a, b) => a.month.localeCompare(b.month));
-    } else if (sort === GroupArchiveSortEnum.MOST_RECORDS) {
-      results.sort((a, b) => {
-        if (b.count !== a.count) {
-          return b.count - a.count;
-        }
-        return b.month.localeCompare(a.month);
-      });
-    }
-    // LATEST는 이미 기본값 (DESC)
-
-    return results;
+    return { items, nextCursor };
   }
 
   /**
@@ -357,7 +403,7 @@ export class GroupRecordService {
       results.push({
         date: dKey,
         postCount,
-        coverThumbnailId,
+        coverAssetId: coverThumbnailId,
         latestPostTitle: latestPost.title,
         latestPlaceName: placeName,
       });

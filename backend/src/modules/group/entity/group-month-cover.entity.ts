@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Group } from './group.entity';
 import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
+import { Post } from '@/modules/post/entity/post.entity';
 
 @Entity('group_month_covers')
 @Unique(['groupId', 'year', 'month']) // 그룹은 연/월당 하나의 커버만 가짐
@@ -36,6 +37,13 @@ export class GroupMonthCover {
 
   @Column({ name: 'cover_media_asset_id', type: 'uuid', nullable: true })
   coverAssetId: string | null;
+
+  @Column({ name: 'source_post_id', type: 'uuid', nullable: true })
+  sourcePostId: string | null;
+
+  @ManyToOne(() => Post, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'source_post_id' })
+  sourcePost: Post | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
