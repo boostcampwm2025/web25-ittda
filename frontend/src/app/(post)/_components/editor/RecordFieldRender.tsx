@@ -145,6 +145,7 @@ export function RecordFieldRenderer({
           data={displayValue as TableValue}
           onUpdate={(d) => (d ? onUpdate(block.id, d) : onRemove(block.id))}
           isLocked={lock.isLockedByOther}
+          isMyLock={lock.isMyLock}
           onFocus={handleFocus}
           onBlur={handleCommit}
         />
