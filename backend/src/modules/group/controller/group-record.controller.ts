@@ -30,6 +30,8 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
 import { PaginatedGroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
 import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
 import { PaginatedGroupMonthCoverCandidateResponseDto } from '../dto/group-month-cover-candidates-response.dto';
+import { GetGroupCoverCandidatesQueryDto } from '../dto/get-group-cover-candidates.query.dto';
+import { GroupCoverCandidatesResponseDto } from '../dto/group-cover-candidates.response.dto';
 import { parseYearMonth } from '@/common/utils/parseDateValidator';
 
 @ApiTags('group-records')
@@ -155,6 +157,37 @@ export class GroupRecordController {
       groupId,
       year,
       month,
+      cursor,
+      Number(limit),
+    );
+
+    return { data };
+  }
+
+  /**
+   * 그룹 커버 후보 조회 (New)
+   */
+  @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.VIEWER)
+  @Get(':groupId/cover-candidates')
+  @ApiOperation({
+    summary: '그룹 커버 후보 조회',
+    description:
+      '특정 월의 모든 기록에서 사용된 이미지 목록을 날짜별로 그룹화하여 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: GroupCoverCandidatesResponseDto })
+  async getCoverCandidates(
+    @Param('groupId') groupId: string,
+    @Query() query: GetGroupCoverCandidatesQueryDto,
+  ) {
+    const { month, cursor, limit = 20 } = query;
+    const { year, month: m } = parseYearMonth(month);
+
+    const data = await this.groupRecordService.getCoverCandidates(
+      groupId,
+      year,
+      m,
       cursor,
       Number(limit),
     );
