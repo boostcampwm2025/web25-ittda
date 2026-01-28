@@ -75,7 +75,6 @@ function LocationPickerContent({
   const [centerAddress, setCenterAddress] = useState<string>('');
   const [centerPlaceName, setCenterPlaceName] = useState<string>('');
   const [isAddressLoading, setIsAddressLoading] = useState(false);
-  const hasInitializedAddress = useRef(false);
 
   useEffect(() => {
     if (!mapRef.current || !placesLib) return;
@@ -86,92 +85,28 @@ function LocationPickerContent({
 
   useEffect(() => {
     if (geoLat && geoLng && mapRef.current) {
+      // 지도 이동
       mapRef.current.panTo({ lat: geoLat, lng: geoLng });
+
+      // 이동한 위치의 주소 강제 갱신
+      const updateInitialAddress = async () => {
+        setIsAddressLoading(true);
+        try {
+          const placeName = await findNearbyPlace(geoLat, geoLng);
+          const addr = await reverseGeocode(geoLat, geoLng);
+
+          setCenterAddress(addr);
+          setCenterPlaceName(placeName || '');
+        } catch (error) {
+          console.error('Initial Geocode Error:', error);
+        } finally {
+          setIsAddressLoading(false);
+        }
+      };
+
+      updateInitialAddress();
     }
   }, [geoLat, geoLng]);
-
-  // 맨 처음 렌더링될 때 중심 위치의 주소를 가져옴
-  useEffect(() => {
-    const initializeAddress = async () => {
-      if (
-        !mapRef.current ||
-        !placesServiceRef.current ||
-        hasInitializedAddress.current ||
-        !placesLib
-      )
-        return;
-
-      const center = mapRef.current.getCenter();
-      if (!center) return;
-
-      hasInitializedAddress.current = true;
-      setIsAddressLoading(true);
-
-      try {
-        // 먼저 근처 POI 찾기
-        const placeName = await findNearbyPlace(center.lat(), center.lng());
-
-        // 주소 가져오기
-        if (!window.google?.maps?.Geocoder) {
-          setCenterAddress('주소를 불러올 수 없습니다.');
-          setIsAddressLoading(false);
-          return;
-        }
-        const geocoder = new google.maps.Geocoder();
-        geocoder.geocode(
-          {
-            location: { lat: center.lat(), lng: center.lng() },
-            language: 'ko',
-          },
-          (results, status) => {
-            if (status === 'OK' && results?.[0]) {
-              // address_components에서 동/구 수준까지만 조합
-              const components = results[0].address_components;
-              const country =
-                components.find((c) => c.types.includes('country'))
-                  ?.long_name || '';
-              const level1 =
-                components.find((c) =>
-                  c.types.includes('administrative_area_level_1'),
-                )?.long_name || '';
-              const sublocalityLevel1 =
-                components.find((c) => c.types.includes('sublocality_level_1'))
-                  ?.long_name || '';
-              const sublocalityLevel2 =
-                components.find((c) => c.types.includes('sublocality_level_2'))
-                  ?.long_name || '';
-
-              const address = [
-                country,
-                level1,
-                sublocalityLevel1,
-                sublocalityLevel2,
-              ]
-                .filter(Boolean)
-                .join(' ');
-
-              setCenterAddress(address || results[0].formatted_address);
-              if (placeName) {
-                setCenterPlaceName(placeName);
-              }
-            } else {
-              setCenterAddress('주소를 불러올 수 없습니다.');
-            }
-            setIsAddressLoading(false);
-          },
-        );
-      } catch (error) {
-        console.error('Error initializing address:', error);
-        setCenterAddress('주소를 불러올 수 없습니다.');
-        setIsAddressLoading(false);
-      }
-    };
-
-    // 지도가 완전히 로드된 후 실행
-    if (mapRef.current && placesServiceRef.current && placesLib) {
-      initializeAddress();
-    }
-  }, [placesLib]);
 
   const handleSearch = async (keyword: string) => {
     if (!keyword.trim() || !mapRef.current || !placesLib) return;
