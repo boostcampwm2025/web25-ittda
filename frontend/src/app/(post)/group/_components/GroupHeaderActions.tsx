@@ -61,7 +61,7 @@ export default function GroupHeaderActions({
       <div className="flex items-center gap-2">
         {/* 보이스 컨트롤은 이제 App.tsx에서 전역으로 관리되므로, 여기서는 개별적으로 대화를 시작하는 버튼만 남겨둠 */}
         {/* TODO: 보이스 연결에 필요한 데이터 전역 상태에 추가 */}
-        {/* {!isVoiceActive && (
+        {!isVoiceActive && (
           <button
             onClick={() => setIsVoiceActive(true)}
             className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all active:scale-95 shadow-sm dark:bg-[#10B981]/15 dark:text-[#10B981] bg-[#10B981]/10 text-[#10B981]"
@@ -69,7 +69,7 @@ export default function GroupHeaderActions({
             <Mic className="w-3.5 h-3.5" />
             보이스 연결
           </button>
-        )} */}
+        )}
         <GroupInviteDrawer groupId={groupId || 'gruop'} />
 
         <DateSelectorDrawer

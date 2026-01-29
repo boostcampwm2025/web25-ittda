@@ -6,7 +6,6 @@ import { CreateRecordRequest } from '@/lib/types/record';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiResponse } from '@/lib/types/response';
-import { refreshHomeData, refreshRecordData } from '@/lib/actions/revalidate';
 
 export interface PublishRecordRequest {
   draftId: string;
@@ -28,27 +27,6 @@ export const useCreateRecord = (
   const router = useRouter();
   const queryClient = useQueryClient();
   const { userId } = useAuthStore();
-
-  const invalidateQuery = async (groupId?: string) => {
-    await Promise.all([refreshRecordData(), refreshHomeData()]);
-
-    const invalidations = [
-      queryClient.invalidateQueries({ queryKey: ['my', 'records'] }),
-      queryClient.invalidateQueries({ queryKey: ['records'] }),
-      queryClient.invalidateQueries({ queryKey: ['profile'] }),
-      queryClient.invalidateQueries({ queryKey: ['summary'] }),
-    ];
-
-    if (groupId) {
-      invalidations.push(
-        queryClient.invalidateQueries({
-          queryKey: ['group', groupId, 'records'],
-        }),
-      );
-    }
-
-    await Promise.all(invalidations);
-  };
 
   // 일반 게시글 생성
   const createMutation = useApiPost<RecordDetail, CreateRecordRequest>(
@@ -91,11 +69,6 @@ export const useCreateRecord = (
         queryClient.invalidateQueries({ queryKey: ['pattern'] }),
       ]);
       if (!res.data.groupId) {
-        if (groupId) {
-          await invalidateQuery(groupId);
-        } else {
-          await invalidateQuery();
-        }
         toast.success('기록이 성공적으로 저장되었습니다.');
       }
 

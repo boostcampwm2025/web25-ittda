@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 
 interface ProfileEditHeaderActionsProps {
   title?: string;
-  onSave?: (data: { nickname: string; image: File | null }) => void;
+  onSave: (data: { nickname: string; image: File | null }) => void;
   redirectPath?: string;
   isPending: boolean;
 }
@@ -24,7 +24,7 @@ export default function ProfileEditHeaderActions({
   const handleSave = () => {
     const editData = getEditData();
 
-    if (onSave) onSave(editData);
+    onSave(editData);
 
     if (redirectPath) {
       router.push(redirectPath);
@@ -39,7 +39,7 @@ export default function ProfileEditHeaderActions({
       </h2>
       <button
         onClick={handleSave}
-        className="cursor-pointer font-bold text-sm active:scale-95 transition-all min-w-8"
+        className="cursor-pointer font-bold text-sm active:scale-95 transition-all"
       >
         {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '저장'}
       </button>

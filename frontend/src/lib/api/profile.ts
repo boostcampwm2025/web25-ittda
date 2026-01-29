@@ -58,13 +58,7 @@ export const getCachedUserEmotionSummary = cache(async (limit?: number) => {
  * 서버 컴포넌트에서 사용하는 캐시된 기록 통계 조회
  */
 export const getCachedUserRecordStats = cache(async () => {
-  const response = await get<RecordPatternResponse>(
-    '/api/stats/summary',
-    undefined,
-    {
-      next: { tags: ['stats-summary'] },
-    },
-  );
+  const response = await get<RecordPatternResponse>('/api/stats/summary');
   if (!response.success) {
     throw createApiError(response);
   }

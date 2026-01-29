@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import AssetImage from './AssetImage';
 
 interface ImageCarouselProps {
   images: string[];
@@ -132,14 +131,14 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
         >
           {images.map((url, index) => (
             <div key={index} className="w-full shrink-0 relative aspect-square">
-              <AssetImage
-                assetId={url}
-                alt={`게시글 ${index + 1}번째`}
+              <Image
+                src={url}
+                className="select-none pointer-events-none object-cover"
+                alt={`Image ${index + 1}`}
                 fill
                 draggable={false}
                 unoptimized={true}
                 sizes="(max-width: 768px) 100vw, 800px"
-                className="select-none pointer-events-none object-cover"
               />
             </div>
           ))}

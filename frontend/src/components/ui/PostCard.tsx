@@ -84,9 +84,7 @@ export function PostCard({
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 dark:opacity-60 opacity-90"
           />
         ) : (
-          <div className={cn('flex items-center justify-center', className)}>
-            <ImageIcon className="w-6 h-6 text-gray-400" />
-          </div>
+          <div className="absolute inset-0 w-full h-full dark:bg-linear-to-br dark:from-[#10B981]/20 dark:to-[#121212] bg-linear-to-br from-[#10B981]/10 to-white" />
         )}
 
         {/* 그라디언트 오버레이 */}
@@ -95,6 +93,13 @@ export function PostCard({
         {/* 자식 컴포넌트 렌더링 */}
         {children}
       </div>
+
+      {/* 이미지가 없을 때 플레이스홀더 아이콘 */}
+      {!imageUrl && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
+          <ImageIcon className="w-8 h-8 text-gray-400" />
+        </div>
+      )}
     </div>
   );
 }

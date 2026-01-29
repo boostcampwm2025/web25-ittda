@@ -1,7 +1,7 @@
 'use client';
 
 import { Group } from '@/lib/types/group';
-import { Camera, ChevronRight, ImageIcon, X } from 'lucide-react';
+import { Camera, ChevronRight, Users, X } from 'lucide-react';
 import Image from 'next/image';
 import { useGroupEdit } from './GroupEditContext';
 import { useRouter } from 'next/navigation';
@@ -15,15 +15,13 @@ import {
 } from '@/components/ui/drawer';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import { cn } from '@/lib/utils';
-import AssetImage from '@/components/AssetImage';
-import { GroupEditResponse } from '@/lib/types/groupResponse';
 
 type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
   groupId: string;
-  me: GroupEditResponse['me'];
+  nickname: Group['nicknameInGroup'];
 };
 
-export default function GroupInfo({ groupId, me }: GroupInfoProps) {
+export default function GroupInfo({ groupId, nickname }: GroupInfoProps) {
   const { groupName, setGroupName, groupThumbnail, setGroupThumbnail } =
     useGroupEdit();
   const router = useRouter();
@@ -49,18 +47,16 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
         <Drawer>
           <DrawerTrigger className="relative cursor-pointer">
             <div className="w-24 h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
-              {groupThumbnail?.assetId ? (
-                <AssetImage
+              {groupThumbnail ? (
+                <Image
                   width={100}
                   height={100}
-                  assetId={groupThumbnail.assetId}
-                  alt="그룹 썸네일"
+                  src={groupThumbnail.assetId || '/base.png'}
                   className="w-full h-full object-cover opacity-80"
+                  alt="그룹 썸네일"
                 />
               ) : (
-                <div className="flex items-center justify-center">
-                  <ImageIcon className="w-6 h-6 text-gray-400" />
-                </div>
+                <Users className="w-1/3 h-1/3 text-gray-400" />
               )}
             </div>
             <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
@@ -140,26 +136,16 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
           className="cursor-pointer mt-4 w-full flex items-center justify-between p-5 rounded-3xl border transition-all active:scale-[0.98] dark:bg-[#10B981]/5 dark:border-[#10B981]/10 dark:hover:bg-[#10B981]/10 bg-[#10B981]/5 border-[#10B981]/10 hover:bg-[#10B981]/10"
         >
           <div className="flex items-center gap-4">
-            {me.profileImage?.assetId ? (
-              <AssetImage
-                width={50}
-                height={50}
-                assetId={me.profileImage.assetId}
-                alt="유저 프로필"
-                className="w-12 h-12 rounded-2xl border bg-white shadow-sm shrink-0"
-              />
-            ) : (
-              <Image
-                width={50}
-                height={50}
-                src={'/profile_base.png'}
-                alt="프로필"
-                className="w-12 h-12 rounded-2xl border bg-white shadow-sm shrink-0"
-              />
-            )}
+            <Image
+              width={50}
+              height={50}
+              src="/profile-ex.jpeg"
+              className="w-12 h-12 rounded-2xl border bg-white shadow-sm shrink-0"
+              alt="그룹에서 나의 프로필"
+            />
             <div className="text-left">
               <p className="text-sm font-bold dark:text-white text-itta-black">
-                {me.nicknameInGroup}
+                {nickname}
               </p>
               <p className="text-[11px] text-[#10B981] font-medium">
                 이 그룹 전용 프로필 설정하기

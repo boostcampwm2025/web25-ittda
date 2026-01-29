@@ -104,5 +104,5 @@ export interface InviteJoinResponse {
 export interface GroupMembersResponse {
   groupName: string;
   groupMemberCount: number;
-  members: { memberId: string; profileImageId: string | null }[];
+  members: { memberId: string; profileImageId: string }[];
 }

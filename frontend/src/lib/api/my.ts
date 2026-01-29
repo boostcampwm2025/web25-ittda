@@ -103,12 +103,8 @@ export const myMonthlyRecordCoverOptions = (month: string) =>
       return response.data;
     },
     initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => {
-      if (!lastPage || !lastPage.pageInfo) return undefined;
-      return lastPage.pageInfo.hasNext
-        ? lastPage.pageInfo.nextCursor
-        : undefined;
-    },
+    getNextPageParam: (lastPage) =>
+      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
     staleTime: PERSONAL_STALE_TIME,
     retry: false,
   });

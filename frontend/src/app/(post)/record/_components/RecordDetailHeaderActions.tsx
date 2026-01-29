@@ -46,18 +46,16 @@ export default function RecordDetailHeaderActions({
   const textBlock = record.blocks.find((block) => block.type === 'TEXT');
   const content =
     textBlock && 'text' in textBlock.value ? textBlock.value.text : '';
-  const image = record.blocks.find((block) => block.type === 'IMAGE');
 
   // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
     requestAnimationFrame(() => {
-      setCurrentUrl(`${window.location.origin}/record/${record.id}`);
+      setCurrentUrl(window.location.href);
     });
   }, []);
 
   // TEXT 타입 블록에서 내용 추출
   const shareData = {
-    id: record.id,
     title: record.title,
     text: content,
     url: currentUrl,
@@ -102,7 +100,31 @@ export default function RecordDetailHeaderActions({
   };
 
   const handleShare = async () => {
-    setShareOpen(true);
+    if (!navigator.share) {
+      setShareOpen(true);
+      return;
+    }
+
+    try {
+      await navigator.share(shareData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (
+        err.name === 'TypeError' ||
+        (err.message && err.message.toLowerCase().includes('url'))
+      ) {
+        try {
+          await navigator.share({
+            title: record.title,
+            text: content,
+          });
+        } catch (innerErr) {
+          console.error('Share failed even without URL:', innerErr);
+        }
+      } else if (err.name !== 'AbortError') {
+        console.error('Share failed:', err);
+      }
+    }
   };
 
   const handleDelete = () => {
@@ -188,12 +210,6 @@ export default function RecordDetailHeaderActions({
         title={shareData.title}
         open={shareOpen}
         onOpenChange={setShareOpen}
-        record={{
-          id: record.id,
-          title: record.title,
-          content,
-          image: image?.id ?? null,
-        }}
       />
     </>
   );
