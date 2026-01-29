@@ -4,6 +4,7 @@ import { Camera, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRef } from 'react';
 import { useProfileEdit } from '../app/(main)/profile/edit/_components/ProfileEditContext';
+import AssetImage from './AssetImage';
 
 interface ProfileInfoProps {
   profileImage: string;
@@ -52,13 +53,17 @@ export default function ProfileInfo({
             className="relative group cursor-pointer"
           >
             <div className="w-32 h-32 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
-              <Image
-                width={100}
-                height={100}
-                src={(image && URL.createObjectURL(image)) || profileImage}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
+              {image && URL.createObjectURL(image) ? (
+                <Image
+                  width={100}
+                  height={100}
+                  src={image && URL.createObjectURL(image)}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <AssetImage assetId={profileImage} alt={`${nickname} 프로필`} />
+              )}
             </div>
             <div className="absolute bottom-0 right-0 w-10 h-10 text-white bg-itta-black rounded-full flex items-center justify-center border-2 border-white shadow-lg active:scale-90 transition-all">
               <Camera className="w-5 h-5" />

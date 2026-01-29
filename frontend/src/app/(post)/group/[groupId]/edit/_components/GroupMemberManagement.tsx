@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { useApiDelete } from '@/hooks/useApi';
 import { GroupMember } from '@/lib/types/groupResponse';
 import { GroupRoleType } from '@/lib/types/group';
+import { useQueryClient } from '@tanstack/react-query';
+import AssetImage from '@/components/AssetImage';
 
 interface GroupMemberManagementProps {
   groupId: string;
@@ -128,13 +130,23 @@ export default function GroupMemberManagement({
             className="flex items-center justify-between p-3 rounded-2xl border transition-colors dark:bg-white/5 dark:border-white/5 bg-gray-50 border-black/2"
           >
             <div className="flex items-center gap-3">
-              <Image
-                width={50}
-                height={50}
-                src={member.profileImage?.assetId || '/profile-ex.jpeg'}
-                className="w-10 h-10 rounded-full border bg-white"
-                alt=""
-              />
+              {member.profileImage?.assetId ? (
+                <AssetImage
+                  width={50}
+                  height={50}
+                  assetId={member.profileImage.assetId}
+                  alt={`${member.nicknameInGroup} 멤버의 프로필`}
+                  className="w-10 h-10 rounded-full border bg-white"
+                />
+              ) : (
+                <Image
+                  width={50}
+                  height={50}
+                  src={'/profile_base.png'}
+                  alt={`${member.nicknameInGroup} 멤버의 프로필`}
+                  className="w-10 h-10 rounded-full border bg-white"
+                />
+              )}
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[13px] font-bold dark:text-gray-200 text-itta-black">

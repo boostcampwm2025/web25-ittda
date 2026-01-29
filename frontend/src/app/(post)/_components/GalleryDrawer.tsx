@@ -2,7 +2,6 @@
 
 import { cn } from '@/lib/utils';
 import { Check, ImageIcon } from 'lucide-react';
-import Image from 'next/image';
 import { useCallback, useMemo, useRef } from 'react';
 import { DrawerClose } from '../../../components/ui/drawer';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -11,6 +10,7 @@ import {
   groupMonthlyRecordCoverOptions,
 } from '@/lib/api/group';
 import { myMonthlyRecordCoverOptions } from '@/lib/api/my';
+import AssetImage from '@/components/AssetImage';
 
 interface GalleryDrawerProps {
   type: 'group' | 'personal' | 'other';
@@ -122,10 +122,10 @@ export default function GalleryDrawer({
                       isCurrent ? 'border-[#10B981]' : 'border-transparent',
                     )}
                   >
-                    <Image
-                      src={item.assetId}
-                      className="object-cover"
+                    <AssetImage
+                      assetId={item.assetId}
                       alt={item.postTitle}
+                      className="object-cover"
                       fill
                       sizes="(max-width: 640px) 33vw, 25vw"
                     />
