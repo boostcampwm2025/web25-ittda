@@ -55,6 +55,7 @@ import { RecordFieldRenderer } from './RecordFieldRender';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import { useRecordEditorPhotos } from '../../_hooks/useRecordEditorPhotos';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -71,6 +72,7 @@ export default function PostEditor({
   groupId,
   postId,
 }: PostEditorProps) {
+  const queryClient = useQueryClient();
   const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
@@ -317,6 +319,7 @@ export default function PostEditor({
         draftId,
         draftVersion: versionRef.current,
       });
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
       return;
     }
 
@@ -353,6 +356,7 @@ export default function PostEditor({
       ...(groupId ? { groupId } : {}),
     };
 
+    queryClient.invalidateQueries({ queryKey: ['my', 'records'] });
     execute({
       payload: postPayload,
     });

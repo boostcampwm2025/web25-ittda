@@ -125,17 +125,18 @@ export default function SharedRecords({ searchParams }: SharedRecordProps) {
 
   if (sortedGroups.length === 0) {
     return (
-      <div className="py-16 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">
+      <div className="py-16 flex flex-col items-center justify-center text-center space-y-6 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">
         <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
-          <Users className="w-6 h-68 text-[#10B981]" />
+          <Users className="w-6 h-6 text-[#10B981]" />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2 max-w-xs">
           <h3 className="text-sm font-bold dark:text-gray-200 text-gray-700">
             공유된 그룹이 없어요
           </h3>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 leading-relaxed">
             친구들과 함께 기록을 공유할
-            <br /> 새로운 그룹을 만들어보세요!
+            <br />
+            새로운 그룹을 만들어보세요!
           </p>
         </div>
       </div>

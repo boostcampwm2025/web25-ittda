@@ -8,6 +8,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
+import { convertDayRecords } from '@/app/(post)/_utils/convertMonthRecords';
 
 interface GroupMonthlyDetailPageProps {
   params: Promise<{ month: string; groupId: string }>;
@@ -27,9 +28,10 @@ export default async function GroupMonthlyDetailPage({
     dailyRecords = await getCachedGroupDailyRecordList(groupId, month);
 
     // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    // select 함수가 적용된 변환된 데이터를 저장
     queryClient.setQueryData(
       ['group', groupId, 'records', 'daily', month],
-      dailyRecords,
+      convertDayRecords(dailyRecords),
     );
   }
 

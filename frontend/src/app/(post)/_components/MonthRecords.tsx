@@ -115,7 +115,11 @@ export default function MonthRecords({
         </div>
         <button
           type="button"
-          onClick={() => router.push('/add')}
+          onClick={() =>
+            groupId
+              ? router.push(`/add?groupId=${groupId}`)
+              : router.push('/add')
+          }
           className="mt-2 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-itta-black shadow-lg shadow-itta-black/20 hover:bg-itta-black/80 active:scale-95 transition-all"
         >
           <Plus className="w-4 h-4" />
