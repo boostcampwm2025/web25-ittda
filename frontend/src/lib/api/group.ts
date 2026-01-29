@@ -182,8 +182,12 @@ export const groupRecordCoverOptions = (groupId: string) =>
       return response.data;
     },
     initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) =>
-      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.pageInfo) return undefined;
+      return lastPage.pageInfo.hasNext
+        ? lastPage.pageInfo.nextCursor
+        : undefined;
+    },
     retry: false,
   });
 
@@ -284,7 +288,11 @@ export const groupMonthlyRecordCoverOptions = (
       return response.data;
     },
     initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) =>
-      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.pageInfo) return undefined;
+      return lastPage.pageInfo.hasNext
+        ? lastPage.pageInfo.nextCursor
+        : undefined;
+    },
     retry: false,
   });

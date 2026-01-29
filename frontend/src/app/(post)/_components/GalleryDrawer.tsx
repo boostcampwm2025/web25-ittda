@@ -55,7 +55,7 @@ export default function GalleryDrawer({
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = currentQuery;
 
   const items = (data?.pages ?? []).flatMap((page) =>
-    page.sections.flatMap((section) => section.items),
+    (page?.sections ?? []).flatMap((section) => section.items ?? []),
   );
 
   // 무한 스크롤 관찰자
