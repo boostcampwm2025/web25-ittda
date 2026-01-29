@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { post } from '@/lib/api/api';
+import { get, post } from '@/lib/api/api';
 import { createApiError } from '@/lib/utils/errorHandler';
 
 /** 단건 미디어 조회 응답 */
@@ -27,9 +27,8 @@ export function useMediaResolveSingle(mediaId?: string, draftId?: string) {
   return useQuery({
     queryKey: ['mediaUrl', mediaId, draftId],
     queryFn: async () => {
-      const response = await post<SingleResolveResponse>(
+      const response = await get<SingleResolveResponse>(
         `/api/media/${mediaId}/url`,
-        { draftId },
       );
 
       if (!response.success) throw createApiError(response);
@@ -43,13 +42,14 @@ export function useMediaResolveSingle(mediaId?: string, draftId?: string) {
 /**
  * 다중 미디어 조회
  */
-export function useMediaResolveMulti(mediaIds: string[]) {
+export function useMediaResolveMulti(mediaIds: string[], draftId?: string) {
   const sortedIds = [...mediaIds].sort();
 
   return useQuery({
     queryKey: ['mediaResolve', sortedIds],
     queryFn: async () => {
       const response = await post<MultiResolveResponse>('/api/media/resolve', {
+        draftId,
         mediaIds,
       });
 
