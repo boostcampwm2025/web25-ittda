@@ -77,7 +77,12 @@ export default function OAuthCallbackContent({
           );
         }
 
-        router.push('/');
+        const hasSeenOnboarding = localStorage.getItem('has_seen_onboarding');
+        if (hasSeenOnboarding === 'true') {
+          router.replace('/'); // 이미 봤다면 홈으로
+        } else {
+          router.replace('/onboarding'); // 안 봤다면 온보딩으로
+        }
       }
     };
 

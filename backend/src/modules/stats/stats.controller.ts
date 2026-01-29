@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Req,
-  UseGuards,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -32,7 +25,7 @@ interface RequestWithUser extends Request {
 }
 
 @ApiTags('stats')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @UseGuards(JwtAuthGuard)
 @Controller({
   path: 'stats',
@@ -99,17 +92,5 @@ export class StatsController {
     ]);
 
     return { streak, monthlyRecordingDays };
-  }
-
-  private parseYearMonth(yyyy_mm: string) {
-    const [yearStr, monthStr] = yyyy_mm.split('-');
-    const year = parseInt(yearStr, 10);
-    const month = parseInt(monthStr, 10);
-
-    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
-      throw new BadRequestException('Invalid date format. Use YYYY-MM.');
-    }
-
-    return { year, month };
   }
 }

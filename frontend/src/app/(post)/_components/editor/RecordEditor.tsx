@@ -54,17 +54,19 @@ import { useThrottle } from '@/lib/utils/useThrottle';
 import { RecordFieldRenderer } from './RecordFieldRender';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 
+interface PostEditorProps {
+  mode: 'add' | 'edit';
+  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
+  draftId?: string;
+  groupId?: string;
+}
+
 export default function PostEditor({
   mode,
   initialPost,
   draftId,
   groupId,
-}: {
-  mode: 'add' | 'edit';
-  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
-  groupId?: string;
-  draftId?: string;
-}) {
+}: PostEditorProps) {
   const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');

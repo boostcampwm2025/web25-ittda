@@ -6,12 +6,15 @@ import Image from 'next/image';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from './PWAInstallModal';
 import { setCookie } from '@/lib/utils/cookie';
+import { usePathname } from 'next/navigation';
 
 export default function PWAInstallBannerClient() {
   const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
     usePWAInstall();
   const [showBanner, setShowBanner] = useState(true);
   const [showInstructions, setShowInstructions] = useState(false);
+
+  const pathname = usePathname();
 
   const handleInstallClick = async () => {
     // Chrome/Edge 등에서 기본 프롬프트 지원하는 경우
@@ -44,6 +47,10 @@ export default function PWAInstallBannerClient() {
   };
 
   if (isInstalled || !showBanner) {
+    return null;
+  }
+
+  if (pathname.startsWith('/login') || pathname.startsWith('/onboarding')) {
     return null;
   }
 

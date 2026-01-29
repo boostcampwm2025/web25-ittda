@@ -1,6 +1,5 @@
 import {
   Body,
-  BadRequestException,
   Controller,
   Get,
   Patch,
@@ -28,11 +27,13 @@ import { GetDailyArchiveQueryDto } from './dto/get-daily-archive.query.dto';
 import { DayRecordResponseDto } from './dto/day-record.response.dto';
 import { GetArchivesMonthCoverQueryDto } from './dto/get-archives-month-cover.query.dto';
 
+import { parseYearMonth } from '@/common/utils/parseDateValidator';
+
 import type { MyJwtPayload } from '../auth/auth.type';
 
 // 내 기록함 포함 사용자 관련 api
 @ApiTags('user')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @UseGuards(JwtAuthGuard)
 @Controller({
   path: 'user',
@@ -81,7 +82,7 @@ export class UserController {
       throw new UnauthorizedException('Access token is required.');
     }
 
-    const { year, month } = this.parseYearMonth(yyyy_mm);
+    const { year, month } = parseYearMonth(yyyy_mm);
 
     const images = await this.userService.getMonthImages(userId, year, month);
     return { data: { images } };
@@ -104,7 +105,7 @@ export class UserController {
       throw new UnauthorizedException('Access token is required.');
     }
 
-    const { year, month } = this.parseYearMonth(yyyy_mm);
+    const { year, month } = parseYearMonth(yyyy_mm);
 
     await this.userService.updateMonthCover(
       userId,
@@ -130,9 +131,30 @@ export class UserController {
       throw new UnauthorizedException('Access token is required.');
     }
 
-    const { year, month } = this.parseYearMonth(query.month);
+    const { year, month } = parseYearMonth(query.month);
 
     const data = await this.userService.getDailyArchive(userId, year, month);
+    return { data };
+  }
+
+  @Get('archives/record-days')
+  @ApiOperation({
+    summary: '기록이 있는 날짜 조회',
+    description: '특정 월 중 기록이 있는 날짜 목록을 조회합니다.',
+  })
+  @ApiWrappedOkResponse({ type: String, isArray: true })
+  async getRecordedDays(
+    @User() user: MyJwtPayload,
+    @Query() query: GetDailyArchiveQueryDto,
+  ): Promise<{ data: string[] }> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    const { year, month } = parseYearMonth(query.month);
+    const data = await this.userService.getRecordedDays(userId, year, month);
+
     return { data };
   }
 
@@ -151,21 +173,9 @@ export class UserController {
       throw new UnauthorizedException('Access token is required.');
     }
 
-    const { year, month } = this.parseYearMonth(query.year);
+    const { year, month } = parseYearMonth(query.year);
     const data = await this.userService.getMonthImages(userId, year, month);
 
     return { data };
-  }
-
-  private parseYearMonth(yyyy_mm: string) {
-    const [yearStr, monthStr] = yyyy_mm.split('-');
-    const year = parseInt(yearStr, 10);
-    const month = parseInt(monthStr, 10);
-
-    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
-      throw new BadRequestException('Invalid date format. Use YYYY-MM.');
-    }
-
-    return { year, month };
   }
 }

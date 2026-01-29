@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { RecordDetail } from '@/lib/types/recordResponse';
 import { CreateRecordRequest } from '@/lib/types/record';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface PublishRecordRequest {
   draftId: string;
@@ -18,14 +19,21 @@ export const useCreateRecord = (
   },
 ) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { userId } = useAuthStore();
 
   // 일반 게시글 생성
   const createMutation = useApiPost<RecordDetail, CreateRecordRequest>(
     '/api/posts',
     {
-      onSuccess: (res) => {
+      onSuccess: async (res) => {
         if (res.success && res.data?.id) {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['records'] }),
+            queryClient.invalidateQueries({ queryKey: ['me'] }),
+            queryClient.invalidateQueries({ queryKey: ['summary'] }),
+            queryClient.invalidateQueries({ queryKey: ['pattern'] }),
+          ]);
           router.replace(`/record/${res.data?.id}`);
         }
       },

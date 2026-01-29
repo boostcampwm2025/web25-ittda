@@ -10,9 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiExtraModels,
   ApiNoContentResponse,
+  ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { PostService } from './post.service';
@@ -34,6 +37,7 @@ import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import type { MyJwtPayload } from '../auth/auth.type';
 
 @ApiTags('posts')
+@ApiBearerAuth('bearerAuth')
 @ApiExtraModels(MoodValueDto, LocationValueDto, RatingValueDto, MediaValueDto)
 @UseGuards(JwtAuthGuard)
 @Controller({ path: 'posts', version: '1' })
@@ -41,6 +45,12 @@ export class PostController {
   constructor(private readonly postService: PostService) {}
 
   @Get(':id')
+  @ApiOperation({
+    summary: '게시글 상세 조회',
+    description:
+      '특정 ID의 게시글 상세 정보를 조회합니다. 조회 권한이 필요합니다.',
+  })
+  @ApiParam({ name: 'id', description: '게시글 ID' })
   @ApiWrappedOkResponse({ type: PostDetailDto })
   async getOne(
     @User() user: MyJwtPayload,
@@ -55,6 +65,10 @@ export class PostController {
   }
 
   @HttpPost()
+  @ApiOperation({
+    summary: '게시글 생성',
+    description: '새로운 게시글을 작성합니다. 블록 단위로 본문을 구성합니다.',
+  })
   @ApiBody({
     type: CreatePostDto,
     description:
@@ -77,6 +91,11 @@ export class PostController {
 
   @Delete(':id')
   @HttpCode(204)
+  @ApiOperation({
+    summary: '게시글 삭제',
+    description: '특정 ID의 게시글을 삭제합니다. 작성자만 삭제 가능합니다.',
+  })
+  @ApiParam({ name: 'id', description: '게시글 ID' })
   @ApiNoContentResponse()
   async deleteOne(
     @User() user: MyJwtPayload,

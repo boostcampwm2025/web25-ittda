@@ -24,7 +24,7 @@ interface RequestWithUser extends Request {
 
 // 마이페이지/설정
 @ApiTags('mypage')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @Controller({
   path: 'me',
   version: '1',

@@ -11,10 +11,10 @@ export default function EmotionDashboard() {
   const router = useRouter();
 
   const {
-    data: currentEmotions = [],
+    data: currentEmotions = { emotion: [], totalCount: 0 },
     isLoading,
     isError,
-  } = useQuery(userProfileEmotionSummaryOptions());
+  } = useQuery(userProfileEmotionSummaryOptions(10));
 
   if (isLoading) {
     return (
@@ -45,19 +45,24 @@ export default function EmotionDashboard() {
 
       <div className="w-full justify-between items-center">
         <MonthlyPatternChart emotions={currentEmotions} />
-
+        <div className="flex items-center justify-end pr-1 gap-1 text-itta-black/80 dark:text-gray-300">
+          <p className="text-[11px] tracking-tight">
+            총&nbsp;
+            <span className="font-bold text-[#10B981]/90">
+              {currentEmotions.totalCount}개
+            </span>
+            &nbsp;중
+          </p>
+        </div>
         {/* 리스트 형태로 감정 데이터 표시 */}
         <div className="mt-5 mb-6">
-          {currentEmotions.length > 0 ? (
+          {currentEmotions.emotion.length > 0 ? (
             <div className="space-y-2">
-              {[...currentEmotions]
+              {[...currentEmotions.emotion]
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 5)
                 .map((emotion, index) => {
-                  const totalCount = currentEmotions.reduce(
-                    (sum, e) => sum + e.count,
-                    0,
-                  );
+                  const totalCount = currentEmotions.totalCount;
                   const percentage = (
                     (emotion.count / totalCount) *
                     100

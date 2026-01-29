@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   JoinColumn,
   Index,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { User } from '../../user/entity/user.entity';
@@ -66,4 +67,7 @@ export class GroupMember {
 
   @CreateDateColumn({ name: 'joined_at', type: 'timestamptz' })
   joinedAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
 }

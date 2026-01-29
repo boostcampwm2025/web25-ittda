@@ -1,6 +1,6 @@
 'use client';
 
-import { myMonthlyRecordListOptions } from '@/lib/api/my';
+import { userProfileOptions } from '@/lib/api/profile';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import {
@@ -14,22 +14,27 @@ import {
 
 export default function MonthlyUsageChart() {
   const { theme } = useTheme();
-  const year = new Date().getFullYear().toString();
 
-  const {
-    data: monthlyRecords = [],
-    isLoading,
-    isError,
-  } = useQuery(myMonthlyRecordListOptions(year));
+  const { data: profile, isLoading, isError } = useQuery(userProfileOptions());
 
   // API 응답을 차트 데이터 형식으로 변환
-  const monthlyUsageData = monthlyRecords.map((record) => {
-    const [year, month] = record.id.split('-');
-    return {
-      name: `${year.slice(2)}.${month}`,
-      value: record.count,
-    };
-  });
+  const monthlyUsageData = profile?.stats.monthlyCounts
+    .slice()
+    .reverse()
+    .slice(0, 6)
+    .map((record) => {
+      const [year, month] = record.month.split('-');
+      return {
+        name: `${year.slice(2)}.${month}`,
+        value: record.count,
+      };
+    });
+
+  // 모든 데이터가 0인지 확인
+  const hasNoData =
+    !monthlyUsageData ||
+    monthlyUsageData.length === 0 ||
+    monthlyUsageData.every((data) => data.value === 0);
 
   if (isLoading) {
     return (
@@ -63,6 +68,26 @@ export default function MonthlyUsageChart() {
     );
   }
 
+  if (hasNoData) {
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-[13px] font-bold dark:text-white text-itta-black">
+            월별 사용 그래프
+          </h2>
+        </div>
+        <div className="h-44 w-full pb-3 flex flex-col items-center justify-center gap-1.5">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            아직 기록이 없어요
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            첫 기록을 작성해보세요
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
@@ -89,7 +114,7 @@ export default function MonthlyUsageChart() {
               dy={10}
             />
             <Bar dataKey="value" radius={[2, 2, 2, 2]} barSize={40}>
-              {monthlyUsageData.map((entry, index) => (
+              {profile?.stats.monthlyCounts.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={

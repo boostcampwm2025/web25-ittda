@@ -4,7 +4,7 @@ import TagSearchDrawer from '@/app/(search)/_components/TagSearchDrawer';
 
 export type FilterDrawerType = 'tag' | 'date' | 'location' | 'emotion' | null;
 
-interface Props {
+interface FilterDrawerProps {
   activeDrawer: FilterDrawerType;
   close: () => void;
   tags: string[];
@@ -12,6 +12,7 @@ interface Props {
   dateRange: { start: string | null; end: string | null };
   onUpdateUrl: (params: Record<string, string | null>) => void;
 }
+
 const ALL_TAGS = [
   '일상',
   '맛집',
@@ -31,7 +32,7 @@ export function FilterDrawerRenderer({
   emotions,
   dateRange,
   onUpdateUrl,
-}: Props) {
+}: FilterDrawerProps) {
   if (!activeDrawer) return;
   switch (activeDrawer) {
     case 'tag':

@@ -1,8 +1,10 @@
+'use client';
+
+import { userProfileOptions } from '@/lib/api/profile';
+import { useQuery } from '@tanstack/react-query';
+
 export default function WritingRecordStatistics() {
-  const writingData = {
-    writtenRecords: 172,
-    addedImage: 146, // 이미지
-  };
+  const { data: profile } = useQuery(userProfileOptions());
 
   return (
     <>
@@ -20,7 +22,7 @@ export default function WritingRecordStatistics() {
             </span>
             <div className="flex items-baseline gap-1">
               <span className="text-[16px] font-semibold dark:text-white text-[#222222]">
-                {writingData.writtenRecords}
+                {profile?.stats.totalPosts}
               </span>
               <span className="text-[12px] font-medium text-gray-400">개</span>
             </div>
@@ -31,7 +33,7 @@ export default function WritingRecordStatistics() {
             </span>
             <div className="flex items-baseline gap-1">
               <span className="text-[16px] font-semibold dark:text-white text-[#222222]">
-                {writingData.addedImage}
+                {profile?.stats.totalImages}
               </span>
               <span className="text-[12px] font-medium text-gray-400">개</span>
             </div>

@@ -7,6 +7,7 @@ import { recordPreviewListOptions } from '@/lib/api/records';
 import BlockContent from '@/components/BlockContent';
 import { Block } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
+import { BookOpen, Plus } from 'lucide-react';
 
 export default function RecordList() {
   const router = useRouter();
@@ -115,18 +116,24 @@ export default function RecordList() {
           </div>
         ))
       ) : (
-        <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">
-          <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
-            이날의 기록이 없습니다.
-          </p>
+        <div className="py-16 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+            <BookOpen className="w-6 h-6 text-[#10B981]" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+              아직 기록이 없어요
+            </p>
+            <p className="text-xs text-gray-400">
+              이날의 첫 번째 추억을 남겨보세요
+            </p>
+          </div>
           <button
             type="button"
-            onClick={() => {
-              const formattedDate = selectedDateStr.replace(/-/g, '.');
-              router.push(`/add?prefilledDate=${formattedDate}`);
-            }}
-            className="text-[11px] font-bold text-[#10B981] hover:underline"
+            onClick={() => router.push('/add')}
+            className="mt-2 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-itta-black shadow-lg shadow-itta-black/20 hover:bg-itta-black/80 active:scale-95 transition-all"
           >
+            <Plus className="w-4 h-4" />
             기록 추가하기
           </button>
         </div>
