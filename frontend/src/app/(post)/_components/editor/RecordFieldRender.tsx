@@ -68,9 +68,9 @@ export function RecordFieldRenderer({
     }
   };
 
-  const handleCommit = () => {
+  const handleCommit = (finalValue?: BlockValue) => {
     if (lock.isMyLock) {
-      onCommit(block.id, displayValue);
+      onCommit(block.id, finalValue ?? displayValue);
     }
   };
   const handleLockAndAction = () => {
@@ -104,7 +104,7 @@ export function RecordFieldRenderer({
           isLocked={lock?.isLockedByOther}
           isMyLock={lock.isMyLock}
           onFocus={handleFocus}
-          onBlur={handleCommit}
+          onBlur={(finalText) => handleCommit({ text: finalText })}
           isLastContentBlock={isLastContentBlock}
         />
       );

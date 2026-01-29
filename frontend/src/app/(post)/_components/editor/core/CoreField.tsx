@@ -70,7 +70,7 @@ interface ContentProps {
   isLocked?: boolean;
   isMyLock?: boolean;
   onFocus?: () => void;
-  onBlur?: () => void;
+  onBlur?: (finalText: string) => void;
 }
 
 export const ContentField = ({
@@ -88,6 +88,7 @@ export const ContentField = ({
 
   useEffect(() => {
     if (isMyLock && textareaRef.current) {
+      if (document.activeElement === textareaRef.current) return;
       isInternalFocus.current = true;
       textareaRef.current.focus();
 
@@ -135,6 +136,12 @@ export const ContentField = ({
     return () => observer.disconnect();
   }, [adjustHeight]);
 
+  const handleBlur = () => {
+    if (textareaRef.current) {
+      onBlur?.(textareaRef.current.value);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -151,7 +158,7 @@ export const ContentField = ({
           value={value.text}
           disabled={isLocked}
           onFocus={handleFocusWrapper}
-          onBlur={onBlur}
+          onBlur={handleBlur}
           onChange={(e) => onChange(e.target.value)}
           className="w-full min-h-30 border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
         />

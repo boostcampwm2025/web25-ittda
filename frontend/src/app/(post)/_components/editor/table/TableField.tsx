@@ -11,7 +11,7 @@ interface TableFieldProps {
   isLocked?: boolean;
   isMyLock?: boolean;
   onFocus?: () => void;
-  onBlur?: () => void;
+  onBlur?: (finalValue: TableValue) => void;
 }
 
 export const TableField = ({
@@ -25,7 +25,7 @@ export const TableField = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
   const isInternalFocus = useRef(false);
-  
+
   useEffect(() => {
     if (isMyLock && firstInputRef.current) {
       if (containerRef.current?.contains(document.activeElement)) {
@@ -58,7 +58,9 @@ export const TableField = ({
     }
 
     // 테이블 외부로 나갈 때만 onBlur
-    onBlur?.();
+    if (data) {
+      onBlur?.(data);
+    }
   };
 
   if (!data) return null;
