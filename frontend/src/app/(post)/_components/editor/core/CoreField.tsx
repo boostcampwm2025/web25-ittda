@@ -98,7 +98,7 @@ export const ContentField = ({
     }
   }, [isMyLock]);
 
-  const handleFocusWrapper = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+  const handleFocusWrapper = () => {
     if (isInternalFocus.current) {
       isInternalFocus.current = false;
       return;

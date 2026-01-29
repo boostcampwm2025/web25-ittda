@@ -40,7 +40,7 @@ export const TableField = ({
   }, [isMyLock]);
 
   // 내부 포커스인지 외부 사용자의 클릭 포커스인지 구분
-  const handleFocusWrapper = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleFocusWrapper = () => {
     if (isInternalFocus.current || isMyLock) {
       isInternalFocus.current = false;
       return;
