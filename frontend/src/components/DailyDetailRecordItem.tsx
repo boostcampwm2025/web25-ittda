@@ -23,7 +23,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useApiDelete } from '@/hooks/useApi';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/utils/errorHandler';
-import AssetImage from './AssetImage';
 
 interface DailyDetailRecordItemProps {
   record: RecordPreview;
@@ -105,26 +104,16 @@ export default function DailyDetailRecordItem({
             </h4>
 
             <div className="flex -space-x-2 shrink-0">
-              {members
-                ?.slice(0, 3)
-                .map((m) =>
-                  m.avatar ? (
-                    <AssetImage
-                      key={m.id}
-                      assetId={m.avatar}
-                      alt={`${m.name}의 프로필`}
-                    />
-                  ) : (
-                    <Image
-                      key={m.id}
-                      width={32}
-                      height={32}
-                      src={'/profile_base.png'}
-                      alt={`${m.name}의 프로필`}
-                      className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white object-cover"
-                    />
-                  ),
-                )}
+              {members?.slice(0, 3).map((m) => (
+                <Image
+                  key={m.id}
+                  src={m.avatar}
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white object-cover"
+                  alt={m.name}
+                />
+              ))}
               {members && members.length > 3 && (
                 <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
                   <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">
@@ -165,10 +154,7 @@ export default function DailyDetailRecordItem({
                   return (
                     <div key={rowNumber} className="w-full">
                       {sortedBlocks.map((block) => (
-                        <BlockContent
-                          key={`${record.postId}-${block.id}`}
-                          block={block}
-                        />
+                        <BlockContent key={block.id} block={block} />
                       ))}
                     </div>
                   );

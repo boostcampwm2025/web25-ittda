@@ -7,7 +7,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import AssetImage from './AssetImage';
 
 export default function Header() {
   const router = useRouter();
@@ -67,20 +66,15 @@ export default function Header() {
             'dark:border-white/10 dark:shadow-none',
           )}
         >
-          {userProfile?.user.profileImageId ? (
-            <AssetImage
-              assetId={userProfile.user.profileImageId}
-              alt="유저 프로필"
-            />
-          ) : (
-            <Image
-              width={30}
-              height={30}
-              src={'/profile_base.png'}
-              alt="프로필"
-              className="w-full h-full object-cover"
-            />
-          )}
+          <Image
+            src={userProfile?.user?.profileImageId || '/profile-ex.jpeg'}
+            alt="프로필"
+            className="w-full h-full object-cover"
+            // placeholder="blur"
+            // blurDataURL=""
+            width={30}
+            height={30}
+          />
         </button>
       </div>
     </header>

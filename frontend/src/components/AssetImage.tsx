@@ -30,7 +30,12 @@ export default function AssetImage({
 
   if (isLoading) {
     return (
-      <div className={cn('flex items-center justify-center', className)}>
+      <div
+        className={cn(
+          'flex items-center justify-center bg-gray-100 dark:bg-gray-800',
+          className,
+        )}
+      >
         <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
       </div>
     );
@@ -42,7 +47,12 @@ export default function AssetImage({
     }
 
     return (
-      <div className={cn('flex items-center justify-center', className)}>
+      <div
+        className={cn(
+          'flex items-center justify-center bg-gray-100 dark:bg-gray-800',
+          className,
+        )}
+      >
         <ImageIcon className="w-6 h-6 text-gray-400" />
       </div>
     );

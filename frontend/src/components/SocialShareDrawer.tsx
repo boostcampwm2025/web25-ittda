@@ -35,12 +35,6 @@ interface SocialShareDrawerProps {
   path: string;
   open: boolean;
   onOpenChange: Dispatch<SetStateAction<boolean>>;
-  record: {
-    id: string;
-    title: string;
-    image: string | null;
-    content: string;
-  };
 }
 
 interface SocialNameProps {
@@ -56,40 +50,9 @@ export default function SocialShareDrawer({
   path,
   open,
   onOpenChange,
-  record,
 }: SocialShareDrawerProps) {
-  const handleKakaoShare = () => {
-    if (!window.Kakao || !window.Kakao?.Share) return;
-
-    const imageUrl = record.image
-      ? record.image
-      : `${process.env.NEXT_PUBLIC_CLIENT_URL}/thumbnail.png`;
-
-    window.Kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: {
-        title: record.title || '오늘의 기록을 확인해보세요',
-        description:
-          record.content ||
-          '기억과 맥락을 잇는 우리의 소중한 순간을 확인해보세요.',
-        imageUrl: imageUrl,
-        imageWidth: 800,
-        imageHeight: 400,
-        link: {
-          mobileWebUrl: path,
-          webUrl: path,
-        },
-      },
-      buttons: [
-        {
-          title: '기록 보러가기',
-          link: {
-            mobileWebUrl: path,
-            webUrl: path,
-          },
-        },
-      ],
-    });
+  const shareKakao = () => {
+    // TODO: 주디 카톡 공유 마무리되면 가져오기
   };
 
   return (
@@ -111,7 +74,7 @@ export default function SocialShareDrawer({
             <ul className="flex justify-start gap-6 min-w-max">
               <li className="flex flex-col items-center shrink-0">
                 <button
-                  onClick={handleKakaoShare}
+                  onClick={shareKakao}
                   className="flex flex-col items-center"
                   aria-label="카카오톡으로 공유하기"
                 >
@@ -129,9 +92,7 @@ export default function SocialShareDrawer({
               <li className="flex flex-col items-center shrink-0">
                 <FacebookShareButton
                   url={path}
-                  title={title}
                   aria-label="페이스북으로 공유하기"
-                  content={record.content}
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
                   <FacebookIcon size={60} round />
@@ -141,9 +102,7 @@ export default function SocialShareDrawer({
               <li className="flex flex-col items-center shrink-0">
                 <FacebookMessengerShareButton
                   url={path}
-                  title={title}
                   appId="521270401588372"
-                  content={record.content}
                   aria-label="페이스북 메신저로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
@@ -155,7 +114,6 @@ export default function SocialShareDrawer({
                 <TwitterShareButton
                   url={path}
                   title={title}
-                  content={record.content}
                   aria-label="트위터로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
@@ -166,10 +124,8 @@ export default function SocialShareDrawer({
               <li className="flex flex-col items-center shrink-0">
                 <EmailShareButton
                   url={path}
-                  title={title}
-                  subject={record.title}
-                  body={record.content}
-                  content={record.content}
+                  subject={`athens-${title}`}
+                  body={`athens-${title}`}
                   aria-label="이메일로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
@@ -181,7 +137,6 @@ export default function SocialShareDrawer({
                 <LineShareButton
                   url={path}
                   title={title}
-                  content={record.content}
                   aria-label="라인으로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
