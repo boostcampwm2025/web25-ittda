@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post as HttpPost,
   UnauthorizedException,
   UseGuards,
@@ -20,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { EditPostDto } from './dto/edit-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
 import {
   LocationValueDto,
@@ -64,6 +66,25 @@ export class PostController {
     return this.postService.findOne(id);
   }
 
+  @Get(':postId/edit')
+  @ApiOperation({
+    summary: '게시글 수정 스냅샷 조회',
+    description:
+      '게시글 수정을 위한 스냅샷을 조회합니다. 그룹 글은 ADMIN/EDITOR 권한만 수정 가능합니다.',
+  })
+  @ApiParam({ name: 'postId', description: '게시글 ID' })
+  @ApiWrappedOkResponse({ type: EditPostDto })
+  async getEditSnapshot(
+    @User() user: MyJwtPayload,
+    @Param('postId') postId: string,
+  ): Promise<EditPostDto> {
+    const requesterId = user?.sub;
+    if (!requesterId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+    return this.postService.getEditSnapshot(postId, requesterId);
+  }
+
   @HttpPost()
   @ApiOperation({
     summary: '게시글 생성',
@@ -87,6 +108,30 @@ export class PostController {
       throw new UnauthorizedException('Access token is required.');
     }
     return this.postService.createPost(ownerId, dto);
+  }
+
+  @Patch(':postId')
+  @ApiOperation({
+    summary: '게시글 수정',
+    description:
+      '기존 게시글을 수정합니다. 블록 전체를 교체합니다. 그룹 글은 ADMIN/EDITOR 권한만 수정 가능합니다.',
+  })
+  @ApiParam({ name: 'postId', description: '게시글 ID' })
+  @ApiBody({
+    type: EditPostDto,
+    description: '게시글 편집 스냅샷 전체를 전달합니다.',
+  })
+  @ApiWrappedOkResponse({ type: PostDetailDto })
+  async updatePost(
+    @User() user: MyJwtPayload,
+    @Param('postId') postId: string,
+    @Body() dto: EditPostDto,
+  ): Promise<PostDetailDto> {
+    const requesterId = user?.sub;
+    if (!requesterId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+    return this.postService.updatePost(postId, requesterId, dto);
   }
 
   @Delete(':id')
