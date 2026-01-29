@@ -46,8 +46,14 @@ export const useCreateRecord = (
   const publishMutation = useApiPost<RecordDetail, PublishRecordRequest>(
     `/api/groups/${groupId}/posts/publish`,
     {
-      onSuccess: (res) => {
+      onSuccess: async (res) => {
         if (res.success && res.data?.id) {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['records'] }),
+            queryClient.invalidateQueries({ queryKey: ['me'] }),
+            queryClient.invalidateQueries({ queryKey: ['summary'] }),
+            queryClient.invalidateQueries({ queryKey: ['pattern'] }),
+          ]);
           router.replace(`/record/${res.data?.id}`);
         }
       },

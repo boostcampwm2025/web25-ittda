@@ -1,6 +1,6 @@
 'use client';
 
-import { SessionProvider, useSession } from 'next-auth/react';
+import { SessionProvider, signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -21,6 +21,11 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    if (session?.error || status === 'unauthenticated') {
+      logout();
+      signOut({ redirectTo: '/login' });
+    }
+
     if (status === 'loading') return;
 
     // 토큰 에러 또는 인증 만료 시 로그아웃 처리
@@ -29,7 +34,7 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
     // 로그인이 필요한 상태인데 세션이 없는 경우 (로그인 유저 타입 체크)
     if (isUnauthenticated && userType === 'social') {
       logout();
-      router.replace('/login');
+      signOut({ redirectTo: '/login' });
     }
   }, [status, userType, logout, router, pathname, session]);
 
@@ -42,7 +47,7 @@ export default function AuthContext({
   children: React.ReactNode;
 }) {
   return (
-    <SessionProvider refetchOnWindowFocus={true} refetchInterval={5 * 60}>
+    <SessionProvider refetchOnWindowFocus={true}>
       <SessionGuard>{children}</SessionGuard>
     </SessionProvider>
   );

@@ -70,6 +70,7 @@ async function fetchWithRetry<T>(
 ) {
   try {
     const response = await fetch(url, fetchOptions);
+
     if (response.status === 204) {
       return {
         success: true,
@@ -77,6 +78,12 @@ async function fetchWithRetry<T>(
         error: null,
       };
     }
+
+    // CSRF 요청 자체가 에러를 뱉을 때를 대비해 응답을 파싱하기 전에도 체크
+    if (url.includes('/api/auth/csrf') || url.includes('/api/auth/session')) {
+      return await response.json(); // NextAuth 요청은 그냥 결과를 반환하고 끝냄
+    }
+
     const data = await response.json();
 
     // 토큰 만료 에러 처리 (인터셉터 역할)
@@ -84,7 +91,7 @@ async function fetchWithRetry<T>(
       !data.success &&
       data.error?.code === 'UNAUTHORIZED' &&
       !skipAuth &&
-      !url.includes('/auth/reissue') // 재발급 API는 제외
+      !url.includes('/auth/refresh') // 재발급 API 자체의 실패는 제외
     ) {
       if (typeof window === 'undefined') {
         // 서버 컴포넌트 환경이라면 토큰 재발급이 아닌 세션 초기화 후 로그인 재요청
@@ -92,14 +99,16 @@ async function fetchWithRetry<T>(
         redirect('/login?reason=expired');
         return;
       }
+
       // 토큰 재발급 시도
       const newToken = await refreshAccessToken();
 
       if (!newToken) {
         // 재발급 실패 - 로그아웃 처리
-        handleLogout();
+        await handleLogout();
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
+          return;
         }
         return {
           success: false,
@@ -113,14 +122,12 @@ async function fetchWithRetry<T>(
       }
 
       // 새 토큰으로 헤더 업데이트 후 재시도
-      const newHeaders = {
-        ...fetchOptions.headers,
-        Authorization: `Bearer ${newToken}`,
-      } as HeadersInit;
+      const finalHeaders = new Headers(fetchOptions.headers);
+      finalHeaders.set('Authorization', `Bearer ${newToken}`);
 
       return fetchWithRetry<T>(
         url,
-        { ...fetchOptions, headers: newHeaders },
+        { ...fetchOptions, headers: finalHeaders },
         attempt,
         maxRetries,
         retryDelay,

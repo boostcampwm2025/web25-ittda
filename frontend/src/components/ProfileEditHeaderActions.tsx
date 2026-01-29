@@ -3,17 +3,20 @@
 import Back from '@/components/Back';
 import { useRouter } from 'next/navigation';
 import { useProfileEdit } from '../app/(main)/profile/edit/_components/ProfileEditContext';
+import { Loader2 } from 'lucide-react';
 
 interface ProfileEditHeaderActionsProps {
   title?: string;
-  onSave?: (data: { nickname: string; image: File | null }) => void;
+  onSave: (data: { nickname: string; image: File | null }) => void;
   redirectPath?: string;
+  isPending: boolean;
 }
 
 export default function ProfileEditHeaderActions({
   title = '프로필 수정',
   onSave,
   redirectPath,
+  isPending = false,
 }: ProfileEditHeaderActionsProps) {
   const router = useRouter();
   const { getEditData } = useProfileEdit();
@@ -21,17 +24,7 @@ export default function ProfileEditHeaderActions({
   const handleSave = () => {
     const editData = getEditData();
 
-    if (onSave) {
-      onSave(editData);
-    } else {
-      // FormData를 사용하여 파일과 데이터를 함께 전송
-      const formData = new FormData();
-      formData.append('nickname', editData.nickname);
-      if (editData.image) {
-        formData.append('profileImage', editData.image);
-      }
-      // TODO: 서버에 프로필 저장 요청
-    }
+    onSave(editData);
 
     if (redirectPath) {
       router.push(redirectPath);
@@ -48,7 +41,7 @@ export default function ProfileEditHeaderActions({
         onClick={handleSave}
         className="cursor-pointer font-bold text-sm active:scale-95 transition-all"
       >
-        저장
+        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '저장'}
       </button>
     </header>
   );

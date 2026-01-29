@@ -14,6 +14,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
+import { cn } from '@/lib/utils';
 
 type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
   groupId: string;
@@ -24,6 +25,21 @@ export default function GroupInfo({ groupId, nickname }: GroupInfoProps) {
   const { groupName, setGroupName, groupThumbnail, setGroupThumbnail } =
     useGroupEdit();
   const router = useRouter();
+
+  // 닉네임 유효성 검사
+  const getGroupNameError = () => {
+    if (groupName.length < 2) return '그룹 이름은 최소 2자 이상이어야 합니다.';
+    if (groupName.length > 10)
+      return '그룹 이름은 최대 10자까지 입력 가능합니다.';
+    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]+$/;
+
+    if (!groupNameRegex.test(groupName)) {
+      return '특수문자는 사용할 수 없습니다. (한글, 영문, 숫자, 공백만 가능)';
+    }
+    return null;
+  };
+
+  const groupNameError = getGroupNameError();
 
   return (
     <section className="space-y-4">
@@ -86,7 +102,14 @@ export default function GroupInfo({ groupId, nickname }: GroupInfoProps) {
             value={groupName}
             placeholder="그룹명을 작성해주세요."
             onChange={(e) => setGroupName(e.target.value)}
-            className="w-full border-b-2 bg-transparent px-1 py-3 text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
+            className={
+              (cn(
+                `w-full border-b-2 bg-transparent px-1 py-3 text-lg font-bold transition-all outline-none dark:placeholder-gray-700 placeholder-gray-300 dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black`,
+              ),
+              groupNameError
+                ? 'border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500'
+                : 'dark:border-white/5 dark:focus:border-[#10B981] border-gray-100 focus:border-[#10B981]')
+            }
           />
           {groupName && (
             <button
@@ -97,6 +120,11 @@ export default function GroupInfo({ groupId, nickname }: GroupInfoProps) {
             </button>
           )}
         </div>
+        {groupNameError && (
+          <p className="text-[10px] text-red-500 px-1 font-medium">
+            {groupNameError}
+          </p>
+        )}
       </div>
 
       <section className="space-y-4">

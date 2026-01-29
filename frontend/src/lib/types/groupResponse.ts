@@ -37,16 +37,26 @@ export interface GroupDetail {
   name: string;
   createdAt: string;
   ownerUserId: string;
-  cover: {
-    assetId: string;
-    sourcePostId: string;
-  } | null;
+  cover: GroupProfileCover | null;
+}
+
+export interface GroupProfileCoverResponse {
+  groupId: string;
+  cover: GroupProfileCover;
+  updatedAt: string;
 }
 
 export interface GroupEditResponse {
   group: GroupDetail;
   me: GroupMember;
   members: GroupMember[];
+}
+
+export interface UpdateGroupMeParams {
+  groupId: string;
+  userId: string;
+  nicknameInGroup?: string;
+  profileMediaId?: string;
 }
 
 /**
