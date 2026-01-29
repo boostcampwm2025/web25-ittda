@@ -3,33 +3,30 @@
 import Image, { ImageProps } from 'next/image';
 import { ImageIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useApiQuery } from '@/hooks/useApi';
-
-interface AssetUrlResponse {
-  url: string;
-}
+import { useMediaResolveSingle } from '@/hooks/useMediaResolve';
 
 interface AssetImageProps extends Omit<ImageProps, 'src'> {
-  assetId: string;
+  assetId: string; // solve 해야할 ID
+  url?: string; // 직접 solve 완료한 URL
+  draftId?: string; // TODO: 명세서에 있어서 추가함, 필요없을 시 삭제
   fallback?: React.ReactNode;
 }
 
 export default function AssetImage({
   assetId,
+  url,
+  draftId,
   alt,
   className,
   fallback,
   ...props
 }: AssetImageProps) {
-  const { data, isLoading, isError } = useApiQuery<AssetUrlResponse>(
-    ['asset', assetId],
-    `/api/assets/${assetId}`,
-    {
-      enabled: !!assetId,
-      staleTime: 1000 * 60 * 60, // 1시간 동안 fresh
-      gcTime: 1000 * 60 * 60 * 24, // 24시간 동안 캐시 유지
-    },
+  //url이 없을 때만 assetId로 solve 호출하기
+  const { data, isLoading, isError } = useMediaResolveSingle(
+    url ? undefined : assetId,
+    draftId,
   );
+  const imageSrc = url || data?.url;
 
   if (isLoading) {
     return (
@@ -44,7 +41,7 @@ export default function AssetImage({
     );
   }
 
-  if (isError || !data?.url) {
+  if (isError || !imageSrc) {
     if (fallback) {
       return <>{fallback}</>;
     }
@@ -61,5 +58,5 @@ export default function AssetImage({
     );
   }
 
-  return <Image src={data.url} alt={alt} className={className} {...props} />;
+  return <Image src={imageSrc} alt={alt} className={className} {...props} />;
 }
