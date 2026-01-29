@@ -49,13 +49,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
           accessTokenExpires:
-            Date.now() + 2 * 60 * 1000 - Math.floor(Math.random() * 10000), // 서버 토큰 만료 시간보다 조금 이르게(14분) 잡아서 401 방지
+            Date.now() +
+            15 * 60 * 1000 -
+            60 * 1000 -
+            Math.floor(Math.random() * 10000), // 서버 토큰 만료 시간보다 조금 이르게(14분) 잡아서 401 방지
         };
       }
 
       // 이전 갱신에서 에러가 발생했다면, 더 이상 갱신 시도하지 않음
-      if (token.error) {
-        return token;
+      if (token.error === 'RefreshAccessTokenError') {
+        return { ...token, accessToken: null };
       }
 
       if (Date.now() < (token.accessTokenExpires as number)) {

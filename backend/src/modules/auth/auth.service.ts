@@ -116,13 +116,13 @@ export class AuthService {
     // 2. 이미 폐기(revoked)된 토큰인 경우 Grace Period 체크
     if (saved.revoked) {
       const now = new Date();
-      const gracePeriod = 10 * 1000; // 10초 유예
-      const revokedAt = new Date((saved as { updatedAt: Date }).updatedAt);
-      const isWithinGracePeriod =
-        now.getTime() - revokedAt.getTime() < gracePeriod;
+      const gracePeriod = 20 * 1000; // 네트워크 지연 고려
 
-      if (isWithinGracePeriod) {
-        // 유예 기간 내: 가장 최근 발급된 토큰을 찾아 반환
+      // saved.updatedAt이 Date 객체인지 확인하고 밀리초 단위로 비교
+      const revokedAt = new Date(saved.updatedAt).getTime();
+      const diff = now.getTime() - revokedAt;
+
+      if (diff < gracePeriod) {
         const latestToken = await this.refreshTokenRepo.findOne({
           where: { userId: saved.userId, revoked: false },
           order: { createdAt: 'DESC' },
@@ -136,7 +136,6 @@ export class AuthService {
           return { accessToken, refreshToken: latestToken.token };
         }
       }
-
       throw new UnauthorizedException('Refresh token reuse detected');
     }
 

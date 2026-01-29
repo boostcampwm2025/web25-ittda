@@ -1,3 +1,4 @@
+import { randomBaseImage } from '@/lib/image';
 import { DailyRecordList, MonthlyRecordList } from '@/lib/types/recordResponse';
 
 const dayNames = ['일', '월', '화', '수', '목', '금', '토'] as const;
@@ -31,6 +32,6 @@ export const convertDayRecords = (dailyRecords: DailyRecordList[]) =>
       dayName: dayNames[dayIndex],
       title: record.latestPostTitle,
       count: record.postCount,
-      coverUrl: record.coverAssetId || '/base.png',
+      coverUrl: record.coverAssetId || randomBaseImage(record.date),
     };
   });

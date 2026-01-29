@@ -16,6 +16,8 @@ let cachedSession: Session | null = null;
 let cacheExpiry = 0;
 const CACHE_TIME = 5 * 60 * 1000; // 5분
 
+export const getIsRefreshing = () => isRefreshing;
+
 // BroadcastChannel로 다른 탭/토큰 갱신 감지 시 캐시 무효화
 if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
   const bc = new BroadcastChannel('next-auth');
@@ -95,71 +97,35 @@ function onTokenRefreshed(token: string) {
  * refresh token은 httpOnly 쿠키에 저장되어 있어 자동으로 전송됨
  */
 export async function refreshAccessToken(): Promise<string | null> {
-  // 이미 재발급 중이면 대기
   if (isRefreshing) {
-    return new Promise((resolve) => {
-      subscribeTokenRefresh((token: string) => {
-        resolve(token);
-      });
-    });
+    return new Promise((resolve) => subscribeTokenRefresh(resolve));
   }
 
   isRefreshing = true;
 
   try {
-    const response = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
+    // 직접 백엔드에 쏘지 않고 NextAuth의 getSession 호출
+    // getSession()이 호출되면 서버의 jwt 콜백이 실행되면서
+    // refreshServerAccessToken 로직이 돌아감
+    const session = await getSession({ broadcast: true });
 
-    if (!response.ok) {
-      // 로그아웃 필요
+    if (!session || session.error === 'RefreshAccessTokenError') {
+      handleLogout();
       return null;
     }
 
-    const authHeader = response.headers.get('Authorization');
-    const newAccessToken = authHeader?.replace('Bearer ', '') ?? null;
+    const newToken = session.accessToken;
 
-    if (!newAccessToken) {
-      // 로그아웃 필요
+    if (!newToken) {
       return null;
     }
-
-    // 브라우저의 storage 이벤트를 트리거해서 Auth 클라이언트가 storage 이벤트를 감지해 세션을 최신화
-    if (typeof window !== 'undefined') {
-      // NextAuth가 사용하는 것과 동일한 채널 생성
-      if (typeof BroadcastChannel !== 'undefined') {
-        // 최신 브라우저: BroadcastChannel만 사용
-        const bc = new BroadcastChannel('next-auth');
-        bc.postMessage({
-          event: 'session',
-          senderId: INSTANCE_ID,
-          data: { trigger: 'getSession' },
-        });
-        bc.close();
-      } else {
-        // 구형 브라우저 폴백: BroadcastChannel이 없을 때만 StorageEvent 발생
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: 'nextauth.message',
-            newValue: JSON.stringify({
-              event: 'session',
-              senderId: INSTANCE_ID,
-              data: { trigger: 'getSession' },
-              timestamp: Math.floor(Date.now() / 1000),
-            }),
-          }),
-        );
-      }
-    }
-
-    onTokenRefreshed(newAccessToken);
-    return newAccessToken;
-  } catch {
-    return null;
+    cachedSession = session;
+    onTokenRefreshed(newToken);
+    return newToken;
   } finally {
-    isRefreshing = false;
+    setTimeout(() => {
+      isRefreshing = false;
+    }, 1000);
   }
 }
 
@@ -206,23 +172,26 @@ export async function refreshServerAccessToken(token: any) {
         .substring('refreshToken='.length);
 
       return {
+        ...token,
         accessToken: newAccessToken,
         refreshToken: newRefreshToken || token.refreshToken,
-        // 백엔드 토큰 만료(2분)보다 약간 일찍 갱신하도록 설정
-        accessTokenExpires: Date.now() + 2 * 60 * 1000 - 10000,
+        // 백엔드 토큰 만료(15분)보다 약간 일찍 갱신하도록 설정
+        accessTokenExpires:
+          Date.now() +
+          15 * 60 * 1000 -
+          60 * 1000 -
+          Math.floor(Math.random() * 10000),
+        error: null,
       };
     } catch (error) {
       console.error('서버 토큰 갱신 실패', error);
-      return { error: 'RefreshAccessTokenError' };
+      return { ...token, error: 'RefreshAccessTokenError' };
+    } finally {
+      serverRefreshPromise = null;
     }
   })();
 
-  try {
-    const result = await serverRefreshPromise;
-    return { ...token, ...result };
-  } finally {
-    serverRefreshPromise = null;
-  }
+  return serverRefreshPromise;
 }
 
 export async function handleLogout() {
