@@ -9,7 +9,7 @@ export default auth((req) => {
 
   const isSocialLoggedIn = !!session;
   const isGuestLoggedIn = !!cookies.get('x-guest-session-id');
-  const isLoggedIn = isSocialLoggedIn || isGuestLoggedIn; // 세션이 있으면 tru
+  const isLoggedIn = isSocialLoggedIn || isGuestLoggedIn; // 세션이 있으면 true
 
   const isPublicPath = PUBLIC_PATHS.some((path) =>
     nextUrl.pathname.startsWith(path),

@@ -14,6 +14,9 @@ import { GuestModule } from './modules/guest/guest.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { MyPageModule } from './modules/mypage/mypage.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { SearchModule } from './modules/search/search.module';
+import { MapModule } from './modules/map/map.module';
+import { TemplateModule } from './modules/template/template.module';
 import { MediaModule } from './modules/media/media.module';
 
 @Module({
@@ -38,6 +41,9 @@ import { MediaModule } from './modules/media/media.module';
     FeedModule,
     MyPageModule,
     StatsModule,
+    SearchModule,
+    MapModule,
+    TemplateModule,
     MediaModule,
   ],
   controllers: [AppController],
