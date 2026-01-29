@@ -48,5 +48,5 @@ WORKDIR /app/backend
 
 EXPOSE 4000
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
 # nest start는 기본적으로 소스 코드(src/main.ts)를 실행
