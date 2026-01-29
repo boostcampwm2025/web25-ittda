@@ -90,7 +90,7 @@ export class PostDraftController {
       postId,
       requesterId,
     );
-    return { redirectUrl: `/groups/${groupId}/posts/${draft.id}/edit` };
+    return { redirectUrl: `/group/${groupId}/post/${draft.id}` };
   }
 
   @Get('drafts/:draftId')

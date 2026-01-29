@@ -46,6 +46,8 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
     setStartX(e.clientX);
   };
 
+  // TODO: 임시 unsed 허용. 미사용 시 삭제
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDragStart = (clientX: number) => {
     setIsDragging(true);
     setIsMoved(false); // 시작할 때는 이동하지 않은 상태
@@ -97,6 +99,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
       <div className="w-full rounded-xs overflow-hidden">
         <Image
           src={images[0]}
+          unoptimized={true}
           className="w-full h-auto"
           alt="Image"
           width={800}
@@ -134,6 +137,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
                 alt={`Image ${index + 1}`}
                 fill
                 draggable={false}
+                unoptimized={true}
                 sizes="(max-width: 768px) 100vw, 800px"
               />
             </div>

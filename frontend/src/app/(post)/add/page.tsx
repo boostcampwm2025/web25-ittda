@@ -1,41 +1,37 @@
+import { personalEditOptions } from '@/lib/api/records';
 import PostEditor from '../_components/editor/RecordEditor';
-import { groupDraftOptions } from '@/lib/api/groupRecord';
 import { QueryClient } from '@tanstack/react-query';
+import { RecordBlock } from '@/lib/types/record';
+import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
 
 interface AddPostPageProps {
-  searchParams: Promise<{
-    groupId?: string;
-    draftId?: string;
-  }>;
+  searchParams: Promise<{ mode: string; postId: string }>;
 }
 
 export default async function AddPostPage({ searchParams }: AddPostPageProps) {
-  const { groupId, draftId } = await searchParams;
+  const { mode: queryMode, postId } = await searchParams;
   const queryClient = new QueryClient();
   let initialPost = undefined;
 
-  // 공동 작업인 경우 서버에서 프리패칭
-  if (groupId && draftId) {
-    try {
-      const data = await queryClient.fetchQuery(
-        groupDraftOptions(groupId, draftId),
-      );
+  const mode = (queryMode as 'add' | 'edit') || 'add';
+
+  try {
+    if (mode === 'edit' && postId) {
+      const data = await queryClient.fetchQuery(personalEditOptions(postId));
+
+      const mappedBlocks = (data.blocks || []).map((block: RecordBlock) => ({
+        ...block,
+        type: ServerToFieldTypeMap[block.type] || block.type.toLowerCase(),
+      })) as RecordBlock[];
 
       initialPost = {
-        title: data.snapshot.title || '',
-        blocks: data.snapshot.blocks || [],
+        title: data.title || '',
+        blocks: mappedBlocks,
       };
-    } catch (error) {
-      console.error('공동 드래프트 로드 실패:', error);
     }
+  } catch (error) {
+    console.error('데이터 로드 실패:', error);
   }
 
-  return (
-    <PostEditor
-      mode="add"
-      groupId={groupId}
-      draftId={draftId}
-      initialPost={initialPost}
-    />
-  );
+  return <PostEditor mode={mode} initialPost={initialPost} />;
 }

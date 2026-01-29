@@ -58,5 +58,13 @@ export default function AssetImage({
     );
   }
 
-  return <Image src={imageSrc} alt={alt} className={className} {...props} />;
+  return (
+    <Image
+      src={imageSrc}
+      unoptimized={true}
+      alt={alt}
+      className={className}
+      {...props}
+    />
+  );
 }

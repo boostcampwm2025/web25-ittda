@@ -62,6 +62,18 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.kopis.or.kr',
       },
+      // 로컬 개발 이미지 조회용
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '9000',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'kr.object.ncloudstorage.com',
+        pathname: '/**',
+      },
     ],
   },
 };

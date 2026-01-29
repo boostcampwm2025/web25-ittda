@@ -53,19 +53,15 @@ import { useRecordCollaboration } from '@/hooks/useRecordCollaboration';
 import { useThrottle } from '@/lib/utils/useThrottle';
 import { RecordFieldRenderer } from './RecordFieldRender';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
+import { useRecordEditorPhotos } from '../../_hooks/useRecordEditorPhotos';
+import { useMediaUpload } from '@/hooks/useMediaUpload';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
   initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
   draftId?: string;
   groupId?: string;
-}
-
-interface PostEditorProps {
-  mode: 'add' | 'edit';
-  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
-  draftId?: string;
-  groupId?: string;
+  postId?: string;
 }
 
 export default function PostEditor({
@@ -73,6 +69,7 @@ export default function PostEditor({
   initialPost,
   draftId,
   groupId,
+  postId,
 }: PostEditorProps) {
   const router = useRouter();
 
@@ -82,6 +79,8 @@ export default function PostEditor({
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
   const { requestLock, releaseLock } = useLockManager(draftId);
+  const { uploadMultipleMedia, isUploading: isMediaUploading } =
+    useMediaUpload();
 
   const {
     streamingValues,
@@ -96,7 +95,7 @@ export default function PostEditor({
     setTitle,
     initialPost?.version, // 초기 버전 주입
   );
-  const { execute } = useCreateRecord(groupId, {
+  const { execute } = useCreateRecord(groupId, postId, {
     onError: () => {
       setIsPublishing(false);
     },
@@ -111,11 +110,6 @@ export default function PostEditor({
     addOrShowBlock,
     removeBlock,
     handleApplyTemplate,
-    handlePhotoUpload,
-    pendingMetadata,
-    handleApplyMetadata,
-    handleSkipMetadata,
-    handleEditMetadata,
   } = usePostEditorBlocks({
     blocks,
     setBlocks,
@@ -125,6 +119,23 @@ export default function PostEditor({
     requestLock,
     releaseLock,
     applyPatch,
+  });
+
+  const {
+    pendingMetadata,
+    pendingFilesRef,
+    handlePhotoUpload,
+    handleApplyMetadata,
+    handleSkipMetadata,
+    handleEditMetadata,
+  } = useRecordEditorPhotos({
+    blocks,
+    setBlocks,
+    activeDrawer,
+    setActiveDrawer,
+    handleDone,
+    draftId,
+    uploadMultipleMedia,
   });
 
   const handleLocationUpdate = (locationData: LocationValue | null) => {
@@ -297,29 +308,54 @@ export default function PostEditor({
     router.push('/location-picker');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const scope = (groupId ? 'GROUP' : 'PERSONAL') as RecordScope;
-
     const isDraft = !!draftId;
 
-    const postPayload: CreateRecordRequest = {
-      scope: scope,
-      title,
-      blocks: mapBlocksToPayload(blocks, isDraft),
-      ...(groupId ? { groupId } : {}),
-    };
-
-    if (draftId && groupId) {
+    if (groupId && draftId) {
       execute({
         draftId,
         draftVersion: versionRef.current,
-        payload: postPayload,
       });
-    } else {
-      execute({
-        payload: postPayload,
-      });
+      return;
     }
+
+    // 개인용 게시글 이미지 -> id 변환 로직
+    const finalizedBlocks = await Promise.all(
+      blocks.map(async (block) => {
+        if (block.type === 'photos') {
+          const tempUrls = block.value.tempUrls || [];
+          const filesToUpload: File[] = [];
+
+          // Ref에서 실제 파일 매칭
+          tempUrls.forEach((url) => {
+            const file = pendingFilesRef.current.get(url);
+            if (file) filesToUpload.push(file);
+          });
+
+          if (filesToUpload.length > 0) {
+            const newMediaIds = await uploadMultipleMedia(filesToUpload);
+            const updatedValue = {
+              mediaIds: [...(block.value.mediaIds || []), ...newMediaIds],
+              tempUrls: [], // 업로드 완료 후 비움
+            };
+
+            return { ...block, value: updatedValue };
+          }
+        }
+        return block;
+      }),
+    );
+    const postPayload: CreateRecordRequest = {
+      scope: scope,
+      title,
+      blocks: mapBlocksToPayload(finalizedBlocks, isDraft),
+      ...(groupId ? { groupId } : {}),
+    };
+
+    execute({
+      payload: postPayload,
+    });
   };
 
   const throttledEmitStream = useThrottle(
@@ -386,7 +422,6 @@ export default function PostEditor({
       //락 해제
       releaseLock(`block:${id}`);
     }
-
     setActiveDrawer(null);
   };
 
@@ -516,6 +551,7 @@ export default function PostEditor({
             onClose={() => {
               handleCloseDrawer(id);
             }}
+            draftId={draftId}
           />
         );
       case 'emotion':
@@ -552,7 +588,7 @@ export default function PostEditor({
 
   return (
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
-      {isPublishing && (
+      {(isPublishing || (isMediaUploading && !draftId)) && (
         <AuthLoadingScreen type="publish" className="fixed inset-0 z-[9999]" />
       )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
