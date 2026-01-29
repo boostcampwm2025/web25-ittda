@@ -2,24 +2,7 @@ version: '3.8' # Docker Compose 파일의 버전. 최신 기능을 위해 3.x �
 
 # 프로젝트에서 실행할 서비스(컨테이너)들을 정의합니다.
 services:
-  # 1. 프론트엔드 서비스 정의
-  frontend:
-    # 사용할 Docker 이미지: 환경 변수(NCP_REGISTRY_URL)에서 레지스트리 경로를 가져오고,
-    # 그 안에 있는 'project/frontend:latest' 태그의 이미지를 사용합니다.
-    image: ${NCP_REGISTRY_URL}/frontend:latest
-    # 컨테이너에 할당할 이름입니다.
-    container_name: frontend
-    # 컨테이너가 종료되었을 때 항상 다시 시작하도록 설정합니다. (서비스의 지속성 보장)
-    restart: always
-    # 포트 매핑: 호스트(로컬)의 127.0.0.1:3000 포트를 컨테이너의 3000 포트와 연결합니다.
-    # '127.0.0.1'로 바인딩하여 외부에서 직접 접근하는 것을 **차단**하고,
-    # Nginx 같은 프록시 서버를 통해서만 접근하도록 제한하는 중요한 보안 설정입니다.
-    ports:
-      - '127.0.0.1:3000:3000'
-    networks:
-      - app-net
-
-  # 2. 백엔드 서비스 정의
+  # 1. 백엔드 서비스 정의
   backend:
     # 사용할 Docker 이미지: 환경 변수(NCP_REGISTRY_URL)에서 레지스트리 경로를 가져오고,
     # 그 안에 있는 'project/backend:latest' 태그의 이미지를 사용합니다.
@@ -35,12 +18,15 @@ services:
     # 컨테이너 내부에서 사용할 환경 변수 설정
     environment:
       NODE_ENV: production # 운영 환경으로 설정
-      # 데이터베이스 연결 정보 (모두 .env 파일에서 로드되는 환경 변수 사용)
-      DB_HOST: ${DB_HOST} # 데이터베이스 서버의 Private IP 사용 (보안 강화)
-      DB_PORT: ${DB_PORT}
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      # DATABASE_URL 기반으로 연결
+      DATABASE_URL: ${DATABASE_URL}
+      # Object Storage(S3)
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_REGION: ${S3_REGION}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE}
       # Redis 연결 정보 (현재 주석 처리되어 있지만, 필요 시 사용 가능)
       # REDIS_HOST: ${REDIS_HOST}
       # REDIS_PORT: ${REDIS_PORT}
