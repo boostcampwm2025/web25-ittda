@@ -4,6 +4,7 @@ import ProfileEditProvider from '@/app/(main)/profile/edit/_components/ProfileEd
 import ProfileEditHeaderActions from '@/components/ProfileEditHeaderActions';
 import ProfileInfo from '@/components/ProfileInfo';
 import { useApiPatch } from '@/hooks/useApi';
+import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { UpdateGroupMeParams } from '@/lib/types/groupResponse';
 
 import { BaseUser } from '@/lib/types/profile';
@@ -29,19 +30,18 @@ export default function GroupProfileEditClient({
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
 
+  const { uploadMultipleMedia } = useMediaUpload();
+
   const handleSave = async (data: { nickname: string; image: File | null }) => {
     setIsPending(true);
     try {
-      const finalMediaId = groupProfile.profileImageId;
+      let finalMediaId = groupProfile.profileImageId;
 
       if (data.image) {
-        // const uploadRes = await uploadMedia(data.image);
-        // finalMediaId = uploadRes.id;
+        finalMediaId = (await uploadMultipleMedia([data.image]))[0];
       }
 
       await updateProfile({
-        groupId: groupId,
-        userId: userId || 'userId',
         nicknameInGroup: data.nickname,
         profileMediaId: finalMediaId || undefined,
       });
