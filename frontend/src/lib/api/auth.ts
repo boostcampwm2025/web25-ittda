@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { getSession, signOut } from 'next-auth/react';
-import { deleteCookie } from '../utils/cookie';
-import { guestCookieKey } from '@/store/useAuthStore';
+import { deleteCookie, getCookie } from '../utils/cookie';
+import { guestCookieKey, useAuthStore } from '@/store/useAuthStore';
 import type { Session } from 'next-auth';
 
 const INSTANCE_ID =
@@ -45,7 +45,12 @@ export async function getAccessToken() {
   if (typeof window === 'undefined') {
     // 서버 환경이므로 Auth 서버 세션에서 가져옴
     const session = await auth();
-    return session?.accessToken;
+
+    if (session?.accessToken) return session.accessToken;
+
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    return cookieStore.get('x-guest-access-token')?.value || null;
   } else {
     const now = Date.now();
 
@@ -69,7 +74,13 @@ export async function getAccessToken() {
       cachedSession = session;
       cacheExpiry = Date.now() + CACHE_TIME;
 
-      return session?.accessToken;
+      if (session?.accessToken) return session?.accessToken;
+
+      const { guestAccessToken } = useAuthStore.getState();
+      if (guestAccessToken) return guestAccessToken;
+
+      // Zustand가 비어있다면 클라이언트 쿠키에서 직접 읽기 (새로고침 대비)
+      return getCookie('x-guest-access-token') || null;
     } finally {
       // 요청이 끝났으므로 Promise 참조 제거 (다음 요청을 위해)
       sessionPromise = null;

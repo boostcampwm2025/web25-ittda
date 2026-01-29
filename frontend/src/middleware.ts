@@ -8,7 +8,9 @@ export default auth((req) => {
   const { nextUrl, auth: session, cookies } = req;
 
   const isSocialLoggedIn = !!session;
-  const isGuestLoggedIn = !!cookies.get('x-guest-session-id');
+  const isGuestLoggedIn =
+    !!cookies.get('x-guest-session-id') ||
+    !!cookies.get('x-guest-access-token');
   const isLoggedIn = isSocialLoggedIn || isGuestLoggedIn; // 세션이 있으면 tru
 
   const isPublicPath = PUBLIC_PATHS.some((path) =>
