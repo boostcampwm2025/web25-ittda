@@ -228,6 +228,7 @@ export class AuthController {
     return;
   }
 
+  // TODO: 운영환경에서는 주석하는 것 추천
   @Post('dev/token')
   @ApiOperation({
     summary: '개발용 토큰 발급',

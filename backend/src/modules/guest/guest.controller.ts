@@ -29,7 +29,7 @@ export class GuestController {
 
     const accessToken = this.jwtService.sign(
       { sub: session.userId },
-      { expiresIn: '1h' },
+      { expiresIn: '3d' }, // 게스트 세션 만료기간과 동일: 3일
     );
 
     // 응답 헤더에 guest를 위한 Access Token 설정

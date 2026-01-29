@@ -6,7 +6,6 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { randomUUID } from 'crypto';
-import { GuestSessionService } from '../guest/guest-session.service';
 import { GuestMigrationService } from '../guest/guest-migration.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -26,10 +25,12 @@ interface CodePayload {
 export class AuthService {
   constructor(
     private readonly userService: UserService,
+
     private readonly jwtService: JwtService,
+
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepo: Repository<RefreshToken>,
-    private readonly guestSessionService: GuestSessionService,
+
     private readonly guestMigrationService: GuestMigrationService,
   ) {}
 
