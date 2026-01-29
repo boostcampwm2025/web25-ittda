@@ -37,5 +37,12 @@ export default async function PostDraftPage({ params }: AddPostPageProps) {
     }
   }
 
-  return <PostEditor mode="add" draftId={draftId} initialPost={initialPost} />;
+  return (
+    <PostEditor
+      mode="add"
+      draftId={draftId}
+      initialPost={initialPost}
+      groupId={groupId}
+    />
+  );
 }

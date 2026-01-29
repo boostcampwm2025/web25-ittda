@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocketStore } from '@/store/useSocketStore';
-import { RecordBlock, BlockValue } from '@/lib/types/recordField';
+import { RecordBlock, BlockValue, BlockLayout } from '@/lib/types/recordField';
 import { useRouter } from 'next/navigation';
 import {
   getDefaultValue,
@@ -19,6 +19,7 @@ export function useRecordCollaboration(
   const { socket, sessionId: mySessionId } = useSocketStore();
   const router = useRouter();
   const versionRef = useRef(initialVersion);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     if (initialVersion > versionRef.current) {
@@ -97,9 +98,27 @@ export function useRecordCollaboration(
                 b.id === cmd.blockId ? { ...b, value: cmd.value } : b,
               );
             } else if (cmd.type === 'BLOCK_MOVE') {
-              next = next.map((b) =>
-                b.id === cmd.blockId ? { ...b, layout: cmd.layout } : b,
-              );
+              setBlocks((prev) => {
+                const nextBlocks = cmd.moves
+                  .map((moveItem: { blockId: string; layout: BlockLayout }) => {
+                    // 현재 로컬에서 해당하는 id 찾기
+                    const localBlock = prev.find(
+                      (b) => b.id === moveItem.blockId,
+                    );
+
+                    // 기존 값들은 유지. 레이아웃만 적용
+                    if (localBlock) {
+                      return {
+                        ...localBlock,
+                        layout: moveItem.layout,
+                      };
+                    }
+                    return null;
+                  })
+                  .filter((b: RecordBlock) => b !== null);
+                //정규화
+                return normalizeLayout(nextBlocks);
+              });
             }
           });
           return normalizeLayout(next);
@@ -136,9 +155,27 @@ export function useRecordCollaboration(
         window.location.reload();
       }, 2_000);
     });
-    socket.on('DRAFT_PUBLISHED', ({ postId }) =>
-      router.push(`/post/${postId}`),
-    );
+
+    socket.on('DRAFT_PUBLISH_STARTED', ({ draftId: id }) => {
+      if (id === draftId) setIsPublishing(true);
+    });
+    socket.on('DRAFT_PUBLISHED', ({ postId }) => {
+      setTimeout(() => {
+        setIsPublishing(false);
+        toast.success(
+          '공동 기록이 저장되었습니다.\n저장된 내용을 확인해보세요.',
+          {
+            duration: 3000,
+            style: {
+              whiteSpace: 'pre-wrap',
+            },
+          },
+        );
+        setTimeout(() => {
+          router.replace(`/record/${postId}`);
+        }, 2_000);
+      }, 2_000);
+    });
 
     return () => {
       socket.off('BLOCK_VALUE_STREAM');
@@ -172,5 +209,12 @@ export function useRecordCollaboration(
     [socket, draftId],
   );
 
-  return { streamingValues, emitStream, applyPatch };
+  return {
+    streamingValues,
+    emitStream,
+    applyPatch,
+    versionRef,
+    isPublishing,
+    setIsPublishing,
+  };
 }

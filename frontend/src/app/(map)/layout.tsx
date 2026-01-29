@@ -1,18 +1,13 @@
-import Header from '@/components/Header';
 import { Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
 
-export default function MapLayout({
+export default function MapRootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
     <div className="w-full h-screen flex flex-col">
-      <div className="hidden md:block">
-        <Header />
-      </div>
-
       <div className="flex flex-1 min-h-0 w-full justify-center">
         <Suspense
           fallback={

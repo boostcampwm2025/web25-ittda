@@ -45,6 +45,7 @@ Stream/Patch/Publish
 - `PATCH_APPLY { draftId, baseVersion, patch }`
 - `PATCH_COMMITTED { version, patch, authorSessionId }`
 - `PATCH_REJECTED_STALE { currentVersion }`
+- `DRAFT_PUBLISH_STARTED { draftId }`
 - `DRAFT_PUBLISHED { postId }`
 
 ## 이벤트 상세 설명
@@ -178,6 +179,12 @@ Stream/Patch/Publish
 - publish 완료 시 룸 전체 브로드캐스트
 - payload: `{ postId }`
 - 클라이언트는 편집 화면 종료/상세 페이지 이동
+
+### DRAFT_PUBLISH_STARTED
+
+- publish 시작 시 룸 전체 브로드캐스트
+- payload: `{ draftId }`
+- 클라이언트는 로딩 UI 표시
 
 ## Payload 요약
 

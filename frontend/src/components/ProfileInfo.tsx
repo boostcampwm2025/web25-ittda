@@ -111,7 +111,7 @@ export default function ProfileInfo({
           </div>
 
           {showEmail && email && (
-            <div className="space-y-2">
+            <div className="space-y-2 flex flex-col justify-center items-start gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
                 이메일 계정
               </label>
@@ -119,7 +119,7 @@ export default function ProfileInfo({
                 type="text"
                 value={email}
                 disabled
-                className="w-full border rounded-2xl px-5 py-4 text-sm font-semibold cursor-not-allowed transition-colors dark:bg-white/5 dark:border-white/5 dark:text-gray-600 bg-gray-50 border-gray-100 text-gray-300"
+                className="w-full text-start border rounded-lg px-3 py-4 text-sm font-semibold cursor-not-allowed transition-colors dark:bg-white/5 dark:border-white/5 dark:text-gray-500 bg-gray-50 border-gray-100 text-gray-400"
               />
             </div>
           )}

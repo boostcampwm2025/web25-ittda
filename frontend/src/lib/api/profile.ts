@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { queryOptions } from '@tanstack/react-query';
-import { EmotionStatSummary, TagStatSummary } from '../types/profile';
+import { Emotion, TagStatSummary } from '../types/profile';
 import {
   RecordPatternResponse,
   UserProfileResponse,
@@ -28,8 +28,9 @@ export const getCachedUserProfile = cache(async () => {
 /**
  * 서버 컴포넌트에서 사용하는 캐시된 태그 통계 조회
  */
-export const getCachedUserTagSummary = cache(async () => {
-  const response = await get<TagStatSummary>('/api/me/tags/stats?limit=10');
+export const getCachedUserTagSummary = cache(async (limit?: number) => {
+  const endpoint = limit ? `/api/stats/tags?limit=${limit}` : '/api/stats/tags';
+  const response = await get<TagStatSummary>(endpoint);
   if (!response.success) {
     throw createApiError(response);
   }
@@ -39,34 +40,30 @@ export const getCachedUserTagSummary = cache(async () => {
 /**
  * 서버 컴포넌트에서 사용하는 캐시된 감정 통계 조회
  */
-export const getCachedUserEmotionSummary = cache(async () => {
-  const response = await get<EmotionStatSummary>(
-    '/api/me/emotions/stats?limit=7',
-  );
+export const getCachedUserEmotionSummary = cache(async (limit?: number) => {
+  const endpoint = limit
+    ? `/api/stats/emotions?limit=${limit}`
+    : '/api/stats/emotions';
+  const response = await get<Emotion[]>(endpoint);
+  if (!response.success) {
+    throw createApiError(response);
+  }
+  return {
+    emotion: response.data,
+    totalCount: Number(response.meta?.totalCount),
+  };
+});
+
+/**
+ * 서버 컴포넌트에서 사용하는 캐시된 기록 통계 조회
+ */
+export const getCachedUserRecordStats = cache(async () => {
+  const response = await get<RecordPatternResponse>('/api/stats/summary');
   if (!response.success) {
     throw createApiError(response);
   }
   return response.data;
 });
-
-/**
- * 서버 컴포넌트에서 사용하는 캐시된 기록 통계 조회
- * @param type - 'date': 연속 작성 일수, 'month': 월간 기록 수
- * @param value - YYYY-MM-DD 또는 YYYY-MM 형식
- */
-export const getCachedUserRecordStats = cache(
-  async (type: 'date' | 'month', value: string) => {
-    const endpoint =
-      type === 'date'
-        ? `/api/me/stats/summary?date=${value}`
-        : `/api/me/stats/summary?month=${value}`;
-    const response = await get<RecordPatternResponse>(endpoint);
-    if (!response.success) {
-      throw createApiError(response);
-    }
-    return response.data;
-  },
-);
 
 // ============================================
 // 클라이언트 컴포넌트용 queryOptions (React Query)
@@ -87,11 +84,16 @@ export const userProfileOptions = () =>
     retry: false,
   });
 
-export const userProfileTagSummaryOptions = () =>
+export const userProfileTagSummaryOptions = (limit?: number) =>
   queryOptions({
-    queryKey: ['profile', 'tags', 'summary'],
+    queryKey: limit
+      ? ['profile', 'tags', 'summary', limit]
+      : ['profile', 'tags', 'summary'],
     queryFn: async () => {
-      const response = await get<TagStatSummary>('/api/stats/tags?limit=10');
+      const endpoint = limit
+        ? `/api/stats/tags?limit=${limit}`
+        : '/api/stats/tags';
+      const response = await get<TagStatSummary>(endpoint);
 
       if (!response.success) {
         throw createApiError(response);
@@ -102,18 +104,24 @@ export const userProfileTagSummaryOptions = () =>
     retry: false,
   });
 
-export const userProfileEmotionSummaryOptions = () =>
+export const userProfileEmotionSummaryOptions = (limit?: number) =>
   queryOptions({
-    queryKey: ['profile', 'emotions', 'summary'],
+    queryKey: limit
+      ? ['profile', 'emotions', 'summary', limit]
+      : ['profile', 'emotions', 'summary'],
     queryFn: async () => {
-      const response = await get<EmotionStatSummary>(
-        '/api/stats/emotions?limit=7',
-      );
+      const endpoint = limit
+        ? `/api/stats/emotions?limit=${limit}`
+        : '/api/stats/emotions';
+      const response = await get<Emotion[]>(endpoint);
 
       if (!response.success) {
         throw createApiError(response);
       }
-      return response.data;
+      return {
+        emotion: response.data,
+        totalCount: Number(response.meta?.totalCount),
+      };
     },
     staleTime: PERSONAL_STALE_TIME,
     retry: false,

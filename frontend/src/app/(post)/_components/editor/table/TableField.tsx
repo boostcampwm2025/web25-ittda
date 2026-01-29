@@ -3,11 +3,13 @@
 import { TableValue } from '@/lib/types/recordField';
 import { cn } from '@/lib/utils';
 import { Plus, MinusCircle, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface TableFieldProps {
   data: TableValue | null;
   onUpdate: (newData: TableValue | null) => void;
-  isLocked: boolean;
+  isLocked?: boolean;
+  isMyLock?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
 }
@@ -16,9 +18,49 @@ export const TableField = ({
   data,
   onUpdate,
   isLocked,
+  isMyLock,
   onFocus,
   onBlur,
 }: TableFieldProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const isInternalFocus = useRef(false);
+  
+  useEffect(() => {
+    if (isMyLock && firstInputRef.current) {
+      if (containerRef.current?.contains(document.activeElement)) {
+        return;
+      }
+      isInternalFocus.current = true;
+      firstInputRef.current.focus();
+
+      const len = firstInputRef.current.value.length;
+      firstInputRef.current.setSelectionRange(len, len);
+    }
+  }, [isMyLock]);
+
+  // 내부 포커스인지 외부 사용자의 클릭 포커스인지 구분
+  const handleFocusWrapper = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (isInternalFocus.current || isMyLock) {
+      isInternalFocus.current = false;
+      return;
+    }
+    onFocus?.();
+  };
+
+  const handleBlurWrapper = (e: React.FocusEvent<HTMLInputElement>) => {
+    // 다음에 포커스될 요소가 우리 테이블 안에 있다면 블러 무시
+    if (
+      e.relatedTarget &&
+      containerRef.current?.contains(e.relatedTarget as Node)
+    ) {
+      return;
+    }
+
+    // 테이블 외부로 나갈 때만 onBlur
+    onBlur?.();
+  };
+
   if (!data) return null;
 
   const { rows: rowCount, cols: colCount, cells } = data;
@@ -80,6 +122,7 @@ export const TableField = ({
 
   return (
     <div
+      ref={containerRef}
       className={cn(
         'group/table relative w-full transition-opacity',
         isLocked && 'opacity-60 pointer-events-none',
@@ -118,12 +161,13 @@ export const TableField = ({
                       className="p-0 border-r border-gray-100/50 dark:border-white/5 last:border-none"
                     >
                       <input
+                        ref={rIdx === 0 && cIdx === 0 ? firstInputRef : null}
                         type="text"
                         value={cell}
                         onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
-                        disabled={isLocked}
-                        onFocus={onFocus}
-                        onBlur={onBlur}
+                        disabled={isLocked && !isMyLock}
+                        onFocus={handleFocusWrapper}
+                        onBlur={handleBlurWrapper}
                         placeholder={rIdx === 0 ? '항목명' : '내용'}
                         className={`w-full p-2.5 text-xs outline-none dark:focus:bg-white/5 transition-colors ${
                           rIdx === 0
