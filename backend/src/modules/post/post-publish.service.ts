@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { In, IsNull, QueryFailedError, Repository } from 'typeorm';
 import type { Point } from 'geojson';
 import { isUUID } from 'class-validator';
 
@@ -27,6 +27,7 @@ import { PostScope } from '@/enums/post-scope.enum';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { PostBlockType } from '@/enums/post-block-type.enum';
+import { CreatePostDto } from './dto/create-post.dto';
 import { validateBlocks } from './validator/blocks.validator';
 import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
@@ -46,7 +47,7 @@ export class PostPublishService {
     groupId: string,
     payload: PublishDraftDto,
   ) {
-    const { draftId, draftVersion, post } = payload;
+    const { draftId, draftVersion } = payload;
     if (!this.draftStateService.startPublishing(draftId)) {
       throw new ConflictException('Draft is already publishing.');
     }
@@ -65,16 +66,8 @@ export class PostPublishService {
           const memberRepo = manager.getRepository(GroupMember);
           const userRepo = manager.getRepository(User);
 
-          if (post.scope !== PostScope.GROUP) {
-            throw new BadRequestException('scope must be GROUP.');
-          }
-          const resolvedGroupId = post.groupId ?? groupId;
-          if (post.groupId && post.groupId !== groupId) {
-            throw new BadRequestException('groupId mismatch.');
-          }
-
           const draft = await draftRepo.findOne({
-            where: { id: draftId, groupId: resolvedGroupId, isActive: true },
+            where: { id: draftId, groupId: groupId, isActive: true },
             lock: { mode: 'pessimistic_write' },
           });
           if (!draft) throw new NotFoundException('Draft not found');
@@ -83,7 +76,7 @@ export class PostPublishService {
           }
 
           const member = await memberRepo.findOne({
-            where: { groupId: resolvedGroupId, userId: requesterId },
+            where: { groupId: groupId, userId: requesterId },
             select: { role: true },
           });
           if (!member) {
@@ -101,14 +94,21 @@ export class PostPublishService {
           }
 
           const group = await groupRepo.findOne({
-            where: { id: resolvedGroupId },
+            where: { id: groupId },
           });
           if (!group) throw new NotFoundException('Group not found');
 
-          validateBlocks(post.blocks);
-          this.ensureBlockIds(post.blocks);
+          const snapshot = this.parseGroupDraftSnapshot(
+            draft.snapshot,
+            groupId,
+          );
 
-          const meta = extractMetaFromBlocks(post.blocks);
+          const snapshotBlocks = snapshot.blocks;
+          validateBlocks(snapshotBlocks);
+          this.ensureBlockIds(snapshotBlocks);
+          this.ensureNoDuplicateBlockIds(snapshotBlocks);
+
+          const meta = extractMetaFromBlocks(snapshotBlocks);
           const eventAt = resolveEventAtFromBlocks(meta.date, meta.time);
           const location: Point | undefined = meta.location
             ? {
@@ -118,12 +118,12 @@ export class PostPublishService {
             : undefined;
 
           const created = postRepo.create({
-            scope: post.scope,
+            scope: PostScope.GROUP,
             ownerUserId: draft.ownerActorId,
             ownerUser: owner,
-            groupId: resolvedGroupId,
+            groupId: groupId,
             group,
-            title: post.title,
+            title: snapshot.title,
             location: location ?? undefined,
             eventAt,
             tags: meta.tags ?? null,
@@ -132,7 +132,7 @@ export class PostPublishService {
           });
           const saved = await postRepo.save(created);
 
-          await groupRepo.update(resolvedGroupId, {
+          await groupRepo.update(groupId, {
             lastActivityAt: saved.updatedAt,
           });
 
@@ -152,7 +152,7 @@ export class PostPublishService {
             await contributorRepo.save(contributors);
           }
 
-          const blocks = post.blocks.map((block) =>
+          const savedBlocks = snapshotBlocks.map((block) =>
             blockRepo.create({
               id: block.id,
               postId: saved.id,
@@ -164,41 +164,16 @@ export class PostPublishService {
               layoutSpan: block.layout.span,
             }),
           );
-          if (blocks.length > 0) {
-            await blockRepo.save(blocks);
+          if (savedBlocks.length > 0) {
+            await blockRepo.save(savedBlocks);
           }
 
-          const mediaEntries: PostMedia[] = [];
-          if (post.thumbnailMediaId) {
-            mediaEntries.push(
-              mediaRepo.create({
-                postId: saved.id,
-                post: saved,
-                mediaId: post.thumbnailMediaId,
-                kind: PostMediaKind.THUMBNAIL,
-              }),
-            );
-          }
-
-          post.blocks.forEach((block) => {
-            if (block.type !== PostBlockType.IMAGE) return;
-            const mediaIds = (block.value as BlockValueMap['IMAGE'])?.mediaIds;
-            if (!Array.isArray(mediaIds) || mediaIds.length === 0) return;
-            mediaIds.forEach((mediaId, sortIndex) => {
-              if (typeof mediaId !== 'string') return;
-              mediaEntries.push(
-                mediaRepo.create({
-                  postId: saved.id,
-                  post: saved,
-                  mediaId,
-                  kind: PostMediaKind.BLOCK,
-                  blockId: block.id,
-                  sortOrder: sortIndex + 1,
-                }),
-              );
-            });
-          });
-
+          const mediaEntries = this.buildBlockMediaEntries(
+            mediaRepo,
+            snapshotBlocks,
+            saved.id,
+            saved,
+          );
           if (mediaEntries.length > 0) {
             await mediaRepo.save(mediaEntries);
           }
@@ -227,7 +202,171 @@ export class PostPublishService {
     }
   }
 
-  private ensureBlockIds(blocks: PublishDraftDto['post']['blocks']) {
+  async publishGroupEditDraft(
+    requesterId: string,
+    groupId: string,
+    postId: string,
+    payload: PublishDraftDto,
+  ) {
+    const { draftId, draftVersion } = payload;
+    if (!this.draftStateService.startPublishing(draftId)) {
+      throw new ConflictException('Draft is already publishing.');
+    }
+
+    try {
+      await this.postRepository.manager.transaction(async (manager) => {
+        const draftRepo = manager.getRepository(PostDraft);
+        const postRepo = manager.getRepository(Post);
+        const blockRepo = manager.getRepository(PostBlock);
+        const contributorRepo = manager.getRepository(PostContributor);
+        const mediaRepo = manager.getRepository(PostMedia);
+        const groupRepo = manager.getRepository(Group);
+        const memberRepo = manager.getRepository(GroupMember);
+
+        const draft = await draftRepo.findOne({
+          where: {
+            id: draftId,
+            groupId,
+            isActive: true,
+            kind: 'EDIT',
+            targetPostId: postId,
+          },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!draft) throw new NotFoundException('Draft not found');
+        if (draft.version !== draftVersion) {
+          throw new ConflictException('Draft version mismatch.');
+        }
+
+        const post = await postRepo.findOne({
+          where: { id: postId, deletedAt: IsNull() },
+          select: {
+            id: true,
+            ownerUserId: true,
+            groupId: true,
+            scope: true,
+            title: true,
+          },
+        });
+        if (!post) throw new NotFoundException('Post not found');
+
+        // NOTE: edit publish는 snapshot에 groupId를 받기 때문에
+        // 클라이언트 오염 방지를 위해 groupId 일치 검사를 유지한다.
+        if (post.scope !== PostScope.GROUP || post.groupId !== groupId) {
+          throw new BadRequestException('Post does not belong to this group.');
+        }
+
+        const member = await memberRepo.findOne({
+          where: { groupId, userId: requesterId },
+          select: { role: true },
+        });
+        if (!member) {
+          throw new ForbiddenException('Not a group member.');
+        }
+        if (member.role === GroupRoleEnum.VIEWER) {
+          throw new ForbiddenException('Insufficient permission.');
+        }
+
+        const snapshot = this.parseGroupDraftSnapshot(draft.snapshot, groupId);
+
+        const blocks = snapshot.blocks;
+        validateBlocks(blocks);
+        this.ensureBlockIds(blocks);
+        this.ensureNoDuplicateBlockIds(blocks);
+
+        const meta = extractMetaFromBlocks(blocks);
+        const eventAt = resolveEventAtFromBlocks(meta.date, meta.time);
+        const location: Point | undefined = meta.location
+          ? {
+              type: 'Point',
+              coordinates: [meta.location.lng, meta.location.lat],
+            }
+          : undefined;
+
+        const existingBlocks = await blockRepo.find({
+          where: { postId: post.id },
+          select: { id: true },
+        });
+        const existingIds = new Set(existingBlocks.map((block) => block.id));
+        const nextIds = new Set(
+          blocks.map((block) => block.id).filter(Boolean),
+        );
+        const deleteIds = Array.from(existingIds).filter(
+          (id) => !nextIds.has(id),
+        );
+
+        const updated = postRepo.create({
+          ...post,
+          title: snapshot.title,
+          location: location ?? undefined,
+          eventAt,
+          tags: meta.tags ?? null,
+          emotion: meta.emotion ?? null,
+          rating: meta.rating ?? null,
+        });
+        const saved = await postRepo.save(updated);
+
+        if (deleteIds.length > 0) {
+          await blockRepo.delete({ id: In(deleteIds) });
+        }
+        const updatedBlocks = blocks.map((block) =>
+          blockRepo.create({
+            id: block.id,
+            postId: saved.id,
+            post: saved,
+            type: block.type,
+            value: block.value,
+            layoutRow: block.layout.row,
+            layoutCol: block.layout.col,
+            layoutSpan: block.layout.span,
+          }),
+        );
+        if (updatedBlocks.length > 0) {
+          await blockRepo.save(updatedBlocks);
+        }
+
+        await this.syncBlockMediaEntries(mediaRepo, saved.id, saved, blocks);
+
+        if (requesterId !== post.ownerUserId) {
+          const existingContributor = await contributorRepo.findOne({
+            where: { postId: post.id, userId: requesterId },
+            select: { role: true },
+          });
+          if (!existingContributor) {
+            const contributor = contributorRepo.create({
+              postId: post.id,
+              userId: requesterId,
+              role: PostContributorRole.EDITOR,
+            });
+            await contributorRepo.save(contributor);
+          }
+        }
+
+        draft.isActive = false;
+        await draftRepo.save(draft);
+
+        await groupRepo.update(groupId, {
+          lastActivityAt: saved.updatedAt,
+        });
+      });
+
+      this.draftStateService.clearTouchedBy(draftId);
+      this.postDraftGateway.broadcastDraftPublished(draftId, postId);
+      return postId;
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        const dbError = error as { code?: string };
+        if (dbError.code === '23505') {
+          throw new ConflictException('Duplicate blockId.');
+        }
+      }
+      throw error;
+    } finally {
+      this.draftStateService.finishPublishing(draftId);
+    }
+  }
+
+  private ensureBlockIds(blocks: CreatePostDto['blocks']) {
     const seen = new Set<string>();
     for (const block of blocks) {
       if (!block.id || !isUUID(block.id)) {
@@ -237,6 +376,153 @@ export class PostPublishService {
         throw new BadRequestException('Duplicate blockId in blocks.');
       }
       seen.add(block.id);
+    }
+  }
+
+  private ensureNoDuplicateBlockIds(blocks: CreatePostDto['blocks']) {
+    const ids = blocks.map((block) => block.id).filter(Boolean);
+    if (ids.length === 0) return;
+    const unique = new Set(ids);
+    if (unique.size !== ids.length) {
+      throw new BadRequestException('Duplicate blockId in blocks.');
+    }
+  }
+
+  private parseGroupDraftSnapshot(
+    snapshot: unknown,
+    groupId: string,
+  ): Pick<CreatePostDto, 'title' | 'blocks' | 'groupId' | 'scope'> {
+    const candidate = snapshot as Partial<CreatePostDto> | null | undefined;
+    if (
+      !candidate ||
+      candidate.scope !== PostScope.GROUP ||
+      typeof candidate.title !== 'string' ||
+      !Array.isArray(candidate.blocks)
+    ) {
+      throw new BadRequestException('Draft snapshot is invalid.');
+    }
+    if (candidate.groupId && candidate.groupId !== groupId) {
+      throw new BadRequestException('groupId mismatch.');
+    }
+    return candidate as Pick<
+      CreatePostDto,
+      'title' | 'blocks' | 'groupId' | 'scope'
+    >;
+  }
+
+  private buildBlockMediaEntries(
+    mediaRepo: Repository<PostMedia>,
+    blocks: CreatePostDto['blocks'],
+    postId: string,
+    post: Post,
+  ): PostMedia[] {
+    const entries: PostMedia[] = [];
+    blocks.forEach((block) => {
+      if (block.type !== PostBlockType.IMAGE) return;
+      const mediaIds = (block.value as BlockValueMap['IMAGE'])?.mediaIds;
+      if (!Array.isArray(mediaIds) || mediaIds.length === 0) return;
+      mediaIds.forEach((mediaId, sortIndex) => {
+        if (typeof mediaId !== 'string') return;
+        entries.push(
+          mediaRepo.create({
+            postId,
+            post,
+            mediaId,
+            kind: PostMediaKind.BLOCK,
+            blockId: block.id,
+            sortOrder: sortIndex + 1,
+          }),
+        );
+      });
+    });
+    return entries;
+  }
+
+  private async syncBlockMediaEntries(
+    mediaRepo: Repository<PostMedia>,
+    postId: string,
+    post: Post,
+    blocks: CreatePostDto['blocks'],
+  ) {
+    // 이미지 블록 기준으로 목표 media 목록 구성 (blockId -> mediaIds[])
+    const desired = new Map<string, string[]>();
+    blocks.forEach((block) => {
+      if (block.type !== PostBlockType.IMAGE) return;
+      if (!block.id) return;
+      const mediaIds = (block.value as BlockValueMap['IMAGE'])?.mediaIds;
+      if (!Array.isArray(mediaIds) || mediaIds.length === 0) return;
+      const filtered = mediaIds.filter((id) => typeof id === 'string');
+      if (filtered.length === 0) return;
+      desired.set(block.id, filtered);
+    });
+
+    // 현재 post의 BLOCK 미디어 조회
+    const existing = await mediaRepo.find({
+      where: { postId, kind: PostMediaKind.BLOCK },
+      select: { id: true, blockId: true, mediaId: true, sortOrder: true },
+    });
+
+    // (blockId, sortOrder) 기준으로 기존 미디어 인덱싱
+    const existingByKey = new Map<string, PostMedia>();
+    existing.forEach((entry) => {
+      if (!entry.blockId || !entry.sortOrder) return;
+      existingByKey.set(`${entry.blockId}:${entry.sortOrder}`, entry);
+    });
+
+    // 기존/목표 비교로 삭제/업데이트/삽입 목록 산출
+    const toDelete: string[] = [];
+    const toUpdate: Array<{ id: string; mediaId: string }> = [];
+    const toInsert: PostMedia[] = [];
+
+    existing.forEach((entry) => {
+      if (!entry.id || !entry.blockId || !entry.sortOrder) return;
+      const list = desired.get(entry.blockId);
+      if (!list) {
+        toDelete.push(entry.id);
+        return;
+      }
+      const index = entry.sortOrder - 1;
+      const nextMediaId = list[index];
+      if (!nextMediaId) {
+        toDelete.push(entry.id);
+        return;
+      }
+      if (entry.mediaId !== nextMediaId) {
+        toUpdate.push({ id: entry.id, mediaId: nextMediaId });
+      }
+    });
+
+    desired.forEach((list, blockId) => {
+      list.forEach((mediaId, index) => {
+        const sortOrder = index + 1;
+        const key = `${blockId}:${sortOrder}`;
+        if (existingByKey.has(key)) return;
+        toInsert.push(
+          mediaRepo.create({
+            postId,
+            post,
+            mediaId,
+            kind: PostMediaKind.BLOCK,
+            blockId,
+            sortOrder,
+          }),
+        );
+      });
+    });
+
+    // 최소 변경으로 적용
+    if (toDelete.length > 0) {
+      await mediaRepo.delete(toDelete);
+    }
+    if (toUpdate.length > 0) {
+      await Promise.all(
+        toUpdate.map((entry) =>
+          mediaRepo.update({ id: entry.id }, { mediaId: entry.mediaId }),
+        ),
+      );
+    }
+    if (toInsert.length > 0) {
+      await mediaRepo.save(toInsert);
     }
   }
 }
