@@ -221,7 +221,6 @@ export async function fetchApi<T>(
   // 인증 헤더 추가
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',
-    'Cache-Control': 'no-store',
     ...headers,
   };
 
@@ -251,7 +250,6 @@ export async function fetchApi<T>(
     {
       ...fetchOptions,
       headers: defaultHeaders,
-      cache: 'no-store', // Next.js fetch 캐싱 비활성화
       ...(sendCookie ? { credentials: 'include' } : {}),
     }, // 쿠키에 담긴 refresh token을 보호하기 위해 reissue를 보낼 때만 허용
     0,

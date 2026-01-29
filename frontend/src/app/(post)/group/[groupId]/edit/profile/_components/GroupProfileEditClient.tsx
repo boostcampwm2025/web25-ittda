@@ -14,7 +14,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { revalidateGroupProfile } from '../../actions';
-import { useRouter } from 'next/navigation';
 
 interface GroupProfileEditClientProps {
   groupId: string;
