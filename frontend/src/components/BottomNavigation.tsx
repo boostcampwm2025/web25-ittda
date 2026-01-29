@@ -52,7 +52,6 @@ export default function BottomNavigation() {
     '/onboarding',
   ];
   const isDetail =
-    pathname.includes('/record/') ||
     pathname.includes('/detail/') ||
     pathname.includes('/month/') ||
     pathname.includes('/edit');
