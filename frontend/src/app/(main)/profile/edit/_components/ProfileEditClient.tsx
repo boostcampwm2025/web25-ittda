@@ -31,10 +31,10 @@ export default function ProfileEditClient() {
 
       const response = await updateUserProfile({
         nickname: data.nickname,
-        profileImageUrl: finalMediaId,
+        profileImageId: finalMediaId,
       });
 
-      queryClient.setQueryData(['profile', 'me'], response);
+      queryClient.setQueryData(['profile', 'me'], response.data);
       toast.success('프로필 정보가 수정되었습니다.');
     } catch (error) {
       console.error('내정보 수정 실패', error);

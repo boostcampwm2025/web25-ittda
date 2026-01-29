@@ -71,7 +71,7 @@ export class MyPageController {
     const user = await this.myPageService.updateProfile(
       userId,
       dto.nickname,
-      dto.profileImageUrl,
+      dto.profileImageId,
     );
     const stats = await this.statsService.getUserStats(userId);
     return { userId, user, stats };
