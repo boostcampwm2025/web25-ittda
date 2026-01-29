@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder, Brackets } from 'typeorm';
 import type { Point } from 'geojson';
@@ -10,6 +10,7 @@ import {
   MapPostsQueryDto,
   PaginatedMapPostsResponseDto,
   MapPostItemDto,
+  MapScope,
 } from './dto/map-query.dto';
 
 @Injectable()
@@ -23,7 +24,18 @@ export class MapService {
     userId: string,
     queryDto: MapPostsQueryDto,
   ): Promise<PaginatedMapPostsResponseDto> {
-    const { lat, lng, radius, from, to, tags, cursor, limit = 20 } = queryDto;
+    const {
+      lat,
+      lng,
+      radius,
+      from,
+      to,
+      tags,
+      cursor,
+      limit = 20,
+      scope,
+      groupId,
+    } = queryDto;
 
     const query = this.postRepository
       .createQueryBuilder('post')
@@ -36,8 +48,7 @@ export class MapService {
         },
       )
       .leftJoinAndSelect('postMedia.media', 'media')
-      .where('post.ownerUserId = :userId', { userId })
-      .andWhere('post.deletedAt IS NULL')
+      .where('post.deletedAt IS NULL')
       .andWhere(
         'ST_DWithin(post.location, ST_SetSRID(ST_Point(:lng, :lat), 4326), :radius)',
         {
@@ -46,6 +57,24 @@ export class MapService {
           radius,
         },
       );
+
+    // Scope-based filtering
+    if (scope === MapScope.PERSONAL) {
+      // 내가 작성자이거나 기여자(contributor)인 글
+      query.andWhere(
+        new Brackets((qb) => {
+          qb.where('post.ownerUserId = :userId', { userId }).orWhere(
+            'EXISTS (SELECT 1 FROM post_contributors pc WHERE pc.post_id = post.id AND pc.user_id = :userId)',
+            { userId },
+          );
+        }),
+      );
+    } else if (scope === MapScope.GROUP) {
+      if (!groupId) {
+        throw new BadRequestException('groupId is required for group scope');
+      }
+      query.andWhere('post.groupId = :groupId', { groupId });
+    }
 
     // Filters
     if (from) {
@@ -84,13 +113,13 @@ export class MapService {
           },
         );
 
-        let placeDisplay: string | undefined;
+        let placeDisplay: string | null = null;
         if (locationBlock) {
           const val = locationBlock.value as {
-            address: string;
+            address?: string;
             placeName?: string;
           };
-          placeDisplay = val.placeName || val.address;
+          placeDisplay = val.placeName || val.address || null;
         }
 
         return {
@@ -106,7 +135,7 @@ export class MapService {
       }),
     );
 
-    let nextCursor: string | undefined;
+    let nextCursor: string | null = null;
     if (hasNextPage) {
       const lastItem = items[items.length - 1];
       if (lastItem.eventAt) {
@@ -116,6 +145,7 @@ export class MapService {
 
     return {
       items: resultItems,
+      hasNextPage,
       nextCursor,
     };
   }

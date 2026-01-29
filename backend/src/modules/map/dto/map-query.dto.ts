@@ -4,10 +4,16 @@ import {
   IsNumber,
   IsString,
   IsDateString,
+  IsEnum,
   Min,
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export enum MapScope {
+  PERSONAL = 'personal',
+  GROUP = 'group',
+}
 
 export class MapPostsQueryDto {
   @ApiProperty({ description: '중심 위도' })
@@ -19,6 +25,18 @@ export class MapPostsQueryDto {
   @IsNumber()
   @Type(() => Number)
   lng: number;
+
+  @ApiProperty({
+    enum: MapScope,
+    description: '조회 범위 (personal: 내 기록, group: 그룹 기록)',
+  })
+  @IsEnum(MapScope)
+  scope: MapScope;
+
+  @ApiPropertyOptional({ description: '그룹 ID (scope이 group인 경우 필수)' })
+  @IsOptional()
+  @IsString()
+  groupId?: string;
 
   @ApiPropertyOptional({ description: '반경 (미터)', default: 1000 })
   @IsOptional()
@@ -81,14 +99,17 @@ export class MapPostItemDto {
   @ApiProperty({ type: [String], description: '태그 목록' })
   tags: string[];
 
-  @ApiPropertyOptional({ description: '장소명' })
-  placeName?: string;
+  @ApiPropertyOptional({ description: '장소명', nullable: true })
+  placeName?: string | null;
 }
 
 export class PaginatedMapPostsResponseDto {
   @ApiProperty({ type: [MapPostItemDto] })
   items: MapPostItemDto[];
 
-  @ApiPropertyOptional({ description: '다음 페이지용 커서' })
-  nextCursor?: string;
+  @ApiProperty({ description: '다음 페이지 여부' })
+  hasNextPage: boolean;
+
+  @ApiProperty({ description: '다음 페이지용 커서', nullable: true })
+  nextCursor: string | null;
 }
