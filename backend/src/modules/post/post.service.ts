@@ -13,7 +13,6 @@ import type { Point } from 'geojson';
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
-import { PostMedia, PostMediaKind } from './entity/post-media.entity';
 import { PostDraft } from './entity/post-draft.entity';
 import { PostMedia, PostMediaKind } from './entity/post-media.entity';
 import { User } from '@/modules/user/entity/user.entity';
