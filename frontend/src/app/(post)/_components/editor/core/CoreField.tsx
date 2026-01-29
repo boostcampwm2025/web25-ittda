@@ -1,5 +1,9 @@
 'use client';
-import { formatDateDot, getWeekdayFromDotString } from '@/lib/date';
+import {
+  formatDateDot,
+  formatDateISO,
+  getWeekdayFromDotString,
+} from '@/lib/date';
 import { convertTo12Hour } from '@/lib/utils/time';
 import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
@@ -13,7 +17,11 @@ interface DateProps {
 }
 
 export const DateField = ({ date, onClick }: DateProps) => {
-  const formattedDate = formatDateDot(new Date(date.date));
+  const isDefault = !date.date;
+  // 기본값 생성
+  const targetDate = isDefault ? formatDateISO(new Date()) : date.date;
+
+  const formattedDate = formatDateDot(new Date(targetDate));
   const dayName = getWeekdayFromDotString(formattedDate);
   return (
     <button
@@ -32,7 +40,17 @@ interface TimeProps {
 }
 
 export const TimeField = ({ time, onClick }: TimeProps) => {
-  const formattedTime = convertTo12Hour(time.time);
+  let targetTime = time.time;
+
+  // 기본값 생성
+  if (!targetTime || !targetTime.includes(':')) {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    targetTime = `${hours}:${minutes}`;
+  }
+
+  const formattedTime = convertTo12Hour(targetTime);
   return (
     <button
       onClick={onClick}

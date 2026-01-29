@@ -1,17 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeLayout, getDefaultValue } from '../_utils/recordLayoutHelper';
-import { FieldType } from '@/lib/types/record';
+import { FieldType, LocationValue } from '@/lib/types/record';
 import { RecordBlock } from '@/lib/types/recordField';
 
 interface Params {
   initialPost?: { title: string; blocks: RecordBlock[] };
   onInitialized: (data: { title: string; blocks: RecordBlock[] }) => void;
+  onLocationUpdate?: (location: LocationValue | null) => void;
 }
 
 export function usePostEditorInitializer({
   initialPost,
   onInitialized,
+  onLocationUpdate,
 }: Params) {
   const hasInitializedRef = useRef(false);
 
@@ -73,4 +75,17 @@ export function usePostEditorInitializer({
       blocks: baseBlocks,
     });
   }, [initialPost, onInitialized]);
+
+  useEffect(() => {
+    const handleLocationEvent = (event: Event) => {
+      const locationData = (event as CustomEvent<LocationValue>).detail;
+      if (onLocationUpdate) {
+        onLocationUpdate(locationData);
+      }
+    };
+
+    window.addEventListener('locationSelected', handleLocationEvent);
+    return () =>
+      window.removeEventListener('locationSelected', handleLocationEvent);
+  }, [onLocationUpdate]);
 }
