@@ -61,13 +61,7 @@ interface PostEditorProps {
   initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
   draftId?: string;
   groupId?: string;
-}
-
-interface PostEditorProps {
-  mode: 'add' | 'edit';
-  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
-  draftId?: string;
-  groupId?: string;
+  postId?: string;
 }
 
 export default function PostEditor({
@@ -75,6 +69,7 @@ export default function PostEditor({
   initialPost,
   draftId,
   groupId,
+  postId,
 }: PostEditorProps) {
   const router = useRouter();
 
@@ -100,7 +95,7 @@ export default function PostEditor({
     setTitle,
     initialPost?.version, // 초기 버전 주입
   );
-  const { execute } = useCreateRecord(groupId, {
+  const { execute } = useCreateRecord(groupId, postId, {
     onError: () => {
       setIsPublishing(false);
     },
@@ -317,8 +312,15 @@ export default function PostEditor({
     const scope = (groupId ? 'GROUP' : 'PERSONAL') as RecordScope;
     const isDraft = !!draftId;
 
-    // TODO : 공동작업 이미지 처리 추가
-    // 게시글 이미지 -> id 변환 로직
+    if (groupId && draftId) {
+      execute({
+        draftId,
+        draftVersion: versionRef.current,
+      });
+      return;
+    }
+
+    // 개인용 게시글 이미지 -> id 변환 로직
     const finalizedBlocks = await Promise.all(
       blocks.map(async (block) => {
         if (block.type === 'photos') {
@@ -351,17 +353,9 @@ export default function PostEditor({
       ...(groupId ? { groupId } : {}),
     };
 
-    if (draftId && groupId) {
-      execute({
-        draftId,
-        draftVersion: versionRef.current,
-        payload: postPayload,
-      });
-    } else {
-      execute({
-        payload: postPayload,
-      });
-    }
+    execute({
+      payload: postPayload,
+    });
   };
 
   const throttledEmitStream = useThrottle(

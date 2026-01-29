@@ -38,7 +38,7 @@ export default async function GroupHeader({
           {groupInfo.members?.slice(0, 5).map((m) => (
             <Image
               key={m.memberId}
-              src={m.profileImageId}
+              src={m.profileImageId || '/default-profile.png'}
               width={32}
               height={32}
               className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white object-cover"

@@ -1,7 +1,7 @@
 import { cache } from 'react';
 import { queryOptions } from '@tanstack/react-query';
 import { get } from './api';
-import { RecordDetailResponse } from '../types/record';
+import { RecordBlock, RecordDetailResponse } from '../types/record';
 import { RecordPreview } from '../types/recordResponse';
 import { createApiError } from '../utils/errorHandler';
 import { PERSONAL_STALE_TIME } from '../constants/constants';
@@ -96,4 +96,25 @@ export const recordPreviewListOptions = (
     },
     staleTime: scope === 'personal' || !scope ? PERSONAL_STALE_TIME : 0,
     retry: false,
+  });
+
+export interface PersonalEditResponse {
+  title: string;
+  thumbnailMediaId: string;
+  blocks: RecordBlock[];
+}
+// 개인 게시글 수정 스냅샷 조회
+export const personalEditOptions = (postId: string) =>
+  queryOptions({
+    queryKey: ['posts', postId, 'edit'],
+    queryFn: async () => {
+      const res = await get<PersonalEditResponse>(`/api/posts/${postId}/edit`);
+      if (!res.success) throw createApiError(res);
+      if (!res.success) {
+        throw createApiError(res);
+      }
+      return res.data;
+    },
+    retry: 2,
+    enabled: !!postId,
   });
