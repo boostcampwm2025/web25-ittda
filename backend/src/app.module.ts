@@ -15,6 +15,7 @@ import { MyPageModule } from './modules/mypage/mypage.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { SearchModule } from './modules/search/search.module';
 import { MapModule } from './modules/map/map.module';
+import { TemplateModule } from './modules/template/template.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { MapModule } from './modules/map/map.module';
     StatsModule,
     SearchModule,
     MapModule,
+    TemplateModule,
   ],
   controllers: [AppController],
   providers: [AppService],
