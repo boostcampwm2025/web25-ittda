@@ -12,6 +12,8 @@ import { ApiResponse, ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../auth/auth.type';
+import { GroupRoleGuard } from '../group/guards/group-roles.guard';
+import { GroupRoles } from '../group/guards/group-roles.decorator';
 import { PostDraftService } from './post-draft.service';
 import { PostPublishService } from './post-publish.service';
 import { PostService } from './post.service';
@@ -22,8 +24,10 @@ import {
 } from './dto/post-draft-response.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
+import { GroupRoleEnum } from '@/enums/group-role.enum';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, GroupRoleGuard)
+@GroupRoles(GroupRoleEnum.EDITOR)
 @ApiTags('drafts')
 @Controller({ path: 'groups/:groupId', version: '1' })
 export class PostDraftController {

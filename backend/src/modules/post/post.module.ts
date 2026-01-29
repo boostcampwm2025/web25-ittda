@@ -21,6 +21,7 @@ import { User } from '../user/entity/user.entity';
 import { Group } from '../group/entity/group.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { AuthModule } from '../auth/auth.module';
+import { GroupModule } from '../group/group.module';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { AuthModule } from '../auth/auth.module';
       GroupMember,
     ]),
     AuthModule,
-    AuthModule,
+    GroupModule,
   ],
   controllers: [PostController, PostDraftController],
   providers: [
