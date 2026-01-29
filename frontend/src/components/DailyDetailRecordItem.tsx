@@ -154,7 +154,10 @@ export default function DailyDetailRecordItem({
                   return (
                     <div key={rowNumber} className="w-full">
                       {sortedBlocks.map((block) => (
-                        <BlockContent key={block.id} block={block} />
+                        <BlockContent
+                          key={`${record.postId}-${block.id}`}
+                          block={block}
+                        />
                       ))}
                     </div>
                   );
