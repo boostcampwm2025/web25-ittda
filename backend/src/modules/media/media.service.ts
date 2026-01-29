@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, LessThan, Repository } from 'typeorm';
@@ -27,6 +32,8 @@ import type { PresignFileRequestDto } from './dto/presign-media.dto';
 export class MediaService {
   private readonly s3Client: S3Client;
   private readonly bucket: string;
+  private readonly s3ConfigValid: boolean;
+  private readonly logger = new Logger(MediaService.name);
   private readonly presignTtlSeconds = 300;
   private readonly maxUploadSizeBytes = 10 * 1024 * 1024;
   private readonly allowedContentTypes = new Set([
@@ -64,6 +71,9 @@ export class MediaService {
       (this.configService.get<string>('S3_FORCE_PATH_STYLE') ?? 'false') ===
       'true';
     this.bucket = this.configService.get<string>('S3_BUCKET') ?? '';
+    this.s3ConfigValid = Boolean(
+      endpoint && accessKeyId && secretAccessKey && this.bucket,
+    );
 
     this.s3Client = new S3Client({
       region,
@@ -80,6 +90,7 @@ export class MediaService {
     ownerUserId: string,
     files: PresignFileRequestDto[],
   ) {
+    this.ensureS3Config();
     // TODO: presign 단계에서는 요청 값 기반 검증만 가능함(실제 파일은 complete에서 검증).
     // 추후 PUT -> POST 전환 시점에 contentType/size 재검증 로직 추가 필요.
     files.forEach((file) => {
@@ -105,7 +116,15 @@ export class MediaService {
       });
     });
 
-    await this.mediaAssetRepository.save(assets);
+    try {
+      await this.mediaAssetRepository.save(assets);
+    } catch (err) {
+      this.logger.error(
+        'DB 저장 실패',
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException('파일 메타데이터 저장 실패');
+    }
 
     const expiresAt = new Date(
       Date.now() + this.presignTtlSeconds * 1000,
@@ -127,9 +146,18 @@ export class MediaService {
           ContentType: asset.mimeType ?? undefined,
           Metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         });
-        const uploadUrl = await getSignedUrl(this.s3Client, command, {
-          expiresIn: this.presignTtlSeconds,
-        });
+        let uploadUrl: string;
+        try {
+          uploadUrl = await getSignedUrl(this.s3Client, command, {
+            expiresIn: this.presignTtlSeconds,
+          });
+        } catch (err) {
+          this.logger.error(
+            `Presigned URL 생성 실패 (mediaId=${asset.id})`,
+            err instanceof Error ? err.stack : String(err),
+          );
+          throw new InternalServerErrorException('업로드 URL 생성 실패');
+        }
         return {
           mediaId: asset.id,
           method: 'PUT' as const,
@@ -143,6 +171,7 @@ export class MediaService {
   }
 
   async resolveUrls(requesterId: string, mediaIds: string[], draftId?: string) {
+    this.ensureS3Config();
     const assets = await this.mediaAssetRepository.find({
       where: mediaIds.map((id) => ({ id })),
     });
@@ -202,9 +231,18 @@ export class MediaService {
         Bucket: this.bucket,
         Key: asset.storageKey,
       });
-      const url = await getSignedUrl(this.s3Client, command, {
-        expiresIn: this.presignTtlSeconds,
-      });
+      let url: string;
+      try {
+        url = await getSignedUrl(this.s3Client, command, {
+          expiresIn: this.presignTtlSeconds,
+        });
+      } catch (err) {
+        this.logger.error(
+          `Presigned URL 생성 실패 (mediaId=${mediaId})`,
+          err instanceof Error ? err.stack : String(err),
+        );
+        throw new InternalServerErrorException('조회 URL 생성 실패');
+      }
       items.push({ mediaId, url, expiresAt });
     }
 
@@ -212,6 +250,7 @@ export class MediaService {
   }
 
   async resolveUrl(requesterId: string, mediaId: string, draftId?: string) {
+    this.ensureS3Config();
     const asset = await this.mediaAssetRepository.findOne({
       where: { id: mediaId },
     });
@@ -253,10 +292,29 @@ export class MediaService {
       Bucket: this.bucket,
       Key: asset.storageKey,
     });
-    const url = await getSignedUrl(this.s3Client, command, {
-      expiresIn: this.presignTtlSeconds,
-    });
+    let url: string;
+    try {
+      url = await getSignedUrl(this.s3Client, command, {
+        expiresIn: this.presignTtlSeconds,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Presigned URL 생성 실패 (mediaId=${mediaId})`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException('조회 URL 생성 실패');
+    }
     return { ok: true as const, url, expiresAt };
+  }
+
+  private ensureS3Config() {
+    if (this.s3ConfigValid) {
+      return;
+    }
+    this.logger.error('S3 환경 변수 누락 또는 잘못된 설정');
+    throw new InternalServerErrorException(
+      '스토리지 설정이 올바르지 않습니다.',
+    );
   }
 
   async completeUploads(ownerUserId: string, mediaIds: string[]) {
