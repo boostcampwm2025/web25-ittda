@@ -43,6 +43,7 @@ interface FieldRendererProps {
     isMyLock: boolean;
     isLockedByOther: boolean;
   };
+  draftId?: string;
 }
 
 export function RecordFieldRenderer({
@@ -114,6 +115,7 @@ export function RecordFieldRenderer({
           photos={displayValue as PhotoValue}
           onClick={handleLockAndAction}
           onRemove={() => onRemove(block.id)}
+          draftId={draftId}
         />
       );
     case 'emotion':

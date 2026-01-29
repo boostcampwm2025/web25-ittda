@@ -9,17 +9,33 @@ import {
 } from '../core/FieldDefaultButton';
 import { FieldDeleteButton } from '../core/FieldDeleteButton';
 import { PhotoValue } from '@/lib/types/recordField';
+import { useMediaResolveMulti } from '@/hooks/useMediaResolve';
 
 interface Props {
   photos: PhotoValue;
   onClick: () => void;
   onRemove: () => void;
+  draftId?: string;
 }
 
-export const PhotoField = ({ photos, onClick, onRemove }: Props) => {
+export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
   const MAX_VISIBLE = 3;
 
-  const allPhotos = [...(photos.tempUrls || [])];
+  // URL 변환
+  const mediaIds = photos.mediaIds || [];
+  const { data: resolvedData } = useMediaResolveMulti(mediaIds, draftId);
+
+  // resolve 된 url
+  const urlMap = new Map(
+    resolvedData?.items.map((item) => [item.mediaId, item.url]),
+  );
+
+  // 전체 사진
+  const allPhotos = [
+    ...(photos.tempUrls || []),
+    ...(mediaIds.map((id) => urlMap.get(id)).filter(Boolean) as string[]),
+  ];
+
   const totalCount = allPhotos.length;
   const hasMore = totalCount > MAX_VISIBLE;
 
@@ -53,6 +69,7 @@ export const PhotoField = ({ photos, onClick, onRemove }: Props) => {
               className="object-cover"
               alt={`첨부 사진 ${url}`}
               sizes="60px"
+              unoptimized={true}
             />
             {idx === MAX_VISIBLE - 1 && hasMore && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
