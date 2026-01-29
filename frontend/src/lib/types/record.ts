@@ -146,6 +146,7 @@ export interface LocationValue {
 export interface ImageValue {
   mediaIds?: string[];
   tempUrls?: string[];
+  resolvedUrls?: string[];
 }
 
 export interface TableValue {
