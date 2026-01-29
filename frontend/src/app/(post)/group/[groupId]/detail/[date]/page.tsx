@@ -52,9 +52,14 @@ export default async function GroupDailyDetailPage({
       <div className="p-6">
         <HydrationBoundary state={dehydrate(queryClient)}>
           {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
-            <DailyDetailRecords memories={records} date={date} scope="groups" />
+            <DailyDetailRecords
+              memories={records}
+              date={date}
+              scope="groups"
+              groupId={groupId}
+            />
           ) : (
-            <DailyDetailRecords date={date} scope="groups" />
+            <DailyDetailRecords date={date} scope="groups" groupId={groupId} />
           )}
         </HydrationBoundary>
         <DailyDetailFloatingActions date={date} groupId={groupId} />
