@@ -8,7 +8,7 @@ import { convertTo12Hour } from '@/lib/utils/time';
 import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
 import { cn } from '@/lib/utils';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { DateValue, TextValue, TimeValue } from '@/lib/types/record';
 
 interface DateProps {
@@ -111,13 +111,15 @@ export const ContentField = ({
     const target = textareaRef.current;
     // 현재 텍스트 크기에 맞게 높이 조절
     if (target) {
-      target.style.height = 'auto';
-      target.style.height = `${target.scrollHeight}px`;
+      requestAnimationFrame(() => {
+        target.style.height = 'auto';
+        target.style.height = `${target.scrollHeight}px`;
+      });
     }
   }, []);
 
   // value 변경될 때 높이 조절
-  useEffect(() => {
+  useLayoutEffect(() => {
     adjustHeight();
   }, [value, adjustHeight]);
 
