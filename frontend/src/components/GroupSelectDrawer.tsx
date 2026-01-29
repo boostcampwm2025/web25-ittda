@@ -8,9 +8,9 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { X, Users, ChevronRight } from 'lucide-react';
-import Image from 'next/image';
+import { X, Users, ChevronRight, ImageIcon } from 'lucide-react';
 import { GroupSummary } from '@/lib/types/recordResponse';
+import AssetImage from './AssetImage';
 
 interface GroupSelectDrawerProps {
   open: boolean;
@@ -77,16 +77,16 @@ export default function GroupSelectDrawer({
                 className="flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100"
               >
                 {group.cover?.assetId ? (
-                  <Image
-                    src={group.cover.assetId}
+                  <AssetImage
+                    assetId={group.cover.assetId}
                     alt={group.name}
                     width={50}
                     height={50}
                     className="w-12 h-12 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-linear-to-br dark:bg-white bg-itta-black flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white dark:text-itta-black" />
+                  <div className="flex items-center justify-center">
+                    <ImageIcon className="w-6 h-6 text-gray-400" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0 text-left">

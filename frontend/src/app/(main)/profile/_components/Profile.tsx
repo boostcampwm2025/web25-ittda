@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { userProfileOptions } from '@/lib/api/profile';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import AssetImage from '@/components/AssetImage';
 
 export default function Profile() {
   const router = useRouter();
@@ -40,13 +41,20 @@ export default function Profile() {
   return (
     <div className="rounded-2xl p-6 shadow-xs border flex items-center gap-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
       <div className="w-20 h-20 rounded-full border-4 overflow-hidden shadow-sm dark:border-[#121212] border-[#F9F9F9]">
-        <Image
-          width={100}
-          height={100}
-          src={userProfile.user?.profileImageId || '/profile-ex.jpeg'}
-          alt="Profile"
-          className="w-full h-full object-cover"
-        />
+        {userProfile.user.profileImageId ? (
+          <AssetImage
+            assetId={userProfile.user.profileImageId}
+            alt="유저 프로필"
+          />
+        ) : (
+          <Image
+            width={100}
+            height={100}
+            src={'/profile_base.png'}
+            alt="프로필"
+            className="w-full h-full object-cover"
+          />
+        )}
       </div>
       <div className="flex-1">
         <h3 className="text-lg font-black mb-1 dark:text-white text-itta-black">

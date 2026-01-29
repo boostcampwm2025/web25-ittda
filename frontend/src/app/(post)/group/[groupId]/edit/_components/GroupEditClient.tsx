@@ -37,7 +37,7 @@ export default function GroupEditClient({ groupId }: GroupEditClientProps) {
         <GroupInfo
           groupThumnail={group.cover?.assetId || ''}
           groupId={groupId}
-          nickname={me.nicknameInGroup}
+          me={me}
         />
 
         <GroupMemberManagement groupId={groupId} me={me} />
