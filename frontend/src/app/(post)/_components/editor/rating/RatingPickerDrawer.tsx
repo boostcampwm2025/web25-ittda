@@ -12,7 +12,7 @@ import { RatingValue } from '@/lib/types/recordField';
 import { useThrottle } from '@/lib/utils/useThrottle';
 
 interface RatingDrawerProps {
-  onClose: () => void;
+  onClose: (finalValue?: RatingValue) => void;
   rating: RatingValue;
   onUpdateRating: (val: RatingValue) => void;
 }
@@ -70,6 +70,11 @@ export default function RatingDrawer({
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, []);
 
+  const handleConfirm = () => {
+    onUpdateRating({ rating: localValue });
+    onClose({ rating: localValue });
+  };
+
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent>
@@ -126,7 +131,7 @@ export default function RatingDrawer({
           </div>
 
           <button
-            onClick={onClose}
+            onClick={handleConfirm}
             className="mt-8 flex w-full py-4 rounded-2xl text-sm font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 items-center justify-center"
           >
             확인

@@ -370,20 +370,20 @@ export default function PostEditor({
   };
 
   // 명시적으로 드로어를 닫을 때
-  const handleCloseDrawer = (id?: string) => {
+  const handleCloseDrawer = (id?: string, finalValue?: BlockValue) => {
     if (id && draftId) {
-      const streamingValue = streamingValues[id];
       const currentBlock = blocks.find((b) => b.id === id);
       //여기서 커밋하기
       if (currentBlock) {
+        const valueToCommit = finalValue || currentBlock.value;
+
         applyPatch({
           type: 'BLOCK_SET_VALUE',
           blockId: id,
-          value: streamingValue || currentBlock.value,
+          value: valueToCommit,
         });
       }
-
-      // 락 해제
+      //락 해제
       releaseLock(`block:${id}`);
     }
 
@@ -471,7 +471,7 @@ export default function PostEditor({
           <RatingDrawer
             rating={initialValue as RatingValue}
             onUpdateRating={(nr) => handleDrawerDone({ rating: nr.rating })}
-            onClose={() => handleCloseDrawer(id)}
+            onClose={(v) => handleCloseDrawer(id, v)}
           />
         );
       case 'photos':
