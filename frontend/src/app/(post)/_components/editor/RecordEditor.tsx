@@ -21,9 +21,12 @@ import MetadataSelectionDrawer from './metadata/MetadataSelectionDrawer';
 // 타입
 import {
   BlockValue,
+  CreateRecordRequest,
   FieldType,
+  LocationValue,
   MoodValue,
   RatingValue,
+  RecordScope,
   TagValue,
   TimeValue,
 } from '@/lib/types/record';
@@ -31,6 +34,8 @@ import { RecordBlock } from '@/lib/types/recordField';
 import {
   canBeHalfWidth,
   getDefaultValue,
+  isRecordBlockEmpty,
+  normalizeLayout,
 } from '../../_utils/recordLayoutHelper';
 import SaveTemplateDrawer from './core/SaveTemplateDrawer';
 import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
@@ -47,6 +52,14 @@ import { useSocketStore } from '@/store/useSocketStore';
 import { useRecordCollaboration } from '@/hooks/useRecordCollaboration';
 import { useThrottle } from '@/lib/utils/useThrottle';
 import { RecordFieldRenderer } from './RecordFieldRender';
+import AuthLoadingScreen from '@/components/AuthLoadingScreen';
+
+interface PostEditorProps {
+  mode: 'add' | 'edit';
+  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
+  draftId?: string;
+  groupId?: string;
+}
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -65,18 +78,29 @@ export default function PostEditor({
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const [blocks, setBlocks] = useState<RecordBlock[]>([]);
-  const { mutate: createRecord } = useCreateRecord();
+
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
-  const { requestLock, releaseLock, pendingLockKey, setPendingLockKey } =
-    useLockManager(draftId);
+  const { requestLock, releaseLock } = useLockManager(draftId);
 
-  const { streamingValues, emitStream, applyPatch } = useRecordCollaboration(
+  const {
+    streamingValues,
+    emitStream,
+    applyPatch,
+    versionRef,
+    isPublishing,
+    setIsPublishing,
+  } = useRecordCollaboration(
     draftId,
     setBlocks,
     setTitle,
     initialPost?.version, // 초기 버전 주입
   );
+  const { execute } = useCreateRecord(groupId, {
+    onError: () => {
+      setIsPublishing(false);
+    },
+  });
 
   const {
     activeDrawer,
@@ -103,14 +127,54 @@ export default function PostEditor({
     applyPatch,
   });
 
+  const handleLocationUpdate = (locationData: LocationValue | null) => {
+    const existingBlock = blocks.find((b) => b.type === 'location');
+    if (!existingBlock) return;
+
+    // 새로 추가된 데이터가 있다면
+    if (locationData) {
+      updateFieldValue(locationData, existingBlock.id);
+      if (draftId) {
+        handleFieldCommit(existingBlock.id, locationData);
+      }
+    } else {
+      const lockKey = `block:${existingBlock.id}`;
+      const isMine = locks[lockKey] === mySessionId;
+
+      if (!(isMine && draftId)) return;
+
+      // 값이 비어있는 블록이라면 아예 삭제
+      if (!existingBlock.value || isRecordBlockEmpty(existingBlock.value)) {
+        applyPatch({
+          type: 'BLOCK_DELETE',
+          blockId: existingBlock.id,
+        });
+        setBlocks((prev) =>
+          normalizeLayout(prev.filter((b) => b.id !== existingBlock.id)),
+        );
+      }
+      releaseLock(lockKey);
+    }
+
+    // 세션 스토리지 정리
+    sessionStorage.removeItem('editor_draft');
+    sessionStorage.removeItem('selected_location');
+  };
+
   const {
     gridRef,
     isDraggingId,
-    setIsDraggingId,
     handleDragStart,
     handleDragOver,
     handleGridDragOver,
-  } = useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth);
+    handleDragEnd,
+  } = useRecordEditorDnD(
+    blocks,
+    setBlocks,
+    canBeHalfWidth,
+    applyPatch,
+    draftId,
+  );
 
   // 페이지 초기화/복구 및 위치 데이터 받기
   const resolvedInitialPost = initialPost
@@ -124,6 +188,7 @@ export default function PostEditor({
       setTitle(title);
       setBlocks(blocks);
     },
+    onLocationUpdate: handleLocationUpdate,
   });
 
   const { members } = useDraftPresence(draftId);
@@ -151,7 +216,7 @@ export default function PostEditor({
     return () => {
       socket.off('LOCK_CHANGED');
     };
-  }, [socket, pendingLockKey, mySessionId, setPendingLockKey]);
+  }, [socket, mySessionId]);
 
   // 메타데이터 선택 drawer가 열릴 때 필드 락 요청
   const metadataLocksRef = useRef<string[]>([]);
@@ -220,19 +285,41 @@ export default function PostEditor({
 
   const goToLocationPicker = () => {
     sessionStorage.setItem('editor_draft', JSON.stringify({ title, blocks }));
+    const existing = blocks.find((b) => b.type === 'location');
+    // locaion 처음 만들어진다면
+    if (!existing) {
+      addOrShowBlock('location');
+    } else {
+      const lockKey = `block:${existing.id}`;
+      requestLock(lockKey);
+    }
+
     router.push('/location-picker');
   };
 
   const handleSave = () => {
-    //개인 기록 저장만 보장
-    //TODO: 그룹 기록 저장
-    const scope = draftId ? 'GROUP' : 'PERSONAL';
-    const payload = {
+    const scope = (groupId ? 'GROUP' : 'PERSONAL') as RecordScope;
+
+    const isDraft = !!draftId;
+
+    const postPayload: CreateRecordRequest = {
       scope: scope,
       title,
-      blocks: mapBlocksToPayload(blocks),
+      blocks: mapBlocksToPayload(blocks, isDraft),
+      ...(groupId ? { groupId } : {}),
     };
-    createRecord(payload);
+
+    if (draftId && groupId) {
+      execute({
+        draftId,
+        draftVersion: versionRef.current,
+        payload: postPayload,
+      });
+    } else {
+      execute({
+        payload: postPayload,
+      });
+    }
   };
 
   const throttledEmitStream = useThrottle(
@@ -285,18 +372,37 @@ export default function PostEditor({
   // 명시적으로 드로어를 닫을 때
   const handleCloseDrawer = (id?: string) => {
     if (id && draftId) {
+      const streamingValue = streamingValues[id];
       const currentBlock = blocks.find((b) => b.id === id);
-
       //여기서 커밋하기
       if (currentBlock) {
         applyPatch({
           type: 'BLOCK_SET_VALUE',
           blockId: id,
-          value: currentBlock.value,
+          value: streamingValue || currentBlock.value,
         });
       }
 
       // 락 해제
+      releaseLock(`block:${id}`);
+    }
+
+    setActiveDrawer(null);
+  };
+
+  // 선택과 동시에 커밋되도록 하는 드로어
+  const handleImmediateCommit = (newValue: BlockValue) => {
+    if (!activeDrawer || !activeDrawer.id) return;
+    const id = activeDrawer.id;
+    updateFieldValue(newValue, id);
+
+    if (draftId) {
+      applyPatch({
+        type: 'BLOCK_SET_VALUE',
+        blockId: id,
+        value: newValue,
+      });
+
       releaseLock(`block:${id}`);
     }
 
@@ -339,7 +445,7 @@ export default function PostEditor({
           <DateDrawer
             mode="single"
             currentDate={initialValue as string}
-            onSelectDate={(v) => handleDrawerDone({ date: v })}
+            onSelectDate={(v) => handleImmediateCommit({ date: v })}
             onClose={() => handleCloseDrawer(id)}
           />
         );
@@ -347,7 +453,7 @@ export default function PostEditor({
         return (
           <TimePickerDrawer
             currentTime={initialValue as TimeValue}
-            onSave={(v) => handleDrawerDone({ time: v })}
+            onSave={(v) => handleImmediateCommit({ time: v })}
             onClose={() => handleCloseDrawer(id)}
           />
         );
@@ -446,6 +552,9 @@ export default function PostEditor({
 
   return (
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
+      {isPublishing && (
+        <AuthLoadingScreen type="publish" className="fixed inset-0 z-[9999]" />
+      )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
         <RecordTitleInput
@@ -465,19 +574,23 @@ export default function PostEditor({
           {blocks.map((block) => {
             const lockKey = `block:${block.id}`;
             const ownerSessionId = locks[lockKey];
+
+            const isMyLock = !!ownerSessionId && ownerSessionId === mySessionId;
+            const isLockedByOther = !!ownerSessionId && !isMyLock;
+
             const owner = members.find((m) => m.sessionId === ownerSessionId);
+
             const contentBlockCount = blocks.filter(
               (b) => b.type === 'content',
             ).length;
             const isLastContentBlock = contentBlockCount === 1;
-            //const isLockedByOther = ownerSessionId && ownerSessionId !== mySessionId;
             return (
               <div
                 key={block.id}
                 draggable
                 onDragStart={() => handleDragStart(block.id)}
                 onDragOver={(e) => handleDragOver(e, block.id)}
-                onDragEnd={() => setIsDraggingId(null)}
+                onDragEnd={handleDragEnd}
                 className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
               >
                 <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
@@ -485,19 +598,21 @@ export default function PostEditor({
                 </div>
 
                 <div className="w-full flex flex-row gap-2 items-center">
-                  {owner && (
-                    <Image
-                      src="/profile-ex.jpeg"
-                      className="w-6 h-6 rounded-full"
-                      width={8}
-                      height={8}
-                      alt="현재 유저 프로필"
-                    />
+                  {isLockedByOther && owner && (
+                    <div>
+                      {/**TODO : 추후 유저 이미지 받아와서 추가 */}
+                      <Image
+                        src="/profile-ex.jpeg"
+                        className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
+                        width={24}
+                        height={24}
+                        alt={`${owner.displayName} 편집 중`}
+                        title={owner.displayName}
+                      />
+                    </div>
                   )}
                   <RecordFieldRenderer
                     block={block}
-                    locks={locks}
-                    mySessionId={mySessionId}
                     streamingValue={streamingValues[block.id]}
                     requestLock={requestLock}
                     onUpdate={handleFieldUpdate}
@@ -506,6 +621,11 @@ export default function PostEditor({
                     onOpenDrawer={(type, id) => setActiveDrawer({ type, id })}
                     goToLocationPicker={goToLocationPicker}
                     isLastContentBlock={isLastContentBlock}
+                    lock={{
+                      lockKey,
+                      isMyLock,
+                      isLockedByOther,
+                    }}
                   />
                 </div>
               </div>

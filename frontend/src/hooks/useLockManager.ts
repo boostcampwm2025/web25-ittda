@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useSocketStore } from '@/store/useSocketStore';
 import { toast } from 'sonner';
 
@@ -14,7 +14,7 @@ export interface LockResponsePayload {
 
 export function useLockManager(draftId?: string) {
   const { socket, sessionId: mySessionId } = useSocketStore();
-  const [pendingLockKey, setPendingLockKey] = useState<string | null>(null);
+  const pendingLockRef = useRef<string | null>(null);
   const activeLockKeys = useRef<Set<string>>(new Set());
   const heartbeatRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
@@ -23,7 +23,7 @@ export function useLockManager(draftId?: string) {
     (lockKey: string) => {
       if (!socket || !draftId) return;
       activeLockKeys.current.add(lockKey);
-      setPendingLockKey(lockKey);
+      pendingLockRef.current = lockKey;
       socket.emit('LOCK_ACQUIRE', { draftId, lockKey });
     },
     [socket, draftId],
@@ -45,7 +45,7 @@ export function useLockManager(draftId?: string) {
 
       stopHeartbeat(lockKey);
     },
-    [socket, draftId],
+    [socket, draftId, stopHeartbeat],
   );
 
   // 하트비트
@@ -66,15 +66,21 @@ export function useLockManager(draftId?: string) {
 
   useEffect(() => {
     if (!socket) return;
+    const currentKeys = activeLockKeys.current;
+    const currentHeartbeats = heartbeatRefs.current;
 
     // 성공 시 하트비트 시작
     socket.on('LOCK_GRANTED', ({ lockKey }: LockResponsePayload) => {
+      if (pendingLockRef.current === lockKey) {
+        pendingLockRef.current = null;
+      }
       startHeartbeat(lockKey);
     });
 
     // 거절 시 처리
     socket.on('LOCK_DENIED', ({ lockKey }: LockResponsePayload) => {
-      if (pendingLockKey === lockKey) setPendingLockKey(null);
+      if (pendingLockRef.current === lockKey) pendingLockRef.current = null;
+      activeLockKeys.current.delete(lockKey);
       toast.error('다른 사용자가 편집 중입니다.');
     });
 
@@ -93,13 +99,16 @@ export function useLockManager(draftId?: string) {
       socket.off('LOCK_GRANTED');
       socket.off('LOCK_DENIED');
       socket.off('LOCK_EXPIRED');
-      Object.keys(heartbeatRefs.current).forEach((key) => {
-        clearInterval(heartbeatRefs.current[key]);
+      currentKeys.forEach((lockKey) => {
+        socket.emit('LOCK_RELEASE', { draftId, lockKey });
+        if (currentHeartbeats[lockKey]) {
+          clearInterval(currentHeartbeats[lockKey]);
+        }
       });
+      currentKeys.clear();
       heartbeatRefs.current = {};
-      activeLockKeys.current.clear();
     };
-  }, [socket, pendingLockKey, startHeartbeat, stopHeartbeat, mySessionId]);
+  }, [socket, startHeartbeat, stopHeartbeat, mySessionId, draftId]);
 
-  return { requestLock, releaseLock, pendingLockKey, setPendingLockKey };
+  return { requestLock, releaseLock };
 }

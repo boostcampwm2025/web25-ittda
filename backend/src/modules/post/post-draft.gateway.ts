@@ -312,6 +312,12 @@ export class PostDraftGateway
     });
   }
 
+  broadcastDraftPublishStarted(draftId: string) {
+    this.server.to(this.getDraftRoom(draftId)).emit('DRAFT_PUBLISH_STARTED', {
+      draftId,
+    });
+  }
+
   private getDraftRoom(draftId: string) {
     return `draft:${draftId}`;
   }
