@@ -48,7 +48,7 @@ export function useSearchFilters(options?: { withLocation?: boolean }) {
         else next.set(key, value);
       });
 
-      router.push(`${pathname}?${next.toString()}`, { scroll: false });
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
     },
     [router, pathname, searchParams],
   );

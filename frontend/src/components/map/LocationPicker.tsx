@@ -81,7 +81,7 @@ function LocationPickerContent({
     if (!placesServiceRef.current) {
       placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
     }
-  }, [placesLib, mapRef.current]);
+  }, [placesLib]);
 
   useEffect(() => {
     if (geoLat && geoLng && mapRef.current) {
@@ -106,6 +106,7 @@ function LocationPickerContent({
 
       updateInitialAddress();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geoLat, geoLng]);
 
   const handleSearch = async (keyword: string) => {
@@ -310,11 +311,23 @@ function LocationPickerContent({
 
       if (mode === 'search') {
         const bounds = mapRef.current.getBounds();
-        if (bounds && geometryLib && window.google?.maps?.geometry?.spherical) {
+
+        if (bounds && geometryLib) {
           const ne = bounds.getNorthEast();
-          const radiusInMeters =
-            google.maps.geometry.spherical.computeDistanceBetween(center, ne);
-          data.radius = Math.round(radiusInMeters);
+
+          // 거리 계산
+          const radiusInMeters = geometryLib.spherical.computeDistanceBetween(
+            center,
+            ne,
+          );
+
+          const radiusInKm = radiusInMeters / 1000;
+
+          data.radius = Math.min(Number(radiusInKm.toFixed(2)), 100);
+        } else {
+          // geometryLib가 아직 로딩 전이거나 bounds를 가져오지 못한 경우
+          console.warn('반경 적용 실패');
+          data.radius = 5;
         }
       }
 

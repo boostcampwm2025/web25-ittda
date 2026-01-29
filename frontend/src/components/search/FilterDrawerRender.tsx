@@ -11,18 +11,8 @@ interface FilterDrawerProps {
   emotions: string[];
   dateRange: { start: string | null; end: string | null };
   onUpdateUrl: (params: Record<string, string | null>) => void;
+  frequentTags: string[];
 }
-
-const ALL_TAGS = [
-  '일상',
-  '맛집',
-  '성수동',
-  '여행',
-  '운동',
-  '독서',
-  '가족',
-  '카페',
-];
 
 // 필터링 시 필요한 드로어 가져오는 함수
 export function FilterDrawerRenderer({
@@ -32,13 +22,14 @@ export function FilterDrawerRenderer({
   emotions,
   dateRange,
   onUpdateUrl,
+  frequentTags,
 }: FilterDrawerProps) {
   if (!activeDrawer) return;
   switch (activeDrawer) {
     case 'tag':
       return (
         <TagSearchDrawer
-          allTags={ALL_TAGS}
+          allTags={frequentTags.length > 0 ? frequentTags : []}
           selectedTags={tags}
           onToggleTag={(tag) => {
             const next = tags.includes(tag)

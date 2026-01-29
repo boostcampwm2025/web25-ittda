@@ -67,6 +67,7 @@ export const useCreateRecord = (
         queryClient.invalidateQueries({ queryKey: ['me'] }),
         queryClient.invalidateQueries({ queryKey: ['summary'] }),
         queryClient.invalidateQueries({ queryKey: ['pattern'] }),
+        queryClient.refetchQueries({ queryKey: ['search', 'tags'] }),
       ]);
       if (!res.data.groupId) {
         toast.success('기록이 성공적으로 저장되었습니다.');

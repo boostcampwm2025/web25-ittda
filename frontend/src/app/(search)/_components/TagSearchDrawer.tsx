@@ -11,7 +11,7 @@ import {
 
 interface Props {
   onClose: () => void;
-  allTags: string[];
+  allTags?: string[];
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
   onReset: () => void;
@@ -27,7 +27,7 @@ export default function TagSearchDrawer({
   const [keyword, setKeyword] = useState('');
 
   const filteredTags = useMemo(() => {
-    return allTags.filter((tag) =>
+    return allTags?.filter((tag) =>
       tag.toLowerCase().includes(keyword.toLowerCase()),
     );
   }, [allTags, keyword]);
@@ -66,41 +66,43 @@ export default function TagSearchDrawer({
           </div>
 
           {/* 태그 목록 영역 */}
-          <section className="flex flex-col space-y-4 ">
-            <p className="text-xs font-bold text-itta-gray3 uppercase tracking-widest leading-none">
-              자주 사용한 태그
-            </p>
-            <div className="flex flex-wrap gap-2 mb-10 min-h-[120px] content-start overflow-y-auto max-h-[300px] hide-scrollbar">
-              {filteredTags.map((tag) => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => onToggleTag(tag)}
-                    className={`px-4 py-2 rounded-2xl text-sm font-bold border transition-all ${
-                      isSelected
-                        ? 'bg-itta-point/5 border-itta-point text-itta-point'
-                        : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5 text-itta-gray3 hover:border-gray-200'
-                    }`}
-                  >
-                    <span
-                      className={
-                        isSelected ? 'text-itta-point' : 'text-itta-point/40'
-                      }
+          {filteredTags && filteredTags?.length > 0 && (
+            <section className="flex flex-col space-y-4 ">
+              <p className="text-xs font-bold text-itta-gray3 uppercase tracking-widest leading-none">
+                자주 사용한 태그
+              </p>
+              <div className="flex flex-wrap gap-2 mb-10 min-h-[120px] content-start overflow-y-auto max-h-[300px] hide-scrollbar">
+                {filteredTags?.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => onToggleTag(tag)}
+                      className={`px-4 py-2 rounded-2xl text-sm font-bold border transition-all ${
+                        isSelected
+                          ? 'bg-itta-point/5 border-itta-point text-itta-point'
+                          : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5 text-itta-gray3 hover:border-gray-200'
+                      }`}
                     >
-                      #
-                    </span>{' '}
-                    {tag}
-                  </button>
-                );
-              })}
-              {filteredTags.length === 0 && (
-                <p className="text-sm text-gray-400 w-full text-center py-10">
-                  검색 결과가 없습니다.
-                </p>
-              )}
-            </div>
-          </section>
+                      <span
+                        className={
+                          isSelected ? 'text-itta-point' : 'text-itta-point/40'
+                        }
+                      >
+                        #
+                      </span>{' '}
+                      {tag}
+                    </button>
+                  );
+                })}
+                {filteredTags?.length === 0 && (
+                  <p className="text-sm text-gray-400 w-full text-center py-10">
+                    검색 결과가 없습니다.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
 
           {/* 하단 액션바 */}
           <div className="flex gap-3 items-center">

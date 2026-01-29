@@ -79,7 +79,6 @@ export interface RecordSearchItem {
   date: string;
   content: string;
   imageUrl: string;
-  tags: string[];
 }
 
 export type RecordScope = 'PERSONAL' | 'GROUP';
