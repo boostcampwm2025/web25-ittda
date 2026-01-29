@@ -139,6 +139,8 @@ export default function PostEditor({
     activeDrawer,
     setActiveDrawer,
     handleDone,
+    draftId,
+    uploadMultipleMedia,
   });
 
   const handleLocationUpdate = (locationData: LocationValue | null) => {
@@ -426,7 +428,6 @@ export default function PostEditor({
       //락 해제
       releaseLock(`block:${id}`);
     }
-
     setActiveDrawer(null);
   };
 
@@ -556,6 +557,7 @@ export default function PostEditor({
             onClose={() => {
               handleCloseDrawer(id);
             }}
+            draftId={draftId}
           />
         );
       case 'emotion':
@@ -592,7 +594,7 @@ export default function PostEditor({
 
   return (
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
-      {(isPublishing || isMediaUploading) && (
+      {(isPublishing || (isMediaUploading && !draftId)) && (
         <AuthLoadingScreen type="publish" className="fixed inset-0 z-[9999]" />
       )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />

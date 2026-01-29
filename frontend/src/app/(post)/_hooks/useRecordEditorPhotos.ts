@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -43,6 +41,8 @@ interface RecordEditorPhotos {
     } | null>
   >;
   handleDone: (val: BlockValue, shouldClose?: boolean) => void;
+  draftId?: string;
+  uploadMultipleMedia?: (files: File[]) => Promise<string[]>;
 }
 export function useRecordEditorPhotos({
   blocks,
@@ -50,6 +50,8 @@ export function useRecordEditorPhotos({
   activeDrawer,
   setActiveDrawer,
   handleDone,
+  draftId,
+  uploadMultipleMedia,
 }: RecordEditorPhotos) {
   // EXIF 메타데이터 상태
   const pendingFilesRef = useRef<Map<string, File>>(new Map());
@@ -72,7 +74,6 @@ export function useRecordEditorPhotos({
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || activeDrawer?.type !== 'photos') return;
-    debugger;
     const existingPhotos = blocks.find(
       (b) => b.id === activeDrawer.id && b.type === 'photos',
     ) as Extract<RecordBlock, { type: 'photos' }> | undefined;
@@ -81,10 +82,13 @@ export function useRecordEditorPhotos({
       mediaIds: [],
       tempUrls: [],
     };
-
     const filesToRead = Array.from(files);
-
+    const isDraft = !!draftId;
+    let uploadedIds: string[] = [];
     try {
+      if (isDraft && uploadMultipleMedia) {
+        uploadedIds = await uploadMultipleMedia(filesToRead);
+      }
       // 이미지를 Base64로 변환
       const newImages = await Promise.all(
         filesToRead.map(
@@ -132,10 +136,22 @@ export function useRecordEditorPhotos({
         }));
       } else {
         // 메타데이터 없으면 바로 추가
-        const updatedPhotoValue: PhotoValue = {
-          ...currentPhotoValue,
-          tempUrls: [...(currentPhotoValue.tempUrls || []), ...newImages],
-        };
+        let updatedPhotoValue: PhotoValue = {};
+        if (draftId) {
+          updatedPhotoValue = {
+            mediaIds: [
+              ...(existingPhotos?.value.mediaIds || []),
+              ...uploadedIds,
+            ],
+            tempUrls: [],
+          };
+        } else {
+          updatedPhotoValue = {
+            ...currentPhotoValue,
+            tempUrls: [...(currentPhotoValue.tempUrls || []), ...newImages],
+          };
+        }
+
         handleDone(updatedPhotoValue, false);
       }
     } catch (err) {
