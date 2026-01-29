@@ -21,11 +21,11 @@ import { User } from '@/common/decorators/user.decorator';
 import { GetMonthlyArchiveQueryDto } from './dto/get-monthly-archive.query.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { MonthRecordResponseDto } from './dto/month-record.response.dto';
-import { GetMonthImagesResponseDto } from './dto/get-month-images.response.dto';
 import { UpdateMonthCoverBodyDto } from './dto/update-month-cover.body.dto';
 import { GetDailyArchiveQueryDto } from './dto/get-daily-archive.query.dto';
 import { DayRecordResponseDto } from './dto/day-record.response.dto';
 import { GetArchivesMonthCoverQueryDto } from './dto/get-archives-month-cover.query.dto';
+import { UserCoverCandidatesResponseDto } from './dto/user-cover-candidates.response.dto';
 
 import { parseYearMonth } from '@/common/utils/parseDateValidator';
 
@@ -63,29 +63,6 @@ export class UserController {
     );
 
     return { data };
-  }
-
-  @Get('archives/months/:yyyy_mm/images')
-  @ApiOperation({
-    summary: '사용자 월별 이미지 조회',
-    description:
-      '특정 월의 모든 기록에서 사용된 이미지 목록을 조회합니다. (deprecated: archives/monthcover 권장)',
-  })
-  @ApiParam({ name: 'yyyy_mm', description: '연-월 (예: 2026-01)' })
-  @ApiWrappedOkResponse({ type: GetMonthImagesResponseDto })
-  async getMonthImages(
-    @User() user: MyJwtPayload,
-    @Param('yyyy_mm') yyyy_mm: string,
-  ): Promise<{ data: GetMonthImagesResponseDto }> {
-    const userId = user?.sub;
-    if (!userId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
-
-    const { year, month } = parseYearMonth(yyyy_mm);
-
-    const images = await this.userService.getMonthImages(userId, year, month);
-    return { data: { images } };
   }
 
   @Patch('archives/months/:yyyy_mm/cover')
@@ -163,18 +140,22 @@ export class UserController {
     summary: '사용자 월별 커버 후보 이미지 조회',
     description: '특정 월의 모든 기록에서 사용된 이미지 목록을 조회합니다.',
   })
-  @ApiWrappedOkResponse({ type: String, isArray: true })
+  @ApiWrappedOkResponse({ type: UserCoverCandidatesResponseDto })
   async getArchivesMonthCover(
     @User() user: MyJwtPayload,
     @Query() query: GetArchivesMonthCoverQueryDto,
-  ): Promise<{ data: string[] }> {
+  ): Promise<{ data: UserCoverCandidatesResponseDto }> {
     const userId = user?.sub;
     if (!userId) {
       throw new UnauthorizedException('Access token is required.');
     }
 
     const { year, month } = parseYearMonth(query.year);
-    const data = await this.userService.getMonthImages(userId, year, month);
+    const data = await this.userService.getMonthCoverCandidates(
+      userId,
+      year,
+      month,
+    );
 
     return { data };
   }
