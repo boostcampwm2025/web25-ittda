@@ -53,7 +53,9 @@ export default function LoginContent({
           toast.info(
             `게스트 모드는 일주일 뒤에 작성하신 데이터가 삭제되니\n소중한 기록을 잃지 않도록 계정을 연동해 주세요.`,
           );
-          router.push('/');
+          setTimeout(() => {
+            router.replace('/');
+          }, 500);
         }
       },
     },
