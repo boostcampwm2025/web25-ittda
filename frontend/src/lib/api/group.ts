@@ -52,7 +52,7 @@ export const getCachedGroupMonthlyRecordList = cache(
     if (!response.success) {
       throw createApiError(response);
     }
-    return response.data;
+    return response.data ?? [];
   },
 );
 
