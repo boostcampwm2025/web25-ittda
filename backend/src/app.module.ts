@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getTypeOrmConfig } from './config/typeorm/typeorm.config';
@@ -13,6 +14,7 @@ import { GuestModule } from './modules/guest/guest.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { MyPageModule } from './modules/mypage/mypage.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { MediaModule } from './modules/media/media.module';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { StatsModule } from './modules/stats/stats.module';
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV ?? 'local'}`,
     }),
+    ScheduleModule.forRoot(),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -35,6 +38,7 @@ import { StatsModule } from './modules/stats/stats.module';
     FeedModule,
     MyPageModule,
     StatsModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

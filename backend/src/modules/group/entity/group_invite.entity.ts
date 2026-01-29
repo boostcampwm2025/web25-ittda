@@ -32,7 +32,7 @@ export class GroupInvite {
   })
   permission: GroupRoleEnum;
 
-  @Column({ name: 'expires_at' })
+  @Column({ name: 'expires_at', type: 'timestamptz' })
   expiresAt: Date;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
