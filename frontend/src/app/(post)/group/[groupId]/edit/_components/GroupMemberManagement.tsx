@@ -138,7 +138,7 @@ export default function GroupMemberManagement({
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[13px] font-bold dark:text-gray-200 text-itta-black">
-                    {member.name}
+                    {member.nicknameInGroup || member.name}
                   </span>
                   {member.role === 'ADMIN' && (
                     <ShieldCheck className="w-3 h-3 text-[#10B981]" />
