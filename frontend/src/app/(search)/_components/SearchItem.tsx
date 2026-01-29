@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
-import { MapPin } from 'lucide-react';
+import { ImageIcon, MapPin } from 'lucide-react';
 import { RecordSearchItem } from '@/lib/types/record';
+import AssetImage from '@/components/AssetImage';
 interface SearchItemProps {
   record: RecordSearchItem;
   onClick: (id: string) => void;
@@ -16,15 +16,19 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
       className="w-full flex items-center gap-4 p-4 rounded-xl border  text-left shadow-sm active:scale-[0.98] group bg-white border-gray-100/50 dark:bg-[#1E1E1E] dark:border-white/5"
     >
       {/* 썸네일 이미지 */}
-      {record.imageUrl && (
-        <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-gray-50 dark:bg-white/5">
-          <Image
-            src={record.imageUrl}
+      {record.imageUrl ? (
+        <div className="flex justify-center items-center relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-gray-50 dark:bg-white/5">
+          <AssetImage
+            assetId={record.imageUrl}
             alt={record.title}
             fill
-            className="object-cover"
             sizes="48px"
+            className="object-cover"
           />
+        </div>
+      ) : (
+        <div className="flex items-center justify-center">
+          <ImageIcon className="w-6 h-6 text-gray-400" />
         </div>
       )}
 
