@@ -28,17 +28,17 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
   const sortedRows = Array.from(rowMap.entries()).sort(([a], [b]) => a - b);
 
   return (
-    <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
+    <div className="flex flex-col flex-1 -mt-6 transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
         <RecordDetailHeaderActions record={record} />
       </header>
 
-      <main className="max-w-3xl mx-auto">
+      <main className="flex-grow flex flex-col max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
           {record.title}
         </h1>
 
-        <div className="space-y-3">
+        <div className="flex-grow space-y-3">
           {sortedRows.map(([rowNumber, blocks]) => {
             // 각 row의 블록을 col 순서대로 정렬
             const sortedBlocks = blocks.sort(
@@ -87,7 +87,7 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
           })}
         </div>
 
-        <div className="pt-8 mt-8 border-t border-gray-200 dark:border-gray-700">
+        <div className="pt-8 mt-16 border-t border-gray-200 dark:border-gray-700 pb-6">
           <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
             작성자
           </h2>
