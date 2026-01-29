@@ -56,6 +56,7 @@ import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import { useRecordEditorPhotos } from '../../_hooks/useRecordEditorPhotos';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { useQueryClient } from '@tanstack/react-query';
+import { refreshGroupData } from '@/lib/actions/revalidate';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -319,8 +320,14 @@ export default function PostEditor({
         draftId,
         draftVersion: versionRef.current,
       });
+      await refreshGroupData(groupId);
       queryClient.invalidateQueries({ queryKey: ['group', groupId] });
       return;
+    }
+
+    if (groupId) {
+      await refreshGroupData(groupId);
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
     }
 
     // 개인용 게시글 이미지 -> id 변환 로직
