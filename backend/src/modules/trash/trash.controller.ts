@@ -7,7 +7,13 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiNoContentResponse,
+} from '@nestjs/swagger';
 import { TrashService } from './trash.service';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { User } from '@/common/decorators/user.decorator';
@@ -35,8 +41,10 @@ export class TrashController {
   @Post('posts/:postId/restore')
   @ApiOperation({
     summary: '게시글 복구',
-    description: '휴지통에 있는 게시글을 복구합니다.',
+    description: '휴지통에 있는 특정 게시글을 복구합니다.',
   })
+  @ApiParam({ name: 'postId', description: '복구할 게시글 ID' })
+  @ApiNoContentResponse({ description: '복구 성공' })
   @HttpCode(204)
   async restorePost(
     @User() user: MyJwtPayload,
@@ -48,8 +56,11 @@ export class TrashController {
   @Delete('posts/:postId')
   @ApiOperation({
     summary: '게시글 완전 삭제',
-    description: '휴지통에 있는 게시글을 영구적으로 삭제합니다.',
+    description:
+      '휴지통에 있는 게시글을 영구적으로 삭제합니다. 복구가 불가능합니다.',
   })
+  @ApiParam({ name: 'postId', description: '영구 삭제할 게시글 ID' })
+  @ApiNoContentResponse({ description: '삭제 성공' })
   @HttpCode(204)
   async hardDeletePost(
     @User() user: MyJwtPayload,
