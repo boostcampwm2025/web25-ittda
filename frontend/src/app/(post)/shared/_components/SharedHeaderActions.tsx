@@ -11,7 +11,7 @@ import {
 import { useApiPost } from '@/hooks/useApi';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
-import { GroupSummary } from '@/lib/types/recordResponse';
+import { GroupSummary, newGroupResponse } from '@/lib/types/recordResponse';
 import {
   BarChart3,
   CalendarDays,
@@ -46,10 +46,19 @@ export default function SharedHeaderActions() {
 
   const queryClient = useQueryClient();
 
-  const { mutate } = useApiPost<GroupSummary>('/api/groups', {
+  const { mutate } = useApiPost<newGroupResponse>('/api/groups', {
     onSuccess: (response) => {
       if (!response.data) return;
-      const newGroup = response.data;
+      const newGroup: GroupSummary = {
+        groupId: response.data.id,
+        name: response.data.name,
+        cover: null,
+        memberCount: 1,
+        recordCount: 0,
+        createdAt: response.data.createdAt,
+        lastActivityAt: response.data.createdAt,
+        latestPost: null,
+      };
       // 서버 응답 데이터를 캐시에 즉시 추가
       queryClient.setQueryData<GroupSummary[]>(['shared'], (old) => {
         if (!old) return [newGroup];
