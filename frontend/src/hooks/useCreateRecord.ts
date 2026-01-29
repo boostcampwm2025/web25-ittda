@@ -46,7 +46,7 @@ export const useCreateRecord = (
   const publishMutation = useApiPost<RecordDetail, PublishRecordRequest>(
     `/api/groups/${groupId}/posts/publish`,
     {
-      onSuccess: (res) => {
+      onSuccess: async (res) => {
         if (res.success && res.data?.id) {
           await Promise.all([
             queryClient.invalidateQueries({ queryKey: ['records'] }),
