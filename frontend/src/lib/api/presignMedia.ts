@@ -33,8 +33,6 @@ export const uploadFileToStorage = async (
     body: file,
     headers: {
       'Content-Type': file.type,
-      // 'x-amz-meta-width': dimensions.width.toString(),
-      // 'x-amz-meta-height': dimensions.height.toString(),
     },
   });
 

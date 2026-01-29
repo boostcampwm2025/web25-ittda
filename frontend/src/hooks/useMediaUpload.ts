@@ -26,19 +26,14 @@ export const useMediaUpload = () => {
         fileInfos.map(({ file, dimensions }) => ({
           contentType: file.type,
           size: file.size,
-          width: dimensions.width, // TODO: 현재는 헤더에서 넣으면 에러나옴. 필요없다면 이후 삭제.
-          height: dimensions.height,
+          width: dimensions.width,
         })),
       );
 
       // URL로 실제 파일 업로드
       await Promise.all(
         presignItems.map((item, index) =>
-          uploadFileToStorage(
-            item.uploadUrl,
-            files[index],
-            //fileInfos[index].dimensions,
-          ),
+          uploadFileToStorage(item.uploadUrl, files[index]),
         ),
       );
 
