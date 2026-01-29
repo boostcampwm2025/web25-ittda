@@ -12,10 +12,7 @@ import { GroupMonthCover } from '../entity/group-month-cover.entity';
 import { Post } from '../../post/entity/post.entity';
 import { PostBlock } from '../../post/entity/post-block.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
-import {
-  GroupMonthRecordResponseDto,
-  PaginatedGroupMonthRecordResponseDto,
-} from '../dto/group-month-record.response.dto';
+import { GroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
 import { GroupArchiveSortEnum } from '../dto/get-group-monthly-archive.query.dto';
 import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
 import {
@@ -128,9 +125,7 @@ export class GroupRecordService {
     groupId: string,
     year: number,
     sort: GroupArchiveSortEnum = GroupArchiveSortEnum.LATEST,
-    cursor?: string,
-    limit: number = 12,
-  ): Promise<PaginatedGroupMonthRecordResponseDto> {
+  ): Promise<GroupMonthRecordResponseDto[]> {
     // 1. 그룹 존재 확인
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
@@ -160,7 +155,7 @@ export class GroupRecordService {
     const posts = await qb.orderBy('p.eventAt', 'DESC').getMany();
 
     if (posts.length === 0) {
-      return { items: [], nextCursor: null };
+      return [];
     }
 
     // 3. 월별 그룹핑
@@ -192,33 +187,10 @@ export class GroupRecordService {
       monthKeys.sort((a, b) => b.localeCompare(a));
     }
 
-    // 5. 페이지네이션 (Cursor)
-    let startIndex = 0;
-    if (cursor) {
-      const decodedCursor = Buffer.from(cursor, 'base64').toString('utf-8');
-      startIndex = monthKeys.indexOf(decodedCursor);
-      if (startIndex === -1) {
-        startIndex = 0; // 커서를 못 찾으면 처음부터
-      } else if (decodedCursor === monthKeys[monthKeys.length - 1]) {
-        // 마지막이면 다음 페이지 없음
-        return { items: [], nextCursor: null };
-      } else {
-        // 커서 다음 요소부터 시작
-        startIndex += 1;
-      }
-    }
-
-    const slicedKeys = monthKeys.slice(startIndex, startIndex + limit);
-    const hasNext = monthKeys.length > startIndex + limit;
-    let nextCursor: string | null = null;
-
-    if (hasNext) {
-      const rawCursor = slicedKeys[slicedKeys.length - 1];
-      nextCursor = Buffer.from(rawCursor, 'utf-8').toString('base64');
-    }
+    const slicedKeys = monthKeys;
 
     if (slicedKeys.length === 0) {
-      return { items: [], nextCursor: null };
+      return [];
     }
 
     // 6. 필요한 데이터 일괄 조회 (커버, 대표 게시글 블록)
@@ -300,7 +272,7 @@ export class GroupRecordService {
       });
     }
 
-    return { items, nextCursor };
+    return items;
   }
 
   /**
