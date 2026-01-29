@@ -15,7 +15,7 @@ export interface RecordCardProps {
   name: string;
   count: number | string;
   latestTitle: string;
-  latestLocation: string;
+  latestLocation?: string | null;
   cover?: GroupCover | null;
   hasNotification?: boolean;
   createdAt?: string;
@@ -68,7 +68,7 @@ export function RecordCard({
         <div className="space-y-1">
           <PostCard.Description>{latestTitle}</PostCard.Description>
           <div className="flex justify-between items-center flex-wrap">
-            {latestLocation && (
+            {latestLocation ? (
               <PostCard.Meta
                 className="pr-3"
                 icon={
@@ -80,6 +80,8 @@ export function RecordCard({
               >
                 {latestLocation}
               </PostCard.Meta>
+            ) : (
+              <div className="pr-3" />
             )}
             <span className="font-semibold p-1 text-[8px] pl-0 text-white/70">
               {createdAt}

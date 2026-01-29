@@ -40,7 +40,7 @@ export default function GroupEditClient({ groupId }: GroupEditClientProps) {
           me={me}
         />
 
-        <GroupMemberManagement groupId={groupId} />
+        <GroupMemberManagement groupId={groupId} me={me} />
 
         <GroupDangerousZone groupName={group.name} groupId={groupId} />
       </div>

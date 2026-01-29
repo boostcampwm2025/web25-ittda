@@ -39,7 +39,7 @@ export default function ProfileEditHeaderActions({
       </h2>
       <button
         onClick={handleSave}
-        className="cursor-pointer font-bold text-sm active:scale-95 transition-all"
+        className="cursor-pointer font-bold text-sm active:scale-95 transition-all min-w-8"
       >
         {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '저장'}
       </button>
