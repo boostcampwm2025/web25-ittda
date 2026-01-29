@@ -276,8 +276,8 @@ export const groupMonthlyRecordCoverOptions = (
     queryKey: ['cover', groupId, month],
     queryFn: async ({ pageParam }) => {
       const url = pageParam
-        ? `/api/groups/${groupId}/archives/monthcover?year=${month}&cursor=${pageParam}`
-        : `/api/groups/${groupId}/archives/monthcover?year=${month}`;
+        ? `/api/groups/${groupId}/archives/monthcover?yearMonth=${month}&cursor=${pageParam}`
+        : `/api/groups/${groupId}/archives/monthcover?yearMonth=${month}`;
 
       const response = await get<GroupCoverListResponse>(url);
 
