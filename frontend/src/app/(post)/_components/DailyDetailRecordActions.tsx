@@ -21,49 +21,19 @@ export default function DailyDetailRecordActions({
   const [currentUrl, setCurrentUrl] = useState('');
 
   const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
+  const image = record.blocks.find((block) => block.type === 'IMAGE');
 
   // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
     requestAnimationFrame(() => {
-      setCurrentUrl(window.location.href);
+      setCurrentUrl(`${window.location.origin}/record/${record.postId}`);
     });
   }, []);
 
-  // TEXT 타입 블록에서 내용 추출
-  const shareData = {
-    title: record.title,
-    text: content,
-    url: currentUrl,
-  };
-
-  const handleShare = async (record: RecordPreview, e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveMenuId(null);
-
-    if (!navigator.share) {
-      setShareOpen(true);
-      return;
-    }
-
-    try {
-      await navigator.share({
-        title: record.title,
-        text: content,
-        url: window.location.href,
-      });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        try {
-          await navigator.share({
-            title: record.title,
-            text: content,
-          });
-        } catch (innerErr) {
-          console.error('Share failed', innerErr);
-        }
-      }
-    }
+    setShareOpen(true);
   };
 
   const handleEdit = (record: RecordPreview, e: React.MouseEvent) => {
@@ -113,7 +83,7 @@ export default function DailyDetailRecordActions({
           />
           <div className="absolute right-0 top-8 z-30 min-w-27.5 rounded-2xl shadow-2xl border p-1 animate-in fade-in zoom-in-95 duration-200 dark:bg-[#2A2A2A] dark:border-white/10 bg-white border-gray-100">
             <button
-              onClick={(e) => handleShare(record, e)}
+              onClick={handleShare}
               className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
             >
               공유하기
@@ -135,10 +105,16 @@ export default function DailyDetailRecordActions({
         </>
       )}
       <SocialShareDrawer
-        path={shareData.url}
-        title={shareData.title}
+        path={currentUrl}
+        title={record.title}
         open={shareOpen}
         onOpenChange={setShareOpen}
+        record={{
+          id: record.postId,
+          title: record.title,
+          content,
+          image: image?.id ?? null,
+        }}
       />
     </>
   );
