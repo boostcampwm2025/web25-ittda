@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { randomUUID } from 'crypto';
 import { GuestSessionService } from '../guest/guest-session.service';
+import { GuestMigrationService } from '../guest/guest-migration.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from './refresh_token/refresh_token.entity';
@@ -29,6 +30,7 @@ export class AuthService {
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepo: Repository<RefreshToken>,
     private readonly guestSessionService: GuestSessionService,
+    private readonly guestMigrationService: GuestMigrationService,
   ) {}
 
   // userId -> CodePayload 저장
@@ -191,7 +193,6 @@ export class AuthService {
   }
 
   private async mergeGuestSession(userId: string, guestSessionId: string) {
-    // TODO: guestSessionId에 담긴 활동 데이터를 userId에 병합하는 로직 구현
-    await this.guestSessionService.invalidate(guestSessionId);
+    await this.guestMigrationService.migrate(guestSessionId, userId);
   }
 }

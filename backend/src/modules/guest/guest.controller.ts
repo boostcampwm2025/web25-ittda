@@ -1,7 +1,10 @@
-import { Controller, Post } from '@nestjs/common';
+import { Controller, Post, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GuestSessionService } from './guest-session.service';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
+import { JwtService } from '@nestjs/jwt';
+
+import type { Response } from 'express';
 
 @ApiTags('auth')
 @Controller({
@@ -9,7 +12,10 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
   version: '1',
 })
 export class GuestController {
-  constructor(private readonly guestSessionService: GuestSessionService) {}
+  constructor(
+    private readonly guestSessionService: GuestSessionService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   @Post('guest')
   @ApiOperation({
@@ -17,9 +23,18 @@ export class GuestController {
     description: '로그인하지 않은 사용자를 위한 임시 세션을 발급합니다.',
   })
   @ApiWrappedOkResponse({ type: Object })
-  async startGuest() {
+  async startGuest(@Res({ passthrough: true }) res: Response) {
     // 로그인 이전 활동을 위한 게스트 세션 발급
     const session = await this.guestSessionService.create();
+
+    const accessToken = this.jwtService.sign(
+      { sub: session.userId },
+      { expiresIn: '1h' },
+    );
+
+    // 응답 헤더에 guest를 위한 Access Token 설정
+    res.set('Authorization', `Bearer ${accessToken}`);
+    res.set('Access-Control-Expose-Headers', 'Authorization');
 
     return {
       guest: true,
