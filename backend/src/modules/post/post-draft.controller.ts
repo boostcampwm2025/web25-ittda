@@ -145,4 +145,31 @@ export class PostDraftController {
     );
     return this.postService.findOne(postId);
   }
+
+  @Post('posts/:postId/edit/publish')
+  @ApiOperation({
+    summary: '그룹 게시글 수정 드래프트 반영',
+    description: '수정 드래프트를 실제 게시글에 반영합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiParam({ name: 'postId', description: '게시글 ID' })
+  @ApiWrappedOkResponse({ type: PostDetailDto })
+  async publishGroupEditDraft(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+    @Param('postId') postId: string,
+    @Body() dto: PublishDraftDto,
+  ) {
+    const requesterId = user?.sub;
+    if (!requesterId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+    const updatedPostId = await this.postPublishService.publishGroupEditDraft(
+      requesterId,
+      groupId,
+      postId,
+      dto,
+    );
+    return this.postService.findOne(updatedPostId);
+  }
 }
