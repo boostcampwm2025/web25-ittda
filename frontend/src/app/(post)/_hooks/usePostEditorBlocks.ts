@@ -265,10 +265,7 @@ export function usePostEditorBlocks({
     const limit = MULTI_INSTANCE_LIMITS['photos'] || 10;
     const available = limit - currentCount;
 
-    if (available <= 0) {
-      toast.error('최대 개수를 초과했습니다.');
-      return;
-    }
+    if (available <= 0) return toast.warning('최대 개수를 초과했습니다.');
 
     const filesToRead = Array.from(files).slice(0, available);
 

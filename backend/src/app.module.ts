@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getTypeOrmConfig } from './config/typeorm/typeorm.config';
@@ -16,6 +17,7 @@ import { StatsModule } from './modules/stats/stats.module';
 import { SearchModule } from './modules/search/search.module';
 import { MapModule } from './modules/map/map.module';
 import { TemplateModule } from './modules/template/template.module';
+import { MediaModule } from './modules/media/media.module';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { TemplateModule } from './modules/template/template.module';
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV ?? 'local'}`,
     }),
+    ScheduleModule.forRoot(),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -41,6 +44,7 @@ import { TemplateModule } from './modules/template/template.module';
     SearchModule,
     MapModule,
     TemplateModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

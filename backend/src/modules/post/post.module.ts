@@ -14,6 +14,8 @@ import { PatchStreamService } from './collab/patch-stream.service';
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
+import { PostMedia } from './entity/post-media.entity';
+import { PostDraftMedia } from './entity/post-draft-media.entity';
 import { PostDraft } from './entity/post-draft.entity';
 import { User } from '../user/entity/user.entity';
 import { Group } from '../group/entity/group.entity';
@@ -26,6 +28,8 @@ import { AuthModule } from '../auth/auth.module';
       Post,
       PostBlock,
       PostContributor,
+      PostMedia,
+      PostDraftMedia,
       PostDraft,
       User,
       Group,

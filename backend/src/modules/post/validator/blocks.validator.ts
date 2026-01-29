@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 
 type ValidateBlocksOptions = {
@@ -61,6 +62,54 @@ function validateSingleMetaBlocks(counts: Map<PostBlockType, number>) {
     if ((counts.get(type) ?? 0) > max) {
       throw new BadRequestException(`${type} block must be at most ${max}`);
     }
+  }
+}
+
+function validateImageMediaIds(blocks: BlockDto[]) {
+  const mediaIds: string[] = [];
+  for (const block of blocks) {
+    if (block.type !== PostBlockType.IMAGE) continue;
+    const value = block.value as unknown;
+    if (!value || typeof value !== 'object') {
+      throw new BadRequestException('IMAGE.mediaIds is required.');
+    }
+    const candidate = value as { mediaIds?: unknown };
+    if (candidate.mediaIds === undefined) {
+      throw new BadRequestException('IMAGE.mediaIds is required.');
+    }
+    if (!Array.isArray(candidate.mediaIds)) {
+      throw new BadRequestException('IMAGE.mediaIds must be an array.');
+    }
+    if (candidate.mediaIds.length === 0) {
+      throw new BadRequestException('IMAGE.mediaIds must not be empty.');
+    }
+    const ids = candidate.mediaIds as unknown[];
+    let hasNonString = false;
+    for (const id of ids) {
+      if (typeof id !== 'string') {
+        hasNonString = true;
+        break;
+      }
+    }
+    if (hasNonString) {
+      throw new BadRequestException('IMAGE.mediaIds must be strings.');
+    }
+    const idStrings = ids as string[];
+    const invalidUuid = idStrings.find((id) => !isUUID(id));
+    if (invalidUuid) {
+      throw new BadRequestException('IMAGE.mediaIds must be UUIDs.');
+    }
+    mediaIds.push(...idStrings);
+  }
+
+  if (mediaIds.length === 0) return;
+
+  const unique = new Set(mediaIds);
+  if (unique.size !== mediaIds.length) {
+    throw new BadRequestException('IMAGE.mediaIds must be unique.');
+  }
+  if (mediaIds.length > 15) {
+    throw new BadRequestException('IMAGE.mediaIds must be at most 15.');
   }
 }
 
@@ -148,6 +197,8 @@ export function validateBlocks(
   if (enforceSingleMetaBlocks) {
     validateSingleMetaBlocks(counts);
   }
+
+  validateImageMediaIds(blocks);
 
   validateLayout(blocks);
 }
