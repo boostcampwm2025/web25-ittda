@@ -15,7 +15,7 @@ import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../auth/auth.type';
 
 @ApiTags('map')
-@ApiBearerAuth()
+@ApiBearerAuth('bearerAuth')
 @Controller({ path: 'map', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class MapController {
