@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useDebounce<T extends (...args: any[]) => void>(
   fn: T,
@@ -7,7 +8,7 @@ export function useDebounce<T extends (...args: any[]) => void>(
   // 타이머를 useRef로 관리해야 리렌더링 시에도 값이 초기화되지 않음
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  return useCallback(
+  const debounced = useCallback(
     (...args: Parameters<T>) => {
       // 이전 타이머 취소
       if (timer.current) {
@@ -21,4 +22,13 @@ export function useDebounce<T extends (...args: any[]) => void>(
     },
     [fn, delay],
   );
+
+  const cancel = useCallback(() => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+  }, []);
+
+  return { debounced, cancel };
 }

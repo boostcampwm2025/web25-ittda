@@ -63,9 +63,11 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
     setResults(data);
     setIsLoading(false);
   };
-  const debouncedSearch = useDebounce(searchMedia, 500);
+  const { debounced: debouncedSearch, cancel } = useDebounce(searchMedia, 500);
+
   useEffect(() => {
     if (!query.trim()) {
+      cancel();
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       setResults([]);
@@ -73,7 +75,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
     }
     setIsLoading(true);
     debouncedSearch(query, searchType);
-  }, [query, searchType]);
+  }, [cancel, debouncedSearch, query, searchType]);
 
   const handleManualSubmit = () => {
     if (!manualTitle.trim()) return;
@@ -163,7 +165,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                     </div>
                   ) : results.length > 0 ? (
                     <div className="divide-y space-y-4  divide-gray-50 dark:divide-white/5">
-                      {results.map((item, idx) => (
+                      {results.map((item) => (
                         <MediaField
                           key={item.externalId}
                           data={item}

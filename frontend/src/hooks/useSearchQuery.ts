@@ -69,3 +69,16 @@ export function useFrequentTags(limit: number = 10) {
     },
   );
 }
+
+/**
+ * 최근 검색어 조회
+ */
+export function useRecentSearches() {
+  return useApiQuery<{ keywords: string[] }>(
+    ['search', 'recent'],
+    '/api/search/recent',
+    {
+      staleTime: 0,
+    },
+  );
+}
