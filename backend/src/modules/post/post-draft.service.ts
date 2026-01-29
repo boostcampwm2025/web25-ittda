@@ -7,7 +7,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import { isUUID, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { randomUUID } from 'crypto';
@@ -15,10 +15,13 @@ import { DateTime } from 'luxon';
 
 import { PostDraft } from './entity/post-draft.entity';
 import { PostDraftMedia } from './entity/post-draft-media.entity';
+import { Post } from './entity/post.entity';
+import { PostBlock } from './entity/post-block.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostScope } from '@/enums/post-scope.enum';
+import { GroupRoleEnum } from '@/enums/group-role.enum';
 import type { BlockMoveListCommand, PatchCommand } from './collab/types';
 import { PostBlockDto } from './dto/post-block.dto';
 import { PostBlockType } from '@/enums/post-block-type.enum';
@@ -28,19 +31,26 @@ export class PostDraftService {
   constructor(
     @InjectRepository(PostDraft)
     private readonly postDraftRepository: Repository<PostDraft>,
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
+    @InjectRepository(PostBlock)
+    private readonly postBlockRepository: Repository<PostBlock>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
   ) {}
 
-  async getOrCreateGroupCreateDraft(groupId: string, actorId: string) {
+  async getOrCreateGroupCreateDraft(
+    groupId: string,
+    actorId: string,
+  ): Promise<PostDraft> {
     const group = await this.groupRepository.findOne({
       where: { id: groupId },
       select: { id: true },
     });
     if (!group) throw new NotFoundException('Group not found');
-    await this.ensureGroupMember(groupId, actorId);
+    await this.ensureGroupEditor(groupId, actorId);
 
     const existing = await this.postDraftRepository.findOne({
       where: { groupId, isActive: true, kind: 'CREATE' },
@@ -74,13 +84,82 @@ export class PostDraftService {
     }
   }
 
-  async getGroupDraft(groupId: string, draftId: string, requesterId: string) {
-    await this.ensureGroupMember(groupId, requesterId);
+  async getGroupDraft(
+    groupId: string,
+    draftId: string,
+    requesterId: string,
+  ): Promise<PostDraft> {
+    await this.ensureGroupEditor(groupId, requesterId);
     const draft = await this.postDraftRepository.findOne({
       where: { id: draftId, groupId, isActive: true },
     });
     if (!draft) throw new NotFoundException('Draft not found');
     return draft;
+  }
+
+  async getOrCreateGroupEditDraft(
+    groupId: string,
+    postId: string,
+    actorId: string,
+  ): Promise<PostDraft> {
+    await this.ensureGroupEditor(groupId, actorId);
+
+    const post = await this.postRepository.findOne({
+      where: { id: postId, deletedAt: IsNull() },
+      select: { id: true, scope: true, groupId: true, title: true },
+    });
+    if (!post) throw new NotFoundException('Post not found');
+    if (post.scope !== PostScope.GROUP || post.groupId !== groupId) {
+      throw new BadRequestException('Post does not belong to this group.');
+    }
+
+    const existing = await this.postDraftRepository.findOne({
+      where: {
+        groupId,
+        isActive: true,
+        kind: 'EDIT',
+        targetPostId: postId,
+      },
+    });
+    if (existing) return existing;
+
+    const blocks = await this.postBlockRepository.find({
+      where: { postId },
+      order: { layoutRow: 'ASC', layoutCol: 'ASC', layoutSpan: 'ASC' },
+    });
+    const snapshot = this.buildEditDraftSnapshot(post, blocks, groupId);
+
+    const draft = this.postDraftRepository.create({
+      groupId,
+      ownerActorId: actorId,
+      kind: 'EDIT',
+      targetPostId: postId,
+      snapshot,
+    });
+
+    try {
+      return await this.postDraftRepository.save(draft);
+    } catch (error) {
+      const dbError = error as { code?: string };
+      if (error instanceof QueryFailedError && dbError.code === '23505') {
+        const concurrent = await this.postDraftRepository.findOne({
+          where: {
+            groupId,
+            isActive: true,
+            kind: 'EDIT',
+            targetPostId: postId,
+          },
+        });
+        if (concurrent) return concurrent;
+        throw new ConflictException(
+          'Active edit draft already exists for this post.',
+        );
+      }
+      if (error instanceof QueryFailedError) {
+        throw new InternalServerErrorException('Failed to create edit draft.');
+      }
+      throw error;
+    }
   }
 
   async applyPatch(
@@ -127,7 +206,7 @@ export class PostDraftService {
     });
   }
 
-  private buildDefaultDraftSnapshot(groupId: string) {
+  private buildDefaultDraftSnapshot(groupId: string): Record<string, unknown> {
     const now = DateTime.utc();
     const snapshot: Omit<CreatePostDto, 'thumbnailMediaId'> = {
       scope: PostScope.GROUP,
@@ -154,16 +233,42 @@ export class PostDraftService {
         },
       ],
     };
-    return snapshot;
+    return snapshot as unknown as Record<string, unknown>;
   }
 
-  private async ensureGroupMember(groupId: string, userId: string) {
+  private buildEditDraftSnapshot(
+    post: Pick<Post, 'title' | 'groupId'>,
+    blocks: PostBlock[],
+    groupId: string,
+  ): Record<string, unknown> {
+    const snapshot: CreatePostDto = {
+      scope: PostScope.GROUP,
+      groupId,
+      title: post.title,
+      blocks: blocks.map((block) => ({
+        id: block.id,
+        type: block.type,
+        value: block.value,
+        layout: {
+          row: block.layoutRow,
+          col: block.layoutCol,
+          span: block.layoutSpan,
+        },
+      })),
+    };
+    return snapshot as unknown as Record<string, unknown>;
+  }
+
+  private async ensureGroupEditor(groupId: string, userId: string) {
     const member = await this.groupMemberRepository.findOne({
       where: { groupId, userId },
-      select: { id: true },
+      select: { role: true },
     });
     if (!member) {
       throw new ForbiddenException('Not a group member.');
+    }
+    if (member.role === GroupRoleEnum.VIEWER) {
+      throw new ForbiddenException('Insufficient permission.');
     }
   }
 
