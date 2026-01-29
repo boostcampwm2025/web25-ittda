@@ -3,10 +3,14 @@
 import ProfileEditProvider from '@/app/(main)/profile/edit/_components/ProfileEditContext';
 import ProfileEditHeaderActions from '@/components/ProfileEditHeaderActions';
 import ProfileInfo from '@/components/ProfileInfo';
-import { useUpdateGroupProfile } from '@/hooks/useUserGroupSetting';
+import { useApiPatch } from '@/hooks/useApi';
+import { UpdateGroupMeParams } from '@/lib/types/groupResponse';
 
 import { BaseUser } from '@/lib/types/profile';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface GroupProfileEditClientProps {
   groupId: string;
@@ -17,25 +21,37 @@ export default function GroupProfileEditClient({
   groupId,
   groupProfile,
 }: GroupProfileEditClientProps) {
-  const { updateProfile } = useUpdateGroupProfile(groupId);
+  const { mutateAsync: updateProfile } = useApiPatch<UpdateGroupMeParams>(
+    `/api/groups/${groupId}/members/me`,
+  );
   const { userId } = useAuthStore();
 
+  const queryClient = useQueryClient();
+  const [isPending, setIsPending] = useState(false);
+
   const handleSave = async (data: { nickname: string; image: File | null }) => {
+    setIsPending(true);
     try {
-      const mediaId = 'mediaId';
+      const finalMediaId = groupProfile.profileImageId;
 
       if (data.image) {
-        // TODO: 실제 이미지 업로드 로직이 필요할 경우 여기에 추가
+        // const uploadRes = await uploadMedia(data.image);
+        // finalMediaId = uploadRes.id;
       }
 
-      updateProfile({
+      await updateProfile({
         groupId: groupId,
         userId: userId || 'userId',
         nicknameInGroup: data.nickname,
-        profileMediaId: mediaId || undefined,
+        profileMediaId: finalMediaId || undefined,
       });
+
+      queryClient.invalidateQueries({ queryKey: ['group', groupId, 'me'] });
+      toast.success('프로필 정보가 수정되었습니다.');
     } catch (error) {
-      console.error('오류', error);
+      console.error('그룹 내 내정보 수정 실패', error);
+    } finally {
+      setIsPending(false);
     }
   };
 
@@ -51,6 +67,7 @@ export default function GroupProfileEditClient({
         <ProfileEditHeaderActions
           title="그룹 프로필 수정"
           onSave={handleSave}
+          isPending={isPending}
         />
         <div className="flex p-6 flex-col gap-10">
           <ProfileInfo profileImage={currentImage} showEmail={false} />

@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageIcon } from 'lucide-react';
-import { ReactNode } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import AssetImage from '../AssetImage';
 
@@ -54,6 +54,13 @@ export function PostCard({
   className = '',
   children,
 }: BaseCardProps) {
+  const [fallbackIndex] = useState(() => Math.floor(Math.random() * 8) + 1);
+
+  const baseImage = useMemo(() => {
+    // id가 없으면 위에서 생성한 랜덤 인덱스 이미지
+    return `/gemini_base${fallbackIndex}.png`;
+  }, [fallbackIndex]);
+
   return (
     <div className={`group relative ${height}`}>
       <div

@@ -63,6 +63,13 @@ interface PostEditorProps {
   groupId?: string;
 }
 
+interface PostEditorProps {
+  mode: 'add' | 'edit';
+  initialPost?: { title: string; blocks: RecordBlock[]; version?: number };
+  draftId?: string;
+  groupId?: string;
+}
+
 export default function PostEditor({
   mode,
   initialPost,
