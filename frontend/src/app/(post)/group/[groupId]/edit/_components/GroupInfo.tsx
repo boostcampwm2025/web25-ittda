@@ -59,8 +59,8 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
             <div className="w-24 h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
               {groupThumbnail?.assetId ? (
                 <AssetImage
-                  width={100}
-                  height={100}
+                  width={200}
+                  height={200}
                   assetId={groupThumbnail.assetId}
                   alt="그룹 썸네일"
                   className="w-full h-full object-cover opacity-80"
