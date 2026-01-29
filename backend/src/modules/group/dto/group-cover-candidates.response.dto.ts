@@ -1,11 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GroupCoverCandidateItemDto {
-  @ApiProperty({ description: 'Media ID', example: 'uuid' })
+  @ApiProperty({ description: 'Media Asset ID', example: 'uuid' })
   mediaId: string;
-
-  @ApiProperty({ description: 'Media Asset ID', example: 'uuid?' })
-  assetId: string;
 
   @ApiProperty({ description: '게시글 ID', example: 'uuid' })
   postId: string;
