@@ -1,7 +1,5 @@
-import { IsInt, IsUUID, Min, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsInt, IsUUID, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { CreatePostDto } from './create-post.dto';
 
 export class PublishDraftDto {
   @ApiProperty({ format: 'uuid' })
@@ -12,9 +10,4 @@ export class PublishDraftDto {
   @IsInt()
   @Min(0)
   draftVersion: number;
-
-  @ApiProperty({ type: () => CreatePostDto })
-  @ValidateNested()
-  @Type(() => CreatePostDto)
-  post: CreatePostDto;
 }

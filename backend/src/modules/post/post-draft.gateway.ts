@@ -20,6 +20,7 @@ import { WsJwtGuard } from '@/modules/auth/ws/ws-jwt.guard';
 import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/entity/user.entity';
+import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { PresenceService } from './collab/presence.service';
 import { LockService } from './collab/lock.service';
 import { DraftStateService } from './collab/draft-state.service';
@@ -423,6 +424,9 @@ export class PostDraftGateway
     const profileImageId = user.profileImageId ?? null;
     if (!member) {
       throw new WsException('Group membership is required.');
+    }
+    if (member.role === GroupRoleEnum.VIEWER) {
+      throw new WsException('Insufficient permission.');
     }
 
     return {
