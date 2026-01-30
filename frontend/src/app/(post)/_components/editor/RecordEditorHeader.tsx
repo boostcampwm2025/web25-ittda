@@ -34,11 +34,9 @@ export default function RecordEditorHeader({
     <header className="sticky top-0 z-50 shrink-0 px-5 py-4 flex items-center backdrop-blur-md transition-colors duration-300 bg-white/95 dark:bg-[#121212]/95 border-b border-gray-100 dark:border-white/5">
       <div className="flex-1 flex items-center justify-start gap-3">
         <Back />
-        {hasMembers && (
-          <h2 className="sm:hidden text-sm font-bold text-itta-black dark:text-gray-400 whitespace-nowrap">
-            {titleText}
-          </h2>
-        )}
+        <h2 className="sm:hidden text-sm font-bold text-itta-black dark:text-gray-400 whitespace-nowrap">
+          {titleText}
+        </h2>
       </div>
 
       <h2 className="hidden sm:block flex-none text-sm font-bold text-itta-black dark:text-gray-400 whitespace-nowrap">

@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import AssetImage from './AssetImage';
 
 interface ImageCarouselProps {
   images: string[];
@@ -46,6 +47,8 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
     setStartX(e.clientX);
   };
 
+  // TODO: 임시 unsed 허용. 미사용 시 삭제
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDragStart = (clientX: number) => {
     setIsDragging(true);
     setIsMoved(false); // 시작할 때는 이동하지 않은 상태
@@ -97,6 +100,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
       <div className="w-full rounded-xs overflow-hidden">
         <Image
           src={images[0]}
+          unoptimized={true}
           className="w-full h-auto"
           alt="Image"
           width={800}
@@ -128,13 +132,14 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
         >
           {images.map((url, index) => (
             <div key={index} className="w-full shrink-0 relative aspect-square">
-              <Image
-                src={url}
-                className="select-none pointer-events-none object-cover"
-                alt={`Image ${index + 1}`}
+              <AssetImage
+                assetId={url}
+                alt={`게시글 ${index + 1}번째`}
                 fill
                 draggable={false}
+                unoptimized={true}
                 sizes="(max-width: 768px) 100vw, 800px"
+                className="select-none pointer-events-none object-cover"
               />
             </div>
           ))}

@@ -41,6 +41,18 @@ export interface RecordPreview {
   blocks: Block[];
 }
 
+export interface newGroupResponse {
+  id: string;
+  name: string;
+  owner: {
+    id: string;
+  };
+  coverMediaId: null | string;
+  coverSourcePostId: null | string;
+  lastActivityAt: null | string;
+  createdAt: string;
+}
+
 export interface GroupSummary {
   groupId: string;
   name: string;
