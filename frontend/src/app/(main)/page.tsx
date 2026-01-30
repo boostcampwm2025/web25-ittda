@@ -28,8 +28,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     ]);
 
     // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    // recordPreviewListOptions의 queryKey와 일치시켜야 함
     queryClient.setQueryData(
-      ['records', 'preview', selectedDate],
+      ['records', 'preview', selectedDate, 'personal'],
       recordPreviews,
     );
 

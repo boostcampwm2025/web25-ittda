@@ -26,8 +26,9 @@ export default async function GroupDailyDetailPage({
     records = await getCachedRecordPreviewList(date, 'groups', groupId);
 
     // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    // recordPreviewListOptions의 queryKey와 일치시켜야 함
     queryClient.setQueryData(
-      ['records', 'preview', date, 'group', groupId],
+      ['group', groupId, 'records', 'daily', date],
       records,
     );
   } else {
