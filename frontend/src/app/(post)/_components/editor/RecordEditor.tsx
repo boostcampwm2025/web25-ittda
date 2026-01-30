@@ -356,10 +356,21 @@ export default function PostEditor({
         return block;
       }),
     );
+
+    // 빈 photos 블록 필터링 (mediaIds와 tempUrls가 모두 비어있는 경우 제거)
+    const validBlocks = finalizedBlocks.filter((block) => {
+      if (block.type === 'photos') {
+        const mediaIds = block.value.mediaIds || [];
+        const tempUrls = block.value.tempUrls || [];
+        return mediaIds.length > 0 || tempUrls.length > 0;
+      }
+      return true;
+    });
+
     const postPayload: CreateRecordRequest = {
       scope: scope,
       title,
-      blocks: mapBlocksToPayload(finalizedBlocks, isDraft),
+      blocks: mapBlocksToPayload(validBlocks, isDraft),
       ...(groupId ? { groupId } : {}),
     };
 
