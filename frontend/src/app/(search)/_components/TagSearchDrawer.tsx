@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -32,6 +32,17 @@ export default function TagSearchDrawer({
     );
   }, [allTags, keyword]);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && keyword.trim()) {
+      e.preventDefault();
+      // 이미 선택된 태그가 아니라면 추가
+      if (!selectedTags.includes(keyword.trim())) {
+        onToggleTag(keyword.trim());
+      }
+      setKeyword(''); // 입력창 초기화
+    }
+  };
+
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="dark:bg-[#1E1E1E]">
@@ -46,6 +57,25 @@ export default function TagSearchDrawer({
               </DrawerTitle>
             </div>
           </DrawerHeader>
+
+          {/* 현재 선택된 태그 리스트 */}
+          {selectedTags.length !== 0 && (
+            <div className="flex flex-wrap gap-2 mb-3 min-h-8">
+              {selectedTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-itta-point/10 text-itta-point text-xs font-bold animate-in fade-in zoom-in-95"
+                >
+                  #{tag}
+                  <X
+                    size={14}
+                    className="cursor-pointer hover:text-rose-500 transition-colors"
+                    onClick={() => onToggleTag(tag)}
+                  />
+                </span>
+              ))}
+            </div>
+          )}
           {/* 검색 및 상태 입력창 */}
           <div className="flex-[2.5] relative group">
             <Search
@@ -61,6 +91,7 @@ export default function TagSearchDrawer({
               }
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={handleKeyDown}
               className="w-full py-4 pl-12 pr-4 rounded-2xl bg-gray-50 dark:bg-white/5 border-none text-sm font-bold text-itta-black dark:text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-itta-point/20 transition-all shadow-inner"
             />
           </div>
