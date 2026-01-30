@@ -4,7 +4,7 @@ import { Calendar, Clock, MapPin, Star } from 'lucide-react';
 import Image from 'next/image';
 import ImageCarousel from './ImageCarousel';
 import { EMOTION_MAP } from '@/lib/constants/constants';
-import { useMediaResolveMulti } from '@/hooks/useMediaResolve';
+// import { useMediaResolveMulti } from '@/hooks/useMediaResolve';
 
 export default function BlockContent({ block }: { block: Block }) {
   if (!block.value) return null;
