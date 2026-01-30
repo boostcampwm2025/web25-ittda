@@ -27,7 +27,7 @@ import {
 import { GetGroupDailyArchiveQueryDto } from '../dto/get-group-daily-archive.query.dto';
 import { GetGroupMonthImagesQueryDto } from '../dto/get-group-month-images.query.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
-import { PaginatedGroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
+import { GroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
 import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
 import { GetGroupCoverCandidatesQueryDto } from '../dto/get-group-cover-candidates.query.dto';
 import { GroupCoverCandidatesResponseDto } from '../dto/group-cover-candidates.response.dto';
@@ -86,21 +86,18 @@ export class GroupRecordController {
     description: '그룹의 월별 기록 요약 목록을 조회합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
-  @ApiWrappedOkResponse({ type: PaginatedGroupMonthRecordResponseDto })
+  @ApiWrappedOkResponse({ type: GroupMonthRecordResponseDto, isArray: true })
   async getMonthlyArchive(
     @Param('groupId') groupId: string,
     @Query() query: GetGroupMonthlyArchiveQueryDto,
   ) {
     const year = query.year; // optional
     const sort = query.sort ?? GroupArchiveSortEnum.LATEST;
-    const { cursor, limit = 12 } = query;
 
     const data = await this.groupRecordService.getMonthlyArchive(
       groupId,
       year as number,
       sort,
-      cursor,
-      Number(limit),
     );
 
     return { data };

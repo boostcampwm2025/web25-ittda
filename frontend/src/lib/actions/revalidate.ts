@@ -10,3 +10,7 @@ export async function refreshRecordData() {
   revalidatePath('/my', 'page');
   revalidatePath('/group', 'page');
 }
+
+export async function refreshGroupData(groupId: string) {
+  revalidatePath(`/group/${groupId}`);
+}

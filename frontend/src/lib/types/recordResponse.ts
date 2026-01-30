@@ -1,5 +1,5 @@
 import { GroupCover, LatestPost } from './group';
-import { Block, RecordScope, TagValue } from './record';
+import { Block, MapPostItem, RecordScope, TagValue } from './record';
 import { LocationValue, RatingValue, RecordBlock } from './recordField';
 
 /**
@@ -137,3 +137,9 @@ export interface MontlyCoverUpdateResponse {
   coverAssetId: string;
 }
 export type MyDailyRecordedDatesResponse = string[];
+
+export interface MapListResponse {
+  items: MapPostItem[];
+  hasNextPage: boolean;
+  nextCursor: string | null;
+}

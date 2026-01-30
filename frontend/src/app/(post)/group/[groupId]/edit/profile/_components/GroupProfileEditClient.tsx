@@ -5,13 +5,15 @@ import ProfileEditHeaderActions from '@/components/ProfileEditHeaderActions';
 import ProfileInfo from '@/components/ProfileInfo';
 import { useApiPatch } from '@/hooks/useApi';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
+import { groupDetailOptions } from '@/lib/api/group';
 import { UpdateGroupMeParams } from '@/lib/types/groupResponse';
 
 import { BaseUser } from '@/lib/types/profile';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { revalidateGroupProfile } from '../../actions';
 
 interface GroupProfileEditClientProps {
   groupId: string;
@@ -25,6 +27,7 @@ export default function GroupProfileEditClient({
   const { mutateAsync: updateProfile } = useApiPatch<UpdateGroupMeParams>(
     `/api/groups/${groupId}/members/me`,
   );
+  const { data } = useQuery(groupDetailOptions(groupId));
   const { userId } = useAuthStore();
 
   const queryClient = useQueryClient();
@@ -46,7 +49,12 @@ export default function GroupProfileEditClient({
         profileMediaId: finalMediaId || undefined,
       });
 
-      queryClient.invalidateQueries({ queryKey: ['group', groupId, 'me'] });
+      // 클라이언트 쿼리 캐시 무효화
+      await queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+
+      // 서버 캐시 무효화
+      await revalidateGroupProfile(groupId);
+
       toast.success('프로필 정보가 수정되었습니다.');
     } catch (error) {
       console.error('그룹 내 내정보 수정 실패', error);
@@ -55,8 +63,8 @@ export default function GroupProfileEditClient({
     }
   };
 
-  const currentNickname = groupProfile?.nickname || '';
-  const currentImage = groupProfile?.profileImageId || '';
+  const currentNickname = data?.me.nicknameInGroup || '';
+  const currentImage = data?.me.profileImage?.assetId || '';
 
   return (
     <ProfileEditProvider

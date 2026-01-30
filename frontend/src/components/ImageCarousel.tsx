@@ -131,7 +131,10 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
           }}
         >
           {images.map((url, index) => (
-            <div key={index} className="w-full shrink-0 relative aspect-square">
+            <div
+              key={index}
+              className="flex justify-center items-center w-full shrink-0 relative aspect-square"
+            >
               <AssetImage
                 assetId={url}
                 alt={`게시글 ${index + 1}번째`}

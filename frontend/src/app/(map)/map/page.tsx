@@ -19,6 +19,9 @@ import {
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
 import LocationPermissionChecker from '@/components/LocationPermissionChecker';
+import { useQuery } from '@tanstack/react-query';
+import { mapRecordListOptions } from '@/lib/api/records';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 export const DUMMY_POSTS: MapPostItem[] = [
   {
@@ -30,7 +33,7 @@ export const DUMMY_POSTS: MapPostItem[] = [
 
     title: '성수동의 오후, 햇살 가득한 카페',
 
-    imageUrl:
+    thumbnailUrl:
       'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000',
 
     createdAt: '2026-01-10T14:30:00Z',
@@ -49,7 +52,7 @@ export const DUMMY_POSTS: MapPostItem[] = [
 
     title: '한남동 전시회 나들이',
 
-    imageUrl:
+    thumbnailUrl:
       'https://images.unsplash.com/photo-1518998053574-53ee7536d9aa?q=80&w=1000',
 
     createdAt: '2026-01-12T11:00:00Z',
@@ -68,7 +71,7 @@ export const DUMMY_POSTS: MapPostItem[] = [
 
     title: '서울숲 가을 산책',
 
-    imageUrl:
+    thumbnailUrl:
       'https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=1000',
 
     createdAt: '2026-01-13T10:15:00Z',
@@ -87,7 +90,7 @@ export const DUMMY_POSTS: MapPostItem[] = [
 
     title: '강남역 연말 모임 장소 추천',
 
-    imageUrl:
+    thumbnailUrl:
       'https://images.unsplash.com/photo-1516715094483-75da7dee9758?q=80&w=1000',
 
     createdAt: '2025-12-28T19:00:00Z',
@@ -106,7 +109,7 @@ export const DUMMY_POSTS: MapPostItem[] = [
 
     title: '홍대 버스킹과 밤거리 풍경',
 
-    imageUrl:
+    thumbnailUrl:
       'https://images.unsplash.com/photo-1578912853046-01f769558177?q=80&w=1000',
 
     createdAt: '2026-01-05T21:00:00Z',
@@ -125,7 +128,7 @@ export const DUMMY_POSTS: MapPostItem[] = [
 
     title: '북촌 한옥마을 고즈넉한 풍경',
 
-    imageUrl:
+    thumbnailUrl:
       'https://images.unsplash.com/photo-1570116526048-af9c32160b64?q=80&w=1000',
 
     createdAt: '2026-01-11T13:20:00Z',
@@ -144,7 +147,7 @@ export const DUMMY_POSTS: MapPostItem[] = [
 
     title: '여의도 한강공원 피크닉',
 
-    imageUrl:
+    thumbnailUrl:
       'https://images.unsplash.com/photo-1533470509042-83b632943714?q=80&w=1000',
 
     createdAt: '2026-01-02T15:40:00Z',
@@ -163,7 +166,7 @@ export const DUMMY_POSTS: MapPostItem[] = [
 
     title: '경복궁 야간 개관 방문기',
 
-    imageUrl:
+    thumbnailUrl:
       'https://images.unsplash.com/photo-1548115184-bc6544d06a58?q=80&w=1000',
 
     createdAt: '2025-12-20T20:00:00Z',
@@ -208,6 +211,16 @@ export default function RecordMapPage() {
     placesServiceRef.current = new placesLib.PlacesService(dummy);
   }, [placesLib]);
 
+  // 사용자 위치 가져오기
+  const {
+    latitude,
+    longitude,
+    loading: locationLoading,
+    error: locationError,
+  } = useGeolocation({
+    reverseGeocode: false, // 주소 변환 불필요
+  });
+
   // URL 쿼리 파라미터
   const {
     query,
@@ -218,10 +231,22 @@ export default function RecordMapPage() {
     updateUrl,
   } = useSearchFilters();
 
-  // 임시:데이터 필터링
-  // 백엔드 로직 대신 시나리오용 프론트 로직 추가 (API 연동시 삭제 예정)
+  // 지도 기록 데이터 가져오기
+  const { data: mapData } = useQuery({
+    ...mapRecordListOptions({
+      lat: latitude ?? 37.5665, // 기본값: 서울 시청
+      lng: longitude ?? 126.978,
+      scope: 'personal',
+      from: startDate || undefined,
+      to: endDate || undefined,
+      tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
+    }),
+    enabled: latitude !== null && longitude !== null, // 위치 정보가 있을 때만 실행
+  });
+
+  // 데이터 필터링 및 표시
   const displayPosts = useMemo(() => {
-    let results = [...DUMMY_POSTS];
+    let results = mapData?.items ?? [];
 
     // 1. 클러스터/마커 선택 시 (필터링 우선순위 최상위)
     if (Array.isArray(selectedPostId)) {
@@ -231,7 +256,7 @@ export default function RecordMapPage() {
       return results.filter((p) => p.id === selectedPostId);
     }
 
-    // 2. 검색어 필터링
+    // 2. 검색어 필터링 (클라이언트 사이드 추가 필터)
     if (query.trim()) {
       const lowerQuery = query.toLowerCase();
       results = results.filter(
@@ -241,24 +266,9 @@ export default function RecordMapPage() {
       );
     }
 
-    // 3. 태그 필터링
-    if (selectedTags.length > 0) {
-      results = results.filter((r) =>
-        selectedTags.some((tag) => r.tags?.includes(tag)),
-      );
-    }
-
-    // 4. 날짜 필터링
-    if (startDate) {
-      results = results.filter((r) => {
-        const rDate = r.createdAt.split('T')[0];
-        if (!endDate) return rDate === startDate;
-        return rDate >= startDate && rDate <= endDate;
-      });
-    }
-
+    // 나머지 필터링은 서버에서 처리됨 (tags, from, to)
     return results;
-  }, [selectedPostId, query, selectedTags, startDate, endDate]);
+  }, [mapData, selectedPostId, query]);
 
   const handleBoundsChange = useCallback(
     (bounds: google.maps.LatLngBounds | null) => {

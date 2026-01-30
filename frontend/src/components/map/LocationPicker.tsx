@@ -60,6 +60,7 @@ function LocationPickerContent({
     null,
   );
   const isSelectedFromSearch = useRef(false);
+  const isInitialLocationLoaded = useRef(false);
 
   const { latitude: geoLat, longitude: geoLng } = useGeolocation({
     reverseGeocode: true,
@@ -97,6 +98,7 @@ function LocationPickerContent({
 
           setCenterAddress(addr);
           setCenterPlaceName(placeName || '');
+          isInitialLocationLoaded.current = true;
         } catch (error) {
           console.error('Initial Geocode Error:', error);
         } finally {
@@ -115,12 +117,20 @@ function LocationPickerContent({
     }
     const currentPlacesServiceRef = placesServiceRef.current;
     const currentCenter = mapRef.current.getCenter();
+
+    // getCenter()가 undefined를 반환할 수 있으므로 fallback 처리
+    const searchCenter = currentCenter
+      ? currentCenter
+      : geoLat && geoLng
+        ? new google.maps.LatLng(geoLat, geoLng)
+        : undefined;
+
     setIsProcessing(true);
 
     const results = await searchPlacesByKeyword(
       currentPlacesServiceRef,
       keyword,
-      currentCenter,
+      searchCenter,
     );
     setSearchResults(results.slice(0, 10));
     setIsProcessing(false);
@@ -247,6 +257,10 @@ function LocationPickerContent({
       isSelectedFromSearch.current = false;
       return;
     }
+    // 초기 위치 로딩이 완료되기 전에는 주소 갱신하지 않음
+    if (!isInitialLocationLoaded.current) {
+      return;
+    }
 
     const center = mapRef.current.getCenter();
     if (!center) return;
@@ -282,6 +296,7 @@ function LocationPickerContent({
     const location = place.geometry.location;
 
     isSelectedFromSearch.current = true;
+    isInitialLocationLoaded.current = true;
 
     setCenterPlaceName(place.name || '');
     setCenterAddress(place.formatted_address || '');
