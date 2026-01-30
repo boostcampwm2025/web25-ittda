@@ -46,10 +46,15 @@ export class MyPageService {
     }
 
     // 2. 부분 업데이트 수행
-    await this.userRepo.update(userId, {
+    // 2. 부분 업데이트 수행
+    const updateData: Partial<User> = {
       ...(nickname && { nickname }),
       ...(profileImageId && { profileImageId }),
-    });
+    };
+
+    if (Object.keys(updateData).length > 0) {
+      await this.userRepo.update(userId, updateData);
+    }
 
     // 3. 수정된 사용자 정보 반환 (no-unsafe-return 방지)
     return this.findOne(userId);

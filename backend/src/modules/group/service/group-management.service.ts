@@ -192,10 +192,12 @@ export class GroupManagementService {
     return {
       groupName: group.name,
       groupMemberCount: members.length,
-      members: members.map((member) => ({
-        memberId: member.user.id,
-        profileImageId: member.user.profileImageId,
-      })),
+      members: members
+        .filter((member) => !!member.user) // user 데이터가 없는 멤버 제외 (Soft Delete 등)
+        .map((member) => ({
+          memberId: member.user.id,
+          profileImageId: member.user.profileImageId,
+        })),
     };
   }
 

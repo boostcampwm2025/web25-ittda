@@ -16,7 +16,6 @@ import { GroupRoles } from '../guards/group-roles.decorator';
 import { UpdateGroupDto } from '../dto/update-group.dto';
 import { GetGroupsResponseDto } from '../dto/get-groups.dto';
 import { User } from '@/common/decorators/user.decorator';
-import type { MyJwtPayload } from '../../auth/auth.type';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import {
   ApiTags,
@@ -26,6 +25,8 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
+
+import type { MyJwtPayload } from '../../auth/auth.type';
 
 @ApiTags('groups')
 @ApiBearerAuth('bearerAuth')

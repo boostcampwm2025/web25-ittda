@@ -83,7 +83,9 @@ export class UserService {
     postsQb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
 
     postsQb.andWhere('p.eventAt >= :from AND p.eventAt <= :to', { from, to });
+    postsQb.andWhere('p.deletedAt IS NULL');
     postsQb.orderBy('p.eventAt', 'DESC'); // 최신순 정렬
+    postsQb.cache(true);
 
     const posts = await postsQb.getMany();
 
@@ -263,6 +265,8 @@ export class UserService {
     );
     qb.orderBy('p.eventAt', 'DESC');
     qb.addOrderBy('pm.id', 'DESC');
+    qb.andWhere('p.deletedAt IS NULL');
+    qb.andWhere('ma.deletedAt IS NULL');
 
     const mediaList = await qb.getMany();
 
@@ -339,6 +343,7 @@ export class UserService {
         );
       }),
     );
+    qb.andWhere('p.deletedAt IS NULL');
 
     const rows = await qb.getRawMany<{ pm_mediaId: string }>();
     const ids = rows.map((row) => row.pm_mediaId).filter(Boolean);
@@ -406,6 +411,7 @@ export class UserService {
       fromDate,
       toDate,
     });
+    postsQb.andWhere('p.deletedAt IS NULL');
     postsQb.orderBy('p.eventAt', 'DESC');
 
     const posts = await postsQb.getMany();
@@ -545,6 +551,8 @@ export class UserService {
     });
     // 최신순 정렬
     postsQb.orderBy('p.eventAt', 'DESC');
+    postsQb.andWhere('p.deletedAt IS NULL');
+    postsQb.cache(true);
 
     const posts = await postsQb.getMany();
     if (posts.length === 0) {
@@ -616,6 +624,7 @@ export class UserService {
       fromDate,
       toDate,
     });
+    postsQb.andWhere('p.deletedAt IS NULL');
     postsQb.orderBy('p.eventAt', 'DESC');
 
     const posts = await postsQb.getMany();
