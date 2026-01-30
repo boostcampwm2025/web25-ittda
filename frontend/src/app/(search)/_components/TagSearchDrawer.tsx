@@ -33,6 +33,7 @@ export default function TagSearchDrawer({
   }, [allTags, keyword]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' && keyword.trim()) {
       e.preventDefault();
       // 이미 선택된 태그가 아니라면 추가
@@ -92,7 +93,7 @@ export default function TagSearchDrawer({
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full py-4 pl-12 pr-4 rounded-2xl bg-gray-50 dark:bg-white/5 border-none text-sm font-bold text-itta-black dark:text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-itta-point/20 transition-all shadow-inner"
+              className="w-full py-4 pl-12 pr-4 rounded-2xl bg-gray-50 dark:bg-white/5 border-none text-base font-bold text-itta-black dark:text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-itta-point/20 transition-all shadow-inner"
             />
           </div>
 
