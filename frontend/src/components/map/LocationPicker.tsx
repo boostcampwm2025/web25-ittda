@@ -115,12 +115,20 @@ function LocationPickerContent({
     }
     const currentPlacesServiceRef = placesServiceRef.current;
     const currentCenter = mapRef.current.getCenter();
+
+    // getCenter()가 undefined를 반환할 수 있으므로 fallback 처리
+    const searchCenter = currentCenter
+      ? currentCenter
+      : geoLat && geoLng
+        ? new google.maps.LatLng(geoLat, geoLng)
+        : undefined;
+
     setIsProcessing(true);
 
     const results = await searchPlacesByKeyword(
       currentPlacesServiceRef,
       keyword,
-      currentCenter,
+      searchCenter,
     );
     setSearchResults(results.slice(0, 10));
     setIsProcessing(false);
