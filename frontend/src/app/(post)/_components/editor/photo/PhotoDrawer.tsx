@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import Image from 'next/image';
 import { PhotoValue } from '@/lib/types/recordField';
+import { useMediaResolveMulti } from '@/hooks/useMediaResolve';
 
 interface PhotoDrawerProps {
   onClose: () => void;
@@ -25,6 +26,7 @@ interface PhotoDrawerProps {
       location: boolean;
     };
   };
+  draftId?: string;
 }
 
 export default function PhotoDrawer({
@@ -35,8 +37,21 @@ export default function PhotoDrawer({
   onRemoveAll,
   onEditMetadata,
   appliedMetadata = {},
+  draftId,
 }: PhotoDrawerProps) {
-  const allPhotos = [...(photos.mediaIds || []), ...(photos.tempUrls || [])];
+  const mediaIds = photos.mediaIds || [];
+  const { data: resolvedData } = useMediaResolveMulti(mediaIds, draftId);
+
+  // resolve 된 url
+  const urlMap = new Map(
+    resolvedData?.items.map((item) => [item.mediaId, item.url]),
+  );
+
+  // 전체 사진
+  const allPhotos = [
+    ...mediaIds.map((id) => urlMap.get(id) || id),
+    ...(photos.tempUrls || []),
+  ];
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="h-[80vh] flex flex-col outline-none">
@@ -78,9 +93,7 @@ export default function PhotoDrawer({
                   <div
                     key={`${url}-${idx}`}
                     className={`relative aspect-square rounded-2xl overflow-hidden shadow-sm group bg-gray-100 dark:bg-white/5 ${
-                      isMetadataApplied
-                        ? 'ring-4 ring-[#10B981]'
-                        : ''
+                      isMetadataApplied ? 'ring-4 ring-[#10B981]' : ''
                     }`}
                   >
                     <Image
@@ -88,6 +101,7 @@ export default function PhotoDrawer({
                       fill
                       alt={`첨부사진 ${url}`}
                       className="object-cover"
+                      unoptimized={true}
                     />
                     {isMetadataApplied && (
                       <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-2 py-1 bg-[#10B981] rounded-full">

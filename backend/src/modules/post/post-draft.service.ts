@@ -207,7 +207,7 @@ export class PostDraftService {
   }
 
   private buildDefaultDraftSnapshot(groupId: string): Record<string, unknown> {
-    const now = DateTime.utc();
+    const now = DateTime.now().setZone('Asia/Seoul');
     const snapshot: Omit<CreatePostDto, 'thumbnailMediaId'> = {
       scope: PostScope.GROUP,
       groupId,

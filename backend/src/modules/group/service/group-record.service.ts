@@ -27,7 +27,6 @@ import {
   GroupCoverCandidateSectionDto,
   GroupCoverCandidateItemDto,
 } from '../dto/group-cover-candidates.response.dto';
-import { PaginatedGroupMonthCoverCandidateResponseDto } from '../dto/group-month-cover-candidates-response.dto';
 
 @Injectable()
 export class GroupRecordService {
@@ -448,92 +447,22 @@ export class GroupRecordService {
     month: number,
     cursor?: string,
     limit: number = 20,
-  ): Promise<PaginatedGroupMonthCoverCandidateResponseDto> {
-    // 1. 그룹 존재 확인
-    const group = await this.groupRepo.findOne({
-      where: { id: groupId },
-    });
-
-    if (!group) {
-      throw new NotFoundException('그룹을 찾을 수 없습니다.');
-    }
-
-    // 2. 조회 기간 설정
-    const from = DateTime.fromObject({ year, month, day: 1 })
-      .setZone('Asia/Seoul')
-      .startOf('month');
-    const to = from.endOf('month');
-
-    // 3. IMAGE 블록 조회 (Pagination 적용)
-    const qb = this.postBlockRepo.createQueryBuilder('b');
-    qb.innerJoin('b.post', 'p');
-    qb.select(['b.id', 'b.value', 'p.id', 'p.eventAt']);
-
-    qb.where('b.type = :type', { type: PostBlockType.IMAGE });
-    qb.andWhere('p.groupId = :groupId', { groupId });
-    qb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
-      fromDate: from.toJSDate(),
-      toDate: to.toJSDate(),
-    });
-
-    // Cursor Pagination Logic
-    if (cursor) {
-      try {
-        const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-        const [eventAtStr, id] = decoded.split('__');
-        if (eventAtStr && id) {
-          qb.andWhere(
-            '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND b.id < :cursorId))',
-            {
-              cursorEventAt: new Date(eventAtStr),
-              cursorId: id,
-            },
-          );
-        }
-      } catch {
-        // Ignore invalid cursor
-      }
-    }
-
-    qb.orderBy('p.eventAt', 'DESC');
-    qb.addOrderBy('b.id', 'DESC');
-    qb.take(limit + 1);
-
-    const blocks = await qb.getMany();
-
-    const hasNext = blocks.length > limit;
-    const currentBatch = blocks.slice(0, limit);
-    const items = currentBatch.flatMap((b) => {
-      const val = b.value as { mediaIds?: string[] };
-      const eventAt = b.post.eventAt;
-      if (!eventAt) return [];
-      return (val.mediaIds || []).map((assetId) => ({
-        assetId,
-        sourcePostId: b.post.id,
-        eventAt,
-      }));
-    });
-
-    let nextCursor: string | null = null;
-    if (hasNext) {
-      const lastBlock = currentBatch[currentBatch.length - 1];
-      const lastEventAt = lastBlock.post.eventAt;
-      if (lastEventAt) {
-        const rawCursor = `${lastEventAt.toISOString()}__${lastBlock.id}`;
-        nextCursor = Buffer.from(rawCursor, 'utf-8').toString('base64');
-      }
-    }
-
-    return {
-      items,
-      nextCursor,
-    };
+  ): Promise<GroupCoverCandidatesResponseDto> {
+    return this.getCoverCandidatesByMonth(groupId, year, month, cursor, limit);
   }
 
   /**
    * 그룹 커버 후보 조회 (Refactored)
    */
   async getCoverCandidates(
+    groupId: string,
+    cursor?: string,
+    limit: number = 20,
+  ): Promise<GroupCoverCandidatesResponseDto> {
+    return this.getCoverCandidatesAll(groupId, cursor, limit);
+  }
+
+  private async getCoverCandidatesByMonth(
     groupId: string,
     year: number,
     month: number,
@@ -615,8 +544,7 @@ export class GroupRecordService {
         : 'Unknown';
 
       const item: GroupCoverCandidateItemDto = {
-        mediaId: pm.id,
-        assetId: pm.mediaId,
+        mediaId: pm.mediaId,
         postId: pm.post.id,
         postTitle: pm.post.title,
         eventAt: pm.post.eventAt!,
@@ -639,6 +567,117 @@ export class GroupRecordService {
     }));
 
     // 5. Next Cursor 생성
+    let nextCursor: string | null = null;
+    if (hasNext) {
+      const lastItem = currentBatch[currentBatch.length - 1];
+      const lastEventAt = lastItem.post?.eventAt;
+      if (lastEventAt) {
+        const payload = `${lastEventAt.toISOString()}__${lastItem.id}`;
+        nextCursor = Buffer.from(payload).toString('base64');
+      }
+    }
+
+    return {
+      groupId,
+      sections,
+      pageInfo: {
+        hasNext,
+        nextCursor,
+      },
+    };
+  }
+
+  private async getCoverCandidatesAll(
+    groupId: string,
+    cursor?: string,
+    limit: number = 20,
+  ): Promise<GroupCoverCandidatesResponseDto> {
+    // 1. 그룹 존재 확인
+    const group = await this.groupRepo.findOne({ where: { id: groupId } });
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    // 2. PostMedia 조회 (IMAGE 블록에 속한 미디어들)
+    const qb = this.postMediaRepo.createQueryBuilder('pm');
+    qb.innerJoin('pm.post', 'p');
+    qb.leftJoin('pm.media', 'ma');
+
+    qb.select([
+      'pm.id',
+      'pm.mediaId',
+      'pm.kind',
+      'p.id',
+      'p.title',
+      'p.eventAt',
+      'ma.width',
+      'ma.height',
+      'ma.mimeType',
+    ]);
+
+    qb.where('p.groupId = :groupId', { groupId });
+    qb.andWhere('pm.kind = :kind', { kind: PostMediaKind.BLOCK });
+
+    // Cursor Pagination
+    if (cursor) {
+      try {
+        const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+        const [eventAtStr, id] = decoded.split('__');
+        if (eventAtStr && id) {
+          qb.andWhere(
+            '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND pm.id < :cursorId))',
+            {
+              cursorEventAt: new Date(eventAtStr),
+              cursorId: id,
+            },
+          );
+        }
+      } catch {
+        // invalid cursor ignore
+      }
+    }
+
+    qb.orderBy('p.eventAt', 'DESC');
+    qb.addOrderBy('pm.id', 'DESC');
+    qb.take(limit + 1);
+
+    const pmList = await qb.getMany();
+
+    const hasNext = pmList.length > limit;
+    const currentBatch = pmList.slice(0, limit);
+
+    const sectionsMap = new Map<string, GroupCoverCandidateItemDto[]>();
+    for (const pm of currentBatch) {
+      const dateStr = pm.post.eventAt
+        ? DateTime.fromJSDate(pm.post.eventAt)
+            .setZone('Asia/Seoul')
+            .toFormat('yyyy-MM-dd')
+        : 'Unknown';
+
+      const item: GroupCoverCandidateItemDto = {
+        mediaId: pm.mediaId,
+        postId: pm.post.id,
+        postTitle: pm.post.title,
+        eventAt: pm.post.eventAt!,
+        width: pm.media?.width,
+        height: pm.media?.height,
+        mimeType: pm.media?.mimeType,
+      };
+
+      if (!sectionsMap.has(dateStr)) {
+        sectionsMap.set(dateStr, []);
+      }
+      sectionsMap.get(dateStr)!.push(item);
+    }
+
+    const sections: GroupCoverCandidateSectionDto[] = Array.from(
+      sectionsMap.entries(),
+    ).map(([date, items]) => ({
+      date,
+      items,
+    }));
+
+    // Next Cursor 생성
     let nextCursor: string | null = null;
     if (hasNext) {
       const lastItem = currentBatch[currentBatch.length - 1];

@@ -75,11 +75,12 @@ export const getCachedGroupDailyRecordList = cache(
  * 서버 컴포넌트에서 사용하는 캐시된 group 목록 조회
  */
 export const getCachedGroupList = cache(async () => {
-  const response = await get<GroupListResponse[]>('/api/groups');
+  const response = await get<GroupListResponse>('/api/groups');
+
   if (!response.success) {
     throw createApiError(response);
   }
-  return response.data;
+  return response.data.items;
 });
 
 /**
@@ -181,8 +182,12 @@ export const groupRecordCoverOptions = (groupId: string) =>
       return response.data;
     },
     initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) =>
-      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.pageInfo) return undefined;
+      return lastPage.pageInfo.hasNext
+        ? lastPage.pageInfo.nextCursor
+        : undefined;
+    },
     retry: false,
   });
 
@@ -272,8 +277,8 @@ export const groupMonthlyRecordCoverOptions = (
     queryKey: ['cover', groupId, month],
     queryFn: async ({ pageParam }) => {
       const url = pageParam
-        ? `/api/groups/${groupId}/archives/monthcover?year=${month}&cursor=${pageParam}`
-        : `/api/groups/${groupId}/archives/monthcover?year=${month}`;
+        ? `/api/groups/${groupId}/archives/monthcover?yearMonth=${month}&cursor=${pageParam}`
+        : `/api/groups/${groupId}/archives/monthcover?yearMonth=${month}`;
 
       const response = await get<GroupCoverListResponse>(url);
 
@@ -283,7 +288,11 @@ export const groupMonthlyRecordCoverOptions = (
       return response.data;
     },
     initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) =>
-      lastPage.pageInfo.hasNext ? lastPage.pageInfo.nextCursor : undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.pageInfo) return undefined;
+      return lastPage.pageInfo.hasNext
+        ? lastPage.pageInfo.nextCursor
+        : undefined;
+    },
     retry: false,
   });

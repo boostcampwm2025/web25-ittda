@@ -8,7 +8,7 @@ import { convertTo12Hour } from '@/lib/utils/time';
 import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
 import { cn } from '@/lib/utils';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { DateValue, TextValue, TimeValue } from '@/lib/types/record';
 
 interface DateProps {
@@ -70,7 +70,7 @@ interface ContentProps {
   isLocked?: boolean;
   isMyLock?: boolean;
   onFocus?: () => void;
-  onBlur?: () => void;
+  onBlur?: (finalText: string) => void;
 }
 
 export const ContentField = ({
@@ -88,6 +88,7 @@ export const ContentField = ({
 
   useEffect(() => {
     if (isMyLock && textareaRef.current) {
+      if (document.activeElement === textareaRef.current) return;
       isInternalFocus.current = true;
       textareaRef.current.focus();
 
@@ -97,7 +98,7 @@ export const ContentField = ({
     }
   }, [isMyLock]);
 
-  const handleFocusWrapper = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+  const handleFocusWrapper = () => {
     if (isInternalFocus.current) {
       isInternalFocus.current = false;
       return;
@@ -110,13 +111,15 @@ export const ContentField = ({
     const target = textareaRef.current;
     // 현재 텍스트 크기에 맞게 높이 조절
     if (target) {
-      target.style.height = 'auto';
-      target.style.height = `${target.scrollHeight}px`;
+      requestAnimationFrame(() => {
+        target.style.height = 'auto';
+        target.style.height = `${target.scrollHeight}px`;
+      });
     }
   }, []);
 
   // value 변경될 때 높이 조절
-  useEffect(() => {
+  useLayoutEffect(() => {
     adjustHeight();
   }, [value, adjustHeight]);
 
@@ -135,6 +138,12 @@ export const ContentField = ({
     return () => observer.disconnect();
   }, [adjustHeight]);
 
+  const handleBlur = () => {
+    if (textareaRef.current) {
+      onBlur?.(textareaRef.current.value);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -151,7 +160,7 @@ export const ContentField = ({
           value={value.text}
           disabled={isLocked}
           onFocus={handleFocusWrapper}
-          onBlur={onBlur}
+          onBlur={handleBlur}
           onChange={(e) => onChange(e.target.value)}
           className="w-full min-h-30 border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
         />

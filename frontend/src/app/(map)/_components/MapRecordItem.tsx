@@ -1,10 +1,10 @@
 'use client';
 
+import AssetImage from '@/components/AssetImage';
 import { formatDotDateString } from '@/lib/date';
 import { MapPostItem } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Clock, MapPin } from 'lucide-react';
-import Image from 'next/image';
 import { useState } from 'react';
 
 interface MapRecordItemProps {
@@ -28,18 +28,18 @@ export function MapRecordItem({
         'flex items-center gap-5 p-5 rounded-3xl border transition-all duration-300 group cursor-pointer active:scale-[0.97]',
         isHighlighted
           ? 'border-[#10B981] bg-[#10B981]/5 shadow-md scale-[1.02] ring-1 ring-[#10B981]/30'
-          : 'dark:border-white/5 border-gray-100 bg-white dark:bg-white/[0.02] shadow-sm hover:border-[#10B981]/30',
+          : 'dark:border-white/5 border-gray-100 bg-white dark:bg-white/2 shadow-sm hover:border-[#10B981]/30',
       )}
     >
       {post.imageUrl && !isError && (
         <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-black/5">
-          <Image
-            src={post.imageUrl}
-            alt={post.title}
+          <AssetImage
             width={80}
             height={80}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             onError={() => setIsError(true)}
+            assetId={post.imageUrl}
+            alt={post.title}
           />
         </div>
       )}

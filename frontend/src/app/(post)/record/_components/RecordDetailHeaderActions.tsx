@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
+import { useEditPostDraft } from '@/hooks/useGrouprRecord';
 import { RecordDetailResponse } from '@/lib/types/record';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -37,20 +38,26 @@ export default function RecordDetailHeaderActions({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const { userId } = useAuthStore();
+  const { mutateAsync: startGroupEdit } = useEditPostDraft(
+    record.groupId || '',
+    record.id,
+  );
 
   const textBlock = record.blocks.find((block) => block.type === 'TEXT');
   const content =
     textBlock && 'text' in textBlock.value ? textBlock.value.text : '';
+  const image = record.blocks.find((block) => block.type === 'IMAGE');
 
   // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
     requestAnimationFrame(() => {
-      setCurrentUrl(window.location.href);
+      setCurrentUrl(`${window.location.origin}/record/${record.id}`);
     });
   }, []);
 
   // TEXT 타입 블록에서 내용 추출
   const shareData = {
+    id: record.id,
     title: record.title,
     text: content,
     url: currentUrl,
@@ -73,49 +80,29 @@ export default function RecordDetailHeaderActions({
     },
   });
 
-  const handleEdit = () => {
-    // router.push('/add', {
-    //   state: {
-    //     ...record,
-    //     selectedEmotion: { emoji: record.emotion, label: record.emotionLabel },
-    //     selectedTags: record.tags,
-    //     selectedRating: record.rating,
-    //     selectedLocation: record.location,
-    //     attachedPhotos: record.image ? [record.image] : [],
-    //     selectedMedia: record.media,
-    //     tableData: record.table,
-    //     isEdit: true,
-    //     groupId: groupId,
-    //   },
-    // });
+  const handleEdit = async () => {
+    if (record.scope === 'PERSONAL') {
+      router.push(`/add?mode=edit&postId=${record.id}`);
+    } else {
+      if (!record.groupId) {
+        toast.error('그룹 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      const response = await startGroupEdit({});
+
+      if (response.success && response.data?.redirectUrl) {
+        router.push(
+          `${response.data.redirectUrl}?mode=edit&postId=${record.id}`,
+        );
+      } else {
+        toast.error('편집 세션을 시작할 수 없습니다.');
+      }
+    }
   };
 
   const handleShare = async () => {
-    if (!navigator.share) {
-      setShareOpen(true);
-      return;
-    }
-
-    try {
-      await navigator.share(shareData);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      if (
-        err.name === 'TypeError' ||
-        (err.message && err.message.toLowerCase().includes('url'))
-      ) {
-        try {
-          await navigator.share({
-            title: record.title,
-            text: content,
-          });
-        } catch (innerErr) {
-          console.error('Share failed even without URL:', innerErr);
-        }
-      } else if (err.name !== 'AbortError') {
-        console.error('Share failed:', err);
-      }
-    }
+    setShareOpen(true);
   };
 
   const handleDelete = () => {
@@ -201,6 +188,12 @@ export default function RecordDetailHeaderActions({
         title={shareData.title}
         open={shareOpen}
         onOpenChange={setShareOpen}
+        record={{
+          id: record.id,
+          title: record.title,
+          content,
+          image: image?.id ?? null,
+        }}
       />
     </>
   );

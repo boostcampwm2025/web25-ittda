@@ -1,8 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
-import Image from 'next/image';
+import { Check, ImageIcon } from 'lucide-react';
 import { useCallback, useMemo, useRef } from 'react';
 import { DrawerClose } from '../../../components/ui/drawer';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -11,6 +10,7 @@ import {
   groupMonthlyRecordCoverOptions,
 } from '@/lib/api/group';
 import { myMonthlyRecordCoverOptions } from '@/lib/api/my';
+import AssetImage from '@/components/AssetImage';
 
 interface GalleryDrawerProps {
   type: 'group' | 'personal' | 'other';
@@ -55,7 +55,7 @@ export default function GalleryDrawer({
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = currentQuery;
 
   const items = (data?.pages ?? []).flatMap((page) =>
-    page.sections.flatMap((section) => section.items),
+    (page?.sections ?? []).flatMap((section) => section.items ?? []),
   );
 
   // 무한 스크롤 관찰자
@@ -83,10 +83,21 @@ export default function GalleryDrawer({
   return (
     <div className="flex flex-col w-full gap-2.5">
       {items.length === 0 ? (
-        <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 rounded-2xl dark:bg-white/5 bg-white">
-          <p className="font-bold text-[#10B981] text-xs">
-            이미지가 포함된 기록이 없습니다.
-          </p>
+        <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/5">
+          <div className="w-16 h-16 bg-white dark:bg-neutral-800 rounded-2xl flex items-center justify-center shadow-sm">
+            <ImageIcon className="w-8 h-8 text-gray-300 dark:text-neutral-600" />
+          </div>
+
+          <div className="space-y-1">
+            <p className="font-bold text-itta-black dark:text-white text-sm">
+              이미지가 포함된 기록이 없어요
+            </p>
+            <p className="text-[11px] text-gray-400 leading-relaxed">
+              커버로 설정할 수 있는 사진이 포함된
+              <br />
+              기록을 먼저 작성해 보세요!
+            </p>
+          </div>
         </div>
       ) : (
         <div
@@ -111,10 +122,10 @@ export default function GalleryDrawer({
                       isCurrent ? 'border-[#10B981]' : 'border-transparent',
                     )}
                   >
-                    <Image
-                      src={item.assetId}
-                      className="object-cover"
+                    <AssetImage
+                      assetId={item.assetId}
                       alt={item.postTitle}
+                      className="object-cover"
                       fill
                       sizes="(max-width: 640px) 33vw, 25vw"
                     />

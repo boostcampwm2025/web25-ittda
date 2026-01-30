@@ -14,30 +14,19 @@ import {
   XCircle,
 } from 'lucide-react';
 import { AddRecordDrawer } from '@/app/(post)/group/_components/AddRecordDrawer';
-
-// TODO: 실제 API에서 그룹 목록을 가져오도록 수정 (tanstack query 캐싱 사용)
-const mockGroups = [
-  {
-    id: 'g1',
-    name: '우리 가족 추억함',
-    members: 4,
-    coverUrl:
-      'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=600',
-  },
-  {
-    id: 'g2',
-    name: '성수동 맛집 탐방대',
-    members: 3,
-    coverUrl:
-      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600',
-  },
-];
+import { useQuery } from '@tanstack/react-query';
+import { groupListOptions } from '@/lib/api/group';
 
 export default function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [isGroupSelectOpen, setIsGroupSelectOpen] = useState(false);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false); // 그룹 상세용 기록 방식 선택
+
+  const { data: groups = [] } = useQuery({
+    ...groupListOptions(),
+    enabled: isGroupSelectOpen,
+  });
 
   const isSharedPage = pathname === '/shared';
   const isGroupDetail = /\/group\/[^/]+\/(post|draft)\//.test(pathname);
@@ -52,7 +41,6 @@ export default function BottomNavigation() {
     '/onboarding',
   ];
   const isDetail =
-    pathname.includes('/record/') ||
     pathname.includes('/detail/') ||
     pathname.includes('/month/') ||
     pathname.includes('/edit');
@@ -94,8 +82,8 @@ export default function BottomNavigation() {
           </button>
           <NavItem
             icon={<MessageSquare />}
-            active={pathname === `/group/${pathGroupId}/chat`}
-            onClick={() => router.push(`/group/${pathGroupId}/chat`)}
+            active={pathname === `/group/${pathGroupId}/notifications`}
+            onClick={() => router.push(`/group/${pathGroupId}/notifications`)}
             isGroup
           />
           <NavItem
@@ -144,7 +132,7 @@ export default function BottomNavigation() {
       <GroupSelectDrawer
         open={isGroupSelectOpen}
         onOpenChange={setIsGroupSelectOpen}
-        groups={mockGroups}
+        groups={groups}
       />
       <AddRecordDrawer
         isOpen={isAddDrawerOpen}

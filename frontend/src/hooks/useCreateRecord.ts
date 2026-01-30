@@ -1,19 +1,26 @@
 import { useAuthStore } from '@/store/useAuthStore';
-import { useApiPost } from './useApi';
+import { useApiPatch, useApiPost } from './useApi';
 import { useRouter } from 'next/navigation';
 import { RecordDetail } from '@/lib/types/recordResponse';
 import { CreateRecordRequest } from '@/lib/types/record';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { ApiResponse } from '@/lib/types/response';
+import { refreshHomeData, refreshRecordData } from '@/lib/actions/revalidate';
 
 export interface PublishRecordRequest {
   draftId: string;
   draftVersion: number;
   post: CreateRecordRequest;
 }
+export interface PublishDraftDto {
+  draftId: string;
+  draftVersion: number;
+}
 
 export const useCreateRecord = (
   groupId?: string,
+  postId?: string,
   options?: {
     onError?: (error: Error) => void;
   },
@@ -22,41 +29,50 @@ export const useCreateRecord = (
   const queryClient = useQueryClient();
   const { userId } = useAuthStore();
 
+  const invalidateQuery = async (groupId?: string) => {
+    await Promise.all([refreshRecordData(), refreshHomeData()]);
+
+    const invalidations = [
+      queryClient.invalidateQueries({ queryKey: ['my', 'records'] }),
+      queryClient.invalidateQueries({ queryKey: ['records'] }),
+      queryClient.invalidateQueries({ queryKey: ['profile'] }),
+      queryClient.invalidateQueries({ queryKey: ['summary'] }),
+    ];
+
+    if (groupId) {
+      invalidations.push(
+        queryClient.invalidateQueries({
+          queryKey: ['group', groupId, 'records'],
+        }),
+      );
+    }
+
+    await Promise.all(invalidations);
+  };
+
   // 일반 게시글 생성
   const createMutation = useApiPost<RecordDetail, CreateRecordRequest>(
     '/api/posts',
     {
-      onSuccess: async (res) => {
-        if (res.success && res.data?.id) {
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ['records'] }),
-            queryClient.invalidateQueries({ queryKey: ['me'] }),
-            queryClient.invalidateQueries({ queryKey: ['summary'] }),
-            queryClient.invalidateQueries({ queryKey: ['pattern'] }),
-          ]);
-          router.replace(`/record/${res.data?.id}`);
-        }
-      },
+      onSuccess: handleSuccess,
     },
     false,
     { 'x-user-id': userId ?? '' },
   );
 
+  /**개인 게시글 수정 */
+  const updateMutation = useApiPatch<RecordDetail, CreateRecordRequest>(
+    `/api/posts/${postId}`,
+    { onSuccess: handleSuccess },
+  );
+
   // 공동 기록 게시글 생성
-  const publishMutation = useApiPost<RecordDetail, PublishRecordRequest>(
-    `/api/groups/${groupId}/posts/publish`,
+  const publishMutation = useApiPost<RecordDetail, PublishDraftDto>(
+    postId
+      ? `/api/groups/${groupId}/posts/${postId}/edit/publish` // 그룹 수정 발행
+      : `/api/groups/${groupId}/posts/publish`,
     {
-      onSuccess: async (res) => {
-        if (res.success && res.data?.id) {
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ['records'] }),
-            queryClient.invalidateQueries({ queryKey: ['me'] }),
-            queryClient.invalidateQueries({ queryKey: ['summary'] }),
-            queryClient.invalidateQueries({ queryKey: ['pattern'] }),
-          ]);
-          router.replace(`/record/${res.data?.id}`);
-        }
-      },
+      onSuccess: handleSuccess,
       onError: (error) => {
         toast.error('기록 저장 중 오류가 발생했습니다.');
         options?.onError?.(error);
@@ -66,6 +82,27 @@ export const useCreateRecord = (
     { 'x-user-id': userId ?? '' },
   );
 
+  async function handleSuccess(res: ApiResponse<RecordDetail>) {
+    if (res.success && res.data?.id) {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['records'] }),
+        queryClient.invalidateQueries({ queryKey: ['me'] }),
+        queryClient.invalidateQueries({ queryKey: ['summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['pattern'] }),
+      ]);
+      if (!res.data.groupId) {
+        if (groupId) {
+          await invalidateQuery(groupId);
+        } else {
+          await invalidateQuery();
+        }
+        toast.success('기록이 성공적으로 저장되었습니다.');
+      }
+
+      router.replace(`/record/${res.data?.id}`);
+    }
+  }
+
   // 게시글 생성 관련 함수
   const execute = async ({
     draftId,
@@ -74,18 +111,25 @@ export const useCreateRecord = (
   }: {
     draftId?: string;
     draftVersion?: number;
-    payload: CreateRecordRequest;
+    payload?: CreateRecordRequest;
   }) => {
-    if (draftId && draftVersion) {
-      const publishPayload = {
+    if (groupId && draftId && typeof draftVersion === 'number') {
+      return publishMutation.mutate({
         draftId,
         draftVersion,
-        post: payload,
-      };
-
-      return publishMutation.mutate(publishPayload);
+      });
     }
 
+    if (!payload) {
+      toast.error('게시글 수정에 실패했습니다.');
+      return;
+    }
+    // 개인 수정
+    if (postId) {
+      return updateMutation.mutate(payload);
+    }
+
+    // 개인 생성
     return createMutation.mutate(payload);
   };
 

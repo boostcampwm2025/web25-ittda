@@ -5,11 +5,21 @@ import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
 import { QueryClient } from '@tanstack/react-query';
 
 interface AddPostPageProps {
-  params: Promise<{ groupId: string; draftId: string }>;
+  params: Promise<{
+    groupId: string;
+    draftId: string;
+  }>;
+  searchParams: Promise<{ mode?: string; postId?: string }>;
 }
 
-export default async function PostDraftPage({ params }: AddPostPageProps) {
+export default async function PostDraftPage({
+  params,
+  searchParams,
+}: AddPostPageProps) {
   const { groupId, draftId } = await params;
+  const { mode: queryMode, postId } = await searchParams;
+  const mode = (queryMode as 'add' | 'edit') || 'add';
+
   const queryClient = new QueryClient();
   let initialPost = undefined;
 
@@ -39,10 +49,11 @@ export default async function PostDraftPage({ params }: AddPostPageProps) {
 
   return (
     <PostEditor
-      mode="add"
+      mode={mode}
       draftId={draftId}
       initialPost={initialPost}
       groupId={groupId}
+      postId={postId}
     />
   );
 }

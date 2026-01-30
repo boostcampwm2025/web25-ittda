@@ -14,7 +14,7 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // 현재 경로가 로그인 페이지라면 가드 로직을 건너뜀 (무한 루프 방지)
-    if (pathname === '/login') {
+    if (pathname === '/login' || pathname.startsWith('/oauth/callback')) {
       if (status === 'authenticated') {
         router.replace('/');
       }
@@ -27,6 +27,13 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (status === 'loading') return;
+
+    if (status === 'unauthenticated') {
+      // 게스트 유저 타입이 아닐 때만 로그인 페이지로 리다이렉트
+      if (userType !== 'guest') {
+        router.replace('/login');
+      }
+    }
 
     // 토큰 에러 또는 인증 만료 시 로그아웃 처리
     const isUnauthenticated = !session || session.error;

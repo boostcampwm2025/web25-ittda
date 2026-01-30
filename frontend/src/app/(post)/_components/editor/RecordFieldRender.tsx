@@ -43,6 +43,7 @@ interface FieldRendererProps {
     isMyLock: boolean;
     isLockedByOther: boolean;
   };
+  draftId?: string;
 }
 
 export function RecordFieldRenderer({
@@ -68,9 +69,9 @@ export function RecordFieldRenderer({
     }
   };
 
-  const handleCommit = () => {
+  const handleCommit = (finalValue?: BlockValue) => {
     if (lock.isMyLock) {
-      onCommit(block.id, displayValue);
+      onCommit(block.id, finalValue ?? displayValue);
     }
   };
   const handleLockAndAction = () => {
@@ -104,7 +105,7 @@ export function RecordFieldRenderer({
           isLocked={lock?.isLockedByOther}
           isMyLock={lock.isMyLock}
           onFocus={handleFocus}
-          onBlur={handleCommit}
+          onBlur={(finalText) => handleCommit({ text: finalText })}
           isLastContentBlock={isLastContentBlock}
         />
       );
@@ -114,6 +115,7 @@ export function RecordFieldRenderer({
           photos={displayValue as PhotoValue}
           onClick={handleLockAndAction}
           onRemove={() => onRemove(block.id)}
+          draftId={draftId}
         />
       );
     case 'emotion':

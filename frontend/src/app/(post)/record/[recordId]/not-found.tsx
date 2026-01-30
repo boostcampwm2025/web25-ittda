@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default function RecordNotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD] dark:bg-[#121212]">
+    <div className="flex-1 flex items-center justify-center bg-[#FDFDFD] dark:bg-[#121212]">
       <div className="text-center space-y-6 p-8">
         <div className="text-6xl">📝</div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
