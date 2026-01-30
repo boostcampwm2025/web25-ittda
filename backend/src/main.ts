@@ -43,7 +43,7 @@ async function bootstrap() {
 
   // CORS 설정
   app.enableCors({
-    origin: [process.env.FRONTEND_URL], // FE 주소(TODO: 도메인으로 변경)
+    origin: [process.env.FRONTEND_URL], // FE 주소 (개발, 운영)
     credentials: true, // 쿠키/세션 허용
     exposedHeaders: ['Authorization'], // Access Token을 헤더로 보낼 경우 필수
   });

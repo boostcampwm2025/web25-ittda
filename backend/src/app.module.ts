@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getTypeOrmConfig } from './config/typeorm/typeorm.config';
@@ -27,6 +29,9 @@ import { TrashModule } from './modules/trash/trash.module';
       envFilePath: `.env.${process.env.NODE_ENV ?? 'local'}`,
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60, limit: 20 }], // 1분당 20회 제한
+    }),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
