@@ -175,30 +175,29 @@ export default function BlockContent({ block }: { block: Block }) {
  * imageId를 통한 solve를 위해 분리
  */
 function ImageBlock({ value }: { value: ImageValue }) {
-  const { mediaIds = [], tempUrls = [], resolvedUrls = [] } = value;
-  const shouldResolveOnClient =
-    mediaIds.length > 0 && resolvedUrls.length === 0;
+  // TODO: 이미지 관련 에러 수정
+  // const { mediaIds = [], tempUrls = [], resolvedUrls = [] } = value;
+  // const shouldResolveOnClient =
+  //   mediaIds.length > 0 && resolvedUrls.length === 0;
 
-  const { data, isLoading } = useMediaResolveMulti(
-    shouldResolveOnClient ? mediaIds : [],
-  );
+  // const { data, isLoading } = useMediaResolveMulti(
+  //   shouldResolveOnClient ? mediaIds : [],
+  // );
 
-  const hookUrls = data?.items.map((item) => item.url) || [];
+  // const hookUrls = data?.items.map((item) => item.url) || [];
 
-  const displayImages =
-    resolvedUrls.length > 0
-      ? resolvedUrls
-      : hookUrls.length > 0
-        ? hookUrls
-        : tempUrls;
+  // const displayImages =
+  //   resolvedUrls.length > 0
+  //     ? resolvedUrls
+  //     : hookUrls.length > 0
+  //       ? hookUrls
+  //       : tempUrls;
 
-  if (displayImages.length === 0) return null;
+  // if (displayImages.length === 0) return null;
 
   return (
-    <div
-      className={cn('relative w-full', isLoading && 'opacity-70 animate-pulse')}
-    >
-      <ImageCarousel images={displayImages} />
+    <div className={'relative w-full'}>
+      <ImageCarousel images={value.mediaIds || []} />
     </div>
   );
 }
