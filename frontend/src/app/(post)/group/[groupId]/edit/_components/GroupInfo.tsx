@@ -28,16 +28,24 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
     useGroupEdit();
   const router = useRouter();
 
-  // 닉네임 유효성 검사
+  // 그룹 이름 유효성 검사
   const getGroupNameError = () => {
     if (groupName.length < 2) return '그룹 이름은 최소 2자 이상이어야 합니다.';
     if (groupName.length > 10)
       return '그룹 이름은 최대 10자까지 입력 가능합니다.';
-    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]+$/;
 
-    if (!groupNameRegex.test(groupName)) {
-      return '특수문자는 사용할 수 없습니다. (한글, 영문, 숫자, 공백만 가능)';
+    // 자음/모음만 있는지 체크
+    const incompleteHangulRegex = /[ㄱ-ㅎㅏ-ㅣ]/;
+    if (incompleteHangulRegex.test(groupName)) {
+      return '완성된 한글을 입력해주세요';
     }
+
+    // 허용된 문자만 사용했는지 체크
+    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]+$/;
+    if (!groupNameRegex.test(groupName)) {
+      return '한글, 영문, 숫자, 공백만 사용할 수 있어요';
+    }
+
     return null;
   };
 
@@ -51,8 +59,8 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
             <div className="w-24 h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
               {groupThumbnail?.assetId ? (
                 <AssetImage
-                  width={100}
-                  height={100}
+                  width={200}
+                  height={200}
                   assetId={groupThumbnail.assetId}
                   alt="그룹 썸네일"
                   className="w-full h-full object-cover opacity-80"

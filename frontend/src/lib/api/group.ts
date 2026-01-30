@@ -52,7 +52,7 @@ export const getCachedGroupMonthlyRecordList = cache(
     if (!response.success) {
       throw createApiError(response);
     }
-    return response.data;
+    return response.data ?? [];
   },
 );
 
@@ -76,11 +76,10 @@ export const getCachedGroupDailyRecordList = cache(
  */
 export const getCachedGroupList = cache(async () => {
   const response = await get<GroupListResponse>('/api/groups');
-
   if (!response.success) {
     throw createApiError(response);
   }
-  return response.data.items;
+  return response.data;
 });
 
 /**
@@ -126,7 +125,7 @@ export const groupListOptions = () =>
       if (!response.success) {
         throw createApiError(response);
       }
-      return response.data.items;
+      return response.data?.items ?? [];
     },
     staleTime: PERSONAL_STALE_TIME, // 초대를 수락했을 때 invalidate 필요
     retry: false,

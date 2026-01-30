@@ -69,6 +69,8 @@ export default function Header() {
         >
           {userProfile?.user.profileImageId ? (
             <AssetImage
+              width={50}
+              height={50}
               assetId={userProfile.user.profileImageId}
               alt="유저 프로필"
             />

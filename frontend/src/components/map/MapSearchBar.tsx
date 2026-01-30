@@ -92,7 +92,7 @@ export function MapSearchBar({
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0 bg-white shadow-2xl border-none rounded-xl overflow-hidden mt-2"
+        className="w-[var(--radix-popover-trigger-width)] p-0 bg-white shadow-2xl border-none rounded-xl overflow-hidden mt-2 z-100"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="max-h-60 overflow-y-auto">

@@ -16,7 +16,12 @@ export const searchPlacesByKeyword = (
 
     service.textSearch(request, (results, status) => {
       if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-        resolve(results);
+        // deprecated 속성 제거하여 경고 방지
+        const cleanResults = results.map((result) => {
+          const { opening_hours, ...rest } = result;
+          return rest;
+        });
+        resolve(cleanResults);
       } else if (
         status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS
       ) {

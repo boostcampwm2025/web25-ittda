@@ -10,6 +10,7 @@ import { DateTime } from 'luxon';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import { PostContributor } from '../post/entity/post-contributor.entity';
+import { PostScope } from '@/enums/post-scope.enum';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
 
@@ -74,29 +75,12 @@ export class UserService {
     const from = startDate.toJSDate();
     const to = endDate.toJSDate();
 
-    // 2. 해당 유저의 모든 포스트 조회 (내 글 + 기여한 글)
+    // 2. 해당 유저의 PERSONAL 포스트 조회 (내 글만)
     const postsQb = this.postRepo.createQueryBuilder('p');
     postsQb.select(['p.id', 'p.eventAt', 'p.title']);
 
-    // 조건: (ownerUserId = :userId OR contributor...) AND eventAt BETWEEN :from AND :to
-    postsQb.where(
-      new Brackets((qb) => {
-        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
-            return `EXISTS ${sub}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
+    postsQb.where('p.ownerUserId = :userId', { userId });
+    postsQb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
 
     postsQb.andWhere('p.eventAt >= :from AND p.eventAt <= :to', { from, to });
     postsQb.orderBy('p.eventAt', 'DESC'); // 최신순 정렬
@@ -411,28 +395,12 @@ export class UserService {
     const fromDate = start.toJSDate();
     const toDate = end.toJSDate();
 
-    // 1. 해당 월의 모든 포스트 조회 (내 글 + 기여)
+    // 1. 해당 월의 PERSONAL 포스트 조회 (내 글만)
     const postsQb = this.postRepo.createQueryBuilder('p');
     postsQb.select(['p.id', 'p.eventAt', 'p.title']);
 
-    postsQb.where(
-      new Brackets((qb) => {
-        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
-            return `EXISTS ${sub}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
+    postsQb.where('p.ownerUserId = :userId', { userId });
+    postsQb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
 
     postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
       fromDate,

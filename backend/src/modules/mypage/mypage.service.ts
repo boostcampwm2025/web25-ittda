@@ -29,7 +29,7 @@ export class MyPageService {
   async updateProfile(
     userId: string,
     nickname?: string,
-    profileImageUrl?: string,
+    profileImageId?: string,
   ): Promise<User> {
     // 1. 닉네임 변경 시 유효성 검사
     if (nickname) {
@@ -48,7 +48,7 @@ export class MyPageService {
     // 2. 부분 업데이트 수행
     await this.userRepo.update(userId, {
       ...(nickname && { nickname }),
-      ...(profileImageUrl && { profileImageUrl }),
+      ...(profileImageId && { profileImageId }),
     });
 
     // 3. 수정된 사용자 정보 반환 (no-unsafe-return 방지)

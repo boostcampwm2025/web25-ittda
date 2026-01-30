@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsObject } from 'class-validator';
+import { IsOptional, IsString, IsObject, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateMeDto {
@@ -16,8 +16,8 @@ export class UpdateMeDto {
     required: false,
   })
   @IsOptional()
-  @IsString()
-  profileImageUrl?: string;
+  @IsUUID()
+  profileImageId?: string;
 }
 
 export class UpdateSettingsDto {

@@ -29,10 +29,10 @@ export const PinMarker = ({ post, onClick, setMarkerRef }: PinMarkerProps) => {
       ref={ref}
       onClick={handleClick}
     >
-      <div className="relative w-12 h-12 bg-white rounded-full rounded-br-none transform rotate-45 border-[3px] border-secondary overflow-hidden">
-        {post.imageUrl && !isError ? (
+      <div className="flex justify-center items-center relative w-12 h-12 bg-white rounded-full rounded-br-none transform rotate-45 border-[3px] border-secondary overflow-hidden">
+        {post.thumbnailUrl && !isError ? (
           <AssetImage
-            assetId={post.imageUrl}
+            assetId={post.thumbnailUrl}
             alt={post.title}
             fill
             sizes="48px"
