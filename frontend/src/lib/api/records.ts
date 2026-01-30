@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import { RecordBlock, RecordDetailResponse } from '../types/record';
-import { RecordPreview } from '../types/recordResponse';
+import { MapListResponse, RecordPreview } from '../types/recordResponse';
 import { createApiError } from '../utils/errorHandler';
 import { PERSONAL_STALE_TIME } from '../constants/constants';
 import { resolveMediaInBlocks } from '../utils/mediaResolver';
@@ -49,6 +49,74 @@ export const getCachedRecordPreviewList = cache(
 // ============================================
 // 클라이언트 컴포넌트용 queryOptions (React Query)
 // ============================================
+
+export interface MapRecordListParams {
+  lat: number;
+  lng: number;
+  scope: 'personal' | 'group';
+  groupId?: string;
+  radius?: number;
+  from?: string;
+  to?: string;
+  tags?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export const mapRecordListOptions = ({
+  lat,
+  lng,
+  scope,
+  groupId,
+  radius,
+  from,
+  to,
+  tags,
+  cursor,
+  limit,
+}: MapRecordListParams) =>
+  queryOptions({
+    queryKey: [
+      'map',
+      'records',
+      scope,
+      ...(scope === 'group' && groupId ? [groupId] : []),
+      lat,
+      lng,
+      radius,
+      from,
+      to,
+      tags,
+      cursor,
+      limit,
+    ],
+    queryFn: async () => {
+      const params: Record<string, string | number> = {
+        lat,
+        lng,
+        scope,
+      };
+
+      if (scope === 'group' && groupId) {
+        params.groupId = groupId;
+      }
+      if (radius !== undefined) params.radius = radius;
+      if (from) params.from = from;
+      if (to) params.to = to;
+      if (tags) params.tags = tags;
+      if (cursor) params.cursor = cursor;
+      if (limit !== undefined) params.limit = limit;
+
+      const response = await get<MapListResponse>(`/api/map/posts`, params);
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    staleTime: PERSONAL_STALE_TIME,
+    retry: false,
+  });
 
 export const recordDetailOptions = (recordId: string) =>
   queryOptions({
