@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
 import type { Marker } from '@googlemaps/markerclusterer';
 import type { MapPostItem } from '@/lib/types/record';
-import Image from 'next/image';
+import AssetImage from '@/components/AssetImage';
 
 export type PinMarkerProps = {
   post: MapPostItem;
@@ -29,15 +29,15 @@ export const PinMarker = ({ post, onClick, setMarkerRef }: PinMarkerProps) => {
       ref={ref}
       onClick={handleClick}
     >
-      <div className="relative w-12 h-12 bg-white rounded-full rounded-br-none transform rotate-45 border-[3px] border-secondary overflow-hidden">
-        {post.imageUrl && !isError ? (
-          <Image
-            src={post.imageUrl}
+      <div className="flex justify-center items-center relative w-12 h-12 bg-white rounded-full rounded-br-none transform rotate-45 border-[3px] border-secondary overflow-hidden">
+        {post.thumbnailUrl && !isError ? (
+          <AssetImage
+            assetId={post.thumbnailUrl}
             alt={post.title}
             fill
             sizes="48px"
             className="object-cover transform -rotate-45 scale-125"
-            onError={() => setIsError(true)} // 로딩 실패 시 호출
+            onError={() => setIsError(true)}
           />
         ) : (
           /* 이미지가 없거나 로딩에 실패했을 때 */

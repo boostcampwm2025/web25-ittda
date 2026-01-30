@@ -5,11 +5,11 @@ import { RecordBlock } from '@/lib/types/record';
 import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
 
 interface AddPostPageProps {
-  searchParams: Promise<{ mode: string; postId: string }>;
+  searchParams: Promise<{ mode: string; postId: string; groupId: string }>;
 }
 
 export default async function AddPostPage({ searchParams }: AddPostPageProps) {
-  const { mode: queryMode, postId } = await searchParams;
+  const { mode: queryMode, postId, groupId } = await searchParams;
   const queryClient = new QueryClient();
   let initialPost = undefined;
 
@@ -33,5 +33,5 @@ export default async function AddPostPage({ searchParams }: AddPostPageProps) {
     console.error('데이터 로드 실패:', error);
   }
 
-  return <PostEditor mode={mode} initialPost={initialPost} />;
+  return <PostEditor groupId={groupId} mode={mode} initialPost={initialPost} />;
 }

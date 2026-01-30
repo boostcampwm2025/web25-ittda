@@ -4,11 +4,13 @@ import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from './entity/user.entity';
 import { Post } from '../post/entity/post.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
+import { PostMedia, PostMediaKind } from '../post/entity/post-media.entity';
 import { MonthRecordResponseDto } from './dto/month-record.response.dto';
 import { DateTime } from 'luxon';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import { PostContributor } from '../post/entity/post-contributor.entity';
+import { PostScope } from '@/enums/post-scope.enum';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
 
@@ -26,6 +28,8 @@ export class UserService {
     private readonly postRepo: Repository<Post>,
     @InjectRepository(PostBlock)
     private readonly postBlockRepo: Repository<PostBlock>,
+    @InjectRepository(PostMedia)
+    private readonly postMediaRepo: Repository<PostMedia>,
     @InjectRepository(UserMonthCover)
     private readonly userMonthCoverRepo: Repository<UserMonthCover>,
   ) {}
@@ -71,29 +75,12 @@ export class UserService {
     const from = startDate.toJSDate();
     const to = endDate.toJSDate();
 
-    // 2. 해당 유저의 모든 포스트 조회 (내 글 + 기여한 글)
+    // 2. 해당 유저의 PERSONAL 포스트 조회 (내 글만)
     const postsQb = this.postRepo.createQueryBuilder('p');
     postsQb.select(['p.id', 'p.eventAt', 'p.title']);
 
-    // 조건: (ownerUserId = :userId OR contributor...) AND eventAt BETWEEN :from AND :to
-    postsQb.where(
-      new Brackets((qb) => {
-        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
-            return `EXISTS ${sub}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
+    postsQb.where('p.ownerUserId = :userId', { userId });
+    postsQb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
 
     postsQb.andWhere('p.eventAt >= :from AND p.eventAt <= :to', { from, to });
     postsQb.orderBy('p.eventAt', 'DESC'); // 최신순 정렬
@@ -229,39 +216,34 @@ export class UserService {
   }
 
   /**
-   * 해당 월의 모든 이미지 조회
+   * 사용자 월별 커버 후보 이미지 조회 (날짜별 그룹화)
    */
-  async getMonthImages(
-    userId: string,
-    year: number,
-    month: number,
-  ): Promise<string[]> {
+  async getMonthCoverCandidates(userId: string, year: number, month: number) {
     const from = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
     const to = from.endOf('month');
-
-    // 해당 기간, 내 글(owner)에서 나온 IMAGE 블록 조회
-    // Contributor 글의 이미지도 내 앨범에 넣을지는 정책 결정 필요.
-    // "내 기록함" 맥락이므로 내가 포함된 글의 이미지는 쓸 수 있다고 가정.
-    // 여기서는 QueryBuilder로 Join하여 한 번에 가져옴.
 
     const fromDate = from.toJSDate();
     const toDate = to.toJSDate();
 
-    // Post p JOIN PostBlock b ON p.id = b.postId
-    // WHERE ... AND b.type = 'IMAGE'
-    const qb = this.postBlockRepo.createQueryBuilder('b');
-    qb.innerJoin('b.post', 'p');
-
-    // Auth Check Logic reuse needed?
-    // Simply check owner for now (Optimization) OR reuse complicated logic if needed.
-    // Scenario implies "My Archive", so owner + contributor.
-
-    qb.where('b.type = :type', { type: PostBlockType.IMAGE });
+    const qb = this.postMediaRepo.createQueryBuilder('pm');
+    qb.innerJoin('pm.post', 'p');
+    qb.leftJoin('pm.media', 'ma');
+    qb.select([
+      'pm.id',
+      'pm.mediaId',
+      'pm.kind',
+      'p.id',
+      'p.title',
+      'p.eventAt',
+      'ma.width',
+      'ma.height',
+      'ma.mimeType',
+    ]);
+    qb.where('pm.kind = :kind', { kind: PostMediaKind.BLOCK });
     qb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
       fromDate,
       toDate,
     });
-
     qb.andWhere(
       new Brackets((sub) => {
         sub.where('p.ownerUserId = :userId', { userId }).orWhere(
@@ -279,22 +261,88 @@ export class UserService {
         );
       }),
     );
-
-    // 최신순
     qb.orderBy('p.eventAt', 'DESC');
+    qb.addOrderBy('pm.id', 'DESC');
 
-    const blocks = await qb.getMany();
+    const mediaList = await qb.getMany();
 
-    // Extract Asset IDs
-    const assetIds: string[] = [];
-    for (const b of blocks) {
-      const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
-      if (val.mediaIds) {
-        assetIds.push(...val.mediaIds);
+    const items = mediaList.map((pm) => ({
+      mediaId: pm.mediaId,
+      postId: pm.post.id,
+      postTitle: pm.post.title,
+      eventAt: pm.post.eventAt!,
+      width: pm.media?.width,
+      height: pm.media?.height,
+      mimeType: pm.media?.mimeType,
+    }));
+
+    const sectionsMap = new Map<string, typeof items>();
+    for (const item of items) {
+      const dateStr = DateTime.fromJSDate(item.eventAt)
+        .setZone('Asia/Seoul')
+        .toFormat('yyyy-MM-dd');
+      if (!sectionsMap.has(dateStr)) {
+        sectionsMap.set(dateStr, []);
       }
+      sectionsMap.get(dateStr)!.push(item);
     }
 
-    return assetIds;
+    const sections = Array.from(sectionsMap.entries()).map(([date, list]) => ({
+      date,
+      items: list,
+    }));
+
+    return {
+      userId,
+      sections,
+      pageInfo: {
+        hasNext: false,
+        nextCursor: null,
+      },
+    };
+  }
+
+  private async getMonthCoverAssetIds(
+    userId: string,
+    year: number,
+    month: number,
+  ): Promise<string[]> {
+    const from = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
+    const to = from.endOf('month');
+
+    const fromDate = from.toJSDate();
+    const toDate = to.toJSDate();
+
+    const qb = this.postMediaRepo.createQueryBuilder('pm');
+    qb.innerJoin('pm.post', 'p');
+    qb.select(['pm.mediaId']);
+    qb.where('pm.kind = :kind', { kind: PostMediaKind.BLOCK });
+    qb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+    qb.andWhere(
+      new Brackets((sub) => {
+        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub2 = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+            return `EXISTS ${sub2}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+
+    const rows = await qb.getRawMany<{ pm_mediaId: string }>();
+    const ids = rows.map((row) => row.pm_mediaId).filter(Boolean);
+    return Array.from(new Set(ids));
   }
 
   /**
@@ -307,7 +355,7 @@ export class UserService {
     coverAssetId: string,
   ) {
     // 1. 유효한 커버 후보인지 검증
-    const validAssets = await this.getMonthImages(userId, year, month);
+    const validAssets = await this.getMonthCoverAssetIds(userId, year, month);
     if (!validAssets.includes(coverAssetId)) {
       throw new ForbiddenException(
         '해당 월의 아카이브에 포함된 이미지가 아니거나, 권한이 없습니다.',
@@ -347,28 +395,12 @@ export class UserService {
     const fromDate = start.toJSDate();
     const toDate = end.toJSDate();
 
-    // 1. 해당 월의 모든 포스트 조회 (내 글 + 기여)
+    // 1. 해당 월의 PERSONAL 포스트 조회 (내 글만)
     const postsQb = this.postRepo.createQueryBuilder('p');
     postsQb.select(['p.id', 'p.eventAt', 'p.title']);
 
-    postsQb.where(
-      new Brackets((qb) => {
-        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
-            return `EXISTS ${sub}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
+    postsQb.where('p.ownerUserId = :userId', { userId });
+    postsQb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
 
     postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
       fromDate,

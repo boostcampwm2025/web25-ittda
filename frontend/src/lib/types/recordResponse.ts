@@ -1,5 +1,5 @@
 import { GroupCover, LatestPost } from './group';
-import { Block, RecordScope, TagValue } from './record';
+import { Block, MapPostItem, RecordScope, TagValue } from './record';
 import { LocationValue, RatingValue, RecordBlock } from './recordField';
 
 /**
@@ -39,6 +39,18 @@ export interface RecordPreview {
   emotion: string[];
   rating: RatingValue['rating'] | null;
   blocks: Block[];
+}
+
+export interface newGroupResponse {
+  id: string;
+  name: string;
+  owner: {
+    id: string;
+  };
+  coverMediaId: null | string;
+  coverSourcePostId: null | string;
+  lastActivityAt: null | string;
+  createdAt: string;
 }
 
 export interface GroupSummary {
@@ -125,3 +137,9 @@ export interface MontlyCoverUpdateResponse {
   coverAssetId: string;
 }
 export type MyDailyRecordedDatesResponse = string[];
+
+export interface MapListResponse {
+  items: MapPostItem[];
+  hasNextPage: boolean;
+  nextCursor: string | null;
+}
