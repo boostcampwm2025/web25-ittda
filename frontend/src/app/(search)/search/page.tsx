@@ -221,7 +221,7 @@ export default function SearchPage() {
                         content: record.snippet,
                         imageUrl: record.thumbnailUrl || '',
                       }}
-                      onClick={(id) => router.push(`/post/${id}`)}
+                      onClick={(id) => router.push(`/record/${id}`)}
                     />
                   </div>
                 );
