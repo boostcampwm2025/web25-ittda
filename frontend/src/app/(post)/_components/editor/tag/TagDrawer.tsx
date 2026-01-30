@@ -155,7 +155,7 @@ export default function TagDrawer({
                     addTag(e);
                   }
                 }}
-                className="w-full pl-8 pr-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 outline-none focus:ring-2 focus:ring-itta-point text-sm dark:text-white"
+                className="w-full pl-8 pr-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 outline-none focus:ring-2 focus:ring-itta-point text-base dark:text-white"
                 placeholder={
                   isLimitReached ? '최대 개수 4개 도달' : '새 태그 입력'
                 }
