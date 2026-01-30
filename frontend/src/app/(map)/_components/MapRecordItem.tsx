@@ -31,14 +31,14 @@ export function MapRecordItem({
           : 'dark:border-white/5 border-gray-100 bg-white dark:bg-white/2 shadow-sm hover:border-[#10B981]/30',
       )}
     >
-      {post.imageUrl && !isError && (
+      {post.thumbnailUrl && !isError && (
         <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-black/5">
           <AssetImage
             width={80}
             height={80}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             onError={() => setIsError(true)}
-            assetId={post.imageUrl}
+            assetId={post.thumbnailUrl}
             alt={post.title}
           />
         </div>
