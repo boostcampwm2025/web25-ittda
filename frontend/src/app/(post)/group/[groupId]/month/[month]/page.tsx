@@ -26,7 +26,7 @@ export default async function GroupMonthlyDetailPage({
   } else {
     dailyRecords = await getCachedGroupDailyRecordList(groupId, month);
 
-    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
+    // QueryClient에 원본 데이터를 저장 (select 함수가 클라이언트에서 변환)
     queryClient.setQueryData(
       ['group', groupId, 'records', 'daily', month],
       dailyRecords,

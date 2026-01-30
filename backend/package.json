@@ -23,6 +23,7 @@
     "db:mig:gen": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations/$MIGRATION_NAME -d ./src/data-source.ts",
     "db:mig:create": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
     "db:mig:run": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
+    "db:mig:run:prod": "cross-env NODE_ENV=production ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:mig:run:test": "cross-env NODE_ENV=test ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:mig:revert": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
     "db:mig:show": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d ./src/data-source.ts",

@@ -2,11 +2,12 @@
 
 import { Camera, X } from 'lucide-react';
 import Image from 'next/image';
-import { useRef } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useProfileEdit } from '../app/(main)/profile/edit/_components/ProfileEditContext';
+import AssetImage from './AssetImage';
 
 interface ProfileInfoProps {
-  profileImage: string;
+  profileImage: string | null;
   showEmail?: boolean;
 }
 
@@ -16,6 +17,20 @@ export default function ProfileInfo({
 }: ProfileInfoProps) {
   const { image, setImage, nickname, setNickname, email } = useProfileEdit();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Blob URL을 메모이제이션하여 불필요한 재생성 방지
+  const imagePreviewUrl = useMemo(() => {
+    return image ? URL.createObjectURL(image) : null;
+  }, [image]);
+
+  // Blob URL cleanup
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -51,14 +66,23 @@ export default function ProfileInfo({
             onClick={handleImageClick}
             className="relative group cursor-pointer"
           >
-            <div className="w-32 h-32 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
-              <Image
-                width={100}
-                height={100}
-                src={(image && URL.createObjectURL(image)) || profileImage}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
+            <div className="flex justify-center items-center w-32 h-32 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
+              {imagePreviewUrl ? (
+                <Image
+                  width={200}
+                  height={200}
+                  src={imagePreviewUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <AssetImage
+                  width={200}
+                  height={200}
+                  assetId={profileImage || '/profile_base.png'}
+                  alt={`${nickname} 프로필`}
+                />
+              )}
             </div>
             <div className="absolute bottom-0 right-0 w-10 h-10 text-white bg-itta-black rounded-full flex items-center justify-center border-2 border-white shadow-lg active:scale-90 transition-all">
               <Camera className="w-5 h-5" />

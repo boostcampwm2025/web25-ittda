@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class GroupCoverCandidateItemDto {
+export class UserCoverCandidateItemDto {
   @ApiProperty({ description: 'Media Asset ID', example: 'uuid' })
   mediaId: string;
 
@@ -23,15 +23,15 @@ export class GroupCoverCandidateItemDto {
   mimeType?: string;
 }
 
-export class GroupCoverCandidateSectionDto {
+export class UserCoverCandidateSectionDto {
   @ApiProperty({ description: '날짜', example: '2026-01-14' })
   date: string;
 
-  @ApiProperty({ type: [GroupCoverCandidateItemDto] })
-  items: GroupCoverCandidateItemDto[];
+  @ApiProperty({ type: [UserCoverCandidateItemDto] })
+  items: UserCoverCandidateItemDto[];
 }
 
-export class PageInfoDto {
+export class UserCoverPageInfoDto {
   @ApiProperty({ description: '다음 페이지 존재 여부', example: false })
   hasNext: boolean;
 
@@ -43,13 +43,13 @@ export class PageInfoDto {
   nextCursor: string | null;
 }
 
-export class GroupCoverCandidatesResponseDto {
-  @ApiProperty({ description: '그룹 ID', example: 'grp_123456' })
-  groupId: string;
+export class UserCoverCandidatesResponseDto {
+  @ApiProperty({ description: '사용자 ID', example: 'user_123456' })
+  userId: string;
 
-  @ApiProperty({ type: [GroupCoverCandidateSectionDto] })
-  sections: GroupCoverCandidateSectionDto[];
+  @ApiProperty({ type: [UserCoverCandidateSectionDto] })
+  sections: UserCoverCandidateSectionDto[];
 
-  @ApiProperty({ type: PageInfoDto })
-  pageInfo: PageInfoDto;
+  @ApiProperty({ type: UserCoverPageInfoDto })
+  pageInfo: UserCoverPageInfoDto;
 }
