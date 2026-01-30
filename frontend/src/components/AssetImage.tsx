@@ -21,12 +21,15 @@ export default function AssetImage({
   fallback,
   ...props
 }: AssetImageProps) {
-  //url이 없을 때만 assetId로 solve 호출하기
+  // assetId가 로컬 경로(/로 시작)인지 확인
+  const isLocalPath = assetId?.startsWith('/');
+
+  //url이 없고 로컬 경로가 아닐 때만 assetId로 solve 호출하기
   const { data, isLoading, isError } = useMediaResolveSingle(
-    url ? undefined : assetId,
+    url || isLocalPath ? undefined : assetId,
     draftId,
   );
-  const imageSrc = url || data?.url;
+  const imageSrc = url || (isLocalPath ? assetId : data?.url);
 
   if (isLoading) {
     return (

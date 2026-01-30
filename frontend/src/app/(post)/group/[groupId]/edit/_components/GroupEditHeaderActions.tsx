@@ -36,7 +36,7 @@ export default function GroupEditHeaderActions({
     setIsPending(true);
 
     try {
-      tasks.push(updateGroup({ groupName: editData.groupName }));
+      tasks.push(updateGroup({ name: editData.groupName }));
 
       if (editData.groupThumbnail) {
         tasks.push(

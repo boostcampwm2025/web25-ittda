@@ -43,6 +43,8 @@ export default function Profile() {
       <div className="w-20 h-20 rounded-full border-4 overflow-hidden shadow-sm dark:border-[#121212] border-[#F9F9F9]">
         {userProfile.user.profileImageId ? (
           <AssetImage
+            width={50}
+            height={50}
             assetId={userProfile.user.profileImageId}
             alt="유저 프로필"
           />
