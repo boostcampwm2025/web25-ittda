@@ -38,6 +38,11 @@ export const useCreateInviteCode = (
 
       return response.data;
     },
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    retryOnMount: false,
     staleTime: 1000 * 60 * 60 * 24, // 24시간 유지 (권한 안 바뀌면 계속)
     gcTime: 1000 * 60 * 60 * 24, // 24시간 유지
     enabled: !!groupId && !!isOpen,
