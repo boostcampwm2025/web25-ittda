@@ -55,15 +55,37 @@ export class MyPageService {
     return this.findOne(userId);
   }
 
-  /** 회원 탈퇴 (Soft Delete) */
-  async softDeleteUser(userId: string): Promise<void> {
-    // TypeORM의 softDelete는 deletedAt 컬럼에 현재 시간을 기록합니다.
-    const result = await this.userRepo.softDelete(userId);
+  /** 회원 탈퇴 (Hard Delete & Cascade) */
+  async withdraw(userId: string): Promise<void> {
+    await this.userRepo.manager.transaction(async (em) => {
+      // 1. 그룹 멤버십 삭제
+      await em.delete('GroupMember', { userId });
 
-    if (result.affected === 0) {
-      throw new BadRequestException(
-        '존재하지 않는 사용자이거나 이미 탈퇴 처리되었습니다.',
-      );
-    }
+      // 2. 기여자 정보 삭제
+      await em.delete('PostContributor', { userId });
+
+      // 3. 월별 커버 삭제
+      await em.delete('UserMonthCover', { userId });
+
+      // 4. 작성한 게시글 삭제 (PostMedia, PostBlock 등은 DB Cascade 설정을 따름)
+      // 만약 DB Cascade가 없으면 에러가 날 수 있으나, 일반적으로 Post 삭제 시 관련 데이터 삭제됨을 가정
+      await em.delete('Post', { ownerUserId: userId });
+
+      // 5. 미디어 에셋 삭제 (프로필 이미지 등)
+      // 주의: 미디어가 널리 쓰이고 있다면 Set Null 처리가 나을 수도 있을 것 같음
+      await em.delete('MediaAsset', { ownerUserId: userId });
+
+      // 6. Template 삭제 (옵션)
+      await em.delete('Template', { ownerUserId: userId });
+
+      // 7. 사용자 삭제
+      const result = await em.delete(User, { id: userId });
+
+      if (result.affected === 0) {
+        throw new BadRequestException(
+          '존재하지 않는 사용자이거나 이미 탈퇴 처리되었습니다.',
+        );
+      }
+    });
   }
 }

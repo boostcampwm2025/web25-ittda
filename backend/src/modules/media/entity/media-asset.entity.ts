@@ -60,6 +60,7 @@ export class MediaAsset {
 
   @Column({ type: 'int', nullable: true })
   height?: number;
+
   @Column({ name: 'uploaded_at', type: 'timestamptz', nullable: true })
   uploadedAt?: Date;
 

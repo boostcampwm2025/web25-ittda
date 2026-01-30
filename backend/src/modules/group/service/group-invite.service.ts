@@ -88,7 +88,8 @@ export class GroupInviteService {
     });
 
     if (existingMember) {
-      throw new BadRequestException('이미 그룹의 멤버입니다.');
+      // 이미 멤버라면 에러 대신 성공 처리 (Idempotent)
+      return existingMember;
     }
 
     // 멤버 추가
