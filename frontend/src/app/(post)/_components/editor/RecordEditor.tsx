@@ -519,7 +519,6 @@ export default function PostEditor({
           <TagDrawer
             onClose={() => handleCloseDrawer(id)}
             tags={initialValue as TagValue}
-            previousTags={['식단', '운동']} //TODO: 실제 최근 사용 태그 리스트
             onUpdateTags={(nt) => handleDrawerDone({ tags: nt })}
           />
         );
