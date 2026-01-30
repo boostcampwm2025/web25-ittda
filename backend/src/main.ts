@@ -6,6 +6,7 @@ import { AllHttpExceptionFilter } from '@/common/exception_filters/AllHttpExcept
 import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
 import { TransformInterceptor } from '@/common/interceptors/transform.interceptor';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 import 'reflect-metadata';
 
@@ -15,6 +16,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
+
+  app.use(helmet({ xPoweredBy: false })); // Express가 사용하는 헤더를 숨겨 기술 스택 노출을 방지
 
   app.enableVersioning({
     type: VersioningType.URI,
