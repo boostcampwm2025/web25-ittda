@@ -46,9 +46,9 @@ export const PinMarker = ({
             : 'w-12 h-12 border-[3px] border-secondary',
         )}
       >
-        {post.thumbnailUrl && !isError ? (
+        {post.thumbnailMediaId && !isError ? (
           <AssetImage
-            assetId={post.id}
+            assetId={post.thumbnailMediaId}
             alt={post.title}
             fill
             sizes={isSelected ? '64px' : '48px'}
