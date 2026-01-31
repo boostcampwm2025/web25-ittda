@@ -8,17 +8,23 @@ import BlockContent from '@/components/BlockContent';
 import { Block } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { BookOpen, Plus } from 'lucide-react';
+import { RecordPreview } from '@/lib/types/recordResponse';
 
-export default function RecordList() {
+interface RecordListProps {
+  initialPreviews: RecordPreview[];
+}
+
+export default function RecordList({ initialPreviews }: RecordListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // URL에서 date 파라미터 읽기, 없으면 오늘 날짜
   const selectedDateStr = searchParams.get('date') || formatDateISO();
 
-  const { data: records = [] } = useQuery(
-    recordPreviewListOptions(selectedDateStr),
-  );
+  const { data: records = [] } = useQuery({
+    ...recordPreviewListOptions(selectedDateStr),
+    initialData: initialPreviews,
+  });
 
   return (
     <div className="space-y-4 w-full">

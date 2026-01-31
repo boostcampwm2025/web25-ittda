@@ -50,6 +50,7 @@ export default async function MyMonthlyDetailPage({
           ) : (
             <MonthlyDetailRecords
               month={month}
+              serverSideData={dailyRecords}
               routePath="/my/detail"
               viewMapRoutePath={`my/map/month/${month}`}
             />
