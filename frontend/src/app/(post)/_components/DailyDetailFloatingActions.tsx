@@ -71,9 +71,9 @@ export default function DailyDetailFloatingActions({
             </span>
           </button>
           <button
-            // onClick={() =>
-            // router.push('/add', { state: { prefilledDate: date, groupId } })
-            // }
+            onClick={() =>
+              router.push(groupId ? `/add?groupId=${groupId}` : '/add')
+            }
             className="cursor-pointer w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all bg-white text-itta-black shrink-0"
           >
             <Plus className="w-5 h-5" strokeWidth={3.5} />
