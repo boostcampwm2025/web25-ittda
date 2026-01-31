@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useMemo } from 'react';
-import { Map as MapIcon } from 'lucide-react';
+import { Loader2, Map as MapIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { MapPostItem } from '@/lib/types/record';
@@ -24,7 +24,9 @@ export default function RecordMapDrawer({
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastSnappedIdRef = useRef<string | string[] | null>(null);
-  const prevSelectedPostIdRef = useRef<string | string[] | null>(selectedPostId);
+  const prevSelectedPostIdRef = useRef<string | string[] | null>(
+    selectedPostId,
+  );
 
   // TODO : 백엔드 연결 (클러스터 선택 시 표시할 포스트 필터링)
   const displayPosts = useMemo(() => {
@@ -46,9 +48,14 @@ export default function RecordMapDrawer({
       );
 
       if (targetElement) {
-        targetElement.scrollIntoView({
+        // drawer 상단 padding을 고려하여 스크롤
+        const container = scrollContainerRef.current;
+        const elementTop = (targetElement as HTMLElement).offsetTop;
+        const offset = 16; // pt-4 = 16px 상단 여백
+
+        container.scrollTo({
+          top: elementTop - offset,
           behavior: 'smooth',
-          block: 'center',
         });
       }
     }
@@ -119,13 +126,13 @@ export default function RecordMapDrawer({
       <div className="relative flex-1 overflow-hidden">
         <div
           ref={scrollContainerRef}
-          className="absolute inset-0 px-8 pt-4 pb-16 overflow-y-auto hide-scrollbar"
+          className="absolute inset-0 px-8 pt-4 pb-16 overflow-y-auto scrollbar-hide"
           style={{ touchAction: 'pan-y' }}
         >
           <div className="space-y-4">
             {isLoading ? (
-              <div className="py-24 text-center text-sm text-gray-400 animate-pulse font-medium">
-                기록을 불러오는 중입니다...
+              <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#121212]">
+                <Loader2 className="w-8 h-8 animate-spin text-itta-point" />
               </div>
             ) : displayPosts.length ? (
               displayPosts.map((post) => {
