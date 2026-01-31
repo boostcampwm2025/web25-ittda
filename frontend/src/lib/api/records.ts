@@ -5,7 +5,6 @@ import { RecordBlock, RecordDetailResponse } from '../types/record';
 import { MapListResponse, RecordPreview } from '../types/recordResponse';
 import { createApiError } from '../utils/errorHandler';
 import { PERSONAL_STALE_TIME } from '../constants/constants';
-import { resolveMediaInBlocks } from '../utils/mediaResolver';
 
 // ============================================
 // 서버 컴포넌트용 캐시된 함수 (React cache)
@@ -20,11 +19,7 @@ export const getCachedRecordDetail = cache(async (recordId: string) => {
   if (!response.success) {
     throw createApiError(response);
   }
-  const record = response.data;
-
-  record.blocks = await resolveMediaInBlocks(record.blocks);
-
-  return record;
+  return response.data;
 });
 
 /**
@@ -129,11 +124,7 @@ export const recordDetailOptions = (recordId: string) =>
       if (!response.success) {
         throw createApiError(response);
       }
-      const record = response.data;
-
-      record.blocks = await resolveMediaInBlocks(record.blocks);
-
-      return record;
+      return response.data;
     },
     staleTime: PERSONAL_STALE_TIME,
     retry: false,
