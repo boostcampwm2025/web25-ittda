@@ -90,8 +90,8 @@ export class MapPostItemDto {
   @ApiProperty({ description: '제목' })
   title: string;
 
-  @ApiPropertyOptional({ description: '썸네일 URL' })
-  thumbnailUrl?: string;
+  @ApiPropertyOptional({ description: '썸네일 미디어 ID' })
+  thumbnailMediaId?: string | null;
 
   @ApiProperty({ description: '생성일/이벤트일' })
   createdAt: Date;

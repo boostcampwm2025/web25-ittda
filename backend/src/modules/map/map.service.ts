@@ -1,11 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder, Brackets } from 'typeorm';
+import { Repository, SelectQueryBuilder, Brackets, In } from 'typeorm';
 import type { Point } from 'geojson';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostBlock } from '@/modules/post/entity/post-block.entity';
-import { PostMediaKind } from '@/modules/post/entity/post-media.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
+import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import {
   MapPostsQueryDto,
   PaginatedMapPostsResponseDto,
@@ -18,6 +18,8 @@ export class MapService {
   constructor(
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+    @InjectRepository(PostBlock)
+    private readonly postBlockRepository: Repository<PostBlock>,
   ) {}
 
   async findPostsWithinRadius(
@@ -39,15 +41,6 @@ export class MapService {
 
     const query = this.postRepository
       .createQueryBuilder('post')
-      .leftJoinAndSelect(
-        'post.postMedia',
-        'postMedia',
-        'postMedia.kind = :thumbnailKind',
-        {
-          thumbnailKind: PostMediaKind.THUMBNAIL,
-        },
-      )
-      .leftJoinAndSelect('postMedia.media', 'media')
       .where('post.deletedAt IS NULL')
       .andWhere(
         'ST_DWithin(post.location, ST_SetSRID(ST_Point(:lng, :lat), 4326), :radius)',
@@ -101,9 +94,31 @@ export class MapService {
     const hasNextPage = posts.length > limit;
     const items = posts.slice(0, limit);
 
+    const postIds = items.map((post) => post.id);
+    const thumbnailMap = new Map<string, string | null>();
+    if (postIds.length > 0) {
+      const imageBlocks = await this.postBlockRepository.find({
+        where: {
+          postId: In(postIds),
+          type: PostBlockType.IMAGE,
+        },
+        order: {
+          layoutRow: 'ASC',
+          layoutCol: 'ASC',
+          layoutSpan: 'ASC',
+        },
+      });
+      imageBlocks.forEach((block) => {
+        if (thumbnailMap.has(block.postId)) return;
+        const val = block.value as BlockValueMap[typeof PostBlockType.IMAGE];
+        const mediaId = val.mediaIds?.[0] ?? null;
+        thumbnailMap.set(block.postId, mediaId);
+      });
+    }
+
     const resultItems: MapPostItemDto[] = await Promise.all(
       items.map(async (post) => {
-        const thumbnail = post.postMedia?.[0]?.media;
+        const thumbnailMediaId = thumbnailMap.get(post.id) ?? null;
 
         // Find location block for placeName/address
         const locationBlock = await this.postRepository.manager.findOne(
@@ -127,7 +142,7 @@ export class MapService {
           lat: (post.location as Point).coordinates[1],
           lng: (post.location as Point).coordinates[0],
           title: post.title,
-          thumbnailUrl: thumbnail?.url,
+          thumbnailMediaId,
           createdAt: post.eventAt || post.createdAt,
           tags: post.tags || [],
           placeName: placeDisplay,
