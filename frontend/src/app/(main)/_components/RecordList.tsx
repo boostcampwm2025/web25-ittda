@@ -7,7 +7,7 @@ import { recordPreviewListOptions } from '@/lib/api/records';
 import BlockContent from '@/components/BlockContent';
 import { Block } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen, Plus, Users, User } from 'lucide-react';
 import { RecordPreview } from '@/lib/types/recordResponse';
 
 interface RecordListProps {
@@ -47,9 +47,22 @@ export default function RecordList({ initialPreviews }: RecordListProps) {
             className="rounded-2xl p-6 shadow-sm border active:scale-[0.98] transition-all cursor-pointer overflow-hidden dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100"
           >
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-[16px] font-bold truncate dark:text-white text-itta-black">
-                {record.title}
-              </h4>
+              <div className="flex items-center gap-2 min-w-0">
+                <h4 className="text-[16px] font-bold truncate dark:text-white text-itta-black">
+                  {record.title}
+                </h4>
+                {record.scope === 'GROUP' ? (
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
+                    <Users className="w-3 h-3" />
+                    <span>그룹</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 shrink-0">
+                    <User className="w-3 h-3" />
+                    <span>개인</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="space-y-3">
               {(() => {
