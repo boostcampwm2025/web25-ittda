@@ -39,7 +39,6 @@ export default function TagSearchDrawer({
     if (e.key === 'Enter' && keyword.trim()) {
       e.preventDefault();
       // 이미 선택된 태그가 아니라면 추가
-      console.log('selectedTags', selectedTags);
       if (!selectedTags.includes(keyword.trim())) {
         onToggleTag(keyword.trim());
       }
