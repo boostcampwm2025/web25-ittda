@@ -198,7 +198,7 @@ export class GroupManagementService {
       groupMemberCount: activeMembers.length,
       members: activeMembers.map((member) => ({
         memberId: member.user.id,
-        profileImageId: member.user.profileImageId,
+        profileImageId: member.profileMediaId ?? null,
       })),
     };
   }
