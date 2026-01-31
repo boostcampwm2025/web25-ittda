@@ -244,23 +244,8 @@ export class UserService {
       fromDate,
       toDate,
     });
-    qb.andWhere(
-      new Brackets((sub) => {
-        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub2 = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .getQuery();
-            return `EXISTS ${sub2}`;
-          },
-          { userId },
-        );
-      }),
-    );
+    qb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
+    qb.andWhere('p.ownerUserId = :userId', { userId });
     qb.orderBy('p.eventAt', 'DESC');
     qb.addOrderBy('pm.id', 'DESC');
 
@@ -321,24 +306,8 @@ export class UserService {
       fromDate,
       toDate,
     });
-    qb.andWhere(
-      new Brackets((sub) => {
-        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub2 = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
-            return `EXISTS ${sub2}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
+    qb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
+    qb.andWhere('p.ownerUserId = :userId', { userId });
 
     const rows = await qb.getRawMany<{ pm_mediaId: string }>();
     const ids = rows.map((row) => row.pm_mediaId).filter(Boolean);
