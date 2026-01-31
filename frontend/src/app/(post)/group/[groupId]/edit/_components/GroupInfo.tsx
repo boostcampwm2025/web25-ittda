@@ -114,14 +114,11 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
             value={groupName}
             placeholder="그룹명을 작성해주세요."
             onChange={(e) => setGroupName(e.target.value)}
-            className={
-              (cn(
-                `w-full border-b-2 bg-transparent px-1 py-3 text-lg font-bold transition-all outline-none dark:placeholder-gray-700 placeholder-gray-300 dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black`,
-              ),
+            className={`w-full border-b-2 bg-transparent px-1 py-4 text-sm font-semibold transition-all outline-none dark:text-white dark:placeholder-gray-700 text-itta-black placeholder-gray-300 ${
               groupNameError
                 ? 'border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500'
-                : 'dark:border-white/5 dark:focus:border-[#10B981] border-gray-100 focus:border-[#10B981]')
-            }
+                : 'dark:border-white/5 dark:focus:border-[#10B981] border-gray-100 focus:border-[#10B981]'
+            }`}
           />
           {groupName && (
             <button
