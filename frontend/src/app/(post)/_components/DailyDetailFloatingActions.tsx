@@ -1,10 +1,11 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, MapIcon, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { myDailyRecordedDatesOption } from '@/lib/api/my';
 import { groupDailyRecordedDatesOption } from '@/lib/api/group';
+import ViewOnMapButton from './ViewOnMapButton';
 
 interface DailyDetailFloatingActionsProps {
   groupId?: string;
@@ -48,19 +49,14 @@ export default function DailyDetailFloatingActions({
 
   return (
     <>
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-500">
-        <button
-          onClick={() =>
-            router.push(
-              groupId ? `/group/${groupId}/map/${date}` : `/my/map/${date}`,
-            )
-          }
-          className="cursor-pointer flex items-center gap-2.5 px-6 py-3.5 rounded-full shadow-2xl backdrop-blur-xl border transition-all active:scale-95 dark:bg-[#1E1E1E]/90 dark:border-white/10 dark:text-white bg-white/90 border-gray-100 text-itta-black"
-        >
-          <MapIcon className="w-4 h-4 text-[#10B981]" strokeWidth={2.5} />
-          <span className="text-xs font-bold tracking-tight">지도로 보기</span>
-        </button>
-      </div>
+      <ViewOnMapButton
+        className="bottom-24"
+        routePath={
+          groupId
+            ? `/map?scope=group&groupId=${groupId}&start=${date}`
+            : `/map?start=${date}`
+        }
+      />
 
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[80%] max-w-90 animate-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center justify-between px-6 py-1.5 rounded-full shadow-[0_20px_60px_rgba(0,0,0,0.3)] border border-white/10 transition-all bg-itta-black">

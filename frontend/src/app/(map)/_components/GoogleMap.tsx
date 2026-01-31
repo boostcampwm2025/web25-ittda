@@ -86,7 +86,7 @@ export default function GoogleMap({
   }, [geoLat, geoLng, mapRef]);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  const mapId = '202b44cc1c99c5e4aff9745a'; // process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID;
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID;
 
   // 전역 에러에서 잡아 에러 페이지 뜨도록
   if (!apiKey) throw new Error('지도 호출 에러');

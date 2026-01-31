@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import GoogleMap from '../_components/GoogleMap';
 import RecordMapDrawer from '../_components/RecordMapDrawer';
 import { FilterChip } from '@/components/search/FilterChip';
@@ -19,8 +20,30 @@ import { useQuery } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
 import { useGeolocation } from '@/hooks/useGeolocation';
 
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
 export default function RecordMapPage() {
+  const searchParams = useSearchParams();
+  const scope =
+    (searchParams.get('scope') as 'personal' | 'group') || 'personal';
+  const groupId = searchParams.get('groupId') || undefined;
+
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
@@ -35,6 +58,10 @@ export default function RecordMapPage() {
     null,
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [mapCenter, setMapCenter] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   const [searchResults, setSearchResults] = useState<
     google.maps.places.PlaceResult[]
@@ -54,14 +81,19 @@ export default function RecordMapPage() {
   }, [placesLib]);
 
   // 사용자 위치 가져오기
-  const {
-    latitude,
-    longitude,
-    loading: locationLoading,
-    error: locationError,
-  } = useGeolocation({
+  const { latitude, longitude } = useGeolocation({
     reverseGeocode: false, // 주소 변환 불필요
   });
+
+  // 실제 사용할 지도 중심 (mapCenter가 있으면 사용, 없으면 사용자 위치 사용)
+  const effectiveMapCenter = useMemo(() => {
+    if (mapCenter) return mapCenter;
+    if (latitude && longitude) return { lat: latitude, lng: longitude };
+    return null;
+  }, [mapCenter, latitude, longitude]);
+
+  // 지도 중심 위치를 debounce하여 성능 최적화 (500ms)
+  const debouncedMapCenter = useDebouncedValue(effectiveMapCenter, 500);
 
   // URL 쿼리 파라미터
   const {
@@ -73,17 +105,19 @@ export default function RecordMapPage() {
     updateUrl,
   } = useSearchFilters();
 
-  // 지도 기록 데이터 가져오기
+  // 지도 기록 데이터 가져오기 (debounced center 사용)
   const { data: mapData } = useQuery({
     ...mapRecordListOptions({
-      lat: latitude ?? 37.5665, // 기본값: 서울 시청
-      lng: longitude ?? 126.978,
-      scope: 'personal',
+      lat: debouncedMapCenter?.lat ?? latitude ?? 37.5665, // 기본값: 서울 시청
+      lng: debouncedMapCenter?.lng ?? longitude ?? 126.978,
+      scope,
+      groupId,
       from: startDate || undefined,
       to: endDate || undefined,
       tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
     }),
-    enabled: latitude !== null && longitude !== null, // 위치 정보가 있을 때만 실행
+    enabled:
+      debouncedMapCenter !== null || (latitude !== null && longitude !== null),
   });
 
   // 지도에 표시할 모든 posts (필터링 없이)
@@ -114,8 +148,16 @@ export default function RecordMapPage() {
   const handleBoundsChange = useCallback(
     (bounds: google.maps.LatLngBounds | null) => {
       setMapBounds(bounds);
+
+      // 지도 중심 위치 업데이트 (서버 요청용)
+      if (mapRef.current) {
+        const center = mapRef.current.getCenter();
+        if (center) {
+          setMapCenter({ lat: center.lat(), lng: center.lng() });
+        }
+      }
     },
-    [],
+    [setMapBounds, setMapCenter],
   );
 
   const handleSelectPlace = (place: google.maps.places.PlaceResult) => {
