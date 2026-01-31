@@ -476,61 +476,6 @@ export class UserService {
   }
 
   /**
-   * 해당 연도의 모든 이미지(월 커버 후보) 조회
-   */
-  async getYearlyImages(userId: string, year: number): Promise<string[]> {
-    const start = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
-      'year',
-    );
-    const end = start.endOf('year');
-    const fromDate = start.toJSDate();
-    const toDate = end.toJSDate();
-
-    // 1. 해당 연도의 내 포스트(기여 포함) IDs 조회
-    const postsQb = this.postRepo.createQueryBuilder('p');
-    postsQb.select('p.id');
-
-    postsQb.where('p.scope = :scope', { scope: PostScope.PERSONAL });
-    postsQb.andWhere('p.ownerUserId = :userId', { userId });
-    postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
-      fromDate,
-      toDate,
-    });
-    // 최신순 정렬
-    postsQb.orderBy('p.eventAt', 'DESC');
-
-    const posts = await postsQb.getMany();
-    if (posts.length === 0) {
-      return [];
-    }
-    const postIds = posts.map((p) => p.id);
-
-    // 2. 이미지 블록 조회
-    const blocks = await this.postBlockRepo.find({
-      where: {
-        postId: In(postIds),
-        type: PostBlockType.IMAGE,
-      },
-      order: {
-        // 같은 포스트 내에서는 순서대로
-        layoutRow: 'ASC',
-        layoutCol: 'ASC',
-      },
-    });
-
-    // 3. mediaIds 추출 평탄화
-    const assetIds: string[] = [];
-    for (const b of blocks) {
-      const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
-      if (val.mediaIds) {
-        assetIds.push(...val.mediaIds);
-      }
-    }
-
-    return assetIds;
-  }
-
-  /**
    * 해당 월 중 기록(게시글)이 있는 날짜 조회 (YYYY-MM-DD)
    */
   async getRecordedDays(
