@@ -1,56 +1,89 @@
 # 팀 잇다-
+
 > 사진 메타데이터 기반 **자동 기록**과 **실시간 공동 편집**을 지원하는 그룹 기록 웹 애플리케이션
 
- 👉 [잇다 바로가기](https://web25-ittda-frontend.vercel.app/)
- 
+👉 [잇다 바로가기](https://web25-ittda-frontend.vercel.app/)
+
 <img width="1204" height="630" alt="image" src="https://github.com/user-attachments/assets/5ba3f86f-55d2-4c2d-a809-33d18bd0da4f" />
-
-
 
 # 잇다 서비스 소개
 
 ## 🧩 우리가 마주한 기록의 문제
+
 ### 1️⃣ 맥락 없이 잊혀지는 기록
 
 시간이 흐르면 기록은 남지만, 기억은 남지 않습니다.
 
 > 사진과 글이 쌓여도<br />
-그날의 분위기, 흐름, 상황을 다시 떠올리기는 어렵습니다.<br />
-언제, 어디서, 누구와 있었는지에 대한 맥락은 쉽게 사라집니다.<br />
+> 그날의 분위기, 흐름, 상황을 다시 떠올리기는 어렵습니다.<br />
+> 언제, 어디서, 누구와 있었는지에 대한 맥락은 쉽게 사라집니다.<br />
 
 ### 2️⃣ 번거롭고 정형화된 기록 환경
 
 다양한 정보를 담기엔, 기존의 기록 방식은 너무 복잡합니다.
 
 > 사진은 갤러리에, 위치는 지도 앱에, <br />
-기록은 메모장에 따로 남겨야 하는 구조. <br />
-정해진 형식 속에서는 자유롭게 맥락을 담아내기 어렵습니다. <br />
+> 기록은 메모장에 따로 남겨야 하는 구조. <br />
+> 정해진 형식 속에서는 자유롭게 맥락을 담아내기 어렵습니다. <br />
 
 ### 3️⃣ 파편화되어 흩어진 기억
 
 함께한 추억이지만, 기록은 흩어져 있습니다.
 
 > 수많은 톡방과 SNS, 갤러리에 기억이 나뉘고 <br />
-함께 추억하기 위해서는 번거로운 과정을 거쳐야 합니다. <br />
-기존 도구들은 ‘공동 기록’에 최적화되어 있지 않습니다. <br />
+> 함께 추억하기 위해서는 번거로운 과정을 거쳐야 합니다. <br />
+> 기존 도구들은 ‘공동 기록’에 최적화되어 있지 않습니다. <br />
 
 ## 🔥 잇다는 이렇게 해결했습니다
 
 ### 📷 사진 업로드만으로
+
 날짜 · 시간 · 위치를 메타데이터 기반 자동 기록
 
 ### 🎨 다양한 템플릿으로
+
 상황에 맞는 기록을 간편하게 작성
 
 ### 📵 별도의 SNS 없이
+
 그룹 단위 공동 기록과 공유 지원
 
-
 > 잇다는 <br/>
-흩어진 순간을 하나의 흐름으로, <br/>
-개인의 기록을 넘어, 여러 사람이 함께 맥락을 쌓아가는 기록 서비스입니다.
+> 흩어진 순간을 하나의 흐름으로, <br/>
+> 개인의 기록을 넘어, 여러 사람이 함께 맥락을 쌓아가는 기록 서비스입니다.
+
+## 🛠 기술 스택
+
+### 🎨 Frontend
+
+<p align="left">
+  <img src="https://img.shields.io/badge/typescript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+  <img src="https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=next.js&logoColor=white">
+  <img src="https://img.shields.io/badge/Tanstack%20Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white">
+  <img src="https://img.shields.io/badge/tailwind%20css-06B6D4?style=for-the-badge&logo=tailwind-css&logoColor=white">
+  <img src="https://img.shields.io/badge/vercel-000000?style=for-the-badge&logo=vercel&logoColor=white">
+</p>
+
+### ⚙️ Backend
+
+<p align="left">
+  <img src="https://img.shields.io/badge/nestjs-E0234E?style=for-the-badge&logo=nestjs&logoColor=white">
+  <img src="https://img.shields.io/badge/postgresql-4169E1?style=for-the-badge&logo=postgresql&logoColor=white">
+  <img src="https://img.shields.io/badge/typeorm-FE0808?style=for-the-badge&logo=typeorm&logoColor=white">
+  <img src="https://img.shields.io/badge/socket.io-010101?style=for-the-badge&logo=socket.io&logoColor=white">
+  <img src="https://img.shields.io/badge/swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black">
+</p>
+
+### ☁️ Infrastructure & Tools
+
+<p align="left">
+  <img src="https://img.shields.io/badge/Naver%20Cloud-03C75A?style=for-the-badge&logo=naver&logoColor=white">
+  <img src="https://img.shields.io/badge/docker-2496ED?style=for-the-badge&logo=docker&logoColor=white">
+
+</p>
 
 ## ✨ 서비스 주요 기능
+
 ### 1. 자유롭고 간편하게 기록을 커스텀할 수 있어요.
 
 - 다양한 필드를 통해 **기록의 성격에 맞게 작성**할 수 있어요
@@ -64,7 +97,6 @@
 
 ![화면 녹화 중 2026-02-01 230037 (1)](https://github.com/user-attachments/assets/286745a6-379a-4a85-8e0b-3e50ba20f9f0)
 
-
 ### 3. 기록을 다양한 방식으로 기억해요.
 
 - 하루 동안의 기록을 **시간 흐름에 따라 타임라인**으로 볼 수 있어요.
@@ -72,14 +104,13 @@
 
 <img width="1937" height="1010" alt="image" src="https://github.com/user-attachments/assets/cb518028-5bb7-4259-955f-0691f6215163" />
 
-
-- 다양한 통계 결과로 나의 기록 패턴을 분석해보세요 
-<img width="1444" height="582" alt="image" src="https://github.com/user-attachments/assets/7bc302fe-dfbc-43e9-89f8-9dd5cf79fe98" />
-
+- 다양한 통계 결과로 나의 기록 패턴을 분석해보세요
+  <img width="1444" height="582" alt="image" src="https://github.com/user-attachments/assets/7bc302fe-dfbc-43e9-89f8-9dd5cf79fe98" />
 
 ## 🛠 기술 스택
 
 ### 🎨 Frontend
+
 <p align="left">
   <img src="https://img.shields.io/badge/typescript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
   <img src="https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=next.js&logoColor=white">
@@ -89,6 +120,7 @@
 </p>
 
 ### ⚙️ Backend
+
 <p align="left">
   <img src="https://img.shields.io/badge/nestjs-E0234E?style=for-the-badge&logo=nestjs&logoColor=white">
   <img src="https://img.shields.io/badge/postgresql-4169E1?style=for-the-badge&logo=postgresql&logoColor=white">
@@ -98,12 +130,12 @@
 </p>
 
 ### ☁️ Infrastructure & Tools
+
 <p align="left">
   <img src="https://img.shields.io/badge/Naver%20Cloud-03C75A?style=for-the-badge&logo=naver&logoColor=white">
   <img src="https://img.shields.io/badge/docker-2496ED?style=for-the-badge&logo=docker&logoColor=white">
 
 </p>
-
 
 <br />
 
