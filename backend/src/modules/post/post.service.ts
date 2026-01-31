@@ -228,10 +228,14 @@ export class PostService {
       where: { postId },
       relations: ['user'],
     });
-    const contributorDtos = contributors.map((c) => ({
+    const activeContributors = contributors.filter(
+      (contributor): contributor is PostContributor & { user: User } =>
+        Boolean(contributor.user),
+    );
+    const contributorDtos = activeContributors.map((c) => ({
       userId: c.userId,
       role: c.role,
-      nickname: c.user?.nickname,
+      nickname: c.user.nickname,
     }));
 
     const dto: PostDetailDto = {
