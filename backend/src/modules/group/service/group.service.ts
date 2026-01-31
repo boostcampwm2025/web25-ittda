@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -145,11 +145,11 @@ export class GroupService {
           .getCount();
 
         const recordCount = await this.postRepo.count({
-          where: { groupId },
+          where: { groupId, deletedAt: IsNull() },
         });
 
         const latestPost = await this.postRepo.findOne({
-          where: { groupId },
+          where: { groupId, deletedAt: IsNull() },
           order: { eventAt: 'DESC' },
           select: ['id', 'title', 'eventAt', 'location', 'createdAt'],
         });
