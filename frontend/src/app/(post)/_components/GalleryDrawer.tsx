@@ -17,7 +17,7 @@ interface GalleryDrawerProps {
   groupId?: string;
   month?: string;
   currentAssetId?: string;
-  onSelect: (assetId: string, recordId: string) => void;
+  onSelect: (mediaId: string, recordId: string) => void;
 }
 
 export default function GalleryDrawer({
@@ -105,7 +105,7 @@ export default function GalleryDrawer({
           className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[45vh] overflow-y-auto scrollbar-hide mb-8 min-h-0"
         >
           {items.map((item, idx) => {
-            const isCurrent = currentAssetId === item.assetId;
+            const isCurrent = currentAssetId === item.mediaId;
             const isLastItem = idx === items.length - 1;
 
             return (
@@ -116,14 +116,14 @@ export default function GalleryDrawer({
               >
                 <DrawerClose asChild>
                   <button
-                    onClick={() => onSelect(item.assetId, item.postId)}
+                    onClick={() => onSelect(item.mediaId, item.postId)}
                     className={cn(
                       'absolute inset-0 w-full h-full cursor-pointer rounded-xl overflow-hidden transition-all active:scale-95 border-2',
                       isCurrent ? 'border-[#10B981]' : 'border-transparent',
                     )}
                   >
                     <AssetImage
-                      assetId={item.assetId}
+                      assetId={item.mediaId}
                       alt={item.postTitle}
                       className="object-cover"
                       fill
