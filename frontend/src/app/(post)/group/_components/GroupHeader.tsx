@@ -42,8 +42,8 @@ export default async function GroupHeader({
               m.profileImageId ? (
                 <AssetImage
                   key={m.memberId}
-                  width={32}
-                  height={32}
+                  width={50}
+                  height={50}
                   assetId={m.profileImageId}
                   alt="멤버의 프로필"
                   className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white object-cover"
@@ -51,8 +51,8 @@ export default async function GroupHeader({
               ) : (
                 <Image
                   key={m.memberId}
-                  width={32}
-                  height={32}
+                  width={50}
+                  height={50}
                   src={'/profile_base.png'}
                   alt="멤버의 프로필"
                   className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white object-cover"
