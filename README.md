@@ -45,6 +45,35 @@
 흩어진 순간을 하나의 흐름으로, <br/>
 개인의 기록을 넘어, 여러 사람이 함께 맥락을 쌓아가는 기록 서비스입니다.
 
+
+
+## 🛠 기술 스택
+
+### 🎨 Frontend
+<p align="left">
+  <img src="https://img.shields.io/badge/typescript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+  <img src="https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=next.js&logoColor=white">
+  <img src="https://img.shields.io/badge/Tanstack%20Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white">
+  <img src="https://img.shields.io/badge/tailwind%20css-06B6D4?style=for-the-badge&logo=tailwind-css&logoColor=white">
+  <img src="https://img.shields.io/badge/vercel-000000?style=for-the-badge&logo=vercel&logoColor=white">
+</p>
+
+### ⚙️ Backend
+<p align="left">
+  <img src="https://img.shields.io/badge/nestjs-E0234E?style=for-the-badge&logo=nestjs&logoColor=white">
+  <img src="https://img.shields.io/badge/postgresql-4169E1?style=for-the-badge&logo=postgresql&logoColor=white">
+  <img src="https://img.shields.io/badge/typeorm-FE0808?style=for-the-badge&logo=typeorm&logoColor=white">
+  <img src="https://img.shields.io/badge/socket.io-010101?style=for-the-badge&logo=socket.io&logoColor=white">
+  <img src="https://img.shields.io/badge/swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black">
+</p>
+
+### ☁️ Infrastructure & Tools
+<p align="left">
+  <img src="https://img.shields.io/badge/Naver%20Cloud-03C75A?style=for-the-badge&logo=naver&logoColor=white">
+  <img src="https://img.shields.io/badge/docker-2496ED?style=for-the-badge&logo=docker&logoColor=white">
+
+</p>
+
 <br />
 
 ## 👉 배포 링크
