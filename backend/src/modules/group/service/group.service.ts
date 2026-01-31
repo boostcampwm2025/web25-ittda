@@ -72,13 +72,15 @@ export class GroupService {
     userId: string,
     groupId: string,
   ): Promise<GroupMember | null> {
-    return this.groupMemberRepo.findOne({
+    const member = await this.groupMemberRepo.findOne({
       where: {
         userId,
         groupId,
       },
       relations: ['group', 'user'],
     });
+    if (!member || !member.user) return null;
+    return member;
   }
 
   /** 그룹 삭제 (방장만 가능) */
@@ -136,9 +138,11 @@ export class GroupService {
 
         if (!group) return null;
 
-        const memberCount = await this.groupMemberRepo.count({
-          where: { groupId },
-        });
+        const memberCount = await this.groupMemberRepo
+          .createQueryBuilder('member')
+          .innerJoin('member.user', 'user', 'user.deleted_at IS NULL')
+          .where('member.group_id = :groupId', { groupId })
+          .getCount();
 
         const recordCount = await this.postRepo.count({
           where: { groupId },
