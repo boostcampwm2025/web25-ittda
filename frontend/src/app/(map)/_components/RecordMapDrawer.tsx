@@ -129,7 +129,7 @@ export default function RecordMapDrawer({
           className="absolute inset-0 px-8 pt-4 pb-16 overflow-y-auto scrollbar-hide"
           style={{ touchAction: 'pan-y' }}
         >
-          <div className="space-y-4">
+          <div className="space-y-4 pb-10">
             {isLoading ? (
               <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#121212]">
                 <Loader2 className="w-8 h-8 animate-spin text-itta-point" />
