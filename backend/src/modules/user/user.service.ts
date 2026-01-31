@@ -490,24 +490,8 @@ export class UserService {
     const postsQb = this.postRepo.createQueryBuilder('p');
     postsQb.select('p.id');
 
-    postsQb.where(
-      new Brackets((qb) => {
-        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
-            return `EXISTS ${sub}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
+    postsQb.where('p.scope = :scope', { scope: PostScope.PERSONAL });
+    postsQb.andWhere('p.ownerUserId = :userId', { userId });
     postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
       fromDate,
       toDate,
