@@ -1,20 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Download, Smartphone } from 'lucide-react';
 import Image from 'next/image';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from './PWAInstallModal';
 import { setCookie } from '@/lib/utils/cookie';
 import { usePathname } from 'next/navigation';
+import { isPrivateMode } from '@/lib/utils/browserDetect';
 
 export default function PWAInstallBannerClient() {
   const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
     usePWAInstall();
   const [showBanner, setShowBanner] = useState(true);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [isPrivateBrowsing, setIsPrivateBrowsing] = useState(false);
 
   const pathname = usePathname();
+
+  // 시크릿 모드 감지
+  useEffect(() => {
+    isPrivateMode().then((isPrivate) => {
+      setIsPrivateBrowsing(isPrivate);
+    });
+  }, []);
 
   const handleInstallClick = async () => {
     // Chrome/Edge 등에서 기본 프롬프트 지원하는 경우
@@ -46,7 +55,7 @@ export default function PWAInstallBannerClient() {
     setCookie('pwa-banner-never-show', 'true', { days: 365 * 10 }); // 10년
   };
 
-  if (isInstalled || !showBanner) {
+  if (isInstalled || !showBanner || isPrivateBrowsing) {
     return null;
   }
 
