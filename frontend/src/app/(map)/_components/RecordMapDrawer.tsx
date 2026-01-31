@@ -24,6 +24,7 @@ export default function RecordMapDrawer({
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastSnappedIdRef = useRef<string | string[] | null>(null);
+  const prevSelectedPostIdRef = useRef<string | string[] | null>(selectedPostId);
 
   // TODO : 백엔드 연결 (클러스터 선택 시 표시할 포스트 필터링)
   const displayPosts = useMemo(() => {
@@ -63,7 +64,17 @@ export default function RecordMapDrawer({
   } = useBottomSheetResize();
 
   useEffect(() => {
-    // 샤로운 postID를 클릭했을 때 처음 한 번만 튀어오르게 기억하는 용도
+    const prevId = prevSelectedPostIdRef.current;
+    prevSelectedPostIdRef.current = selectedPostId;
+
+    // 이전에 ID가 있었는데 null이 된 경우 (지도 클릭) drawer 내리기
+    if (prevId !== null && selectedPostId === null && !isDragging) {
+      snapTo('collapsed');
+      lastSnappedIdRef.current = null;
+      return;
+    }
+
+    // 새로운 postID를 클릭했을 때 처음 한 번만 튀어오르게 기억하는 용도
     if (
       selectedPostId &&
       !isDragging &&
@@ -77,7 +88,7 @@ export default function RecordMapDrawer({
   return (
     <div
       className={cn(
-        'absolute left-0 right-0 bottom-0 z-50 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-hidden shadow-[0_-15px_60px_rgba(0,0,0,0.2)] mb-6 sm:mb-12',
+        'absolute left-0 right-0 bottom-0 z-50 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-hidden shadow-[0_-15px_60px_rgba(0,0,0,0.2)]',
         !isDragging &&
           'transition-all duration-500 cubic-bezier(0.2,0.8,0.2,1)',
       )}
@@ -123,7 +134,8 @@ export default function RecordMapDrawer({
                     key={post.id}
                     post={post}
                     isHighlighted={selectedPostId === post.id}
-                    onClick={() => router.push(`/record/${post.id}`)}
+                    onSelect={() => onSelectPost(post.id)}
+                    onNavigate={() => router.push(`/record/${post.id}`)}
                   />
                 );
               })

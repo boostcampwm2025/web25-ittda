@@ -10,12 +10,14 @@ import { useState } from 'react';
 interface MapRecordItemProps {
   post: MapPostItem;
   isHighlighted: boolean;
-  onClick: () => void;
+  onSelect: () => void;
+  onNavigate: () => void;
 }
 export function MapRecordItem({
   post,
   isHighlighted,
-  onClick,
+  onSelect,
+  onNavigate,
 }: MapRecordItemProps) {
   const [isError, setIsError] = useState(false);
 
@@ -23,7 +25,7 @@ export function MapRecordItem({
     <div
       key={post.id}
       data-post-id={post.id}
-      onClick={onClick}
+      onClick={onSelect}
       className={cn(
         'flex items-center gap-5 p-5 rounded-3xl border transition-all duration-300 group cursor-pointer active:scale-[0.97]',
         isHighlighted
@@ -73,13 +75,21 @@ export function MapRecordItem({
           ))}
         </div>
       </div>
-      <ChevronRight
-        size={18}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onNavigate();
+        }}
         className={cn(
-          'transition-colors',
-          isHighlighted ? 'text-[#10B981]' : 'text-gray-300',
+          'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95',
+          isHighlighted
+            ? 'bg-[#10B981] text-white shadow-md'
+            : 'dark:bg-white/5 dark:text-gray-300 bg-gray-100 text-gray-600 hover:bg-[#10B981]/10',
         )}
-      />
+      >
+        상세
+        <ChevronRight size={14} />
+      </button>
     </div>
   );
 }

@@ -16,9 +16,11 @@ interface ClusterClickEvent {
 export const ClusteredPostMarkers = ({
   posts,
   onSelectPost,
+  selectedPostId,
 }: {
   posts: MapPostItem[];
   onSelectPost: (id: string | string[] | null) => void;
+  selectedPostId: string | string[] | null;
 }) => {
   const [markers, setMarkers] = useState<{ [key: string]: Marker }>({});
   const map = useMap();
@@ -86,14 +88,20 @@ export const ClusteredPostMarkers = ({
 
   return (
     <>
-      {posts.map((post) => (
-        <PinMarker
-          key={post.id}
-          post={post}
-          onClick={(id) => onSelectPost(id)}
-          setMarkerRef={setMarkerRef}
-        />
-      ))}
+      {posts.map((post) => {
+        const isSelected =
+          selectedPostId === post.id ||
+          (Array.isArray(selectedPostId) && selectedPostId.includes(post.id));
+        return (
+          <PinMarker
+            key={post.id}
+            post={post}
+            onClick={(id) => onSelectPost(id)}
+            setMarkerRef={setMarkerRef}
+            isSelected={isSelected}
+          />
+        );
+      })}
     </>
   );
 };

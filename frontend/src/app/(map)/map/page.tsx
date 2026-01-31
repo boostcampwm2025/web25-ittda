@@ -1,12 +1,8 @@
 'use client';
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
-
 import GoogleMap from '../_components/GoogleMap';
-
 import RecordMapDrawer from '../_components/RecordMapDrawer';
-
-import { MapPostItem } from '@/lib/types/record';
 import { FilterChip } from '@/components/search/FilterChip';
 import { APIProvider, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MapSearchBar } from '@/components/map/MapSearchBar';
@@ -22,160 +18,6 @@ import LocationPermissionChecker from '@/components/LocationPermissionChecker';
 import { useQuery } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
 import { useGeolocation } from '@/hooks/useGeolocation';
-
-export const DUMMY_POSTS: MapPostItem[] = [
-  {
-    id: 'post-1',
-
-    lat: 37.5445,
-
-    lng: 127.0561,
-
-    title: '성수동의 오후, 햇살 가득한 카페',
-
-    thumbnailUrl:
-      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000',
-
-    createdAt: '2026-01-10T14:30:00Z',
-
-    tags: ['성수동', '카페투어', '주말'],
-
-    placeName: '성수동 카페거리',
-  },
-
-  {
-    id: 'post-2',
-
-    lat: 37.5312,
-
-    lng: 127.0011,
-
-    title: '한남동 전시회 나들이',
-
-    thumbnailUrl:
-      'https://images.unsplash.com/photo-1518998053574-53ee7536d9aa?q=80&w=1000',
-
-    createdAt: '2026-01-12T11:00:00Z',
-
-    tags: ['전시', '미술관', '문화생활'],
-
-    placeName: '한남동 리움미술관',
-  },
-
-  {
-    id: 'post-3',
-
-    lat: 37.5443,
-
-    lng: 127.0374,
-
-    title: '서울숲 가을 산책',
-
-    thumbnailUrl:
-      'https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=1000',
-
-    createdAt: '2026-01-13T10:15:00Z',
-
-    tags: ['서울숲', '산책', '힐링'],
-
-    placeName: '서울숲 공원',
-  },
-
-  {
-    id: 'post-4',
-
-    lat: 37.4979,
-
-    lng: 127.0276,
-
-    title: '강남역 연말 모임 장소 추천',
-
-    thumbnailUrl:
-      'https://images.unsplash.com/photo-1516715094483-75da7dee9758?q=80&w=1000',
-
-    createdAt: '2025-12-28T19:00:00Z',
-
-    tags: ['강남역', '맛집', '연말모임'],
-
-    placeName: '강남역 11번 출구 인근',
-  },
-
-  {
-    id: 'post-5',
-
-    lat: 37.5565,
-
-    lng: 126.9239,
-
-    title: '홍대 버스킹과 밤거리 풍경',
-
-    thumbnailUrl:
-      'https://images.unsplash.com/photo-1578912853046-01f769558177?q=80&w=1000',
-
-    createdAt: '2026-01-05T21:00:00Z',
-
-    tags: ['홍대', '밤산책', '음악'],
-
-    placeName: '홍대 걷고싶은거리',
-  },
-
-  {
-    id: 'post-6',
-
-    lat: 37.5826,
-
-    lng: 126.9831,
-
-    title: '북촌 한옥마을 고즈넉한 풍경',
-
-    thumbnailUrl:
-      'https://images.unsplash.com/photo-1570116526048-af9c32160b64?q=80&w=1000',
-
-    createdAt: '2026-01-11T13:20:00Z',
-
-    tags: ['북촌', '한옥', '전통'],
-
-    placeName: '북촌 한옥마을',
-  },
-
-  {
-    id: 'post-7',
-
-    lat: 37.5216,
-
-    lng: 126.9242,
-
-    title: '여의도 한강공원 피크닉',
-
-    thumbnailUrl:
-      'https://images.unsplash.com/photo-1533470509042-83b632943714?q=80&w=1000',
-
-    createdAt: '2026-01-02T15:40:00Z',
-
-    tags: ['한강', '피크닉', '여의도'],
-
-    placeName: '여의도 한강공원',
-  },
-
-  {
-    id: 'post-8',
-
-    lat: 37.5796,
-
-    lng: 126.977,
-
-    title: '경복궁 야간 개관 방문기',
-
-    thumbnailUrl:
-      'https://images.unsplash.com/photo-1548115184-bc6544d06a58?q=80&w=1000',
-
-    createdAt: '2025-12-20T20:00:00Z',
-
-    tags: ['경복궁', '야간개장', '데이트'],
-
-    placeName: '경복궁 광화문',
-  },
-];
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 export default function RecordMapPage() {
@@ -244,19 +86,11 @@ export default function RecordMapPage() {
     enabled: latitude !== null && longitude !== null, // 위치 정보가 있을 때만 실행
   });
 
-  // 데이터 필터링 및 표시
-  const displayPosts = useMemo(() => {
+  // 지도에 표시할 모든 posts (필터링 없이)
+  const allPosts = useMemo(() => {
     let results = mapData?.items ?? [];
 
-    // 1. 클러스터/마커 선택 시 (필터링 우선순위 최상위)
-    if (Array.isArray(selectedPostId)) {
-      return results.filter((p) => selectedPostId.includes(p.id));
-    }
-    if (typeof selectedPostId === 'string') {
-      return results.filter((p) => p.id === selectedPostId);
-    }
-
-    // 2. 검색어 필터링 (클라이언트 사이드 추가 필터)
+    // 검색어 필터링만 적용
     if (query.trim()) {
       const lowerQuery = query.toLowerCase();
       results = results.filter(
@@ -266,9 +100,16 @@ export default function RecordMapPage() {
       );
     }
 
-    // 나머지 필터링은 서버에서 처리됨 (tags, from, to)
     return results;
-  }, [mapData, selectedPostId, query]);
+  }, [mapData, query]);
+
+  // Drawer에 표시할 posts (클러스터 선택 시 필터링)
+  const drawerPosts = useMemo(() => {
+    if (Array.isArray(selectedPostId)) {
+      return allPosts.filter((p) => selectedPostId.includes(p.id));
+    }
+    return allPosts;
+  }, [allPosts, selectedPostId]);
 
   const handleBoundsChange = useCallback(
     (bounds: google.maps.LatLngBounds | null) => {
@@ -319,7 +160,7 @@ export default function RecordMapPage() {
       <APIProvider apiKey={apiKey!}>
         <div className="absolute inset-0 z-0">
           <GoogleMap
-            posts={displayPosts}
+            posts={allPosts}
             selectedPostId={selectedPostId}
             onSelectPost={setSelectedPostId}
             onBoundsChange={handleBoundsChange}
@@ -371,7 +212,7 @@ export default function RecordMapPage() {
           </div>
         </div>
         <RecordMapDrawer
-          posts={displayPosts}
+          posts={drawerPosts}
           selectedPostId={selectedPostId}
           onSelectPost={setSelectedPostId}
           isLoading={isLoading}
