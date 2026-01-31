@@ -19,22 +19,7 @@ import LocationPermissionChecker from '@/components/LocationPermissionChecker';
 import { useQuery } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
 import { useGeolocation } from '@/hooks/useGeolocation';
-
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+import { useDebouncedValue } from '@/hooks/useDebounce';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
