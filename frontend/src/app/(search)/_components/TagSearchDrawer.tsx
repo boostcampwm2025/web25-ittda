@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Search, X } from 'lucide-react';
+import { Loader2, Search, Tag, X } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { userProfileTagSummaryOptions } from '@/lib/api/profile';
+import { Tag as ITag } from '@/lib/types/record';
+import { useQuery } from '@tanstack/react-query';
 
 interface Props {
   onClose: () => void;
@@ -25,18 +28,18 @@ export default function TagSearchDrawer({
   onReset,
 }: Props) {
   const [keyword, setKeyword] = useState('');
+  const { data: tags, isPending } = useQuery(userProfileTagSummaryOptions(10));
 
-  const filteredTags = useMemo(() => {
-    return allTags?.filter((tag) =>
-      tag.toLowerCase().includes(keyword.toLowerCase()),
-    );
-  }, [allTags, keyword]);
+  const suggestedTags = useMemo(() => {
+    return tags?.frequentTags.map((item: ITag) => item.tag);
+  }, [tags]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' && keyword.trim()) {
       e.preventDefault();
       // 이미 선택된 태그가 아니라면 추가
+      console.log('selectedTags', selectedTags);
       if (!selectedTags.includes(keyword.trim())) {
         onToggleTag(keyword.trim());
       }
@@ -98,13 +101,18 @@ export default function TagSearchDrawer({
           </div>
 
           {/* 태그 목록 영역 */}
-          {filteredTags && filteredTags?.length > 0 && (
-            <section className="flex flex-col space-y-4 ">
-              <p className="text-xs font-bold text-itta-gray3 uppercase tracking-widest leading-none">
-                자주 사용한 태그
-              </p>
-              <div className="flex flex-wrap gap-2 mb-10 min-h-[120px] content-start overflow-y-auto max-h-[300px] hide-scrollbar">
-                {filteredTags?.map((tag) => {
+          {isPending && (
+            <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#121212]">
+              <Loader2 className="w-8 h-8 animate-spin text-itta-point" />
+            </div>
+          )}
+          <section className="flex flex-col space-y-4 ">
+            <p className="text-xs font-bold text-itta-gray3 uppercase tracking-widest leading-none">
+              자주 사용한 태그
+            </p>
+            {suggestedTags && suggestedTags?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-10 min-h-30 content-start overflow-y-auto max-h-75 hide-scrollbar">
+                {suggestedTags?.map((tag) => {
                   const isSelected = selectedTags.includes(tag);
                   return (
                     <button
@@ -127,14 +135,26 @@ export default function TagSearchDrawer({
                     </button>
                   );
                 })}
-                {filteredTags?.length === 0 && (
-                  <p className="text-sm text-gray-400 w-full text-center py-10">
-                    검색 결과가 없습니다.
-                  </p>
+                {suggestedTags?.length === 0 && (
+                  <div className="flex px-3 py-10 items-center justify-center h-full">
+                    <div className="w-full py-8 flex flex-col items-center justify-center gap-2">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+                        <Tag className="w-5 h-5 text-[#10B981]" />
+                      </div>
+                      <div className="space-y-1 text-center">
+                        <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+                          아직 사용한 태그가 없어요
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          태그를 추가하여 기록을 분류해보세요
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
           {/* 하단 액션바 */}
           <div className="flex gap-3 items-center">
