@@ -34,7 +34,7 @@ export default async function MyYearRecordsPage({
       {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
         <MonthRecords monthRecords={monthlyRecords} cardRoute={'/my/month'} />
       ) : (
-        <MonthRecords cardRoute={'/my/month'} />
+        <MonthRecords monthRecords={monthlyRecords} cardRoute={'/my/month'} />
       )}
     </HydrationBoundary>
   );
