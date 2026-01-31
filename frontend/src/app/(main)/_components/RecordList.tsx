@@ -100,6 +100,7 @@ export default function RecordList({ initialPreviews }: RecordListProps) {
                           <BlockContent
                             key={`${block.id}-${rowNumber}-${block.layout.col}`}
                             block={block}
+                            imageLayout="tile"
                           />
                         ))}
                       </div>
@@ -122,7 +123,7 @@ export default function RecordList({ initialPreviews }: RecordListProps) {
                             )}
                           >
                             <div className="truncate whitespace-nowrap overflow-hidden">
-                              <BlockContent block={block} />
+                              <BlockContent block={block} imageLayout="tile" />
                             </div>
                           </div>
                         ))}
