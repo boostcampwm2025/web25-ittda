@@ -1,6 +1,11 @@
 # 팀 잇다-
 > 사진 메타데이터 기반 **자동 기록**과 **실시간 공동 편집**을 지원하는 그룹 기록 웹 애플리케이션
+
+ 👉 [잇다 바로가기](https://web25-ittda-frontend.vercel.app/)
+ 
 <img width="1204" height="630" alt="image" src="https://github.com/user-attachments/assets/5ba3f86f-55d2-4c2d-a809-33d18bd0da4f" />
+
+
 
 # 잇다 서비스 소개
 
@@ -99,11 +104,6 @@
 
 </p>
 
-<br />
-
-## 👉 배포 링크
-
-https://web25-ittda-frontend.vercel.app/
 
 <br />
 
