@@ -12,6 +12,7 @@ import {
 } from '@/lib/utils/exifExtractor';
 
 import { normalizeLayout } from '../_utils/recordLayoutHelper';
+import { MULTI_INSTANCE_LIMITS } from '@/lib/constants/record';
 
 interface ImageWithMetadata {
   imageUrl: string;
@@ -44,6 +45,7 @@ interface RecordEditorPhotos {
   draftId?: string;
   uploadMultipleMedia?: (files: File[]) => Promise<string[]>;
 }
+const PHOTO_LIMIT = MULTI_INSTANCE_LIMITS['photos'] || 10;
 export function useRecordEditorPhotos({
   blocks,
   setBlocks,
@@ -82,7 +84,28 @@ export function useRecordEditorPhotos({
       mediaIds: [],
       tempUrls: [],
     };
-    const filesToRead = Array.from(files);
+    // 10개인 상태에서 추가할 때
+    const currentCount =
+      (currentPhotoValue.mediaIds?.length || 0) +
+      (currentPhotoValue.tempUrls?.length || 0);
+
+    const availableSlot = PHOTO_LIMIT - currentCount;
+
+    if (availableSlot <= 0) {
+      toast.warning(`사진은 최대 ${PHOTO_LIMIT}장까지만 추가할 수 있습니다.`);
+      e.target.value = ''; // 선택 초기화
+      return;
+    }
+
+    let filesToRead = Array.from(files);
+
+    // 10개 초과 시 남은 것만 채우기
+    if (filesToRead.length > availableSlot) {
+      toast.warning(
+        `최대 개수를 초과하여 앞의 ${availableSlot}장의 사진만 추가됩니다.`,
+      );
+      filesToRead = filesToRead.slice(0, availableSlot);
+    }
     const isDraft = !!draftId;
     let uploadedIds: string[] = [];
     try {
