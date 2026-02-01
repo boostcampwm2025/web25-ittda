@@ -45,7 +45,6 @@ import { useCreateRecord } from '@/hooks/useCreateRecord';
 import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
 import { useRouter } from 'next/navigation';
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
-import Image from 'next/image';
 import { useDraftPresence } from '@/hooks/useDraftPresence';
 import { LockResponsePayload, useLockManager } from '@/hooks/useLockManager';
 import { useSocketStore } from '@/store/useSocketStore';
@@ -55,6 +54,8 @@ import { RecordFieldRenderer } from './RecordFieldRender';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import { useRecordEditorPhotos } from '../../_hooks/useRecordEditorPhotos';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
+import AssetImage from '@/components/AssetImage';
+import Image from 'next/image';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -347,10 +348,10 @@ export default function PostEditor({
       }),
     );
     const postPayload: CreateRecordRequest = {
-      scope: scope,
       title,
       blocks: mapBlocksToPayload(finalizedBlocks, isDraft),
       ...(groupId ? { groupId } : {}),
+      ...(!postId ? { scope } : {}),
     };
 
     execute({
@@ -636,15 +637,24 @@ export default function PostEditor({
                 <div className="w-full flex flex-row gap-2 items-center">
                   {isLockedByOther && owner && (
                     <div>
-                      {/**TODO : 추후 유저 이미지 받아와서 추가 */}
-                      <Image
-                        src="/profile-ex.jpeg"
-                        className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
-                        width={24}
-                        height={24}
-                        alt={`${owner.displayName} 편집 중`}
-                        title={owner.displayName}
-                      />
+                      {owner.profileImageId ? (
+                        <AssetImage
+                          assetId={owner.profileImageId}
+                          alt={`${owner.displayName} 편집 중`}
+                          width={24}
+                          height={24}
+                          className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
+                          title={owner.displayName}
+                        />
+                      ) : (
+                        <Image
+                          width={24}
+                          height={24}
+                          src={'/profile_base.png'}
+                          alt={`${owner.displayName} 편집 중`}
+                          className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
+                        />
+                      )}
                     </div>
                   )}
                   <RecordFieldRenderer

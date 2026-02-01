@@ -9,6 +9,7 @@ export interface PresenceMember {
   sessionId: string;
   displayName: string;
   permissionRole: GroupRoleType;
+  profileImageId?: string | null;
   lastSeenAt: string;
 }
 

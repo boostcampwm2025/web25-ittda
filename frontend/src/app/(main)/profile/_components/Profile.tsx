@@ -45,6 +45,8 @@ export default function Profile() {
           <AssetImage
             assetId={userProfile.user.profileImageId}
             alt="유저 프로필"
+            width={100}
+            height={100}
           />
         ) : (
           <Image
