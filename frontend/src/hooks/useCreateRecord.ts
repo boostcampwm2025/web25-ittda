@@ -89,6 +89,7 @@ export const useCreateRecord = (
         queryClient.invalidateQueries({ queryKey: ['me'] }),
         queryClient.invalidateQueries({ queryKey: ['summary'] }),
         queryClient.invalidateQueries({ queryKey: ['pattern'] }),
+        queryClient.refetchQueries({ queryKey: ['search', 'tags'] }),
       ]);
       if (!res.data.groupId) {
         if (groupId) {

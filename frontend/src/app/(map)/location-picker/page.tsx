@@ -10,6 +10,7 @@ export default function LocationPickerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get('from');
+  const isSearchMode = from === 'search';
 
   const handleSelect = (data: LocationValue) => {
     if (from === 'search') {
@@ -18,9 +19,9 @@ export default function LocationPickerPage() {
       newParams.set('lat', String(data.lat));
       newParams.set('lng', String(data.lng));
       newParams.set('address', data.address || '');
-      newParams.set('radius', String(data.radius || 5000));
+      newParams.set('radius', String(data.radius || 100));
 
-      router.push(`/search?${newParams.toString()}`);
+      router.replace(`/search?${newParams.toString()}`);
     } else {
       sessionStorage.setItem('selected_location', JSON.stringify(data));
       router.back();
@@ -37,7 +38,7 @@ export default function LocationPickerPage() {
       </header>
       <main className="flex-1 overflow-hidden">
         <LocationPicker
-          mode="post"
+          mode={isSearchMode ? 'search' : 'post'}
           onSelect={handleSelect}
           className="h-full md:h-full"
         />

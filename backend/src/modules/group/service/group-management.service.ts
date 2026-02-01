@@ -185,7 +185,7 @@ export class GroupManagementService {
     // 그룹 멤버 조회 (user 관계 포함)
     const members = await this.groupMemberRepo.find({
       where: { groupId },
-      relations: ['user'],
+      relations: ['user', 'profileMedia'],
     });
 
     // 응답 형식으로 변환
@@ -301,7 +301,7 @@ export class GroupManagementService {
     // 3. 전체 멤버 조회 (유저 정보 및 프로필 이미지 포함)
     const members = await this.groupMemberRepo.find({
       where: { groupId },
-      relations: ['user', 'user.profileImage'],
+      relations: ['user', 'profileMedia'],
       order: { joinedAt: 'ASC' },
     });
 
@@ -325,9 +325,7 @@ export class GroupManagementService {
     const memberDtos = members.map((m) => ({
       userId: m.user.id,
       name: m.user.nickname,
-      profileImage: m.user.profileImage
-        ? { assetId: m.user.profileImage.id }
-        : null,
+      profileImage: m.profileMedia ? { assetId: m.profileMedia.id } : null,
       role: m.role,
       nicknameInGroup: m.nicknameInGroup,
       joinedAt: m.joinedAt,
@@ -336,8 +334,8 @@ export class GroupManagementService {
     const meDto = {
       userId: meMember.user.id,
       name: meMember.user.nickname,
-      profileImage: meMember.user.profileImage
-        ? { assetId: meMember.user.profileImage.id }
+      profileImage: meMember.profileMedia
+        ? { assetId: meMember.profileMedia.id }
         : null,
       role: meMember.role,
       nicknameInGroup: meMember.nicknameInGroup,

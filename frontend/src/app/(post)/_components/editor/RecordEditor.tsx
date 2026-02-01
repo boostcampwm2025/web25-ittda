@@ -54,6 +54,8 @@ import { RecordFieldRenderer } from './RecordFieldRender';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import { useRecordEditorPhotos } from '../../_hooks/useRecordEditorPhotos';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
+import { useQueryClient } from '@tanstack/react-query';
+import { refreshGroupData } from '@/lib/actions/revalidate';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
 
@@ -72,6 +74,7 @@ export default function PostEditor({
   groupId,
   postId,
 }: PostEditorProps) {
+  const queryClient = useQueryClient();
   const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
@@ -318,7 +321,14 @@ export default function PostEditor({
         draftId,
         draftVersion: versionRef.current,
       });
+      await refreshGroupData(groupId);
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
       return;
+    }
+
+    if (groupId) {
+      await refreshGroupData(groupId);
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
     }
 
     // 개인용 게시글 이미지 -> id 변환 로직
@@ -347,13 +357,25 @@ export default function PostEditor({
         return block;
       }),
     );
+
+    // 빈 photos 블록 필터링 (mediaIds와 tempUrls가 모두 비어있는 경우 제거)
+    const validBlocks = finalizedBlocks.filter((block) => {
+      if (block.type === 'photos') {
+        const mediaIds = block.value.mediaIds || [];
+        const tempUrls = block.value.tempUrls || [];
+        return mediaIds.length > 0 || tempUrls.length > 0;
+      }
+      return true;
+    });
+
     const postPayload: CreateRecordRequest = {
       title,
-      blocks: mapBlocksToPayload(finalizedBlocks, isDraft),
+      blocks: mapBlocksToPayload(validBlocks, isDraft),
       ...(groupId ? { groupId } : {}),
       ...(!postId ? { scope } : {}),
     };
 
+    queryClient.invalidateQueries({ queryKey: ['my', 'records'] });
     execute({
       payload: postPayload,
     });
@@ -498,7 +520,6 @@ export default function PostEditor({
           <TagDrawer
             onClose={() => handleCloseDrawer(id)}
             tags={initialValue as TagValue}
-            previousTags={['식단', '운동']} //TODO: 실제 최근 사용 태그 리스트
             onUpdateTags={(nt) => handleDrawerDone({ tags: nt })}
           />
         );

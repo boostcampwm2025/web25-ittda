@@ -60,6 +60,7 @@ function LocationPickerContent({
     null,
   );
   const isSelectedFromSearch = useRef(false);
+  const isInitialLocationLoaded = useRef(false);
 
   const { latitude: geoLat, longitude: geoLng } = useGeolocation({
     reverseGeocode: true,
@@ -81,7 +82,7 @@ function LocationPickerContent({
     if (!placesServiceRef.current) {
       placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
     }
-  }, [placesLib, mapRef.current]);
+  }, [placesLib]);
 
   useEffect(() => {
     if (geoLat && geoLng && mapRef.current) {
@@ -97,6 +98,7 @@ function LocationPickerContent({
 
           setCenterAddress(addr);
           setCenterPlaceName(placeName || '');
+          isInitialLocationLoaded.current = true;
         } catch (error) {
           console.error('Initial Geocode Error:', error);
         } finally {
@@ -106,6 +108,7 @@ function LocationPickerContent({
 
       updateInitialAddress();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geoLat, geoLng]);
 
   const handleSearch = async (keyword: string) => {
@@ -115,12 +118,20 @@ function LocationPickerContent({
     }
     const currentPlacesServiceRef = placesServiceRef.current;
     const currentCenter = mapRef.current.getCenter();
+
+    // getCenter()가 undefined를 반환할 수 있으므로 fallback 처리
+    const searchCenter = currentCenter
+      ? currentCenter
+      : geoLat && geoLng
+        ? new google.maps.LatLng(geoLat, geoLng)
+        : undefined;
+
     setIsProcessing(true);
 
     const results = await searchPlacesByKeyword(
       currentPlacesServiceRef,
       keyword,
-      currentCenter,
+      searchCenter,
     );
     setSearchResults(results.slice(0, 10));
     setIsProcessing(false);
@@ -247,6 +258,10 @@ function LocationPickerContent({
       isSelectedFromSearch.current = false;
       return;
     }
+    // 초기 위치 로딩이 완료되기 전에는 주소 갱신하지 않음
+    if (!isInitialLocationLoaded.current) {
+      return;
+    }
 
     const center = mapRef.current.getCenter();
     if (!center) return;
@@ -282,6 +297,7 @@ function LocationPickerContent({
     const location = place.geometry.location;
 
     isSelectedFromSearch.current = true;
+    isInitialLocationLoaded.current = true;
 
     setCenterPlaceName(place.name || '');
     setCenterAddress(place.formatted_address || '');
@@ -310,11 +326,23 @@ function LocationPickerContent({
 
       if (mode === 'search') {
         const bounds = mapRef.current.getBounds();
-        if (bounds && geometryLib && window.google?.maps?.geometry?.spherical) {
+
+        if (bounds && geometryLib) {
           const ne = bounds.getNorthEast();
-          const radiusInMeters =
-            google.maps.geometry.spherical.computeDistanceBetween(center, ne);
-          data.radius = Math.round(radiusInMeters);
+
+          // 거리 계산
+          const radiusInMeters = geometryLib.spherical.computeDistanceBetween(
+            center,
+            ne,
+          );
+
+          const radiusInKm = radiusInMeters / 1000;
+
+          data.radius = Math.min(Number(radiusInKm.toFixed(2)), 100);
+        } else {
+          // geometryLib가 아직 로딩 전이거나 bounds를 가져오지 못한 경우
+          console.warn('반경 적용 실패');
+          data.radius = 5;
         }
       }
 

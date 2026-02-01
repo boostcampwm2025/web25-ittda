@@ -10,26 +10,43 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { TagsValue } from '@/lib/types/recordField';
+import { getCachedUserTagSummary } from '@/lib/api/profile';
+import { Tag } from '@/lib/types/record';
 
 interface TagDrawerProps {
   onClose: () => void;
   tags: TagsValue;
   onUpdateTags: (newTags: string[]) => void;
-  previousTags: string[];
 }
 
 export default function TagDrawer({
   onClose,
   tags = { tags: [] },
   onUpdateTags,
-  previousTags = [],
 }: TagDrawerProps) {
   const [inputValue, setInputValue] = useState('');
   const [showWarning, setShowWarning] = useState(false); // 경고 메시지
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
 
   const prevTags = tags.tags;
   const MAX_TAGS = 4;
   const isLimitReached = prevTags.length >= MAX_TAGS;
+
+  useEffect(() => {
+    async function fetchTags() {
+      try {
+        const data = await getCachedUserTagSummary();
+
+        if (data && data.frequentTags) {
+          const tagNames = data.frequentTags.map((item: Tag) => item.tag);
+          setSuggestedTags(tagNames);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tags:', error);
+      }
+    }
+    fetchTags();
+  }, []);
 
   const triggerWarning = () => {
     setShowWarning(true);
@@ -138,7 +155,7 @@ export default function TagDrawer({
                     addTag(e);
                   }
                 }}
-                className="w-full pl-8 pr-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 outline-none focus:ring-2 focus:ring-itta-point text-sm dark:text-white"
+                className="w-full pl-8 pr-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 outline-none focus:ring-2 focus:ring-itta-point text-base dark:text-white"
                 placeholder={
                   isLimitReached ? '최대 개수 4개 도달' : '새 태그 입력'
                 }
@@ -153,13 +170,13 @@ export default function TagDrawer({
           </div>
 
           {/* 이전 사용 태그 섹션 */}
-          {previousTags.length > 0 && (
+          {suggestedTags.length > 0 && (
             <div className="space-y-4 mb-10">
               <p className="text-[10px] font-bold text-itta-gray3 uppercase tracking-widest leading-none">
                 이전에 사용한 태그
               </p>
               <div className="flex flex-wrap gap-2">
-                {previousTags.map((tag) => {
+                {suggestedTags.map((tag) => {
                   const isSelected = prevTags.includes(tag);
                   return (
                     <button

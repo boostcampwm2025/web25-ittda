@@ -26,6 +26,10 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/', nextUrl));
   }
 
+  if (nextUrl.pathname.startsWith('/invite') && hasInviteCode) {
+    return NextResponse.next();
+  }
+
   //  로그인 안 했고, 공개 경로도 아니고, 초대 코드도 없으면 로그인으로
   if (!isLoggedIn && !isPublicPath && !hasInviteCode && !isGuestLoggedIn) {
     const loginUrl = new URL('/login', nextUrl);

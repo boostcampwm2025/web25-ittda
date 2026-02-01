@@ -52,8 +52,8 @@ export default function InvitePage() {
         {
           onSuccess: (response) => {
             const groupId = response.data.groupId;
+            //const groupName = response.data.group.name;
             if (!groupId) createApiError(response);
-
             router.replace(`/group/${groupId}`);
 
             setTimeout(() => {

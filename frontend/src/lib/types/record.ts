@@ -79,7 +79,6 @@ export interface RecordSearchItem {
   date: string;
   content: string;
   imageUrl: string;
-  tags: string[];
 }
 
 export type RecordScope = 'PERSONAL' | 'GROUP';
@@ -235,8 +234,8 @@ export interface MapPostItem {
   lat: number;
   lng: number;
   title: string;
-  imageUrl: string;
+  thumbnailUrl: string;
   createdAt: string;
   tags: string[];
-  placeName: string;
+  placeName: string | null;
 }
