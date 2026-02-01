@@ -52,11 +52,13 @@ export default function InvitePage() {
         {
           onSuccess: (response) => {
             const groupId = response.data.groupId;
-            const groupName = response.data.group.name;
             if (!groupId) createApiError(response);
 
-            toast.success(`${groupName} 그룹에 참여되었습니다!`);
             router.replace(`/group/${groupId}`);
+
+            setTimeout(() => {
+              toast.success(`그룹에 참여되었습니다!`);
+            }, 1500);
           },
           onError: (error) => {
             //TODO: 임시 작업 현재 toast 가 두개 뜨는 문제 존재
@@ -65,6 +67,7 @@ export default function InvitePage() {
           },
         },
       );
+      return;
     }
 
     // 다른 계정으로 가입하거나 로그인이 필요한 경우
