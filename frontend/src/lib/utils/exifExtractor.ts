@@ -1,5 +1,6 @@
 import { reverseGeocodeAddress } from '@/hooks/useGeolocation';
 import * as exifr from 'exifr';
+import * as Sentry from '@sentry/nextjs';
 
 export interface ExifMetadata {
   date?: string; // YYYY-MM-DD
@@ -64,6 +65,13 @@ export async function extractExifMetadata(file: File): Promise<ExifMetadata> {
 
     return result;
   } catch (error) {
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        context: 'post-editor',
+        operation: 'extract-exif-metadata',
+      },
+    });
     console.error('EXIF 메타데이터 추출 실패:', error);
     return { hasMetadata: false };
   }
@@ -118,6 +126,13 @@ export async function extractExifFromDataUrl(
 
     return result;
   } catch (error) {
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        context: 'post-editor',
+        operation: 'extract-data-url-exif-metadata',
+      },
+    });
     console.error('Data URL에서 EXIF 메타데이터 추출 실패:', error);
     return { hasMetadata: false };
   }
