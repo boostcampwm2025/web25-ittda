@@ -1,4 +1,5 @@
 import { MediaValue } from '../types/recordField';
+import * as Sentry from '@sentry/nextjs';
 
 const MOVIE_API_KEY = process.env.NEXT_PUBLIC_MOVIE_API_KEY;
 const KOPIS_API_KEY = process.env.NEXT_PUBLIC_KOPIS_API_KEY;
@@ -25,6 +26,16 @@ export const searchMovies = async (query: string): Promise<MediaValue[]> => {
       type: '영화',
     }));
   } catch (error) {
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        context: 'external-media',
+        operation: 'search-movie',
+      },
+      extra: {
+        query: query,
+      },
+    });
     console.error('Movie API Error:', error);
     return [];
   }
@@ -61,6 +72,18 @@ export const searchKopis = async (
       type: typeName,
     }));
   } catch (error) {
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        context: 'external-media',
+        operation: 'search-kopis',
+      },
+      extra: {
+        query: query,
+        cateCode: cateCode,
+        typeName: typeName,
+      },
+    });
     console.error('KOPIS API Error:', error);
     return [];
   }
