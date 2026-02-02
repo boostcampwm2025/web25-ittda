@@ -9,6 +9,7 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PostMood } from '@/enums/post-mood.enum';
 
 export enum MapScope {
   PERSONAL = 'personal',
@@ -98,6 +99,9 @@ export class MapPostItemDto {
 
   @ApiProperty({ type: [String], description: '태그 목록' })
   tags: string[];
+
+  @ApiPropertyOptional({ type: [String], description: '감정 목록' })
+  emotion?: PostMood[] | null;
 
   @ApiPropertyOptional({ description: '장소명', nullable: true })
   placeName?: string | null;
