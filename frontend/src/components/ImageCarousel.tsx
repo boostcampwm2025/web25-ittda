@@ -137,6 +137,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
             >
               <AssetImage
                 assetId={url}
+                url={url}
                 alt={`게시글 ${index + 1}번째`}
                 fill
                 draggable={false}
