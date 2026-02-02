@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 /**
  * @param key - sessionStorage 키
@@ -27,6 +28,17 @@ export function useSessionStorage<T>(
       const item = window.sessionStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'sessionStorage',
+          operation: 'read-session-storage',
+        },
+        extra: {
+          storageKey: key,
+          initialValue: initialValue,
+        },
+      });
       console.error('Error reading from sessionStorage:', error);
       return initialValue;
     }
@@ -43,6 +55,17 @@ export function useSessionStorage<T>(
         window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'sessionStorage',
+          operation: 'write-session-storage',
+        },
+        extra: {
+          storageKey: key,
+          value: value,
+        },
+      });
       console.error('Error writing to sessionStorage:', error);
     }
   };
@@ -55,6 +78,16 @@ export function useSessionStorage<T>(
         window.sessionStorage.removeItem(key);
       }
     } catch (error) {
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'sessionStorage',
+          operation: 'remove-session-storage',
+        },
+        extra: {
+          storageKey: key,
+        },
+      });
       console.error('Error removing from sessionStorage:', error);
     }
   };
