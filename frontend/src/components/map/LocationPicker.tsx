@@ -17,6 +17,7 @@ import { useTheme } from 'next-themes';
 import { MapSearchBar } from './MapSearchBar';
 import { searchPlacesByKeyword } from '@/lib/utils/googleMaps';
 import { cn } from '@/lib/utils';
+import * as Sentry from '@sentry/nextjs';
 
 export type LocationMode = 'search' | 'post';
 
@@ -100,6 +101,17 @@ function LocationPickerContent({
           setCenterPlaceName(placeName || '');
           isInitialLocationLoaded.current = true;
         } catch (error) {
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              context: 'location-picker',
+              operation: 'initial-geocode',
+            },
+            extra: {
+              lat: geoLat,
+              lng: geoLng,
+            },
+          });
           console.error('Initial Geocode Error:', error);
         } finally {
           setIsAddressLoading(false);
@@ -232,6 +244,18 @@ function LocationPickerContent({
           resolve(null);
         });
       } catch (error) {
+        // 근처 장소 검색 실패는 정보성 경고 (주소는 여전히 표시됨)
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: {
+            context: 'location-picker',
+            operation: 'nearby-search',
+          },
+          extra: {
+            lat,
+            lng,
+          },
+        });
         console.error('NearbySearch Error:', error);
         resolve(null);
       }
@@ -283,6 +307,17 @@ function LocationPickerContent({
         setCenterPlaceName('');
       }
     } catch (error) {
+      // 지도 이동 후 주소 조회 실패는 UX에 영향
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: {
+          context: 'location-picker',
+          operation: 'map-idle-geocode',
+        },
+        extra: {
+          hasCenter: !!mapRef.current?.getCenter(),
+        },
+      });
       console.error('Error in handleMapIdle:', error);
       setCenterAddress('주소를 불러올 수 없습니다.');
       setCenterPlaceName('');
@@ -341,6 +376,18 @@ function LocationPickerContent({
           data.radius = Math.min(Number(radiusInKm.toFixed(2)), 100);
         } else {
           // geometryLib가 아직 로딩 전이거나 bounds를 가져오지 못한 경우
+          const warning = new Error('검색 반경 계산 실패 - 기본값 적용');
+          Sentry.captureException(warning, {
+            level: 'warning',
+            tags: {
+              context: 'location-picker',
+              operation: 'calculate-radius',
+            },
+            extra: {
+              hasGeometryLib: !!geometryLib,
+              hasBounds: !!bounds,
+            },
+          });
           console.warn('반경 적용 실패');
           data.radius = 5;
         }
@@ -348,6 +395,19 @@ function LocationPickerContent({
 
       onSelect(data);
     } catch (error) {
+      // 위치 확정 실패는 사용자 작업이 완료되지 않으므로 에러
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'location-picker',
+          operation: 'confirm-location',
+          mode,
+        },
+        extra: {
+          hasMap: !!mapRef.current,
+          hasAddress: !!centerAddress,
+        },
+      });
       console.error('Location Confirm Error:', error);
     } finally {
       setIsProcessing(false);

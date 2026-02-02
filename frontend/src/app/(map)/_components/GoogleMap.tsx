@@ -13,6 +13,7 @@ import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
 import { useTheme } from 'next-themes';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import * as Sentry from '@sentry/nextjs';
 
 interface GoogleMapProps {
   posts: MapPostItem[];
@@ -37,12 +38,29 @@ function FlyToOnSelect({
   const map = useMap();
   useEffect(() => {
     if (!map) return;
-    map.panTo({ lat, lng });
-    // 필요하면 줌도 고정
-    // map.setZoom(13);
+    try {
+      map.panTo({ lat, lng });
+      // 필요하면 줌도 고정
+      // map.setZoom(13);
 
-    if (offsetX !== 0) {
-      map.panBy(-offsetX, 0);
+      if (offsetX !== 0) {
+        map.panBy(-offsetX, 0);
+      }
+    } catch (error) {
+      // 지도 이동 실패는 UX에 영향을 주므로 추적
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: {
+          context: 'map',
+          operation: 'pan-to-location',
+        },
+        extra: {
+          lat,
+          lng,
+          offsetX,
+        },
+      });
+      console.error('지도 이동 실패:', error);
     }
   }, [map, lat, lng, offsetX]);
   return null;
@@ -75,13 +93,41 @@ export default function GoogleMap({
   useEffect(() => {
     if (!placesLib || !mapRef.current || placesServiceRef.current) return;
 
-    placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
+    try {
+      placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
+    } catch (error) {
+      // Places API 초기화 실패는 검색 기능에 영향
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'map',
+          operation: 'initialize-places-service',
+        },
+      });
+      console.error('Places Service 초기화 실패:', error);
+    }
   }, [placesLib, mapRef, placesServiceRef]);
 
   // 초기 유저의 위치로 지도 이동
   useEffect(() => {
     if (geoLat && geoLng && mapRef.current) {
-      mapRef.current.panTo({ lat: geoLat, lng: geoLng });
+      try {
+        mapRef.current.panTo({ lat: geoLat, lng: geoLng });
+      } catch (error) {
+        // 사용자 위치로 이동 실패
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: {
+            context: 'map',
+            operation: 'pan-to-user-location',
+          },
+          extra: {
+            lat: geoLat,
+            lng: geoLng,
+          },
+        });
+        console.error('사용자 위치로 지도 이동 실패:', error);
+      }
     }
   }, [geoLat, geoLng, mapRef]);
 
@@ -89,10 +135,30 @@ export default function GoogleMap({
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID;
 
   // 전역 에러에서 잡아 에러 페이지 뜨도록
-  if (!apiKey) throw new Error('지도 호출 에러');
+  if (!apiKey) {
+    const error = new Error('Google Maps API 키가 설정되지 않았습니다');
+    Sentry.captureException(error, {
+      level: 'fatal', // 앱 사용 불가능한 심각한 에러
+      tags: {
+        context: 'map',
+        operation: 'initialize',
+        configError: 'missing-api-key',
+      },
+    });
+    throw error;
+  }
   if (!mapId) {
+    const error = new Error('Google Maps ID가 설정되지 않았습니다');
+    Sentry.captureException(error, {
+      level: 'fatal',
+      tags: {
+        context: 'map',
+        operation: 'initialize',
+        configError: 'missing-map-id',
+      },
+    });
     console.error('NEXT_PUBLIC_GOOGLE_MAPS_ID is not defined');
-    throw new Error('지도 ID가 설정되지 않았습니다');
+    throw error;
   }
 
   return (
