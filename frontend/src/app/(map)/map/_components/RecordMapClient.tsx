@@ -2,8 +2,6 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import GoogleMap from '../../_components/GoogleMap';
-import RecordMapDrawer from '../../_components/RecordMapDrawer';
 import { FilterChip } from '@/components/search/FilterChip';
 import { APIProvider, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MapSearchBar } from '@/components/map/MapSearchBar';
@@ -16,32 +14,25 @@ import {
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
 import LocationPermissionChecker from '@/components/LocationPermissionChecker';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
 import { useGeolocation } from '@/hooks/useGeolocation';
-
-// Debounce hook for performance optimization
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+import { useDebouncedValue } from '@/hooks/useDebounce';
+import GoogleMap from '../../_components/GoogleMap';
+import RecordMapDrawer from '../../_components/RecordMapDrawer';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
+// 기본 중심 좌표 (서울 시청)
+const DEFAULT_CENTER_LAT = 37.5665;
+const DEFAULT_CENTER_LNG = 126.978;
+// 기본 범위 (약 10km)
+const DEFAULT_BOUNDS_DELTA = 0.1;
+
 export default function RecordMapClient() {
   const searchParams = useSearchParams();
-  const scope = (searchParams.get('scope') as 'personal' | 'group') || 'personal';
+  const scope =
+    (searchParams.get('scope') as 'personal' | 'group') || 'personal';
   const groupId = searchParams.get('groupId') || undefined;
 
   const [activeDrawer, setActiveDrawer] = useState<
@@ -108,15 +99,29 @@ export default function RecordMapClient() {
   // 지도 기록 데이터 가져오기 (debounced center 사용)
   const { data: mapData } = useQuery({
     ...mapRecordListOptions({
-      lat: debouncedMapCenter?.lat ?? latitude ?? 37.5665, // 기본값: 서울 시청
-      lng: debouncedMapCenter?.lng ?? longitude ?? 126.978,
+      maxLat: mapBounds
+        ? mapBounds.getNorthEast().lat()
+        : DEFAULT_CENTER_LAT + DEFAULT_BOUNDS_DELTA,
+      maxLng: mapBounds
+        ? mapBounds.getNorthEast().lng()
+        : DEFAULT_CENTER_LNG + DEFAULT_BOUNDS_DELTA,
+      minLat: mapBounds
+        ? mapBounds.getSouthWest().lat()
+        : DEFAULT_CENTER_LAT - DEFAULT_BOUNDS_DELTA,
+      minLng: mapBounds
+        ? mapBounds.getSouthWest().lng()
+        : DEFAULT_CENTER_LNG - DEFAULT_BOUNDS_DELTA,
       scope,
       groupId,
+      emotions:
+        selectedEmotions.length > 0 ? selectedEmotions.join(',') : undefined,
       from: startDate || undefined,
       to: endDate || undefined,
       tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
     }),
-    enabled: debouncedMapCenter !== null || (latitude !== null && longitude !== null),
+    placeholderData: keepPreviousData,
+    enabled:
+      debouncedMapCenter !== null || (latitude !== null && longitude !== null),
   });
 
   // 지도에 표시할 모든 posts (필터링 없이)
