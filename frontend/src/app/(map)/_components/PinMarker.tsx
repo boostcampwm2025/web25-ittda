@@ -36,7 +36,7 @@ export const PinMarker = ({ post, onClick, setMarkerRef }: PinMarkerProps) => {
             alt={post.title}
             fill
             sizes="48px"
-            className="object-cover transform -rotate-45 scale-125"
+            className="w-full h-full object-cover transform -rotate-45 scale-125"
             onError={() => setIsError(true)}
           />
         ) : (

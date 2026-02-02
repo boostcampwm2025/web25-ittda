@@ -114,7 +114,7 @@ export default function DailyDetailRecordItem({
                     <AssetImage
                       width={32}
                       height={32}
-                      className="object-cover rounded-full"
+                      className="w-full h-full object-cover rounded-full"
                       assetId={m.avatar}
                       alt={`${m.name}의 프로필`}
                     />
@@ -124,7 +124,7 @@ export default function DailyDetailRecordItem({
                       height={32}
                       src={'/profile_base.png'}
                       alt={`${m.name}의 프로필`}
-                      className="rounded-full object-cover"
+                      className="w-full h-full rounded-full object-cover"
                     />
                   )}
                 </div>

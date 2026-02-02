@@ -102,7 +102,7 @@ export default function GalleryDrawer({
       ) : (
         <div
           ref={scrollContainerRef}
-          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[45vh] overflow-y-auto scrollbar-hide mb-8 min-h-0"
+          className="p-1 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[45vh] overflow-y-auto scrollbar-hide mb-8 min-h-0"
         >
           {items.map((item, idx) => {
             const isCurrent = currentAssetId === item.mediaId;
@@ -118,14 +118,14 @@ export default function GalleryDrawer({
                   <button
                     onClick={() => onSelect(item.mediaId, item.postId)}
                     className={cn(
-                      'absolute inset-0 w-full h-full cursor-pointer rounded-xl overflow-hidden transition-all active:scale-95 border-2',
+                      'absolute inset-0 w-full h-full cursor-pointer rounded-xl overflow-hidden transition-all active:scale-95 border-2 shadow-sm dark:border-[#121212] border-white',
                       isCurrent ? 'border-[#10B981]' : 'border-transparent',
                     )}
                   >
                     <AssetImage
                       assetId={item.mediaId}
                       alt={item.postTitle}
-                      className="object-cover"
+                      className="object-cover w-full h-full"
                       fill
                       sizes="(max-width: 640px) 33vw, 25vw"
                     />

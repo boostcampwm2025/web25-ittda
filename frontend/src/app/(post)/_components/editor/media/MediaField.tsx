@@ -60,7 +60,7 @@ export default function MediaField({
             alt={data.title}
             width={56}
             height={80}
-            className="object-cover group-hover:scale-105 transition-transform"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">

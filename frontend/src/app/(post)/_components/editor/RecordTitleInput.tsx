@@ -68,7 +68,7 @@ export default function RecordTitleInput({
         <div className="relative w-8 h-8 rounded-full shrink-0 overflow-hidden">
           <Image
             src="/profile-ex.jpeg" //TODO: 실제 유저 프로필로 보여주기
-            className="object-cover rounded-full ring-2 ring-itta-point animate-pulse"
+            className="w-full h-full object-cover rounded-full ring-2 ring-itta-point animate-pulse"
             width={32}
             height={32}
             alt={`제목 편집 중인 유저 ${lockOwner?.displayName}`}

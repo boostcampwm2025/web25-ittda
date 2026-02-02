@@ -47,7 +47,7 @@ export default async function GroupHeader({
                   height={32}
                   assetId={m.profileImageId}
                   alt="멤버의 프로필"
-                  className="rounded-full object-cover"
+                  className="w-full h-full rounded-full object-cover"
                 />
               ) : (
                 <Image
@@ -55,7 +55,7 @@ export default async function GroupHeader({
                   height={32}
                   src={'/profile_base.png'}
                   alt="멤버의 프로필"
-                  className="rounded-full object-cover"
+                  className="w-full h-full rounded-full object-cover"
                 />
               )}
             </div>

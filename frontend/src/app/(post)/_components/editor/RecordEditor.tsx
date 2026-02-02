@@ -660,7 +660,7 @@ export default function PostEditor({
                       {/**TODO : 추후 유저 이미지 받아와서 추가 */}
                       <Image
                         src="/profile-ex.jpeg"
-                        className="object-cover rounded-full ring-2 ring-itta-point animate-pulse"
+                        className="w-full h-full object-cover rounded-full ring-2 ring-itta-point animate-pulse"
                         width={32}
                         height={32}
                         alt={`${owner.displayName} 편집 중`}

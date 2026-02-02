@@ -24,7 +24,7 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
             alt={record.title}
             width={48}
             height={48}
-            className="object-cover rounded-xl"
+            className="w-full h-full object-cover rounded-xl"
           />
         </div>
       ) : (

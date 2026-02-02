@@ -97,11 +97,11 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
 
   if (images.length === 1) {
     return (
-      <div className="w-full rounded-xs overflow-hidden">
+      <div className="w-full rounded-sm overflow-hidden border dark:border-white/10 border-gray-100">
         <Image
           src={images[0]}
           unoptimized={true}
-          className="object-cover rounded-xs"
+          className="w-full h-full object-cover rounded-sm"
           alt="게시글 이미지"
           width={780}
           height={780}
@@ -114,7 +114,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
     <div className="w-full relative">
       <div
         ref={containerRef}
-        className="w-full rounded-sm overflow-hidden cursor-grab active:cursor-grabbing relative"
+        className="w-full rounded-sm overflow-hidden cursor-grab active:cursor-grabbing relative border dark:border-white/10 border-gray-100"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -143,7 +143,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
                 height={780}
                 draggable={false}
                 unoptimized={true}
-                className="select-none pointer-events-none object-cover"
+                className="w-full h-full select-none pointer-events-none object-cover"
               />
             </div>
           ))}

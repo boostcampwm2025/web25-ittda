@@ -130,8 +130,6 @@ export default function SharedRecords({
     updateGroupCover({ assetId: assetId, sourcePostId: recordId });
   };
 
-  console.log('sortedGroups', sortedGroups);
-
   if (sortedGroups.length === 0) {
     return (
       <div className="py-16 flex flex-col items-center justify-center text-center space-y-6 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">

@@ -63,7 +63,7 @@ export default function RecordEditorHeader({
                         alt="참여자 프로필"
                         width={32}
                         height={32}
-                        className="rounded-full object-cover"
+                        className="w-full h-full rounded-full object-cover"
                       />
                     </div>
                   ))}
@@ -101,7 +101,7 @@ export default function RecordEditorHeader({
                           alt={member.displayName || '유저'}
                           width={32}
                           height={32}
-                          className="object-cover"
+                          className="w-full h-full object-cover"
                         />
                       </div>
                       <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">

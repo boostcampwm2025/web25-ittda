@@ -71,7 +71,7 @@ export default function Header() {
             <AssetImage
               width={40}
               height={40}
-              className="object-cover rounded-full"
+              className="w-full h-full object-cover rounded-full"
               assetId={userProfile.user.profileImageId}
               alt="유저 프로필"
             />
@@ -81,7 +81,7 @@ export default function Header() {
               height={40}
               src={'/profile_base.png'}
               alt="프로필"
-              className="object-cover rounded-full"
+              className="w-full h-full object-cover rounded-full"
             />
           )}
         </button>

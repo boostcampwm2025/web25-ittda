@@ -11,6 +11,7 @@ import {
 import { X, Users, ChevronRight, ImageIcon } from 'lucide-react';
 import { GroupSummary } from '@/lib/types/recordResponse';
 import AssetImage from './AssetImage';
+import { randomBaseImage } from '@/lib/image';
 
 interface GroupSelectDrawerProps {
   open: boolean;
@@ -76,19 +77,25 @@ export default function GroupSelectDrawer({
                 onClick={() => handleSelectGroup(group.groupId)}
                 className="flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100"
               >
-                {group.cover?.assetId ? (
-                  <AssetImage
-                    assetId={group.cover.assetId}
-                    alt={group.name}
-                    width={48}
-                    height={48}
-                    className="rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <ImageIcon className="w-6 h-6 text-gray-400" />
-                  </div>
-                )}
+                <div className="w-12 h-12 rounded-lg overflow-hidden border-2 shadow-sm dark:border-[#121212] border-white">
+                  {group.cover?.assetId ? (
+                    <AssetImage
+                      assetId={group.cover.assetId}
+                      alt={group.name}
+                      width={48}
+                      height={48}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <AssetImage
+                      alt={group.name}
+                      width={48}
+                      height={48}
+                      assetId={randomBaseImage(group.groupId)}
+                      className="object-cover w-full h-full"
+                    />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0 text-left">
                   <p className="font-semibold dark:text-white text-itta-black truncate">
                     {group.name}

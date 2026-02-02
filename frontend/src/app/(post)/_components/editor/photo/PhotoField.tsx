@@ -67,7 +67,7 @@ export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
               src={url}
               width={56}
               height={56}
-              className="object-cover rounded-2xl"
+              className="w-full h-full object-cover rounded-2xl"
               alt={`첨부 사진 ${url}`}
               unoptimized={true}
             />
