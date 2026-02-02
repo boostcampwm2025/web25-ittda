@@ -24,6 +24,7 @@ import {
   TextValue,
 } from '@/lib/types/record';
 import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface FieldRendererProps {
   block: RecordBlock;
@@ -36,7 +37,6 @@ interface FieldRendererProps {
     type: FieldType | 'layout' | 'saveLayout',
     id?: string,
   ) => void;
-  goToLocationPicker: () => void;
   isLastContentBlock: boolean;
   lock: {
     lockKey: string;
@@ -54,7 +54,6 @@ export function RecordFieldRenderer({
   onCommit,
   onRemove,
   onOpenDrawer,
-  goToLocationPicker,
   isLastContentBlock,
   lock,
 }: FieldRendererProps) {
@@ -75,10 +74,12 @@ export function RecordFieldRenderer({
     }
   };
   const handleLockAndAction = () => {
-    if (lock.isLockedByOther) return;
-    if (draftId && block.type !== 'location') requestLock(lock.lockKey);
-    if (block.type === 'location') goToLocationPicker();
-    else onOpenDrawer(block.type, block.id);
+    if (lock.isLockedByOther) {
+      toast.error('현재 다른 사용자가 편집 중입니다.');
+      return;
+    }
+    if (draftId) requestLock(lock.lockKey);
+    onOpenDrawer(block.type, block.id);
   };
 
   switch (block.type) {

@@ -268,6 +268,25 @@ export function usePostEditorBlocks({
       const meta = FIELD_META[type];
       const existingBlocks = blocks.filter((b) => b.type === type);
       const limit = MULTI_INSTANCE_LIMITS[type];
+
+      if (type === 'location') {
+        let targetId: string | undefined = existingBlocks[0]?.id;
+
+        if (!targetId) {
+          targetId = updateFieldValue(
+            getDefaultValue('location'),
+            undefined,
+            'location',
+          );
+        }
+
+        if (targetId) {
+          if (draftId) requestLock(`block:${targetId}`);
+          setActiveDrawer({ type: 'location', id: targetId });
+        }
+        return;
+      }
+
       // 단일 블록이고 이미 존재하는 경우
       if (meta.isSingle && existingBlocks.length > 0) {
         const existing = existingBlocks[0];
@@ -421,10 +440,6 @@ export function usePostEditorBlocks({
     addOrShowBlock,
     removeBlock,
     handleApplyTemplate,
-    //handlePhotoUpload,
-    //pendingMetadata,
-    //handleApplyMetadata,
-    //handleSkipMetadata,
     applyPendingMetadata,
     handleEditMetadata,
   };

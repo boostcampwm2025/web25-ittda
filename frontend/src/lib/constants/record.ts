@@ -10,7 +10,7 @@ export const FIELD_META: Record<
 > = {
   emotion: { label: '감정', isSingle: false, requiresDrawer: true },
   photos: { label: '사진', isSingle: true, requiresDrawer: true }, // 사진 블록 자체는 하나
-  location: { label: '위치', isSingle: true, requiresDrawer: false },
+  location: { label: '위치', isSingle: true, requiresDrawer: true },
   rating: { label: '별점', isSingle: true, requiresDrawer: true },
   content: { label: '텍스트', isSingle: false, requiresDrawer: false },
   tags: { label: '태그', isSingle: true, requiresDrawer: true },

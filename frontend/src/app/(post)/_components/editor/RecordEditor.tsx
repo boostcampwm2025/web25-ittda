@@ -23,7 +23,6 @@ import {
   BlockValue,
   CreateRecordRequest,
   FieldType,
-  LocationValue,
   MoodValue,
   RatingValue,
   RecordScope,
@@ -34,8 +33,6 @@ import { RecordBlock } from '@/lib/types/recordField';
 import {
   canBeHalfWidth,
   getDefaultValue,
-  isRecordBlockEmpty,
-  normalizeLayout,
 } from '../../_utils/recordLayoutHelper';
 import SaveTemplateDrawer from './core/SaveTemplateDrawer';
 import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
@@ -43,7 +40,7 @@ import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
 import { usePostEditorBlocks } from '../../_hooks/usePostEditorBlocks';
 import { useCreateRecord } from '@/hooks/useCreateRecord';
 import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
-import { useRouter } from 'next/navigation';
+
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
 import { useDraftPresence } from '@/hooks/useDraftPresence';
 import { LockResponsePayload, useLockManager } from '@/hooks/useLockManager';
@@ -58,6 +55,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { refreshGroupData } from '@/lib/actions/revalidate';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
+import LocationDrawer from '@/components/map/LocationDrawer';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -75,7 +73,6 @@ export default function PostEditor({
   postId,
 }: PostEditorProps) {
   const queryClient = useQueryClient();
-  const router = useRouter();
 
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const [blocks, setBlocks] = useState<RecordBlock[]>([]);
@@ -142,40 +139,6 @@ export default function PostEditor({
     uploadMultipleMedia,
   });
 
-  const handleLocationUpdate = (locationData: LocationValue | null) => {
-    const existingBlock = blocks.find((b) => b.type === 'location');
-    if (!existingBlock) return;
-
-    // 새로 추가된 데이터가 있다면
-    if (locationData) {
-      updateFieldValue(locationData, existingBlock.id);
-      if (draftId) {
-        handleFieldCommit(existingBlock.id, locationData);
-      }
-    } else {
-      const lockKey = `block:${existingBlock.id}`;
-      const isMine = locks[lockKey] === mySessionId;
-
-      if (!(isMine && draftId)) return;
-
-      // 값이 비어있는 블록이라면 아예 삭제
-      if (!existingBlock.value || isRecordBlockEmpty(existingBlock.value)) {
-        applyPatch({
-          type: 'BLOCK_DELETE',
-          blockId: existingBlock.id,
-        });
-        setBlocks((prev) =>
-          normalizeLayout(prev.filter((b) => b.id !== existingBlock.id)),
-        );
-      }
-      releaseLock(lockKey);
-    }
-
-    // 세션 스토리지 정리
-    sessionStorage.removeItem('editor_draft');
-    sessionStorage.removeItem('selected_location');
-  };
-
   const {
     gridRef,
     isDraggingId,
@@ -203,10 +166,9 @@ export default function PostEditor({
       setTitle(title);
       setBlocks(blocks);
     },
-    onLocationUpdate: handleLocationUpdate,
   });
 
-  const { members } = useDraftPresence(draftId);
+  const { members } = useDraftPresence(draftId, groupId);
 
   // 서버의 LOCK_CHANGED 브로드캐스트 수신
   useEffect(() => {
@@ -297,20 +259,6 @@ export default function PostEditor({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingMetadata?.images.length, draftId]);
-
-  const goToLocationPicker = () => {
-    sessionStorage.setItem('editor_draft', JSON.stringify({ title, blocks }));
-    const existing = blocks.find((b) => b.type === 'location');
-    // locaion 처음 만들어진다면
-    if (!existing) {
-      addOrShowBlock('location');
-    } else {
-      const lockKey = `block:${existing.id}`;
-      requestLock(lockKey);
-    }
-
-    router.push('/location-picker');
-  };
 
   const handleSave = async () => {
     const scope = (groupId ? 'GROUP' : 'PERSONAL') as RecordScope;
@@ -450,10 +398,15 @@ export default function PostEditor({
 
   // 선택과 동시에 커밋되도록 하는 드로어
   const handleImmediateCommit = (newValue: BlockValue) => {
-    if (!activeDrawer || !activeDrawer.id) return;
-    const id = activeDrawer.id;
-    updateFieldValue(newValue, id);
+    if (!activeDrawer) return;
 
+    const id = updateFieldValue(
+      newValue,
+      activeDrawer.id,
+      activeDrawer.type as FieldType,
+    );
+
+    if (!id) return;
     if (draftId) {
       applyPatch({
         type: 'BLOCK_SET_VALUE',
@@ -594,18 +547,22 @@ export default function PostEditor({
             onClose={() => handleCloseDrawer(id)}
           />
         );
+      case 'location':
+        return (
+          <LocationDrawer
+            isOpen={true}
+            onSelect={(v) => handleImmediateCommit(v)} // 선택 시 바로 커밋하고 닫힘
+            onClose={() => handleCloseDrawer(id)}
+          />
+        );
       default:
         return null;
     }
   };
 
-  // location 분기처리를 위한 Toolbar 전달용 핸들러
+  // Toolbar 전달용 핸들러
   const handleToolbarAddBlock = (type: FieldType) => {
-    if (type === 'location') {
-      goToLocationPicker();
-    } else {
-      addOrShowBlock(type);
-    }
+    addOrShowBlock(type);
   };
 
   return (
@@ -686,7 +643,6 @@ export default function PostEditor({
                     onCommit={handleFieldCommit}
                     onRemove={removeBlock}
                     onOpenDrawer={(type, id) => setActiveDrawer({ type, id })}
-                    goToLocationPicker={goToLocationPicker}
                     isLastContentBlock={isLastContentBlock}
                     lock={{
                       lockKey,
