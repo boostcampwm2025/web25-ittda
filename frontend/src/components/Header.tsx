@@ -69,18 +69,19 @@ export default function Header() {
         >
           {userProfile?.user.profileImageId ? (
             <AssetImage
-              width={50}
-              height={50}
+              width={40}
+              height={40}
+              className="object-cover rounded-full"
               assetId={userProfile.user.profileImageId}
               alt="유저 프로필"
             />
           ) : (
             <Image
-              width={30}
-              height={30}
+              width={40}
+              height={40}
               src={'/profile_base.png'}
               alt="프로필"
-              className="w-full h-full object-cover"
+              className="object-cover rounded-full"
             />
           )}
         </button>

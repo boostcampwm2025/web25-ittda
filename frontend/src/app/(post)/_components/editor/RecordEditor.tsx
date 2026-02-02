@@ -656,13 +656,13 @@ export default function PostEditor({
 
                 <div className="w-full flex flex-row gap-2 items-center">
                   {isLockedByOther && owner && (
-                    <div>
+                    <div className="w-8 h-8 rounded-full overflow-hidden">
                       {/**TODO : 추후 유저 이미지 받아와서 추가 */}
                       <Image
                         src="/profile-ex.jpeg"
-                        className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
-                        width={24}
-                        height={24}
+                        className="object-cover rounded-full ring-2 ring-itta-point animate-pulse"
+                        width={32}
+                        height={32}
                         alt={`${owner.displayName} 편집 중`}
                         title={owner.displayName}
                       />

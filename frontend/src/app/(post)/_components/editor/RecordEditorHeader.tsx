@@ -55,13 +55,14 @@ export default function RecordEditorHeader({
                   {displayMembers.map((member) => (
                     <div
                       key={member?.sessionId || member.actorId}
-                      className="relative inline-block h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#121212] flex-shrink-0"
+                      className="relative inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#121212] shrink-0"
                     >
                       {/**TODO : 추후 유저 이미지 받아와서 추가 */}
                       <Image
                         src={'/profile-ex.jpeg'}
                         alt="참여자 프로필"
-                        fill
+                        width={32}
+                        height={32}
                         className="rounded-full object-cover"
                       />
                     </div>
@@ -88,17 +89,18 @@ export default function RecordEditorHeader({
                     편집 중인 멤버 ({memberList.length})
                   </span>
                 </div>
-                <div className="overflow-y-auto pr-1 max-h-60 !pb-0">
+                <div className="overflow-y-auto pr-1 max-h-60 pb-0!">
                   {memberList.map((member) => (
                     <div
                       key={member.sessionId || member.actorId}
                       className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group/item"
                     >
-                      <div className="relative h-6 w-6 rounded-full overflow-hidden flex-shrink-0 border border-gray-100 dark:border-white/10">
+                      <div className="relative h-8 w-8 rounded-full overflow-hidden shrink-0 border border-gray-100 dark:border-white/10">
                         <Image
                           src={'/profile-ex.jpeg'}
                           alt={member.displayName || '유저'}
-                          fill
+                          width={32}
+                          height={32}
                           className="object-cover"
                         />
                       </div>
@@ -121,7 +123,7 @@ export default function RecordEditorHeader({
 
         <button
           onClick={onSave}
-          className="px-5 py-2 rounded-xl text-sm font-semibold active:scale-95 transition-all shadow-sm bg-itta-black text-white flex-shrink-0"
+          className="px-5 py-2 rounded-xl text-sm font-semibold active:scale-95 transition-all shadow-sm bg-itta-black text-white shrink-0"
         >
           저장
         </button>

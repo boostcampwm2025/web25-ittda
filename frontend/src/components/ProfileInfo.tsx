@@ -69,16 +69,17 @@ export default function ProfileInfo({
             <div className="flex justify-center items-center w-32 h-32 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
               {imagePreviewUrl ? (
                 <Image
-                  width={200}
-                  height={200}
+                  width={128}
+                  height={128}
                   src={imagePreviewUrl}
-                  alt="Profile"
+                  alt={`${nickname} 프로필`}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <AssetImage
-                  width={200}
-                  height={200}
+                  className="w-full h-full object-cover"
+                  width={128}
+                  height={128}
                   assetId={profileImage || '/profile_base.png'}
                   alt={`${nickname} 프로필`}
                 />

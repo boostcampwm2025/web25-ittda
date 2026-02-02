@@ -65,11 +65,12 @@ export default function RecordTitleInput({
   return (
     <div className="w-full flex flex-row gap-2 items-center group/title">
       {isLockedByOther && (
-        <div className="relative w-6 h-6 flex-shrink-0">
+        <div className="relative w-8 h-8 rounded-full shrink-0 overflow-hidden">
           <Image
             src="/profile-ex.jpeg" //TODO: 실제 유저 프로필로 보여주기
-            className="rounded-full ring-2 ring-itta-point animate-pulse"
-            fill
+            className="object-cover rounded-full ring-2 ring-itta-point animate-pulse"
+            width={32}
+            height={32}
             alt={`제목 편집 중인 유저 ${lockOwner?.displayName}`}
             title={lockOwner?.displayName}
           />
@@ -89,7 +90,7 @@ export default function RecordTitleInput({
           'placeholder-gray-200 dark:placeholder-gray-500',
           isLockedByOther
             ? 'text-gray-400 cursor-not-allowed'
-            : 'text-[#333333] dark:text-white',
+            : 'text-itta-black dark:text-white',
         )}
       />
     </div>

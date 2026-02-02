@@ -98,9 +98,10 @@ export default function PhotoDrawer({
                   >
                     <Image
                       src={url}
-                      fill
+                      width={186}
+                      height={186}
                       alt={`첨부사진 ${url}`}
-                      className="object-cover"
+                      className="object-cover rounded-2xl"
                       unoptimized={true}
                     />
                     {isMetadataApplied && (

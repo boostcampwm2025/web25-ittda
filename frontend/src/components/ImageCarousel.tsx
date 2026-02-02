@@ -101,10 +101,10 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
         <Image
           src={images[0]}
           unoptimized={true}
-          className="w-full h-auto"
-          alt="Image"
-          width={800}
-          height={800}
+          className="object-cover rounded-xs"
+          alt="게시글 이미지"
+          width={780}
+          height={780}
         />
       </div>
     );
@@ -133,16 +133,16 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
           {images.map((url, index) => (
             <div
               key={index}
-              className="flex justify-center items-center w-full shrink-0 relative aspect-square"
+              className="flex overflow-hidden justify-center items-center w-full shrink-0 relative aspect-square"
             >
               <AssetImage
                 assetId={url}
                 url={url}
                 alt={`게시글 ${index + 1}번째`}
-                fill
+                width={780}
+                height={780}
                 draggable={false}
                 unoptimized={true}
-                sizes="(max-width: 768px) 100vw, 800px"
                 className="select-none pointer-events-none object-cover"
               />
             </div>

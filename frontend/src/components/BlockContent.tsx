@@ -156,8 +156,8 @@ export default function BlockContent({
                 src={block.value.imageUrl}
                 className="w-12 h-16 object-cover rounded shadow-sm"
                 alt={block.value.title}
-                width={50}
-                height={50}
+                width={48}
+                height={64}
               />
             )}
             <div className="min-w-0 flex-1">

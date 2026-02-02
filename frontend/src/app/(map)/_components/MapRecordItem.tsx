@@ -34,8 +34,8 @@ export function MapRecordItem({
       {post.thumbnailUrl && !isError && (
         <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-black/5">
           <AssetImage
-            width={80}
-            height={80}
+            width={100}
+            height={100}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             onError={() => setIsError(true)}
             assetId={post.thumbnailUrl}

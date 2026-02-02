@@ -80,9 +80,9 @@ export default function GroupSelectDrawer({
                   <AssetImage
                     assetId={group.cover.assetId}
                     alt={group.name}
-                    width={50}
-                    height={50}
-                    className="w-12 h-12 rounded-xl object-cover"
+                    width={48}
+                    height={48}
+                    className="rounded-xl object-cover"
                   />
                 ) : (
                   <div className="flex items-center justify-center">

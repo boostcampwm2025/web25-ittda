@@ -107,9 +107,10 @@ export default function MetadataSelectionDrawer({
                     >
                       <Image
                         src={img.imageUrl}
-                        fill
+                        width={186}
+                        height={186}
                         alt={`사진 ${idx + 1}`}
-                        className="object-cover"
+                        className="object-cover rounded-2xl"
                       />
                       {selectedIndex === idx && (
                         <div className="absolute inset-0 bg-[#10B981]/20 flex items-center justify-center">

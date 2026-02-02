@@ -105,26 +105,30 @@ export default function DailyDetailRecordItem({
             </h4>
 
             <div className="flex -space-x-2 shrink-0">
-              {members
-                ?.slice(0, 3)
-                .map((m) =>
-                  m.avatar ? (
+              {members?.slice(0, 3).map((m) => (
+                <div
+                  key={m.id}
+                  className="w-8 h-8 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white"
+                >
+                  {m.avatar ? (
                     <AssetImage
-                      key={m.id}
+                      width={32}
+                      height={32}
+                      className="object-cover rounded-full"
                       assetId={m.avatar}
                       alt={`${m.name}의 프로필`}
                     />
                   ) : (
                     <Image
-                      key={m.id}
                       width={32}
                       height={32}
                       src={'/profile_base.png'}
                       alt={`${m.name}의 프로필`}
-                      className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white object-cover"
+                      className="rounded-full object-cover"
                     />
-                  ),
-                )}
+                  )}
+                </div>
+              ))}
               {members && members.length > 3 && (
                 <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
                   <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">

@@ -19,7 +19,7 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
             assetId={images[0]}
             url={images[0]}
             alt="이미지"
-            width={800}
+            width={600}
             height={600}
             className="w-full h-full object-cover"
           />
@@ -39,7 +39,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 1}`}
-                fill
+                width={600}
+                height={600}
                 className="object-cover"
               />
             </div>
@@ -59,7 +60,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
               assetId={images[0]}
               url={images[0]}
               alt="메인 이미지"
-              fill
+              width={600}
+              height={600}
               className="object-cover"
             />
           </div>
@@ -69,7 +71,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 2}`}
-                fill
+                width={600}
+                height={600}
                 className="object-cover"
               />
             </div>
@@ -90,7 +93,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 1}`}
-                fill
+                width={600}
+                height={600}
                 className="object-cover"
               />
             </div>
@@ -109,7 +113,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
             assetId={images[0]}
             url={images[0]}
             alt="메인 이미지"
-            fill
+            width={600}
+            height={600}
             className="object-cover"
           />
         </div>
@@ -119,7 +124,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
               assetId={url}
               url={url}
               alt={`이미지 ${index + 2}`}
-              fill
+              width={600}
+              height={600}
               className="object-cover"
             />
           </div>
@@ -130,7 +136,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
               assetId={images[5]}
               url={images[5]}
               alt="이미지 6"
-              fill
+              width={600}
+              height={600}
               className="object-cover"
             />
             {images.length > 6 && (
