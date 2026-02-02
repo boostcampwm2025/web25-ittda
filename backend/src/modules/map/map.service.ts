@@ -27,29 +27,28 @@ export class MapService {
     queryDto: MapPostsQueryDto,
   ): Promise<PaginatedMapPostsResponseDto> {
     const {
-      lat,
-      lng,
-      radius,
       from,
       to,
       tags,
+      emotions,
       cursor,
       limit = 20,
       scope,
       groupId,
+      minLng,
+      minLat,
+      maxLng,
+      maxLat,
     } = queryDto;
 
     const query = this.postRepository
       .createQueryBuilder('post')
-      .where('post.deletedAt IS NULL')
-      .andWhere(
-        'ST_DWithin(post.location, ST_SetSRID(ST_Point(:lng, :lat), 4326), :radius)',
-        {
-          lng,
-          lat,
-          radius,
-        },
-      );
+      .where('post.deletedAt IS NULL');
+
+    query.andWhere(
+      'post.location && ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat, 4326)',
+      { minLng, minLat, maxLng, maxLat },
+    );
 
     // Scope-based filtering
     if (scope === MapScope.PERSONAL) {
@@ -79,6 +78,10 @@ export class MapService {
     if (tags) {
       const tagList = tags.split(',').map((t) => t.trim());
       query.andWhere('post.tags && :tagList', { tagList });
+    }
+    if (emotions) {
+      const emotionList = emotions.split(',').map((e) => e.trim());
+      query.andWhere('post.emotion && :emotionList', { emotionList });
     }
 
     // Pagination
