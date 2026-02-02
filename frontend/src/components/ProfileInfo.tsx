@@ -108,7 +108,7 @@ export default function ProfileInfo({
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className={`w-full border-b-2 bg-transparent px-1 py-4 text-sm font-semibold transition-all outline-none dark:text-white dark:placeholder-gray-700 text-itta-black placeholder-gray-300 ${
+                className={`w-full border-b-2 bg-transparent px-1 py-4 text-base font-semibold transition-all outline-none dark:text-white dark:placeholder-gray-700 text-itta-black placeholder-gray-300 ${
                   nicknameError
                     ? 'border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500'
                     : 'dark:border-white/5 dark:focus:border-[#10B981] border-gray-100 focus:border-[#10B981]'
@@ -144,7 +144,7 @@ export default function ProfileInfo({
                 type="text"
                 value={email}
                 disabled
-                className="w-full text-start border rounded-lg px-3 py-4 text-sm font-semibold cursor-not-allowed transition-colors dark:bg-white/5 dark:border-white/5 dark:text-gray-500 bg-gray-50 border-gray-100 text-gray-400"
+                className="w-full text-start border rounded-lg px-3 py-4 text-base font-semibold cursor-not-allowed transition-colors dark:bg-white/5 dark:border-white/5 dark:text-gray-500 bg-gray-50 border-gray-100 text-gray-400"
               />
             </div>
           )}
