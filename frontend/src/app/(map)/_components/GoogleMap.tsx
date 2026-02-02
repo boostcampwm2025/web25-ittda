@@ -125,7 +125,7 @@ export default function GoogleMap({
           }}
         />
         {searchedLocation && (
-          <AdvancedMarker position={searchedLocation}>
+          <AdvancedMarker position={searchedLocation} zIndex={1000}>
             <Pin background={'#FB4E4E'} glyphColor={'#FFFFFF'} />
           </AdvancedMarker>
         )}
