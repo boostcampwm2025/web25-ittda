@@ -28,6 +28,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useApiDelete, useApiPost } from '@/hooks/useApi';
 import { toast } from 'sonner';
 import { signOut } from 'next-auth/react';
+import * as Sentry from '@sentry/nextjs';
 
 export default function Setting() {
   const router = useRouter();
@@ -41,6 +42,10 @@ export default function Setting() {
   const { mutate: logout } = useApiPost('/api/auth/logout', {
     onSuccess: async () => {
       storeLogout();
+
+      // Sentry에서 사용자 정보 제거
+      Sentry.setUser(null);
+
       await signOut({ callbackUrl: '/login' });
 
       toast.success('로그아웃 되었습니다.');
@@ -51,10 +56,19 @@ export default function Setting() {
     onSuccess: async () => {
       storeLogout();
 
+      // Sentry에서 사용자 정보 제거
+      Sentry.setUser(null);
+
       await signOut({ callbackUrl: '/login' });
       toast.success('탈퇴되었습니다. 이용해 주셔서 감사합니다.');
     },
-    onError: () => {
+    onError: (error) => {
+      Sentry.captureException(error, {
+        tags: {
+          context: 'auth',
+          operation: 'withdrawal',
+        },
+      });
       toast.error('탈퇴 처리 중 오류가 발생했습니다. 다시 시도해 주세요.');
     },
   });

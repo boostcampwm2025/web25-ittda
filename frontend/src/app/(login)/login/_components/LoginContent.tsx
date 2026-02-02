@@ -12,6 +12,7 @@ import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
 import { isInAppBrowser } from '@/lib/utils/browserDetect';
+import * as Sentry from '@sentry/nextjs';
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
@@ -41,6 +42,12 @@ export default function LoginContent({
 
         if (response.data && accessToken) {
           setGuestInfo({ ...response.data, guestAccessToken: accessToken });
+
+          // Sentry에 게스트 사용자 정보 설정
+          Sentry.setUser({
+            id: `guest-${response.data.guestSessionId}`,
+            username: 'Guest User',
+          });
 
           if (inviteCode) {
             joinGroup(

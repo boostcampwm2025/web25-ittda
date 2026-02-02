@@ -11,6 +11,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/nextjs';
 
 interface OAuthCallbackContentProps {
   code: string | undefined;
@@ -48,16 +49,32 @@ export default function OAuthCallbackContent({
         try {
           const profileData =
             await queryClient.fetchQuery(userProfileOptions());
-          setLogin({
+          const userInfo = {
             id: profileData.userId,
             email: profileData.user.email ?? 'example.com',
             nickname: profileData.user.nickname ?? 'Anonymous',
             profileImageId: profileData.user.profileImage?.url ?? null,
             createdAt: profileData.user.createdAt,
+          };
+          setLogin(userInfo);
+
+          // Sentry에 사용자 정보 설정 (에러 추적에 사용)
+          Sentry.setUser({
+            id: profileData.userId,
+            email: profileData.user.email ?? undefined,
+            username: profileData.user.nickname ?? undefined,
           });
-        } catch {
+        } catch (error) {
           // 프로필 조회 실패 시 로그인 상태만 설정
           setSocialLogin();
+
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              context: 'auth',
+              operation: 'fetch-profile-on-login',
+            },
+          });
         }
 
         // 초대 코드 기반 그룹 자동 가입
