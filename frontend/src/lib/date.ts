@@ -179,3 +179,22 @@ export function formatDotDateString(dateString: string): string {
   const datePart = dateString.split('T')[0];
   return datePart.replaceAll('-', '.');
 }
+
+/**
+ * yyyy-mm 형식을 받아 해당 월의 시작일과 종료일을 반환
+ * @param {string} yearMonth - '2024-02' 형식의 문자열
+ * @returns {{startDate: string, endDate: string}}
+ */
+export function getMonthRange(yearMonth: string) {
+  const [year, month] = yearMonth.split('-').map(Number);
+
+  const startDate = `${yearMonth}-01`;
+
+  // month는 1부터 시작하므로, Date 객체에서는 다음 달의 0일을 지정하면 이번 달 마지막 날
+  // 예: new Date(2024, 2, 0) -> 2024년 3월의 0일 -> 2024년 2월 29일
+  const lastDay = new Date(year, month, 0).getDate();
+
+  const endDate = `${yearMonth}-${String(lastDay).padStart(2, '0')}`;
+
+  return { startDate, endDate };
+}

@@ -234,7 +234,7 @@ export interface MapPostItem {
   lat: number;
   lng: number;
   title: string;
-  thumbnailUrl: string;
+  thumbnailMediaId: string;
   createdAt: string;
   tags: string[];
   placeName: string | null;

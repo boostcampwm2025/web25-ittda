@@ -12,6 +12,7 @@ import {
 import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
 import { useTheme } from 'next-themes';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 interface GoogleMapProps {
   posts: MapPostItem[];
@@ -59,6 +60,11 @@ export default function GoogleMap({
 }: GoogleMapProps) {
   const { theme } = useTheme();
   const placesLib = useMapsLibrary('places');
+
+  const { latitude: geoLat, longitude: geoLng } = useGeolocation({
+    reverseGeocode: true,
+  });
+
   const selectedPost = useMemo(() => {
     if (typeof selectedPostId === 'string') {
       return posts.find((p) => p.id === selectedPostId) ?? null;
@@ -72,30 +78,45 @@ export default function GoogleMap({
     placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
   }, [placesLib, mapRef, placesServiceRef]);
 
+  // 초기 유저의 위치로 지도 이동
+  useEffect(() => {
+    if (geoLat && geoLng && mapRef.current) {
+      mapRef.current.panTo({ lat: geoLat, lng: geoLng });
+    }
+  }, [geoLat, geoLng, mapRef]);
+
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID;
 
   // 전역 에러에서 잡아 에러 페이지 뜨도록
   if (!apiKey) throw new Error('지도 호출 에러');
+  if (!mapId) {
+    console.error('NEXT_PUBLIC_GOOGLE_MAPS_ID is not defined');
+    throw new Error('지도 ID가 설정되지 않았습니다');
+  }
 
   return (
     <div className="bg-yellow-50 w-full h-full relative">
       <Map
         colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
-        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
+        mapId={mapId}
         defaultCenter={{ lat: 37.5665, lng: 126.978 }}
-        defaultZoom={12}
+        defaultZoom={16}
         gestureHandling="greedy"
         disableDefaultUI={true}
         onClick={() => onMapClick?.()}
         onIdle={(e) => onBoundsChange?.(e.map.getBounds() ?? null)}
       >
-        <ClusteredPostMarkers posts={posts} onSelectPost={onSelectPost} />
+        <ClusteredPostMarkers
+          posts={posts}
+          onSelectPost={onSelectPost}
+          selectedPostId={selectedPostId}
+        />
 
         {selectedPost && (
           <FlyToOnSelect
             lat={Number(selectedPost.lat)}
             lng={Number(selectedPost.lng)}
-            offsetX={250}
           />
         )}
         <MapHandler
@@ -104,7 +125,7 @@ export default function GoogleMap({
           }}
         />
         {searchedLocation && (
-          <AdvancedMarker position={searchedLocation}>
+          <AdvancedMarker position={searchedLocation} zIndex={1000}>
             <Pin background={'#FB4E4E'} glyphColor={'#FFFFFF'} />
           </AdvancedMarker>
         )}

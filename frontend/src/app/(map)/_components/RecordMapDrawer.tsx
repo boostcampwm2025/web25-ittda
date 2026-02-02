@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useMemo } from 'react';
-import { Map as MapIcon } from 'lucide-react';
+import { Loader2, Map as MapIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { MapPostItem } from '@/lib/types/record';
@@ -24,6 +24,9 @@ export default function RecordMapDrawer({
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastSnappedIdRef = useRef<string | string[] | null>(null);
+  const prevSelectedPostIdRef = useRef<string | string[] | null>(
+    selectedPostId,
+  );
 
   // TODO : 백엔드 연결 (클러스터 선택 시 표시할 포스트 필터링)
   const displayPosts = useMemo(() => {
@@ -33,25 +36,36 @@ export default function RecordMapDrawer({
     return posts;
   }, [posts, selectedPostId]);
 
-  // 선택된 단일 ID가 바뀔 때 자동 스크롤
+  // 선택된 단일 ID가 바뀔 때 자동 스크롤 (데이터 로딩 완료 후)
   useEffect(() => {
     if (
       typeof selectedPostId === 'string' &&
       selectedPostId &&
-      scrollContainerRef.current
+      scrollContainerRef.current &&
+      !isLoading // 로딩 중이 아닐 때만
     ) {
-      const targetElement = scrollContainerRef.current.querySelector(
-        `[data-post-id="${selectedPostId}"]`,
-      );
+      // DOM 업데이트를 기다리기 위해 다음 리렌더링 직전에 적용
+      const ra = requestAnimationFrame(() => {
+        const targetElement = scrollContainerRef.current?.querySelector(
+          `[data-post-id="${selectedPostId}"]`,
+        );
 
-      if (targetElement) {
-        targetElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      }
+        if (targetElement && scrollContainerRef.current) {
+          // drawer 상단 padding을 고려하여 스크롤
+          const container = scrollContainerRef.current;
+          const elementTop = (targetElement as HTMLElement).offsetTop;
+          const offset = 16; // pt-4 = 16px 상단 여백
+
+          container.scrollTo({
+            top: elementTop - offset,
+            behavior: 'smooth',
+          });
+        }
+      });
+
+      return () => cancelAnimationFrame(ra);
     }
-  }, [selectedPostId]);
+  }, [selectedPostId, displayPosts, isLoading]);
 
   const {
     height,
@@ -63,7 +77,17 @@ export default function RecordMapDrawer({
   } = useBottomSheetResize();
 
   useEffect(() => {
-    // 샤로운 postID를 클릭했을 때 처음 한 번만 튀어오르게 기억하는 용도
+    const prevId = prevSelectedPostIdRef.current;
+    prevSelectedPostIdRef.current = selectedPostId;
+
+    // 이전에 ID가 있었는데 null이 된 경우 (지도 클릭) drawer 내리기
+    if (prevId !== null && selectedPostId === null && !isDragging) {
+      snapTo('collapsed');
+      lastSnappedIdRef.current = null;
+      return;
+    }
+
+    // 새로운 postID를 클릭했을 때 처음 한 번만 튀어오르게 기억하는 용도
     if (
       selectedPostId &&
       !isDragging &&
@@ -77,7 +101,7 @@ export default function RecordMapDrawer({
   return (
     <div
       className={cn(
-        'absolute left-0 right-0 bottom-0 z-50 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-hidden shadow-[0_-15px_60px_rgba(0,0,0,0.2)] mb-6 sm:mb-12',
+        'absolute left-0 right-0 bottom-0 z-50 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-hidden shadow-[0_-15px_60px_rgba(0,0,0,0.2)]',
         !isDragging &&
           'transition-all duration-500 cubic-bezier(0.2,0.8,0.2,1)',
       )}
@@ -108,13 +132,13 @@ export default function RecordMapDrawer({
       <div className="relative flex-1 overflow-hidden">
         <div
           ref={scrollContainerRef}
-          className="absolute inset-0 px-8 pt-4 pb-16 overflow-y-auto hide-scrollbar"
+          className="absolute inset-0 px-8 pt-4 pb-16 overflow-y-auto scrollbar-hide"
           style={{ touchAction: 'pan-y' }}
         >
-          <div className="space-y-4">
+          <div className="space-y-4 pb-10">
             {isLoading ? (
-              <div className="py-24 text-center text-sm text-gray-400 animate-pulse font-medium">
-                기록을 불러오는 중입니다...
+              <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#121212]">
+                <Loader2 className="w-8 h-8 animate-spin text-itta-point" />
               </div>
             ) : displayPosts.length ? (
               displayPosts.map((post) => {
@@ -123,16 +147,24 @@ export default function RecordMapDrawer({
                     key={post.id}
                     post={post}
                     isHighlighted={selectedPostId === post.id}
-                    onClick={() => router.push(`/record/${post.id}`)}
+                    onSelect={() => onSelectPost(post.id)}
+                    onNavigate={() => router.push(`/record/${post.id}`)}
                   />
                 );
               })
             ) : (
-              <div className="py-32 flex flex-col items-center gap-4 opacity-30">
-                <MapIcon className="w-14 h-14" />
-                <p className="text-sm font-bold text-center">
-                  주변에 기록이 없습니다.
-                </p>
+              <div className="pt-3 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl dark:bg-white/5 bg-white">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+                  <MapIcon className="w-6 h-6 text-[#10B981]" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+                    주변에 기록이 없어요
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    지도를 이동하거나 필터를 조정해보세요
+                  </p>
+                </div>
               </div>
             )}
           </div>
