@@ -228,11 +228,41 @@ export class PostService {
       where: { postId },
       relations: ['user'],
     });
-    const contributorDtos = contributors.map((c) => ({
-      userId: c.userId,
-      role: c.role,
-      nickname: c.user?.nickname,
-    }));
+    const activeContributors = contributors.filter(
+      (contributor): contributor is PostContributor & { user: User } =>
+        Boolean(contributor.user),
+    );
+    const groupMemberMap = new Map<
+      string,
+      { nicknameInGroup?: string | null; profileMediaId?: string | null }
+    >();
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const members = await this.groupMemberRepository.find({
+        where: activeContributors.map((c) => ({
+          groupId: post.groupId as string,
+          userId: c.userId,
+        })),
+        select: ['userId', 'nicknameInGroup', 'profileMediaId'],
+      });
+      members.forEach((member) => {
+        groupMemberMap.set(member.userId, {
+          nicknameInGroup: member.nicknameInGroup ?? null,
+          profileMediaId: member.profileMediaId ?? null,
+        });
+      });
+    }
+
+    const contributorDtos = activeContributors.map((c) => {
+      const groupMember = groupMemberMap.get(c.userId);
+      return {
+        userId: c.userId,
+        role: c.role,
+        nickname: c.user.nickname ?? null,
+        groupNickname: groupMember?.nicknameInGroup ?? null,
+        profileImageId: c.user.profileImageId ?? null,
+        groupProfileImageId: groupMember?.profileMediaId ?? null,
+      };
+    });
 
     const dto: PostDetailDto = {
       id: post.id,

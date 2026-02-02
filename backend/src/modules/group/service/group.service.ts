@@ -72,13 +72,15 @@ export class GroupService {
     userId: string,
     groupId: string,
   ): Promise<GroupMember | null> {
-    return this.groupMemberRepo.findOne({
+    const member = await this.groupMemberRepo.findOne({
       where: {
         userId,
         groupId,
       },
       relations: ['group', 'user'],
     });
+    if (!member || !member.user) return null;
+    return member;
   }
 
   /** 그룹 삭제 (방장만 가능) */

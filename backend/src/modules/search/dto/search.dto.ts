@@ -7,8 +7,10 @@ import {
   IsNumber,
   Min,
   Max,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PostMood } from '@/enums/post-mood.enum';
 
 export class SearchPostsDto {
   @ApiPropertyOptional({ description: '검색 키워드 (제목 및 내용)' })
@@ -31,6 +33,16 @@ export class SearchPostsDto {
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
+
+  @ApiPropertyOptional({
+    description: '감정 목록',
+    type: [String],
+    example: ['행복', '슬픔'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(PostMood, { each: true })
+  emotions?: PostMood[];
 
   @ApiPropertyOptional({ description: '위도' })
   @IsOptional()
