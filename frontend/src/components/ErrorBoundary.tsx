@@ -2,6 +2,7 @@
 
 import { Component, ReactNode, ErrorInfo, ComponentType } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -64,7 +65,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         errorBoundary: true,
       },
     });
-    console.error({ error, errorInfo });
+    logger.error('컴포넌트 에러 캐치', error);
   }
 
   /** 에러 상태 기본 초기화 */

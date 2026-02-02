@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GroupEditHeaderActionsProps {
   groupId: string;
@@ -63,7 +64,7 @@ export default function GroupEditHeaderActions({
           assetId: editData.groupThumbnail,
         },
       });
-      console.error('update failed', error);
+      logger.error('그룹 정보 수정 실패', error);
     } finally {
       setIsPending(false);
     }

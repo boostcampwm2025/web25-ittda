@@ -13,6 +13,7 @@ import { TagsValue } from '@/lib/types/recordField';
 import { getCachedUserTagSummary } from '@/lib/api/profile';
 import { Tag } from '@/lib/types/record';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface TagDrawerProps {
   onClose: () => void;
@@ -50,7 +51,7 @@ export default function TagDrawer({
             operation: 'get-user-tag-summary',
           },
         });
-        console.error('Failed to fetch tags:', error);
+        logger.error('Failed to fetch tags:', error);
       }
     }
     fetchTags();

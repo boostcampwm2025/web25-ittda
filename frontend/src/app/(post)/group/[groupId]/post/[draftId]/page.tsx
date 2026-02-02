@@ -4,6 +4,7 @@ import { RecordBlock } from '@/lib/types/record';
 import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface AddPostPageProps {
   params: Promise<{
@@ -57,7 +58,7 @@ export default async function PostDraftPage({
           groupId: groupId,
         },
       });
-      console.error('공동 드래프트 로드 실패:', error);
+      logger.error('공동 드래프트 로드 실패', error);
     }
   }
 

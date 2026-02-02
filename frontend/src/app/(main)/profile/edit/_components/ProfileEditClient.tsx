@@ -11,6 +11,7 @@ import { UserProfileResponse } from '@/lib/types/profileResponse';
 import { toast } from 'sonner';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 export default function ProfileEditClient() {
   const { data: profile } = useQuery(userProfileOptions());
@@ -48,7 +49,7 @@ export default function ProfileEditClient() {
           nickname: data.nickname,
         },
       });
-      console.error('내정보 수정 실패', error);
+      logger.error('내정보 수정 실패', error);
     } finally {
       setIsPending(false);
     }

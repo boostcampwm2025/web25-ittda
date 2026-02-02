@@ -6,6 +6,7 @@ import {
 import { getImageDimensions } from '@/lib/utils/image';
 import { useState } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 export const useMediaUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -55,7 +56,8 @@ export const useMediaUpload = () => {
           totalSize: files.reduce((sum, f) => sum + f.size, 0),
         },
       });
-      console.error('Media Upload Error:', error);
+      logger.error('이미지 업로드 실패', error);
+
       throw error;
     } finally {
       setIsUploading(false);

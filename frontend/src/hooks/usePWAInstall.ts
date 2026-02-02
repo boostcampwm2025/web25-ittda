@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -50,7 +51,7 @@ export function usePWAInstall() {
               operation: 'check-installed-apps',
             },
           });
-          console.error('getInstalledRelatedApps 확인 실패:', error);
+          logger.error('getInstalledRelatedApps 확인 실패', error);
         }
       }
 

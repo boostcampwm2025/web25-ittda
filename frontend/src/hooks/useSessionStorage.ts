@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * @param key - sessionStorage 키
@@ -39,7 +40,7 @@ export function useSessionStorage<T>(
           initialValue: initialValue,
         },
       });
-      console.error('Error reading from sessionStorage:', error);
+      logger.error('reading from sessionStorage', error);
       return initialValue;
     }
   });
@@ -66,7 +67,7 @@ export function useSessionStorage<T>(
           value: value,
         },
       });
-      console.error('Error writing to sessionStorage:', error);
+      logger.error('writing to sessionStorage', error);
     }
   };
 
@@ -88,7 +89,7 @@ export function useSessionStorage<T>(
           storageKey: key,
         },
       });
-      console.error('Error removing from sessionStorage:', error);
+      logger.error('removing from sessionStorage', error);
     }
   };
 

@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useNewPostDraft } from '@/hooks/useGrouprRecord';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface AddRecordDrawerProps {
   isOpen: boolean;
@@ -38,7 +39,9 @@ export function AddRecordDrawer({
         onOpenChange(false);
       } else {
         // 리다이렉트 URL 누락은 백엔드 응답 문제일 가능성
-        const error = new Error('공동 기록 생성 응답에 리다이렉트 URL이 없습니다');
+        const error = new Error(
+          '공동 기록 생성 응답에 리다이렉트 URL이 없습니다',
+        );
         Sentry.captureException(error, {
           level: 'warning',
           tags: {
@@ -65,7 +68,7 @@ export function AddRecordDrawer({
           groupId,
         },
       });
-      console.error('Failed to initiate group record:', error);
+      logger.error('AddRecordDrawer - Failed to initiate group record', error);
     }
   };
 

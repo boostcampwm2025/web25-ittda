@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 export async function POST() {
   const session = await auth();
@@ -22,7 +23,7 @@ export async function POST() {
           operation: 'backend-logout',
         },
       });
-      console.error('백엔드 로그아웃 통신 실패', error);
+      logger.error('백엔드 로그아웃 통신 실패', error);
     }
   }
   return NextResponse.json({ success: true, data: {}, error: null });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GeolocationState {
   latitude: number | null;
@@ -93,7 +94,8 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
               longitude,
             },
           });
-          console.error('역지오코딩 실패:', error);
+          logger.error('역지오코딩 실패', error);
+
           // 역지오코딩 실패해도 좌표는 표시
           setState((prev) => ({
             ...prev,
@@ -201,7 +203,8 @@ export async function reverseGeocodeAddress(
               longitude,
             },
           });
-          console.error('Geocoding failed:', status);
+          logger.error('지오코딩 실패', status);
+
           reject(error);
         }
       },
