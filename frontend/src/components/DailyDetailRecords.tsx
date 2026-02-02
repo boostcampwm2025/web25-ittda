@@ -2,13 +2,11 @@
 
 import { recordPreviewListOptions } from '@/lib/api/records';
 import DailyDetailRecordItem from './DailyDetailRecordItem';
-import { ActiveMember } from '@/lib/types/group';
 import { RecordPreview } from '@/lib/types/recordResponse';
 import { useQuery } from '@tanstack/react-query';
 
 interface DailyDetailRecordsProps {
   memories?: RecordPreview[];
-  members?: ActiveMember[];
   date: string;
   scope: 'personal' | 'groups';
   groupId?: string;
@@ -16,7 +14,6 @@ interface DailyDetailRecordsProps {
 
 export default function DailyDetailRecords({
   memories,
-  members,
   date,
   scope,
   groupId,
@@ -31,7 +28,7 @@ export default function DailyDetailRecords({
       {records.map((record) => (
         <div key={record.postId} className="relative pl-6 group">
           <div className="absolute -left-[7.5px] top-1 w-3.5 h-3.5 rounded-full z-10 border-2 shadow-sm transition-transform group-hover:scale-125 dark:bg-white dark:border-[#121212] bg-itta-black border-white" />
-          <DailyDetailRecordItem record={record} members={members} />
+          <DailyDetailRecordItem record={record} groupId={groupId} />
         </div>
       ))}
     </div>

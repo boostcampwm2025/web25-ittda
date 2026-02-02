@@ -12,7 +12,6 @@ import { useState } from 'react';
 import DailyDetailRecordActions from '../app/(post)/_components/DailyDetailRecordActions';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Member } from '@/lib/types/group';
 import { RecordPreview } from '@/lib/types/recordResponse';
 import { Block } from '@/lib/types/record';
 import BlockContent from '@/components/BlockContent'; // BlockContent 컴포넌트 임포트 필요
@@ -28,13 +27,11 @@ import AssetImage from './AssetImage';
 interface DailyDetailRecordItemProps {
   record: RecordPreview;
   groupId?: string;
-  members?: Member[];
 }
 
 export default function DailyDetailRecordItem({
   record,
   groupId,
-  members,
 }: DailyDetailRecordItemProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const router = useRouter();
@@ -65,11 +62,7 @@ export default function DailyDetailRecordItem({
   };
 
   const handleRecordClick = (recordId: string) => {
-    if (groupId) {
-      router.push(`/group/${groupId}/record/${recordId}`);
-    } else {
-      router.push(`/record/${recordId}`);
-    }
+    router.push(`/record/${recordId}`);
   };
 
   const time = getSingleBlockValue<TimeValue>(record, 'TIME')?.time || '';
@@ -105,37 +98,49 @@ export default function DailyDetailRecordItem({
             </h4>
 
             <div className="flex -space-x-2 shrink-0">
-              {members?.slice(0, 3).map((m) => (
-                <div
-                  key={m.id}
-                  className="w-8 h-8 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white"
-                >
-                  {m.avatar ? (
-                    <AssetImage
-                      width={32}
-                      height={32}
-                      className="w-full h-full object-cover rounded-full"
-                      assetId={m.avatar}
-                      alt={`${m.name}의 프로필`}
-                    />
-                  ) : (
-                    <Image
-                      width={32}
-                      height={32}
-                      src={'/profile_base.png'}
-                      alt={`${m.name}의 프로필`}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  )}
-                </div>
-              ))}
-              {members && members.length > 3 && (
-                <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
-                  <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">
-                    +{members.length - 3}
-                  </span>
-                </div>
-              )}
+              {groupId &&
+                record.contributors?.slice(0, 4).map((m) => (
+                  <div
+                    key={m.userId}
+                    className="w-8 h-8 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white"
+                  >
+                    {(() => {
+                      const currentAssetId =
+                        m.groupProfileImageId || m.profileImageId;
+
+                      if (currentAssetId) {
+                        return (
+                          <AssetImage
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover rounded-full"
+                            assetId={currentAssetId}
+                            alt={`${m.groupNickname || m.nickname}의 프로필`}
+                          />
+                        );
+                      }
+
+                      return (
+                        <Image
+                          width={32}
+                          height={32}
+                          src={'/profile_base.png'}
+                          alt={`${m.groupNickname || m.nickname}의 프로필`}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      );
+                    })()}
+                  </div>
+                ))}
+              {groupId &&
+                record.contributors &&
+                record.contributors.length > 4 && (
+                  <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
+                    <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">
+                      +{record.contributors.length - 4}
+                    </span>
+                  </div>
+                )}
             </div>
           </div>
 
