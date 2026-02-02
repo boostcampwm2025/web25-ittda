@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 interface GeolocationState {
   latitude: number | null;
@@ -81,6 +82,17 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
             loading: false,
           }));
         } catch (error) {
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              context: 'geolocation',
+              operation: 'reverse-geocode',
+            },
+            extra: {
+              latitude,
+              longitude,
+            },
+          });
           console.error('역지오코딩 실패:', error);
           // 역지오코딩 실패해도 좌표는 표시
           setState((prev) => ({
@@ -176,8 +188,21 @@ export async function reverseGeocodeAddress(
           );
           resolve(parts.join(' ') || results[0].formatted_address);
         } else {
+          const error = new Error(`Geocoding failed with status: ${status}`);
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              context: 'geolocation',
+              operation: 'geocode-api',
+              status,
+            },
+            extra: {
+              latitude,
+              longitude,
+            },
+          });
           console.error('Geocoding failed:', status);
-          reject(new Error(`Geocoding failed with status: ${status}`));
+          reject(error);
         }
       },
     );
