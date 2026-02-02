@@ -16,6 +16,12 @@ export class PostContributorDto {
   role: PostContributorRole;
   @ApiPropertyOptional()
   nickname?: string;
+  @ApiPropertyOptional()
+  groupNickname?: string | null;
+  @ApiPropertyOptional({ format: 'uuid' })
+  profileImageId?: string | null;
+  @ApiPropertyOptional({ format: 'uuid' })
+  groupProfileImageId?: string | null;
 }
 
 export class PostDetailDto {
