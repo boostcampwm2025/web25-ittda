@@ -19,6 +19,7 @@ import {
   ExifMetadata,
 } from '@/lib/utils/exifExtractor';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface UsePostEditorBlocksProps {
   blocks: RecordBlock[];
@@ -406,7 +407,8 @@ export function usePostEditorBlocks({
           imageUrls: allUrls,
         },
       });
-      console.error('메타데이터 추출 중 오류:', error);
+      logger.error('메타데이터 추출 중 오류', error);
+
       toast.error('메타데이터 추출에 실패했습니다.');
     }
   };

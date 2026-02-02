@@ -18,6 +18,7 @@ import { MapSearchBar } from './MapSearchBar';
 import { searchPlacesByKeyword } from '@/lib/utils/googleMaps';
 import { cn } from '@/lib/utils';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 export type LocationMode = 'search' | 'post';
 
@@ -112,7 +113,7 @@ function LocationPickerContent({
               lng: geoLng,
             },
           });
-          console.error('Initial Geocode Error:', error);
+          logger.error('geocode 초기화 실패', error);
         } finally {
           setIsAddressLoading(false);
         }
@@ -256,7 +257,8 @@ function LocationPickerContent({
             lng,
           },
         });
-        console.error('NearbySearch Error:', error);
+        logger.error('nearby 검색 실패', error);
+
         resolve(null);
       }
     });
@@ -318,7 +320,8 @@ function LocationPickerContent({
           hasCenter: !!mapRef.current?.getCenter(),
         },
       });
-      console.error('Error in handleMapIdle:', error);
+      logger.error('handleMapIdle', error);
+
       setCenterAddress('주소를 불러올 수 없습니다.');
       setCenterPlaceName('');
     } finally {
@@ -408,7 +411,7 @@ function LocationPickerContent({
           hasAddress: !!centerAddress,
         },
       });
-      console.error('Location Confirm Error:', error);
+      logger.error('Location Confirm', error);
     } finally {
       setIsProcessing(false);
     }

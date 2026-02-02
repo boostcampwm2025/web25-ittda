@@ -14,6 +14,7 @@ import { ClusteredPostMarkers } from './ClusteredMarkers';
 import { useTheme } from 'next-themes';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GoogleMapProps {
   posts: MapPostItem[];
@@ -60,7 +61,7 @@ function FlyToOnSelect({
           offsetX,
         },
       });
-      console.error('지도 이동 실패:', error);
+      logger.error('지도 이동 실패', error);
     }
   }, [map, lat, lng, offsetX]);
   return null;
@@ -104,7 +105,7 @@ export default function GoogleMap({
           operation: 'initialize-places-service',
         },
       });
-      console.error('Places Service 초기화 실패:', error);
+      logger.error('Places Service 초기화 실패', error);
     }
   }, [placesLib, mapRef, placesServiceRef]);
 
@@ -126,7 +127,7 @@ export default function GoogleMap({
             lng: geoLng,
           },
         });
-        console.error('사용자 위치로 지도 이동 실패:', error);
+        logger.error('사용자 위치로 지도 이동 실패', error);
       }
     }
   }, [geoLat, geoLng, mapRef]);
@@ -157,7 +158,8 @@ export default function GoogleMap({
         configError: 'missing-map-id',
       },
     });
-    console.error('NEXT_PUBLIC_GOOGLE_MAPS_ID is not defined');
+    logger.error('NEXT_PUBLIC_GOOGLE_MAPS_ID is not defined');
+
     throw error;
   }
 

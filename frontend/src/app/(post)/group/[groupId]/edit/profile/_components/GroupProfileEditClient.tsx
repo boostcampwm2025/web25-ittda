@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { revalidateGroupProfile } from '../../actions';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GroupProfileEditClientProps {
   groupId: string;
@@ -69,7 +70,7 @@ export default function GroupProfileEditClient({
           groupId: groupId,
         },
       });
-      console.error('그룹 내 내정보 수정 실패', error);
+      logger.error('그룹 내 내정보 수정 실패', error);
     } finally {
       setIsPending(false);
     }
