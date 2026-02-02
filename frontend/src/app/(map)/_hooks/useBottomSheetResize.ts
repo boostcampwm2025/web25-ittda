@@ -4,11 +4,11 @@ export function useBottomSheetResize() {
   // 각 window.innerHeight 을 기반으로 최소/최대 조정하기 위함
   const snapPoints = useMemo(() => {
     if (typeof window === 'undefined') {
-      return { collapsed: 220, half: 500, full: 900 };
+      return { collapsed: 170, half: 500, full: 900 };
     }
     // collapsed 높이를 네비게이션바(약 64-80px) + 충분한 여유를 고려하여 설정
     return {
-      collapsed: Math.max(150, window.innerHeight * 0.25),
+      collapsed: Math.max(150, window.innerHeight * 0.175),
       half: window.innerHeight * 0.5,
       full: window.innerHeight * 0.92,
     };
