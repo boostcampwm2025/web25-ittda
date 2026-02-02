@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -72,13 +72,15 @@ export class GroupService {
     userId: string,
     groupId: string,
   ): Promise<GroupMember | null> {
-    return this.groupMemberRepo.findOne({
+    const member = await this.groupMemberRepo.findOne({
       where: {
         userId,
         groupId,
       },
       relations: ['group', 'user'],
     });
+    if (!member || !member.user) return null;
+    return member;
   }
 
   /** 그룹 삭제 (방장만 가능) */
@@ -136,16 +138,18 @@ export class GroupService {
 
         if (!group) return null;
 
-        const memberCount = await this.groupMemberRepo.count({
-          where: { groupId },
-        });
+        const memberCount = await this.groupMemberRepo
+          .createQueryBuilder('member')
+          .innerJoin('member.user', 'user', 'user.deleted_at IS NULL')
+          .where('member.group_id = :groupId', { groupId })
+          .getCount();
 
         const recordCount = await this.postRepo.count({
-          where: { groupId },
+          where: { groupId, deletedAt: IsNull() },
         });
 
         const latestPost = await this.postRepo.findOne({
-          where: { groupId },
+          where: { groupId, deletedAt: IsNull() },
           order: { eventAt: 'DESC' },
           select: ['id', 'title', 'eventAt', 'location', 'createdAt'],
         });

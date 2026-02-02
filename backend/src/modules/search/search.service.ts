@@ -82,6 +82,11 @@ export class SearchService {
       query.andWhere('post.tags && :tags', { tags: dto.tags });
     }
 
+    // Emotion Search
+    if (dto.emotions && dto.emotions.length > 0) {
+      query.andWhere('post.emotion && :emotions', { emotions: dto.emotions });
+    }
+
     // Location Search (Nearby)
     if (dto.latitude !== undefined && dto.longitude !== undefined) {
       query.andWhere(

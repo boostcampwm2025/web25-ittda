@@ -9,6 +9,7 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PostMood } from '@/enums/post-mood.enum';
 
 export enum MapScope {
   PERSONAL = 'personal',
@@ -16,16 +17,6 @@ export enum MapScope {
 }
 
 export class MapPostsQueryDto {
-  @ApiProperty({ description: '중심 위도' })
-  @IsNumber()
-  @Type(() => Number)
-  lat: number;
-
-  @ApiProperty({ description: '중심 경도' })
-  @IsNumber()
-  @Type(() => Number)
-  lng: number;
-
   @ApiProperty({
     enum: MapScope,
     description: '조회 범위 (personal: 내 기록, group: 그룹 기록)',
@@ -38,12 +29,25 @@ export class MapPostsQueryDto {
   @IsString()
   groupId?: string;
 
-  @ApiPropertyOptional({ description: '반경 (미터)', default: 1000 })
-  @IsOptional()
+  @ApiProperty({ description: 'bbox 최소 위도' })
   @IsNumber()
   @Type(() => Number)
-  @Min(0)
-  radius?: number = 1000;
+  minLat: number;
+
+  @ApiProperty({ description: 'bbox 최소 경도' })
+  @IsNumber()
+  @Type(() => Number)
+  minLng: number;
+
+  @ApiProperty({ description: 'bbox 최대 위도' })
+  @IsNumber()
+  @Type(() => Number)
+  maxLat: number;
+
+  @ApiProperty({ description: 'bbox 최대 경도' })
+  @IsNumber()
+  @Type(() => Number)
+  maxLng: number;
 
   @ApiPropertyOptional({ description: '시작 날짜 (YYYY-MM-DD)' })
   @IsOptional()
@@ -62,6 +66,14 @@ export class MapPostsQueryDto {
   @IsOptional()
   @IsString()
   tags?: string;
+
+  @ApiPropertyOptional({
+    description: '감정 목록 (쉼표 구분)',
+    example: '행복,슬픔',
+  })
+  @IsOptional()
+  @IsString()
+  emotions?: string;
 
   @ApiPropertyOptional({ description: '페이지네이션 커서' })
   @IsOptional()
@@ -90,14 +102,17 @@ export class MapPostItemDto {
   @ApiProperty({ description: '제목' })
   title: string;
 
-  @ApiPropertyOptional({ description: '썸네일 URL' })
-  thumbnailUrl?: string;
+  @ApiPropertyOptional({ description: '썸네일 미디어 ID' })
+  thumbnailMediaId?: string | null;
 
   @ApiProperty({ description: '생성일/이벤트일' })
   createdAt: Date;
 
   @ApiProperty({ type: [String], description: '태그 목록' })
   tags: string[];
+
+  @ApiPropertyOptional({ type: [String], description: '감정 목록' })
+  emotion?: PostMood[] | null;
 
   @ApiPropertyOptional({ description: '장소명', nullable: true })
   placeName?: string | null;
