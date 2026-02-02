@@ -3,6 +3,7 @@ import { getSession, signOut } from 'next-auth/react';
 import { deleteCookie, getCookie } from '../utils/cookie';
 import { guestCookieKey, useAuthStore } from '@/store/useAuthStore';
 import type { Session } from 'next-auth';
+import * as Sentry from '@sentry/nextjs';
 
 const INSTANCE_ID =
   typeof window !== 'undefined'
@@ -195,6 +196,15 @@ export async function refreshServerAccessToken(token: any) {
         error: null,
       };
     } catch (error) {
+      Sentry.captureException(error, {
+        tags: {
+          context: 'auth',
+          operation: 'refresh-server-token',
+        },
+        extra: {
+          hasRefreshToken: !!token.refreshToken,
+        },
+      });
       console.error('서버 토큰 갱신 실패', error);
       return { ...token, error: 'RefreshAccessTokenError' };
     } finally {
@@ -213,6 +223,12 @@ export async function handleLogout() {
 
     await signOut({ callbackUrl: '/login' });
   } catch (error) {
+    Sentry.captureException(error, {
+      tags: {
+        context: 'auth',
+        operation: 'logout',
+      },
+    });
     console.error('로그아웃 중 에러 발생', error);
     window.location.href = '/login';
   }
