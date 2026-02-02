@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/nextjs';
 
 interface GroupEditHeaderActionsProps {
   groupId: string;
@@ -57,6 +58,17 @@ export default function GroupEditHeaderActions({
       ]);
       toast.success('수정되었습니다.');
     } catch (error) {
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'group-info',
+          operation: 'update-group-info',
+        },
+        extra: {
+          groupName: editData.groupName,
+          assetId: editData.groupThumbnail,
+        },
+      });
       console.error('update failed', error);
     } finally {
       setIsPending(false);

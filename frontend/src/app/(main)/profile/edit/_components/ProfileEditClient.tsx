@@ -10,6 +10,7 @@ import { useApiPatch } from '@/hooks/useApi';
 import { UserProfileResponse } from '@/lib/types/profileResponse';
 import { toast } from 'sonner';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
+import * as Sentry from '@sentry/nextjs';
 
 export default function ProfileEditClient() {
   const { data: profile } = useQuery(userProfileOptions());
@@ -37,6 +38,16 @@ export default function ProfileEditClient() {
       queryClient.setQueryData(['profile', 'me'], response.data);
       toast.success('프로필 정보가 수정되었습니다.');
     } catch (error) {
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'profile',
+          operation: 'update-profile',
+        },
+        extra: {
+          nickname: data.nickname,
+        },
+      });
       console.error('내정보 수정 실패', error);
     } finally {
       setIsPending(false);
