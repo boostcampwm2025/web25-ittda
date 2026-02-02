@@ -3,6 +3,7 @@
 import React from 'react';
 import { ImageIcon, MapPin } from 'lucide-react';
 import { RecordSearchItem } from '@/lib/types/record';
+import { formatDateDot } from '@/lib/date';
 import AssetImage from '@/components/AssetImage';
 interface SearchItemProps {
   record: RecordSearchItem;
@@ -39,7 +40,7 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
         </h4>
 
         <div className="flex items-center gap-2 text-xs text-itta-gray3">
-          <span>{record.date}</span>
+          <span>{formatDateDot(new Date(record.date))}</span>
 
           {record.address && (
             <div className="flex items-center gap-0.5 truncate">

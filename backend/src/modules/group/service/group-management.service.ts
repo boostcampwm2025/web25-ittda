@@ -188,16 +188,18 @@ export class GroupManagementService {
       relations: ['user', 'profileMedia'],
     });
 
+    const activeMembers = members.filter(
+      (member): member is GroupMember & { user: User } => Boolean(member.user),
+    );
+
     // 응답 형식으로 변환
     return {
       groupName: group.name,
-      groupMemberCount: members.length,
-      members: members
-        .filter((member) => !!member.user) // user 데이터가 없는 멤버 제외 (Soft Delete 등)
-        .map((member) => ({
-          memberId: member.user.id,
-          profileImageId: member.user.profileImageId,
-        })),
+      groupMemberCount: activeMembers.length,
+      members: activeMembers.map((member) => ({
+        memberId: member.user.id,
+        profileImageId: member.profileMediaId ?? null,
+      })),
     };
   }
 
@@ -307,8 +309,12 @@ export class GroupManagementService {
       order: { joinedAt: 'ASC' },
     });
 
+    const activeMembers = members.filter(
+      (member): member is GroupMember & { user: User } => Boolean(member.user),
+    );
+
     // 4. 응답 구성
-    const meMember = members.find((m) => m.userId === userId);
+    const meMember = activeMembers.find((m) => m.userId === userId);
     if (!meMember) throw new ForbiddenException('그룹 멤버가 아닙니다.');
 
     const groupDto = {
@@ -324,7 +330,7 @@ export class GroupManagementService {
         : null,
     };
 
-    const memberDtos = members.map((m) => ({
+    const memberDtos = activeMembers.map((m) => ({
       userId: m.user.id,
       name: m.user.nickname,
       profileImage: m.profileMedia ? { assetId: m.profileMedia.id } : null,
@@ -363,7 +369,7 @@ export class GroupManagementService {
     });
 
     // 2. 멤버가 없는 경우 예외 처리
-    if (!member) {
+    if (!member || !member.user) {
       const groupExists = await this.groupRepo.exists({
         where: { id: groupId },
       });
@@ -408,7 +414,7 @@ export class GroupManagementService {
       relations: ['user'],
     });
 
-    if (!member) {
+    if (!member || !member.user) {
       const groupExists = await this.groupRepo.exists({
         where: { id: groupId },
       });

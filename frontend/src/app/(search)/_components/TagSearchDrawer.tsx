@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -11,7 +11,7 @@ import {
 
 interface Props {
   onClose: () => void;
-  allTags: string[];
+  allTags?: string[];
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
   onReset: () => void;
@@ -27,10 +27,22 @@ export default function TagSearchDrawer({
   const [keyword, setKeyword] = useState('');
 
   const filteredTags = useMemo(() => {
-    return allTags.filter((tag) =>
+    return allTags?.filter((tag) =>
       tag.toLowerCase().includes(keyword.toLowerCase()),
     );
   }, [allTags, keyword]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === 'Enter' && keyword.trim()) {
+      e.preventDefault();
+      // 이미 선택된 태그가 아니라면 추가
+      if (!selectedTags.includes(keyword.trim())) {
+        onToggleTag(keyword.trim());
+      }
+      setKeyword(''); // 입력창 초기화
+    }
+  };
 
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
@@ -46,6 +58,25 @@ export default function TagSearchDrawer({
               </DrawerTitle>
             </div>
           </DrawerHeader>
+
+          {/* 현재 선택된 태그 리스트 */}
+          {selectedTags.length !== 0 && (
+            <div className="flex flex-wrap gap-2 mb-3 min-h-8">
+              {selectedTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-itta-point/10 text-itta-point text-xs font-bold animate-in fade-in zoom-in-95"
+                >
+                  #{tag}
+                  <X
+                    size={14}
+                    className="cursor-pointer hover:text-rose-500 transition-colors"
+                    onClick={() => onToggleTag(tag)}
+                  />
+                </span>
+              ))}
+            </div>
+          )}
           {/* 검색 및 상태 입력창 */}
           <div className="flex-[2.5] relative group">
             <Search
@@ -61,46 +92,49 @@ export default function TagSearchDrawer({
               }
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              className="w-full py-4 pl-12 pr-4 rounded-2xl bg-gray-50 dark:bg-white/5 border-none text-sm font-bold text-itta-black dark:text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-itta-point/20 transition-all shadow-inner"
+              onKeyDown={handleKeyDown}
+              className="w-full py-4 pl-12 pr-4 rounded-2xl bg-gray-50 dark:bg-white/5 border-none text-base font-bold text-itta-black dark:text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-itta-point/20 transition-all shadow-inner"
             />
           </div>
 
           {/* 태그 목록 영역 */}
-          <section className="flex flex-col space-y-4 ">
-            <p className="text-xs font-bold text-itta-gray3 uppercase tracking-widest leading-none">
-              자주 사용한 태그
-            </p>
-            <div className="flex flex-wrap gap-2 mb-10 min-h-[120px] content-start overflow-y-auto max-h-[300px] hide-scrollbar">
-              {filteredTags.map((tag) => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => onToggleTag(tag)}
-                    className={`px-4 py-2 rounded-2xl text-sm font-bold border transition-all ${
-                      isSelected
-                        ? 'bg-itta-point/5 border-itta-point text-itta-point'
-                        : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5 text-itta-gray3 hover:border-gray-200'
-                    }`}
-                  >
-                    <span
-                      className={
-                        isSelected ? 'text-itta-point' : 'text-itta-point/40'
-                      }
+          {filteredTags && filteredTags?.length > 0 && (
+            <section className="flex flex-col space-y-4 ">
+              <p className="text-xs font-bold text-itta-gray3 uppercase tracking-widest leading-none">
+                자주 사용한 태그
+              </p>
+              <div className="flex flex-wrap gap-2 mb-10 min-h-[120px] content-start overflow-y-auto max-h-[300px] hide-scrollbar">
+                {filteredTags?.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => onToggleTag(tag)}
+                      className={`px-4 py-2 rounded-2xl text-sm font-bold border transition-all ${
+                        isSelected
+                          ? 'bg-itta-point/5 border-itta-point text-itta-point'
+                          : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5 text-itta-gray3 hover:border-gray-200'
+                      }`}
                     >
-                      #
-                    </span>{' '}
-                    {tag}
-                  </button>
-                );
-              })}
-              {filteredTags.length === 0 && (
-                <p className="text-sm text-gray-400 w-full text-center py-10">
-                  검색 결과가 없습니다.
-                </p>
-              )}
-            </div>
-          </section>
+                      <span
+                        className={
+                          isSelected ? 'text-itta-point' : 'text-itta-point/40'
+                        }
+                      >
+                        #
+                      </span>{' '}
+                      {tag}
+                    </button>
+                  );
+                })}
+                {filteredTags?.length === 0 && (
+                  <p className="text-sm text-gray-400 w-full text-center py-10">
+                    검색 결과가 없습니다.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
 
           {/* 하단 액션바 */}
           <div className="flex gap-3 items-center">

@@ -21,15 +21,18 @@ export default function AssetImage({
   fallback,
   ...props
 }: AssetImageProps) {
-  // assetId가 로컬 경로(/로 시작)인지 확인
+  // assetId가 로컬 경로(/로 시작) 또는 이미 URL인지 확인
   const isLocalPath = assetId?.startsWith('/');
+  const isAlreadyUrl =
+    assetId?.startsWith('http://') || assetId?.startsWith('https://');
 
-  //url이 없고 로컬 경로가 아닐 때만 assetId로 solve 호출하기
+  //url이 없고 로컬 경로나 URL이 아닐 때만 assetId로 solve 호출하기
   const { data, isLoading, isError } = useMediaResolveSingle(
-    url || isLocalPath ? undefined : assetId,
+    url || isLocalPath || isAlreadyUrl ? undefined : assetId,
     draftId,
   );
-  const imageSrc = url || (isLocalPath ? assetId : data?.url);
+  const imageSrc =
+    url || (isLocalPath ? assetId : isAlreadyUrl ? assetId : data?.url);
 
   if (isLoading) {
     return (
