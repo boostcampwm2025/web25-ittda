@@ -56,14 +56,13 @@ export default function RecordEditorHeader({
                   {displayMembers.map((member) => (
                     <div
                       key={member?.sessionId || member.actorId}
-                      className="relative inline-block h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#121212] flex-shrink-0"
+                      className="relative inline-block h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#121212] flex-shrink-0 bg-white dark:bg-[#121212] isolate"
                     >
                       {member.profileImageId ? (
                         <AssetImage
                           assetId={member.profileImageId}
                           alt={`${member.displayName} 프로필 이미지`}
-                          width={50}
-                          height={50}
+                          fill
                           className="rounded-full object-cover"
                         />
                       ) : (
@@ -105,21 +104,19 @@ export default function RecordEditorHeader({
                       key={member.sessionId || member.actorId}
                       className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group/item"
                     >
-                      <div className="relative h-6 w-6 rounded-full overflow-hidden flex-shrink-0 border border-gray-100 dark:border-white/10">
+                      <div className="relative h-8 w-8 rounded-full overflow-hidden flex-shrink-0 border border-gray-100 dark:border-white/10">
                         {member.profileImageId ? (
                           <AssetImage
                             assetId={
                               member.profileImageId || '/profile_base.png'
                             }
                             alt={`${member.displayName} 프로필 이미지`}
-                            width={50}
-                            height={50}
+                            fill
                             className="rounded-full object-cover"
                           />
                         ) : (
                           <Image
-                            width={50}
-                            height={50}
+                            fill
                             src={'/profile_base.png'}
                             alt={`${member.displayName} 프로필 이미지`}
                             className="rounded-full object-cover"
