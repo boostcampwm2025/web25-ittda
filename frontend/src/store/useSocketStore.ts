@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { getAccessToken, refreshAccessToken } from '@/lib/api/auth';
+import { SocketExceptionResponse } from '@/lib/types/recordCollaboration';
 
 interface SocketStore {
   socket: Socket | null;
@@ -47,22 +48,34 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
       set({ isConnected: false });
     });
 
+    // 토큰 갱신 및 재연결 함수
+    const handleAuthError = async () => {
+      console.debug('소켓 인증 에러, 토큰 재발급');
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        socket.auth = { token: newToken };
+        // 연결을 끊고 새 토큰으로 다시 연결
+        socket.disconnect().connect();
+      } else {
+        get().disconnectSocket();
+      }
+    };
+
     // 에러 발생 시 처리
     socket.on('connect_error', async (err: { message: string }) => {
-      if (err.message === 'Unauthorized') {
-        console.debug('소켓 인증 에러 발생, 토큰 재발급 시도...');
-        const newToken = await refreshAccessToken();
-
-        if (newToken) {
-          // 토큰 갱신 후 재연결
-          socket.auth = { token: newToken };
-          socket.connect();
-        } else {
-          // 토큰 모두 만료된 경우
-          get().disconnectSocket();
-        }
+      if (err.message === 'Unauthorized' || err.message.includes('token')) {
+        await handleAuthError();
       }
     });
+
+    socket.on('exception', async (data: SocketExceptionResponse) => {
+      console.error('소켓 서버 예외 발생:', data);
+
+      if (data.message === 'Invalid access token.' || data.status === 'error') {
+        await handleAuthError();
+      }
+    });
+
     set({ socket });
   },
   setSessionId: (id: string | null) => set({ sessionId: id }),
