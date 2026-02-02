@@ -50,8 +50,7 @@ export const FilterChip = ({
       >
         <Icon size={13} strokeWidth={isActive ? 2.5 : 2} />
         <span className="truncate max-w-25">{label}</span>
-       </div>
-      </button>
+      </div>
 
       {isActive && (
         <div
