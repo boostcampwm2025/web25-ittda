@@ -1,7 +1,6 @@
 import { useApiPost } from './useApi';
 import { useQuery } from '@tanstack/react-query';
 import { post } from '@/lib/api/api';
-import { createApiError } from '@/lib/utils/errorHandler';
 import { InviteJoinResponse } from '@/lib/types/groupResponse';
 
 export interface InviteResponse {
@@ -33,10 +32,13 @@ export const useCreateInviteCode = (
       );
 
       if (!response.success) {
-        throw createApiError(response);
+        throw response;
       }
 
       return response.data;
+    },
+    meta: {
+      silent: true,
     },
     retry: false,
     refetchOnWindowFocus: false,
