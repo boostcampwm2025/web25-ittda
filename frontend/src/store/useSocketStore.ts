@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { getAccessToken, refreshAccessToken } from '@/lib/api/auth';
+import * as Sentry from '@sentry/nextjs';
 
 interface SocketStore {
   socket: Socket | null;
@@ -27,6 +28,15 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     }
 
     if (!accessToken) {
+      // 인증 토큰이 없으면 소켓 연결 불가 (실시간 기능 사용 불가)
+      const error = new Error('인증 토큰이 없어 소켓을 연결할 수 없습니다');
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'socket',
+          operation: 'connect',
+        },
+      });
       console.error('인증 토큰이 없어 소켓을 연결할 수 없습니다.');
       return;
     }
@@ -58,9 +68,29 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
           socket.auth = { token: newToken };
           socket.connect();
         } else {
-          // 토큰 모두 만료된 경우
+          // 토큰 모두 만료된 경우 - 재로그인 필요
+          Sentry.captureException(new Error('소켓 인증 실패: 모든 토큰 만료'), {
+            level: 'warning',
+            tags: {
+              context: 'socket',
+              operation: 'auth',
+            },
+          });
           get().disconnectSocket();
         }
+      } else {
+        // 인증 외 다른 연결 에러
+        Sentry.captureException(err, {
+          level: 'error',
+          tags: {
+            context: 'socket',
+            operation: 'connect',
+          },
+          extra: {
+            errorMessage: err.message,
+          },
+        });
+        console.error('소켓 연결 에러:', err);
       }
     });
     set({ socket });

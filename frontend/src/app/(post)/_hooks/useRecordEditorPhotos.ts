@@ -12,6 +12,7 @@ import {
 } from '@/lib/utils/exifExtractor';
 
 import { normalizeLayout } from '../_utils/recordLayoutHelper';
+import * as Sentry from '@sentry/nextjs';
 
 interface ImageWithMetadata {
   imageUrl: string;
@@ -155,6 +156,16 @@ export function useRecordEditorPhotos({
         handleDone(updatedPhotoValue, false);
       }
     } catch (err) {
+      Sentry.captureException(err, {
+        level: 'error',
+        tags: {
+          context: 'post-editor',
+          operation: 'image-upload',
+        },
+        extra: {
+          isDraft: isDraft,
+        },
+      });
       console.error(err);
       toast.error('이미지 업로드에 실패했습니다.');
     } finally {
