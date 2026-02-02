@@ -4,6 +4,7 @@ import {
   MultiResolveItem,
 } from '@/hooks/useMediaResolve';
 import { Block, ImageValue } from '../types/record';
+import * as Sentry from '@sentry/nextjs';
 
 interface ImageBlock extends Block {
   type: 'IMAGE';
@@ -65,6 +66,17 @@ export async function resolveMediaInBlocks(blocks: Block[]): Promise<Block[]> {
       return block;
     });
   } catch (error) {
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        context: 'media-resolver',
+        operation: 'resolve-media-in-blocks',
+      },
+      extra: {
+        blocks: blocks,
+        allMediaIds: allMediaIds,
+      },
+    });
     console.error('Media Resolve Error:', error);
     return blocks; // 실패 시 원본
   }
