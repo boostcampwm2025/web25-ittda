@@ -145,6 +145,7 @@ export class MapService {
           thumbnailMediaId,
           createdAt: post.eventAt || post.createdAt,
           tags: post.tags || [],
+          emotion: post.emotion ?? [],
           placeName: placeDisplay,
         };
       }),
