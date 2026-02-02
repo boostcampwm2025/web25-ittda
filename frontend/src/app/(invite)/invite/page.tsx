@@ -58,7 +58,7 @@ export default function InvitePage() {
 
             setTimeout(() => {
               toast.success(`그룹에 참여되었습니다!`);
-            }, 1500);
+            }, 500);
           },
           onError: (error) => {
             //TODO: 임시 작업 현재 toast 가 두개 뜨는 문제 존재
