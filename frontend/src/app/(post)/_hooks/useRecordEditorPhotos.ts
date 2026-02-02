@@ -278,26 +278,57 @@ export function useRecordEditorPhotos({
    * 메타데이터 스킵
    */
   const handleSkipMetadata = () => {
-    if (!pendingMetadata || !activeDrawer?.id) return;
+    if (!pendingMetadata) return;
 
-    setBlocks((prev) =>
-      normalizeLayout(
-        prev.map((b) =>
-          b.id === activeDrawer.id && b.type === 'photos'
-            ? {
-                ...b,
-                value: {
-                  ...b.value,
-                  tempUrls: [
-                    ...(b.value.tempUrls || []),
-                    ...pendingMetadata.newImageUrls,
-                  ],
-                },
-              }
-            : b,
-        ),
-      ),
-    );
+    // photos 블록 ID 결정
+    let photosBlockId = activeDrawer?.id;
+    if (!photosBlockId) {
+      photosBlockId = uuidv4();
+      setActiveDrawer({
+        type: 'photos',
+        id: photosBlockId,
+      });
+    }
+
+    setBlocks((prev) => {
+      const idx = prev.findIndex(
+        (b) => b.id === photosBlockId && b.type === 'photos',
+      );
+
+      if (idx >= 0) {
+        // 기존 블록 업데이트
+        return normalizeLayout(
+          prev.map((b) =>
+            b.id === photosBlockId && b.type === 'photos'
+              ? {
+                  ...b,
+                  value: {
+                    ...b.value,
+                    tempUrls: [
+                      ...(b.value.tempUrls || []),
+                      ...pendingMetadata.newImageUrls,
+                    ],
+                  },
+                }
+              : b,
+          ),
+        );
+      } else {
+        // 새 블록 생성
+        return normalizeLayout([
+          ...prev,
+          {
+            id: photosBlockId!,
+            type: 'photos',
+            value: {
+              mediaIds: [],
+              tempUrls: pendingMetadata.newImageUrls,
+            },
+            layout: { row: 0, col: 0, span: 2 },
+          } as RecordBlock,
+        ]);
+      }
+    });
 
     setPendingMetadata({
       images: [],
