@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, ReactNode, ErrorInfo, ComponentType } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -52,6 +53,17 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // ErrorBoundary에서 잡힌 모든 에러 Sentry로 전송
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+      tags: {
+        errorBoundary: true,
+      },
+    });
     console.error({ error, errorInfo });
   }
 
