@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { getAccessToken, refreshAccessToken } from '@/lib/api/auth';
 import { SocketExceptionResponse } from '@/lib/types/recordCollaboration';
+import { toast } from 'sonner';
 
 interface SocketStore {
   socket: Socket | null;
@@ -73,6 +74,16 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
 
       if (data.message === 'Invalid access token.' || data.status === 'error') {
         await handleAuthError();
+      }
+      if (data.message === 'draftId mismatch.') {
+        toast.warning('동기화 오류가 발생하여 이전 화면으로 이동합니다.', {
+          duration: 1500,
+        });
+
+        setTimeout(() => {
+          window.history.back();
+        }, 1500);
+        return;
       }
     });
 
