@@ -2,6 +2,7 @@
 
 import AssetImage from '@/components/AssetImage';
 import { formatDotDateString } from '@/lib/date';
+import { randomBaseImage } from '@/lib/image';
 import { MapPostItem } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Clock, MapPin } from 'lucide-react';
@@ -27,20 +28,21 @@ export function MapRecordItem({
       data-post-id={post.id}
       onClick={onSelect}
       className={cn(
-        'flex items-center gap-5 p-5 rounded-3xl border transition-all duration-300 group cursor-pointer active:scale-[0.97]',
+        'flex items-center gap-3 py-4 px-3 rounded-3xl border transition-all duration-300 group cursor-pointer active:scale-[0.97]',
         isHighlighted
           ? 'border-[#10B981] bg-[#10B981]/5 shadow-md scale-[1.02] ring-1 ring-[#10B981]/30'
           : 'dark:border-white/5 border-gray-100 bg-white dark:bg-white/2 shadow-sm hover:border-[#10B981]/30',
+        !post.thumbnailMediaId && 'px-5',
       )}
     >
-      {post.thumbnailMediaId && !isError && (
-        <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-black/5">
+      {post.thumbnailMediaId && (
+        <div className="border-2 shadow-sm bg-white dark:border-[#121212] border-white w-16 h-16 rounded-2xl overflow-hidden shrink-0">
           <AssetImage
-            width={80}
-            height={80}
+            width={64}
+            height={64}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             onError={() => setIsError(true)}
-            assetId={post.thumbnailMediaId}
+            assetId={post.thumbnailMediaId ?? randomBaseImage(post.id)}
             alt={post.title}
           />
         </div>
@@ -55,9 +57,9 @@ export function MapRecordItem({
         >
           {post.title}
         </h4>
-        <p className="text-[11px] text-itta-gray3 flex items-center gap-1.5 font-medium">
-          <MapPin className="w-3 h-3 text-itta-point" />
-          {post.placeName}
+        <p className="text-[11px] text-itta-gray3 flex items-center gap-1.5 font-medium min-w-0">
+          <MapPin className="w-3 h-3 text-itta-point shrink-0" />
+          <span className="truncate">{post.placeName}</span>
         </p>
         <p className="text-[11px] text-itta-gray3 flex items-center gap-1.5 font-medium">
           <Clock className="w-3 h-3 text-itta-point" />
@@ -81,13 +83,12 @@ export function MapRecordItem({
           onNavigate();
         }}
         className={cn(
-          'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95',
+          'flex items-center p-3 rounded-full text-xs font-bold transition-all active:scale-95',
           isHighlighted
             ? 'bg-[#10B981] text-white shadow-md'
             : 'dark:bg-white/5 dark:text-gray-300 bg-gray-100 text-gray-600 hover:bg-[#10B981]/10',
         )}
       >
-        상세
         <ChevronRight size={14} />
       </button>
     </div>

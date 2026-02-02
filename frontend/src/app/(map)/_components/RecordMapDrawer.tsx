@@ -36,30 +36,36 @@ export default function RecordMapDrawer({
     return posts;
   }, [posts, selectedPostId]);
 
-  // 선택된 단일 ID가 바뀔 때 자동 스크롤
+  // 선택된 단일 ID가 바뀔 때 자동 스크롤 (데이터 로딩 완료 후)
   useEffect(() => {
     if (
       typeof selectedPostId === 'string' &&
       selectedPostId &&
-      scrollContainerRef.current
+      scrollContainerRef.current &&
+      !isLoading // 로딩 중이 아닐 때만
     ) {
-      const targetElement = scrollContainerRef.current.querySelector(
-        `[data-post-id="${selectedPostId}"]`,
-      );
+      // DOM 업데이트를 기다리기 위해 다음 리렌더링 직전에 적용
+      const ra = requestAnimationFrame(() => {
+        const targetElement = scrollContainerRef.current?.querySelector(
+          `[data-post-id="${selectedPostId}"]`,
+        );
 
-      if (targetElement) {
-        // drawer 상단 padding을 고려하여 스크롤
-        const container = scrollContainerRef.current;
-        const elementTop = (targetElement as HTMLElement).offsetTop;
-        const offset = 16; // pt-4 = 16px 상단 여백
+        if (targetElement && scrollContainerRef.current) {
+          // drawer 상단 padding을 고려하여 스크롤
+          const container = scrollContainerRef.current;
+          const elementTop = (targetElement as HTMLElement).offsetTop;
+          const offset = 16; // pt-4 = 16px 상단 여백
 
-        container.scrollTo({
-          top: elementTop - offset,
-          behavior: 'smooth',
-        });
-      }
+          container.scrollTo({
+            top: elementTop - offset,
+            behavior: 'smooth',
+          });
+        }
+      });
+
+      return () => cancelAnimationFrame(ra);
     }
-  }, [selectedPostId]);
+  }, [selectedPostId, displayPosts, isLoading]);
 
   const {
     height,
@@ -147,11 +153,18 @@ export default function RecordMapDrawer({
                 );
               })
             ) : (
-              <div className="py-32 flex flex-col items-center gap-4 opacity-30">
-                <MapIcon className="w-14 h-14" />
-                <p className="text-sm font-bold text-center">
-                  주변에 기록이 없습니다.
-                </p>
+              <div className="pt-3 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl dark:bg-white/5 bg-white">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+                  <MapIcon className="w-6 h-6 text-[#10B981]" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+                    주변에 기록이 없어요
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    지도를 이동하거나 필터를 조정해보세요
+                  </p>
+                </div>
               </div>
             )}
           </div>
