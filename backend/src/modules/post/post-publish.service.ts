@@ -107,7 +107,9 @@ export class PostPublishService {
 
           const snapshotBlocks = snapshot.blocks;
           validatePostTitle(snapshot.title);
-          validateBlocks(snapshotBlocks);
+          validateBlocks(snapshotBlocks, {
+            layoutErrorMessage: 'Layout is invalid.',
+          });
           validateBlockValues(snapshotBlocks);
           this.ensureBlockIds(snapshotBlocks);
           this.ensureNoDuplicateBlockIds(snapshotBlocks);
@@ -275,7 +277,9 @@ export class PostPublishService {
 
         validatePostTitle(snapshot.title);
         const blocks = snapshot.blocks;
-        validateBlocks(blocks);
+        validateBlocks(blocks, {
+          layoutErrorMessage: 'Layout is invalid.',
+        });
         validateBlockValues(blocks);
         this.ensureBlockIds(blocks);
         this.ensureNoDuplicateBlockIds(blocks);
