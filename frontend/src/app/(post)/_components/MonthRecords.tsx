@@ -42,7 +42,7 @@ export default function MonthRecords({
   const year = params.year || new Date().getFullYear().toString();
 
   const options = groupId
-    ? groupMonthlyRecordListOptions(groupId)
+    ? groupMonthlyRecordListOptions(groupId, year)
     : myMonthlyRecordListOptions(year);
 
   const { data: months = [] } = useQuery({
