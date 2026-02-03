@@ -9,6 +9,7 @@ import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { isImageBlock } from '@/lib/utils/mediaResolver';
 
 interface DailyDetailRecordActionsProps {
   record: RecordPreview;
@@ -24,13 +25,13 @@ export default function DailyDetailRecordActions({
   const [shareOpen, setShareOpen] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
 
+  const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
+  const image = record.blocks.find(isImageBlock);
+
   const { mutateAsync: startGroupEdit } = useEditPostDraft(
     record.groupId || '',
     record.postId,
   );
-
-  const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
-  const image = record.blocks.find((block) => block.type === 'IMAGE');
 
   // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
@@ -127,7 +128,7 @@ export default function DailyDetailRecordActions({
           id: record.postId,
           title: record.title,
           content,
-          image: image?.id ?? null,
+          image: image?.value.mediaIds?.[0] ?? null,
         }}
       />
     </>
