@@ -87,6 +87,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
       originalTitle: null,
       imageUrl: undefined,
     });
+    onClose();
   };
 
   return (
@@ -171,6 +172,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                           data={item}
                           onClick={() => {
                             onSelect(item);
+                            onClose();
                           }}
                           mode="search"
                         />

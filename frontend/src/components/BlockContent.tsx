@@ -1,6 +1,6 @@
 import { Block, ImageValue } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
-import { Calendar, Clock, MapPin, Star } from 'lucide-react';
+import { Calendar, Clock, Film, MapPin, Star } from 'lucide-react';
 import Image from 'next/image';
 import ImageCarousel from './ImageCarousel';
 import { EMOTION_MAP } from '@/lib/constants/constants';
@@ -138,15 +138,21 @@ export default function BlockContent({ block }: { block: Block }) {
       if ('title' in block.value && 'type' in block.value) {
         return (
           <div className="flex items-center gap-3 p-4 rounded-xl border transition-colors dark:bg-white/3 dark:border-white/5 bg-gray-50/50 border-gray-100">
-            {block.value.imageUrl && (
-              <Image
-                src={block.value.imageUrl}
-                className="w-12 h-16 object-cover rounded shadow-sm"
-                alt={block.value.title}
-                width={50}
-                height={50}
-              />
-            )}
+            <div className="relative w-14 h-20 rounded-md overflow-hidden flex-shrink-0 bg-gray-100 border border-black/5">
+              {block.value.imageUrl ? (
+                <Image
+                  src={block.value.imageUrl}
+                  className="w-full h-full object-cover rounded shadow-sm"
+                  alt={block.value.title}
+                  width={56}
+                  height={80}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <Film className="w-5 h-5" />
+                </div>
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 {block.value.type}

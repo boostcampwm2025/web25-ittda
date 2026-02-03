@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useDebounce<T extends (...args: any[]) => void>(
@@ -7,6 +7,13 @@ export function useDebounce<T extends (...args: any[]) => void>(
 ) {
   // 타이머를 useRef로 관리해야 리렌더링 시에도 값이 초기화되지 않음
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // fn을 ref로 관리하여 매번 재생성되어도 useCallback이 재실행되지 않도록 함
+  const fnRef = useRef(fn);
+
+  // fn이 바뀔 때마다 ref 업데이트
+  useEffect(() => {
+    fnRef.current = fn;
+  }, [fn]);
 
   const debounced = useCallback(
     (...args: Parameters<T>) => {
@@ -17,10 +24,10 @@ export function useDebounce<T extends (...args: any[]) => void>(
 
       // 새로운 타이머 설정
       timer.current = setTimeout(() => {
-        fn(...args);
+        fnRef.current(...args);
       }, delay);
     },
-    [fn, delay],
+    [delay],
   );
 
   const cancel = useCallback(() => {
