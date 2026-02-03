@@ -7,12 +7,11 @@ export async function refreshHomeData() {
 }
 
 export async function refreshRecordData() {
-  revalidatePath('/my', 'page');
-  revalidatePath('/group', 'page');
+  revalidatePath('/my', 'layout');
 }
 
 export async function refreshGroupData(groupId: string) {
-  revalidatePath(`/group/${groupId}`);
+  revalidatePath(`/group/${groupId}`, 'layout');
 }
 
 export async function refreshSharedData() {
