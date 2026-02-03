@@ -1,5 +1,6 @@
 import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, handleLogout } from './auth';
+import * as Sentry from '@sentry/nextjs';
 
 /**
  * API Base URL 결정
@@ -105,6 +106,18 @@ async function fetchWithRetry<T>(
 
       if (!newToken) {
         // 재발급 실패 - 로그아웃 처리
+        const error = new Error('토큰 재발급 실패 - 세션 만료');
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: {
+            context: 'api',
+            operation: 'token-refresh-failure',
+          },
+          extra: {
+            endpoint: url,
+          },
+        });
+
         await handleLogout();
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
@@ -147,6 +160,19 @@ async function fetchWithRetry<T>(
       err.message.includes('JSON') ||
       err.message.includes('Unexpected token')
     ) {
+      // JSON 파싱 실패는 서버 응답 문제일 가능성
+      Sentry.captureException(err, {
+        level: 'error',
+        tags: {
+          context: 'api',
+          operation: 'parse-response',
+        },
+        extra: {
+          endpoint: url,
+          errorMessage: err.message,
+        },
+      });
+
       return {
         success: false,
         data: null,
@@ -160,6 +186,21 @@ async function fetchWithRetry<T>(
 
     // 마지막 시도면 에러 반환
     if (attempt >= maxRetries) {
+      // 최대 재시도 횟수 초과는 네트워크 문제일 가능성
+      Sentry.captureException(err, {
+        level: 'error',
+        tags: {
+          context: 'api',
+          operation: 'network-error',
+        },
+        extra: {
+          endpoint: url,
+          attempt,
+          maxRetries,
+          errorMessage: err.message,
+        },
+      });
+
       return {
         success: false,
         data: null,
@@ -237,15 +278,10 @@ export async function fetchApi<T>(
   }
 
   // 서버 환경에서 fetch 실행시 쿠키 전달
-  const finalOptions: RequestInit = {
-    ...fetchOptions,
-    headers: defaultHeaders,
-  };
-
   if (typeof window === 'undefined') {
     const { cookies } = await import('next/headers');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (finalOptions.headers as any).cookie = (await cookies()).toString();
+    (defaultHeaders as any).cookie = (await cookies()).toString();
   }
 
   return fetchWithRetry<T>(

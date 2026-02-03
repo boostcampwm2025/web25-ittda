@@ -54,15 +54,8 @@ export function PostCard({
   className = '',
   children,
 }: BaseCardProps) {
-  const [fallbackIndex] = useState(() => Math.floor(Math.random() * 8) + 1);
-
-  const baseImage = useMemo(() => {
-    // id가 없으면 위에서 생성한 랜덤 인덱스 이미지
-    return `/gemini_base${fallbackIndex}.png`;
-  }, [fallbackIndex]);
-
   return (
-    <div className={`group relative ${height}`}>
+    <div className={cn('group relative', height)}>
       <div
         role="button"
         tabIndex={0}
@@ -75,19 +68,21 @@ export function PostCard({
           className,
         )}
       >
-        {imageUrl ? (
-          <AssetImage
-            assetId={imageUrl}
-            alt={imageAlt}
-            width={100}
-            height={100}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 dark:opacity-60 opacity-90"
-          />
-        ) : (
-          <div className={cn('flex items-center justify-center', className)}>
-            <ImageIcon className="w-6 h-6 text-gray-400" />
-          </div>
-        )}
+        <div suppressHydrationWarning>
+          {imageUrl ? (
+            <AssetImage
+              assetId={imageUrl}
+              alt={imageAlt}
+              width={100}
+              height={100}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 dark:opacity-60 opacity-90"
+            />
+          ) : (
+            <div className={cn('flex items-center justify-center', className)}>
+              <ImageIcon className="w-6 h-6 text-gray-400" />
+            </div>
+          )}
+        </div>
 
         {/* 그라디언트 오버레이 */}
         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/10 to-transparent" />

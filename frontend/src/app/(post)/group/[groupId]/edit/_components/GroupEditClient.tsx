@@ -8,14 +8,22 @@ import GroupEditHeaderActions from './GroupEditHeaderActions';
 import { groupDetailOptions } from '@/lib/api/group';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { GroupEditResponse } from '@/lib/types/groupResponse';
 
 interface GroupEditClientProps {
   groupId: string;
+  profile: GroupEditResponse;
 }
 
-export default function GroupEditClient({ groupId }: GroupEditClientProps) {
+export default function GroupEditClient({
+  groupId,
+  profile,
+}: GroupEditClientProps) {
   const router = useRouter();
-  const { data } = useQuery(groupDetailOptions(groupId));
+  const { data } = useQuery({
+    ...groupDetailOptions(groupId),
+    initialData: profile,
+  });
 
   if (!data) {
     router.push(`/group/${groupId}`);
@@ -26,7 +34,10 @@ export default function GroupEditClient({ groupId }: GroupEditClientProps) {
   return (
     <GroupEditProvider
       initialName={group.name}
-      initialThumbnail={group.cover?.assetId || ''}
+      initialThumbnail={{
+        assetId: group.cover?.assetId || '',
+        postId: group.cover?.sourcePostId || '',
+      }}
       initialMembers={members}
     >
       <header className="sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/95 bg-white/95">

@@ -2,7 +2,7 @@
 
 import { EMOTION_MAP } from '@/lib/constants/constants';
 import { EmotionStatSummary } from '@/lib/types/profile';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Smile } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -54,9 +54,19 @@ export default function EmotionList({
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {sortedEmotions[emotionTab].length === 0 ? (
           <div className="flex px-3 py-10 items-center justify-center h-full">
-            <p className="text-sm font-medium text-gray-400">
-              사용된 감정이 없습니다.
-            </p>
+            <div className="py-12 flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+                <Smile className="w-5 h-5 text-[#10B981]" />
+              </div>
+              <div className="space-y-1 text-center">
+                <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+                  아직 기록한 감정이 없어요
+                </p>
+                <p className="text-xs text-gray-400">
+                  오늘의 기분을 기록해보세요
+                </p>
+              </div>
+            </div>
           </div>
         ) : (
           sortedEmotions[emotionTab].map((emotion) => (

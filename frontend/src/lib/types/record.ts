@@ -1,3 +1,5 @@
+import { Contributor } from './recordResponse';
+
 export type TemplateType =
   | 'diary'
   | 'travel'
@@ -225,7 +227,7 @@ export interface RecordDetailResponse {
   createdAt: string;
   updatedAt: string;
   blocks: Block[];
-  contributors: RecordContributor[];
+  contributors: Contributor[];
 }
 
 // 지도 리스트 아이템

@@ -1,5 +1,7 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 export async function POST() {
   const session = await auth();
@@ -13,7 +15,15 @@ export async function POST() {
         },
       });
     } catch (error) {
-      console.error('백엔드 로그아웃 통신 실패', error);
+      // 백엔드 로그아웃 통신 실패는 경고로 기록 (세션은 클라이언트에서 삭제되므로)
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: {
+          context: 'auth',
+          operation: 'backend-logout',
+        },
+      });
+      logger.error('백엔드 로그아웃 통신 실패', error);
     }
   }
   return NextResponse.json({ success: true, data: {}, error: null });

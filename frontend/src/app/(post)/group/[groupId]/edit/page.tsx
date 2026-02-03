@@ -7,6 +7,7 @@ import {
 import { getCachedGroupDetail } from '@/lib/api/group';
 import { redirect } from 'next/navigation';
 import { createMockGroupSettings } from '@/lib/mocks/mock';
+import { GroupEditResponse } from '@/lib/types/groupResponse';
 
 interface GroupEditPageProps {
   params: Promise<{ groupId: string }>;
@@ -15,10 +16,11 @@ interface GroupEditPageProps {
 export default async function GroupEditPage({ params }: GroupEditPageProps) {
   const { groupId } = await params;
   const queryClient = new QueryClient();
+  let groupProfile: GroupEditResponse;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
     try {
-      const groupProfile = await getCachedGroupDetail(groupId);
+      groupProfile = await getCachedGroupDetail(groupId);
       // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
       queryClient.setQueryData(['group', groupId, 'edit'], groupProfile);
     } catch (error: unknown) {
@@ -32,6 +34,7 @@ export default async function GroupEditPage({ params }: GroupEditPageProps) {
       throw error;
     }
   } else {
+    groupProfile = createMockGroupSettings(groupId);
     queryClient.setQueryData(
       ['group', groupId, 'edit'],
       createMockGroupSettings(groupId),
@@ -40,7 +43,7 @@ export default async function GroupEditPage({ params }: GroupEditPageProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <GroupEditClient groupId={groupId} />
+      <GroupEditClient profile={groupProfile} groupId={groupId} />
     </HydrationBoundary>
   );
 }

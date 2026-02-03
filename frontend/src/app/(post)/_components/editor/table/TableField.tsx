@@ -169,7 +169,7 @@ export const TableField = ({
                   {row.map((cell, cIdx) => (
                     <td
                       key={cIdx}
-                      className="p-0 border-r border-gray-100/50 dark:border-white/5 last:border-none"
+                      className="p-0 border-r border-gray-100/50 dark:border-white/5 last:border-none overflow-hidden"
                     >
                       <input
                         ref={rIdx === 0 && cIdx === 0 ? firstInputRef : null}
@@ -180,7 +180,7 @@ export const TableField = ({
                         onFocus={handleFocusWrapper}
                         onBlur={handleBlurWrapper}
                         placeholder={rIdx === 0 ? '항목명' : '내용'}
-                        className={`w-full p-2.5 text-xs outline-none dark:focus:bg-white/5 transition-colors ${
+                        className={`table-cell-input p-2.5 outline-none dark:focus:bg-white/5 transition-colors ${
                           rIdx === 0
                             ? 'font-bold text-itta-black dark:text-white bg-gray-100 dark:bg-white/10'
                             : 'font-medium text-itta-gray3 bg-transparent '
@@ -192,7 +192,7 @@ export const TableField = ({
                     <button
                       disabled={isLocked}
                       onClick={() => removeRow(rIdx)}
-                      className="flex m-auto text-gray-300 hover:text-rose-500 transition-colors group-hover/row:opacity-100 active:scale-90"
+                      className="flex m-auto text-gray-300 hover:text-rose-500 transition-colors active:scale-90"
                     >
                       <MinusCircle size={12} />
                     </button>

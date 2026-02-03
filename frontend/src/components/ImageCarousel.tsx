@@ -96,16 +96,16 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
 
   if (images.length === 1) {
     return (
-      <div className="w-full rounded-xs overflow-hidden">
+      <div className="w-full rounded-sm overflow-hidden border dark:border-white/10 border-gray-100">
         <AssetImage
           assetId={images[0]}
           alt={`게시글 이미지`}
-          width={800}
-          height={800}
+          width={780}
+          height={780}
           draggable={false}
           unoptimized={true}
           sizes="(max-width: 768px) 100vw, 800px"
-          className="select-none pointer-events-none object-cover"
+          className="select-none pointer-events-none w-full h-full object-cover rounded-sm"
         />
       </div>
     );
@@ -115,7 +115,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
     <div className="w-full relative">
       <div
         ref={containerRef}
-        className="w-full rounded-sm overflow-hidden cursor-grab active:cursor-grabbing relative"
+        className="w-full rounded-sm overflow-hidden cursor-grab active:cursor-grabbing relative border dark:border-white/10 border-gray-100"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -134,17 +134,17 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
           {images.map((url, index) => (
             <div
               key={index}
-              className="flex justify-center items-center w-full shrink-0 relative aspect-square"
+              className="flex overflow-hidden justify-center items-center w-full shrink-0 relative aspect-square"
             >
               <AssetImage
                 assetId={url}
                 url={url}
                 alt={`게시글 ${index + 1}번째`}
-                fill
+                width={780}
+                height={780}
                 draggable={false}
                 unoptimized={true}
-                sizes="(max-width: 768px) 100vw, 800px"
-                className="select-none pointer-events-none object-cover"
+                className="w-full h-full select-none pointer-events-none object-cover"
               />
             </div>
           ))}

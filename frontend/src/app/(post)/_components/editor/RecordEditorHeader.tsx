@@ -98,7 +98,7 @@ export default function RecordEditorHeader({
                     편집 중인 멤버 ({memberList.length})
                   </span>
                 </div>
-                <div className="overflow-y-auto pr-1 max-h-60 !pb-0">
+                <div className="overflow-y-auto pr-1 max-h-60 pb-0!">
                   {memberList.map((member) => (
                     <div
                       key={member.sessionId || member.actorId}
@@ -142,7 +142,7 @@ export default function RecordEditorHeader({
 
         <button
           onClick={onSave}
-          className="px-5 py-2 rounded-xl text-sm font-semibold active:scale-95 transition-all shadow-sm bg-itta-black text-white flex-shrink-0"
+          className="px-5 py-2 rounded-xl text-sm font-semibold active:scale-95 transition-all shadow-sm bg-itta-black text-white shrink-0"
         >
           저장
         </button>

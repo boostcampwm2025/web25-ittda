@@ -129,6 +129,7 @@ export const groupListOptions = () =>
     },
     staleTime: PERSONAL_STALE_TIME, // 초대를 수락했을 때 invalidate 필요
     retry: false,
+    refetchOnMount: false, // hydrated 데이터가 있으면 마운트 시 refetch하지 않음
   });
 
 export const groupMyProfileOptions = (groupId: string) =>

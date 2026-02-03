@@ -29,29 +29,21 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (session?.error || status === 'unauthenticated') {
-      logout();
-      signOut({ redirectTo: '/login' });
-    }
-
+    // 로딩 중에는 아무것도 하지 않음
     if (status === 'loading') return;
 
-    if (status === 'unauthenticated') {
-      // 게스트 유저 타입이 아닐 때만 로그인 페이지로 리다이렉트
-      if (userType !== 'guest') {
-        router.replace('/login');
-      }
-    }
+    // 세션 에러 또는 소셜 유저가 인증 실패한 경우에만 로그아웃 처리
+    const hasSessionError = session?.error;
+    const isUnauthenticated = status === 'unauthenticated';
+    const isSocialUser = userType === 'social';
 
-    // 토큰 에러 또는 인증 만료 시 로그아웃 처리
-    const isUnauthenticated = !session || session.error;
-
-    // 로그인이 필요한 상태인데 세션이 없는 경우 (로그인 유저 타입 체크)
-    if (isUnauthenticated && userType === 'social') {
+    // 소셜 유저가 인증 실패한 경우에만 처리 (게스트는 제외)
+    if ((hasSessionError || isUnauthenticated) && isSocialUser) {
       logout();
       signOut({ redirectTo: '/login' });
+      return; // 조기 종료로 중복 실행 방지
     }
-  }, [status, userType, logout, router, pathname, session]);
+  }, [status, session, pathname]);
 
   return <>{children}</>;
 }

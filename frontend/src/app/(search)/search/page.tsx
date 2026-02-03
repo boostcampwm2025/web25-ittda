@@ -120,7 +120,7 @@ export default function SearchPage() {
               placeholder="제목이나 내용으로 검색"
               value={localQuery}
               onChange={(e) => handleQueryChange(e.target.value)}
-              className="w-full rounded-lg px-11 py-3 bg-gray-50 dark:bg-white/5 text-sm outline-none dark:text-white"
+              className="w-full rounded-lg px-11 py-3 bg-gray-50 dark:bg-white/5 text-base outline-none dark:text-white"
             />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             {localQuery && (
