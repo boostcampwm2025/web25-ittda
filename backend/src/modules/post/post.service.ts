@@ -98,6 +98,18 @@ export class PostService {
       });
       if (!group) throw new NotFoundException('Group not found');
     }
+    if (dto.scope === PostScope.GROUP && dto.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: dto.groupId, userId: ownerUserId },
+        select: { role: true },
+      });
+      if (!member) {
+        throw new ForbiddenException('Not a group member.');
+      }
+      if (member.role === GroupRoleEnum.VIEWER) {
+        throw new ForbiddenException('Insufficient permission.');
+      }
+    }
 
     const meta = extractMetaFromBlocks(dto.blocks);
     const eventAt = resolveEventAtFromBlocks(meta.date, meta.time); // 세번째 인자는 옵션: timezoneOffset
@@ -349,6 +361,18 @@ export class PostService {
     dto: EditPostDto,
   ): Promise<PostDetailDto> {
     const post = await this.getPostForEdit(postId, requesterId);
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId: requesterId },
+        select: { role: true },
+      });
+      if (!member) {
+        throw new ForbiddenException('Not a group member.');
+      }
+      if (member.role === GroupRoleEnum.VIEWER) {
+        throw new ForbiddenException('Insufficient permission.');
+      }
+    }
 
     validateBlocks(dto.blocks);
     this.ensureNoDuplicateBlockIds(dto.blocks);
@@ -445,6 +469,18 @@ export class PostService {
       where: { id: postId, deletedAt: IsNull() },
     });
     if (!post) throw new NotFoundException('Post not found');
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId: requesterId },
+        select: { role: true },
+      });
+      if (!member) {
+        throw new ForbiddenException('Not a group member.');
+      }
+      if (member.role === GroupRoleEnum.VIEWER) {
+        throw new ForbiddenException('Insufficient permission.');
+      }
+    }
     if (post.ownerUserId !== requesterId) {
       throw new ForbiddenException('Only the owner can delete this post');
     }
