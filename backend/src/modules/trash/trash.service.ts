@@ -9,8 +9,6 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { TrashPostResponseDto } from './dto/trash.dto';
 import { DateTime } from 'luxon';
 
-import { PostMediaKind } from '../post/entity/post-media.entity';
-
 @Injectable()
 export class TrashService {
   constructor(
@@ -18,8 +16,6 @@ export class TrashService {
     private readonly postRepo: Repository<Post>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(GuestSession)
-    private readonly guestSessionRepo: Repository<GuestSession>,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
@@ -34,20 +30,15 @@ export class TrashService {
       },
       withDeleted: true,
       order: { deletedAt: 'DESC' },
-      relations: ['postMedia', 'postMedia.media'],
     });
 
     return posts.map((p) => {
-      const thumbnailMedia = p.postMedia?.find(
-        (m) => m.kind === PostMediaKind.THUMBNAIL,
-      );
       return {
         id: p.id,
         title: p.title,
         scope: p.scope,
         deletedAt: p.deletedAt!,
         groupId: p.groupId ?? null,
-        thumbnailUrl: thumbnailMedia?.media?.url ?? null,
       };
     });
   }

@@ -61,50 +61,60 @@ export class MyPageService {
     return this.findOne(userId);
   }
 
-  /** 회원 탈퇴 (Hard Delete & Cascade) */
+  /**
+   * 회원 탈퇴 (Hard Delete & Ownership Transfer)
+   * @param userId 탈퇴 대상 사용자 ID
+   */
   async withdraw(userId: string): Promise<void> {
     await this.userRepo.manager.transaction(async (em) => {
-      // 4. 내가 owner인 Post 처리
+      // 1. 사용자가 소유한 게시글(Post) 조회
       const ownedPosts = await em.find(Post, {
         where: { ownerUserId: userId },
       });
 
       for (const post of ownedPosts) {
         if (post.groupId) {
-          // 그룹에 속한 게시글이면 소유권 이전 필요
-          const otherMember = await em.findOne('GroupMember', {
-            where: { groupId: post.groupId, userId: Not(userId) },
+          // 그룹에 속한 게시글인 경우 소유권 이전 대상 탐색
+          // 우선순위: Admin -> Editor 순으로 검색
+          let targetMember = await em.findOne('GroupMember', {
+            where: {
+              groupId: post.groupId,
+              userId: Not(userId),
+              role: 'ADMIN', // Role 정의에 따라 문자열 또는 Enum 사용
+            },
           });
-          if (!otherMember) {
-            throw new BadRequestException(
-              `게시글(${post.id})의 소유권을 이전할 다른 그룹 멤버가 없습니다. 탈퇴 불가합니다.`,
-            );
-          } // 소유권 이전
-          post.ownerUserId = otherMember.userId as string;
-          await em.save(post);
+
+          if (!targetMember) {
+            targetMember = await em.findOne('GroupMember', {
+              where: {
+                groupId: post.groupId,
+                userId: Not(userId),
+                role: 'EDITOR',
+              },
+            });
+          }
+
+          if (targetMember) {
+            // A. 소유권 이전 대상이 있는 경우
+            post.ownerUserId = targetMember.userId as string;
+            await em.save(post);
+          } else {
+            // B. Admin/Editor가 모두 없는 경우: 그룹 게시글 삭제
+            await em.delete(Post, { id: post.id });
+          }
         } else {
-          // 그룹에 속하지 않은 개인 게시글은 그냥 삭제
+          // 그룹에 속하지 않은 개인 게시글은 즉시 삭제
           await em.delete(Post, { id: post.id });
         }
       }
 
-      // 1. 그룹 멤버십 삭제
+      // 2. 기타 연관 데이터 삭제 (순서 유의)
       await em.delete('GroupMember', { userId });
-
-      // 2. 기여자 정보 삭제
-      await em.delete('PostContributor', { userId });
-
-      // 3. 월별 커버 삭제
+      await em.delete('PostContributor', { userId }); // TODO: 삭제 대신 null 처리/탈퇴 표시로 변경?
       await em.delete('UserMonthCover', { userId });
-
-      // 5. 미디어 에셋 삭제 (프로필 이미지 등)
-      // 주의: 미디어가 널리 쓰이고 있다면 Set Null 처리가 나을 수도 있을 것 같음
-      //await em.delete('MediaAsset', { ownerUserId: userId });
-
-      // 6. Template 삭제 (옵션)
       await em.delete('Template', { ownerUserId: userId });
 
-      // 7. 사용자 삭제
+      // 3. 사용자 본인 삭제
       const result = await em.delete(User, { id: userId });
 
       if (result.affected === 0) {

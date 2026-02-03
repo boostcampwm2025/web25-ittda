@@ -16,7 +16,4 @@ export class TrashPostResponseDto {
 
   @ApiProperty({ description: '그룹 ID', nullable: true })
   groupId: string | null;
-
-  @ApiProperty({ description: '썸네일 URL', nullable: true })
-  thumbnailUrl: string | null;
 }

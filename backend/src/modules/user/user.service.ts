@@ -11,12 +11,10 @@ import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { PostScope } from '@/enums/post-scope.enum';
+import { UserMonthCover } from './entity/user-month-cover.entity';
+import { DayRecordResponseDto } from './dto/day-record.response.dto';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
-
-import { UserMonthCover } from './entity/user-month-cover.entity';
-
-import { DayRecordResponseDto } from './dto/day-record.response.dto';
 
 // User Service에서 기능 구현
 @Injectable()
