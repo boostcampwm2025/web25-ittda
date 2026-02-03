@@ -5,7 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 export class KakaoAuthGuard extends AuthGuard('kakao') {
   getAuthenticateOptions() {
     return {
-      scope: ['profile_nickname'],
+      scope: ['profile_nickname', 'account_email'],
     };
   }
 }
