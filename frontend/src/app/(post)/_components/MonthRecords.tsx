@@ -98,7 +98,7 @@ export default function MonthRecords({
       );
     });
 
-    updateCover({ assetId, sourcePostId: recordId });
+    updateCover({ assetId });
   };
 
   if (months.length === 0) {
