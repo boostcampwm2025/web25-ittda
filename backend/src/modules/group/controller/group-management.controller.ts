@@ -75,8 +75,8 @@ export class GroupManagementController {
       properties: {
         role: {
           type: 'string',
-          enum: [GroupRoleEnum.ADMIN, GroupRoleEnum.EDITOR],
-          example: GroupRoleEnum.EDITOR,
+          enum: GroupRoleEnum,
+          example: GroupRoleEnum.VIEWER,
         },
       },
     },
