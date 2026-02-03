@@ -13,6 +13,7 @@ import {
   PaginatedSearchResponseDto,
   SearchResultItemDto,
 } from './dto/search.dto';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class SearchService {
@@ -40,6 +41,26 @@ export class SearchService {
     }
     if (dto.tags && dto.tags.length > 0) {
       this.trackTags(userId, dto.tags);
+    }
+
+    const isDateOnly = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+    let startDate = dto.startDate;
+    let endDate = dto.endDate;
+
+    if (startDate && !endDate) {
+      if (isDateOnly(startDate)) {
+        const startOfDay = DateTime.fromISO(startDate, {
+          zone: 'Asia/Seoul',
+        }).startOf('day');
+        const endOfDay = startOfDay.endOf('day');
+        startDate = startOfDay.toISO() ?? undefined;
+        endDate = endOfDay.toISO() ?? undefined;
+      } else {
+        const startDt = DateTime.fromISO(startDate, { setZone: true });
+        if (startDt.isValid) {
+          endDate = startDt.endOf('day').toISO() ?? undefined;
+        }
+      }
     }
     const query = this.postRepository
       .createQueryBuilder('post')
@@ -71,13 +92,13 @@ export class SearchService {
     }
 
     // Date Range Search
-    if (dto.startDate) {
+    if (startDate) {
       query.andWhere('post.eventAt >= :startDate', {
-        startDate: dto.startDate,
+        startDate,
       });
     }
-    if (dto.endDate) {
-      query.andWhere('post.eventAt <= :endDate', { endDate: dto.endDate });
+    if (endDate) {
+      query.andWhere('post.eventAt <= :endDate', { endDate });
     }
 
     // Tag Search
