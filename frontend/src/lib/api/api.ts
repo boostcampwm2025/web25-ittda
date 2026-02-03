@@ -135,7 +135,10 @@ async function fetchWithRetry<T>(
       );
     }
 
-    return data;
+    return {
+      ...data,
+      headers: response.headers,
+    };
   } catch (error) {
     const err = error instanceof Error ? error : new Error('unknown error');
 

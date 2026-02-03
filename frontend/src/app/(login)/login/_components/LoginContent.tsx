@@ -32,8 +32,14 @@ export default function LoginContent({
     '/api/auth/guest',
     {
       onSuccess: (response) => {
-        if (response.data) {
-          setGuestInfo(response.data);
+        const authHeader =
+          response.headers?.get('Authorization') ||
+          response.headers?.get('authorization');
+
+        const accessToken = authHeader?.replace('Bearer ', '');
+
+        if (response.data && accessToken) {
+          setGuestInfo({ ...response.data, guestAccessToken: accessToken });
 
           if (inviteCode) {
             joinGroup(
