@@ -11,6 +11,7 @@ import ThemeColorSetter from '@/components/ThemeColorSetter';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import KakaoScript from '@/lib/services/kakaoScript';
 import AuthContext from './AuthContext';
+import { Suspense } from 'react';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -99,7 +100,9 @@ export default function RootLayout({
                 <PWAInstallBanner />
                 <ConditionalHeader />
                 {children}
-                <BottomNavigation />
+                <Suspense fallback={null}>
+                  <BottomNavigation />
+                </Suspense>
               </div>
             </ThemeProvider>
           </Providers>
