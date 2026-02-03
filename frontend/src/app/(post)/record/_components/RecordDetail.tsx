@@ -104,15 +104,15 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                     height={30}
                     className="w-full h-full object-cover rounded-full"
                     assetId={
-                      contributor.groupProfileImageId ||
-                      contributor.profileImageId ||
-                      '/profile_base.png'
+                      contributor.groupProfileImageId || '/profile_base.png'
                     }
                     alt={`${contributor.groupNickname || contributor.nickname}의 프로필`}
                   />
                 </div>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
-                  {contributor.groupNickname || contributor.nickname}
+                  {contributor.groupNickname ||
+                    contributor.nickname ||
+                    'anonymous'}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800">
                   {contributor.role === 'AUTHOR' ? '작성자' : '편집자'}

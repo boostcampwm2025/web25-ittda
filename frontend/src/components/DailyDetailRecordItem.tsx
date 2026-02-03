@@ -104,32 +104,23 @@ export default function DailyDetailRecordItem({
                     key={m.userId}
                     className="w-8 h-8 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white"
                   >
-                    {(() => {
-                      const currentAssetId =
-                        m.groupProfileImageId || m.profileImageId;
-
-                      if (currentAssetId) {
-                        return (
-                          <AssetImage
-                            width={32}
-                            height={32}
-                            className="w-full h-full object-cover rounded-full"
-                            assetId={currentAssetId}
-                            alt={`${m.groupNickname || m.nickname}의 프로필`}
-                          />
-                        );
-                      }
-
-                      return (
-                        <Image
-                          width={32}
-                          height={32}
-                          src={'/profile_base.png'}
-                          alt={`${m.groupNickname || m.nickname}의 프로필`}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      );
-                    })()}
+                    {m.groupProfileImageId ? (
+                      <AssetImage
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover rounded-full"
+                        assetId={m.groupProfileImageId}
+                        alt={`${m.groupNickname || m.nickname}의 프로필`}
+                      />
+                    ) : (
+                      <Image
+                        width={32}
+                        height={32}
+                        src={'/profile_base.png'}
+                        alt={`${m.groupNickname || m.nickname}의 프로필`}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    )}
                   </div>
                 ))}
               {groupId &&
