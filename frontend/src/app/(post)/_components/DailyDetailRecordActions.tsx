@@ -19,11 +19,11 @@ export default function DailyDetailRecordActions({
   record,
   onDeleteClick,
 }: DailyDetailRecordActionsProps) {
+  const router = useRouter();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
 
-  const router = useRouter();
   const { mutateAsync: startGroupEdit } = useEditPostDraft(
     record.groupId || '',
     record.postId,
@@ -45,7 +45,10 @@ export default function DailyDetailRecordActions({
     setShareOpen(true);
   };
 
-  const handleEdit = async () => {
+  const handleEdit = async (record: RecordPreview, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveMenuId(null);
+
     if (record.scope === 'ME') {
       router.push(`/add?mode=edit&postId=${record.postId}`);
     } else {
@@ -100,7 +103,7 @@ export default function DailyDetailRecordActions({
               공유하기
             </button>
             <button
-              onClick={handleEdit}
+              onClick={(e) => handleEdit(record, e)}
               className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
             >
               수정하기
