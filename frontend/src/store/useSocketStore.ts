@@ -86,6 +86,13 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     socket.on('connect_error', async (err: { message: string }) => {
       if (err.message === 'Unauthorized' || err.message.includes('token')) {
         await handleAuthError();
+      } else {
+        Sentry.captureException(err, {
+          level: 'error',
+          tags: { context: 'socket', operation: 'connect' },
+          extra: { message: err.message },
+        });
+        logger.error('소켓 연결 에러', err);
       }
     });
 
@@ -106,19 +113,13 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
         }, 1500);
         return;
       }
-      
-      Sentry.captureException(err, {
+
+      Sentry.captureMessage(`소켓 서버 예외: ${data.message}`, {
         level: 'error',
-        tags: {
-          context: 'socket',
-          operation: 'connect',
-        },
-        extra: {
-          errorMessage: err.message,
-        },
+        tags: { context: 'socket', operation: 'server_exception' },
+        extra: { serverData: data },
       });
-      logger.error('소켓 연결', err);
-      
+      logger.error('소켓 연결', data);
     });
 
     set({ socket });
