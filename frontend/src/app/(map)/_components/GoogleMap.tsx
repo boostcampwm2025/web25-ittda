@@ -31,11 +31,13 @@ function FlyToOnSelect({
   lat,
   lng,
   offsetX = 0,
+  offsetY = 0,
   zoom = 16,
 }: {
   lat: number;
   lng: number;
   offsetX?: number;
+  offsetY?: number;
   zoom?: number;
 }) {
   const map = useMap();
@@ -45,8 +47,8 @@ function FlyToOnSelect({
       map.panTo({ lat, lng });
       map.setZoom(zoom);
 
-      if (offsetX !== 0) {
-        map.panBy(-offsetX, 0);
+      if (offsetX !== 0 || offsetY !== 0) {
+        map.panBy(-offsetX, offsetY);
       }
     } catch (error) {
       // 지도 이동 실패는 UX에 영향을 주므로 추적
@@ -60,11 +62,12 @@ function FlyToOnSelect({
           lat,
           lng,
           offsetX,
+          offsetY,
         },
       });
       logger.error('지도 이동 실패', error);
     }
-  }, [map, lat, lng, offsetX]);
+  }, [map, lat, lng, offsetX, offsetY, zoom]);
   return null;
 }
 
@@ -189,6 +192,7 @@ export default function GoogleMap({
           <FlyToOnSelect
             lat={Number(selectedPost.lat)}
             lng={Number(selectedPost.lng)}
+            offsetY={130}
           />
         )}
         <MapHandler
