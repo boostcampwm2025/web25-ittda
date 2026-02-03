@@ -97,8 +97,6 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     });
 
     socket.on('exception', async (data: SocketExceptionResponse) => {
-      console.error('소켓 서버 예외 발생:', data);
-
       if (data.message === 'Invalid access token.' || data.status === 'error') {
         await handleAuthError();
         return;
