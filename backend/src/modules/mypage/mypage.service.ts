@@ -2,6 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
+import { Post } from '../post/entity/post.entity';
+import { Not } from 'typeorm';
 
 // Mypage Service에서 기능 구현
 @Injectable()
@@ -46,7 +48,6 @@ export class MyPageService {
     }
 
     // 2. 부분 업데이트 수행
-    // 2. 부분 업데이트 수행
     const updateData: Partial<User> = {
       ...(nickname && { nickname }),
       ...(profileImageId && { profileImageId }),
@@ -63,6 +64,30 @@ export class MyPageService {
   /** 회원 탈퇴 (Hard Delete & Cascade) */
   async withdraw(userId: string): Promise<void> {
     await this.userRepo.manager.transaction(async (em) => {
+      // 4. 내가 owner인 Post 처리
+      const ownedPosts = await em.find(Post, {
+        where: { ownerUserId: userId },
+      });
+
+      for (const post of ownedPosts) {
+        if (post.groupId) {
+          // 그룹에 속한 게시글이면 소유권 이전 필요
+          const otherMember = await em.findOne('GroupMember', {
+            where: { groupId: post.groupId, userId: Not(userId) },
+          });
+          if (!otherMember) {
+            throw new BadRequestException(
+              `게시글(${post.id})의 소유권을 이전할 다른 그룹 멤버가 없습니다. 탈퇴 불가합니다.`,
+            );
+          } // 소유권 이전
+          post.ownerUserId = otherMember.userId as string;
+          await em.save(post);
+        } else {
+          // 그룹에 속하지 않은 개인 게시글은 그냥 삭제
+          await em.delete(Post, { id: post.id });
+        }
+      }
+
       // 1. 그룹 멤버십 삭제
       await em.delete('GroupMember', { userId });
 
@@ -72,13 +97,9 @@ export class MyPageService {
       // 3. 월별 커버 삭제
       await em.delete('UserMonthCover', { userId });
 
-      // 4. 작성한 게시글 삭제 (PostMedia, PostBlock 등은 DB Cascade 설정을 따름)
-      // 만약 DB Cascade가 없으면 에러가 날 수 있으나, 일반적으로 Post 삭제 시 관련 데이터 삭제됨을 가정
-      await em.delete('Post', { ownerUserId: userId });
-
       // 5. 미디어 에셋 삭제 (프로필 이미지 등)
       // 주의: 미디어가 널리 쓰이고 있다면 Set Null 처리가 나을 수도 있을 것 같음
-      await em.delete('MediaAsset', { ownerUserId: userId });
+      //await em.delete('MediaAsset', { ownerUserId: userId });
 
       // 6. Template 삭제 (옵션)
       await em.delete('Template', { ownerUserId: userId });

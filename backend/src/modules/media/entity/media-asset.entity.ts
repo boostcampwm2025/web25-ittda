@@ -26,7 +26,7 @@ export class MediaAsset {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' }) // 요구사항: 관련 데이터 전부 삭제
+  @ManyToOne(() => User, { onDelete: 'NO ACTION' })
   @JoinColumn({ name: 'owner_user_id' })
   ownerUser: User;
 

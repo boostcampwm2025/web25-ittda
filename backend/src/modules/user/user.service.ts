@@ -246,23 +246,8 @@ export class UserService {
       fromDate,
       toDate,
     });
-    qb.andWhere(
-      new Brackets((sub) => {
-        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub2 = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .getQuery();
-            return `EXISTS ${sub2}`;
-          },
-          { userId },
-        );
-      }),
-    );
+    qb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
+    qb.andWhere('p.ownerUserId = :userId', { userId });
     qb.orderBy('p.eventAt', 'DESC');
     qb.addOrderBy('pm.id', 'DESC');
     qb.andWhere('p.deletedAt IS NULL');
@@ -345,8 +330,8 @@ export class UserService {
     );
     qb.andWhere('p.deletedAt IS NULL');
 
-    const rows = await qb.getRawMany<{ pm_mediaId: string }>();
-    const ids = rows.map((row) => row.pm_mediaId).filter(Boolean);
+    const mediaList = await qb.getMany();
+    const ids = mediaList.map((pm) => pm.mediaId).filter(Boolean);
     return Array.from(new Set(ids));
   }
 

@@ -11,6 +11,11 @@ import { toast } from 'sonner';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
+import { isInAppBrowser } from '@/lib/utils/browserDetect';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
@@ -41,6 +46,12 @@ export default function LoginContent({
         if (response.data && accessToken) {
           setGuestInfo({ ...response.data, guestAccessToken: accessToken });
 
+          // Sentry에 게스트 사용자 정보 설정
+          Sentry.setUser({
+            id: `guest-${response.data.guestSessionId}`,
+            username: 'Guest User',
+          });
+
           if (inviteCode) {
             joinGroup(
               {},
@@ -62,7 +73,36 @@ export default function LoginContent({
           setTimeout(() => {
             router.replace('/');
           }, 500);
+        } else {
+          // 응답은 성공했지만 데이터나 토큰이 없는 경우
+          const error = new Error(
+            '게스트 로그인 응답에 필요한 데이터가 없습니다',
+          );
+          Sentry.captureException(error, {
+            level: 'error',
+            tags: {
+              context: 'auth',
+              operation: 'guest-login-invalid-response',
+            },
+            extra: {
+              hasData: !!response.data,
+              hasAccessToken: !!accessToken,
+            },
+          });
+          logger.error('게스트 로그인 응답에 필요한 데이터가 없습니다');
+          toast.error('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
         }
+      },
+      onError: (error) => {
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: {
+            context: 'auth',
+            operation: 'guest-login',
+          },
+        });
+        logger.error('게스트 로그인 실패', error);
+        toast.error('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
       },
     },
   );
@@ -79,6 +119,16 @@ export default function LoginContent({
 
   const handleLoginGuest = async () => {
     guestLogin({});
+  };
+
+  const handleSocialLogin = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isInAppBrowser()) {
+      e.preventDefault();
+      toast.error(
+        '인앱 브라우저에서는 로그인이 제한될 수 있습니다.\n기본 브라우저(Chrome, Safari 등)에서 열어주세요.',
+        { duration: 5000 },
+      );
+    }
   };
 
   return (
@@ -123,6 +173,7 @@ export default function LoginContent({
           <Link
             aria-label="구글로 로그인하기"
             href={getRedirectUri({ provider: 'google' })}
+            onClick={handleSocialLogin}
             className="bg-white border-gray-100 w-14 h-14 rounded-full flex items-center justify-center border shadow-sm transition-all hover:shadow-md active:scale-90"
           >
             <svg viewBox="0 0 24 24" className="w-6 h-6">
@@ -149,6 +200,7 @@ export default function LoginContent({
           <Link
             aria-label="카카오로 로그인하기"
             href={getRedirectUri({ provider: 'kakao' })}
+            onClick={handleSocialLogin}
             className="w-14 h-14 rounded-full bg-[#FEE500] flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90"
           >
             <svg viewBox="0 0 24 24" className="w-7 h-7 fill-[#3C1E1E]">

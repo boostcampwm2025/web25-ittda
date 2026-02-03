@@ -1,6 +1,8 @@
 'use client';
 
 import { Component, ReactNode, ErrorInfo, ComponentType } from 'react';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -52,7 +54,18 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error({ error, errorInfo });
+    // ErrorBoundary에서 잡힌 모든 에러 Sentry로 전송
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+      tags: {
+        errorBoundary: true,
+      },
+    });
+    logger.error('컴포넌트 에러 캐치', error);
   }
 
   /** 에러 상태 기본 초기화 */

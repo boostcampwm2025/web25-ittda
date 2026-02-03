@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * @param key - sessionStorage 키
@@ -27,7 +29,18 @@ export function useSessionStorage<T>(
       const item = window.sessionStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error('Error reading from sessionStorage:', error);
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'sessionStorage',
+          operation: 'read-session-storage',
+        },
+        extra: {
+          storageKey: key,
+          initialValue: initialValue,
+        },
+      });
+      logger.error('reading from sessionStorage', error);
       return initialValue;
     }
   });
@@ -43,7 +56,18 @@ export function useSessionStorage<T>(
         window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
-      console.error('Error writing to sessionStorage:', error);
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'sessionStorage',
+          operation: 'write-session-storage',
+        },
+        extra: {
+          storageKey: key,
+          value: value,
+        },
+      });
+      logger.error('writing to sessionStorage', error);
     }
   };
 
@@ -55,7 +79,17 @@ export function useSessionStorage<T>(
         window.sessionStorage.removeItem(key);
       }
     } catch (error) {
-      console.error('Error removing from sessionStorage:', error);
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'sessionStorage',
+          operation: 'remove-session-storage',
+        },
+        extra: {
+          storageKey: key,
+        },
+      });
+      logger.error('removing from sessionStorage', error);
     }
   };
 

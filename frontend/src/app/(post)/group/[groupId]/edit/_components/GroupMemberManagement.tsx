@@ -145,22 +145,22 @@ export default function GroupMemberManagement({
             key={member.userId}
             className="flex items-center justify-between p-3 rounded-2xl border transition-colors dark:bg-white/5 dark:border-white/5 bg-gray-50 border-black/2"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 overflow-hidden">
               {member.profileImage?.assetId ? (
                 <AssetImage
-                  width={50}
-                  height={50}
+                  width={40}
+                  height={40}
                   assetId={member.profileImage.assetId}
                   alt={`${member.nicknameInGroup} 멤버의 프로필`}
-                  className="w-10 h-10 rounded-full border bg-white"
+                  className="rounded-full border bg-white object-cover"
                 />
               ) : (
                 <Image
-                  width={50}
-                  height={50}
+                  width={40}
+                  height={40}
                   src={'/profile_base.png'}
                   alt={`${member.nicknameInGroup} 멤버의 프로필`}
-                  className="w-10 h-10 rounded-full border bg-white"
+                  className="rounded-full border bg-white object-cover"
                 />
               )}
               <div>

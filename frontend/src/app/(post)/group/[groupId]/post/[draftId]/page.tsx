@@ -3,6 +3,8 @@ import { groupDraftOptions } from '@/lib/api/groupRecord';
 import { RecordBlock } from '@/lib/types/record';
 import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
 import { QueryClient } from '@tanstack/react-query';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface AddPostPageProps {
   params: Promise<{
@@ -43,7 +45,20 @@ export default async function PostDraftPage({
         version: data.version || 0,
       };
     } catch (error) {
-      console.error('공동 드래프트 로드 실패:', error);
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'post-editor',
+          operation: 'load-draft-blocks',
+        },
+        extra: {
+          mode: mode,
+          postId: postId,
+          draftId: draftId,
+          groupId: groupId,
+        },
+      });
+      logger.error('공동 드래프트 로드 실패', error);
     }
   }
 
