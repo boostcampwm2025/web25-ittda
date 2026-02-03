@@ -33,6 +33,7 @@ import { RecordBlock } from '@/lib/types/recordField';
 import {
   canBeHalfWidth,
   getDefaultValue,
+  isRecordBlockEmpty,
 } from '../../_utils/recordLayoutHelper';
 import SaveTemplateDrawer from './core/SaveTemplateDrawer';
 import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
@@ -377,7 +378,17 @@ export default function PostEditor({
 
   // 명시적으로 드로어를 닫을 때
   const handleCloseDrawer = (id?: string, finalValue?: BlockValue) => {
-    if (id && draftId) {
+    if (!id) {
+      setActiveDrawer(null);
+      return;
+    }
+    const currentBlock = blocks.find((b) => b.id === id);
+    const valueToCheck = finalValue || currentBlock?.value;
+
+    if (valueToCheck && isRecordBlockEmpty(valueToCheck)) {
+      // 값이 비어있다면 블록 삭제
+      removeBlock(id);
+    } else if (draftId) {
       const currentBlock = blocks.find((b) => b.id === id);
       //여기서 커밋하기
       if (currentBlock) {
@@ -392,6 +403,21 @@ export default function PostEditor({
       //락 해제
       releaseLock(`block:${id}`);
     }
+    // if (draftId) {
+    //   const currentBlock = blocks.find((b) => b.id === id);
+    //   //여기서 커밋하기
+    //   if (currentBlock) {
+    //     const valueToCommit = finalValue || currentBlock.value;
+
+    //     applyPatch({
+    //       type: 'BLOCK_SET_VALUE',
+    //       blockId: id,
+    //       value: valueToCommit,
+    //     });
+    //   }
+    //   //락 해제
+    //   releaseLock(`block:${id}`);
+    // }
     setActiveDrawer(null);
   };
 
@@ -665,7 +691,7 @@ export default function PostEditor({
         ref={fileInputRef}
         className="hidden"
         multiple
-        accept="image/*,video/*"
+        accept="image/jpeg, image/jpg, image/png, image/webp"
         onChange={handlePhotoUpload}
       />
       {renderActiveDrawer()}
