@@ -31,18 +31,19 @@ function FlyToOnSelect({
   lat,
   lng,
   offsetX = 0,
+  zoom = 16,
 }: {
   lat: number;
   lng: number;
   offsetX?: number;
+  zoom?: number;
 }) {
   const map = useMap();
   useEffect(() => {
     if (!map) return;
     try {
       map.panTo({ lat, lng });
-      // 필요하면 줌도 고정
-      // map.setZoom(13);
+      map.setZoom(zoom);
 
       if (offsetX !== 0) {
         map.panBy(-offsetX, 0);
@@ -175,6 +176,7 @@ export default function GoogleMap({
         gestureHandling="greedy"
         disableDefaultUI={true}
         onClick={() => onMapClick?.()}
+        onDrag={onMapClick}
         onIdle={(e) => onBoundsChange?.(e.map.getBounds() ?? null)}
       >
         <ClusteredPostMarkers
