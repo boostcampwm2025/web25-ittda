@@ -115,7 +115,12 @@ export function usePostEditorBlocks({
 
       if (draftId) {
         const lockKey = `block:${id}`;
-        requestLock(lockKey);
+        const isLockedByMe = locks?.[lockKey] === mySessionId;
+
+        // 본인이 락을 이미 가지고 있다면 requestLock 스킵
+        if (!isLockedByMe) {
+          requestLock(lockKey);
+        }
         applyPatch({
           type: 'BLOCK_DELETE',
           blockId: id,
@@ -134,6 +139,8 @@ export function usePostEditorBlocks({
       applyPatch,
       releaseLock,
       setBlocks,
+      locks,
+      mySessionId,
     ],
   );
 
