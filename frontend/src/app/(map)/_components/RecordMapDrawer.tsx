@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Loader2, Map as MapIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -105,6 +105,7 @@ export default function RecordMapDrawer({
         !isDragging &&
           'transition-all duration-500 cubic-bezier(0.2,0.8,0.2,1)',
       )}
+      onClick={() => onSelectPost(null)}
       style={{ height, borderRadius: '40px 40px 0 0', touchAction: 'none' }}
     >
       <div
@@ -147,7 +148,10 @@ export default function RecordMapDrawer({
                     key={post.id}
                     post={post}
                     isHighlighted={selectedPostId === post.id}
-                    onSelect={() => onSelectPost(post.id)}
+                    onSelect={(e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      onSelectPost(post.id);
+                    }}
                     onNavigate={() => router.push(`/record/${post.id}`)}
                   />
                 );
