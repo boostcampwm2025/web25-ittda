@@ -9,6 +9,9 @@ export interface Contributor {
   userId: string;
   role: 'AUTHOR' | 'CONTRIBUTOR';
   nickname: string;
+  groupNickname: string;
+  groupProfileImageId: null | string;
+  profileImageId: string | null;
 }
 
 /**
@@ -29,6 +32,7 @@ export interface RecordDetail {
 export interface RecordPreview {
   postId: string;
   scope: 'ME' | 'GROUP';
+  contributors: Contributor[];
   groupId: string | null;
   title: string;
   eventAt: string;

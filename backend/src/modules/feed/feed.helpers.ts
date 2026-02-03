@@ -4,10 +4,13 @@ import { In, LessThanOrEqual, Repository } from 'typeorm';
 import { DateTime } from 'luxon';
 
 import { PostBlock } from '../post/entity/post-block.entity';
+import { PostContributor } from '../post/entity/post-contributor.entity';
+import { GroupMember } from '../group/entity/group_member.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import {
   FeedBlockDto,
+  FeedContributorDto,
   FeedCardResponseDto,
 } from './dto/feed-card.response.dto';
 import type { Post } from '../post/entity/post.entity';
@@ -39,9 +42,12 @@ export function dayRange(day: string, tz: string): DayRange {
 export async function buildFeedCards(
   posts: Post[],
   postBlockRepo: Repository<PostBlock>,
+  postContributorRepo: Repository<PostContributor>,
+  groupMemberRepo: Repository<GroupMember>,
   logger: Logger,
 ): Promise<{ cards: FeedCardResponseDto[]; warnings: FeedWarning[] }> {
   const postIds = posts.map((p) => p.id);
+  const postById = new Map(posts.map((p) => [p.id, p]));
 
   // 1) LOCATION 블록 한번에 조회 (postIds IN ...)
   // - type='LOCATION'만
@@ -104,6 +110,62 @@ export async function buildFeedCards(
   }
 
   // 3) 응답 매핑
+  const contributorsByPostId = new Map<string, FeedContributorDto[]>();
+  if (postIds.length > 0) {
+    const contributorRows = await postContributorRepo.find({
+      where: { postId: In(postIds) },
+      relations: ['user'],
+    });
+    const activeContributors = contributorRows.filter(
+      (c): c is PostContributor & { user: { id: string } } => Boolean(c.user),
+    );
+
+    const groupPairs: Array<{ groupId: string; userId: string }> = [];
+    activeContributors.forEach((c) => {
+      const post = postById.get(c.postId);
+      if (post?.groupId) {
+        groupPairs.push({ groupId: post.groupId, userId: c.userId });
+      }
+    });
+
+    const groupMemberMap = new Map<
+      string,
+      { nicknameInGroup?: string | null; profileMediaId?: string | null }
+    >();
+    if (groupPairs.length > 0) {
+      const members = await groupMemberRepo.find({
+        where: groupPairs,
+        select: ['groupId', 'userId', 'nicknameInGroup', 'profileMediaId'],
+      });
+      members.forEach((member) => {
+        const key = `${member.groupId}:${member.userId}`;
+        groupMemberMap.set(key, {
+          nicknameInGroup: member.nicknameInGroup ?? null,
+          profileMediaId: member.profileMediaId ?? null,
+        });
+      });
+    }
+
+    activeContributors.forEach((c) => {
+      const post = postById.get(c.postId);
+      const groupKey = post?.groupId ? `${post.groupId}:${c.userId}` : null;
+      const groupMember = groupKey ? groupMemberMap.get(groupKey) : undefined;
+
+      const dto: FeedContributorDto = {
+        userId: c.userId,
+        role: c.role,
+        nickname: c.user?.nickname ?? null,
+        groupNickname: groupMember?.nicknameInGroup ?? null,
+        profileImageId: c.user?.profileImageId ?? null,
+        groupProfileImageId: groupMember?.profileMediaId ?? null,
+      };
+
+      const list = contributorsByPostId.get(c.postId) ?? [];
+      list.push(dto);
+      contributorsByPostId.set(c.postId, list);
+    });
+  }
+
   const cards: FeedCardResponseDto[] = [];
   const warnings: FeedWarning[] = [];
   const addWarning = (warning: FeedWarning) => warnings.push(warning);
@@ -144,6 +206,7 @@ export async function buildFeedCards(
         tags: p.tags ?? null,
         emotion: p.emotion ?? null,
         rating: p.rating ?? null,
+        contributors: contributorsByPostId.get(p.id) ?? [],
       }),
     );
   }

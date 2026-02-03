@@ -244,23 +244,8 @@ export class UserService {
       fromDate,
       toDate,
     });
-    qb.andWhere(
-      new Brackets((sub) => {
-        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub2 = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .getQuery();
-            return `EXISTS ${sub2}`;
-          },
-          { userId },
-        );
-      }),
-    );
+    qb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
+    qb.andWhere('p.ownerUserId = :userId', { userId });
     qb.orderBy('p.eventAt', 'DESC');
     qb.addOrderBy('pm.id', 'DESC');
 
@@ -321,27 +306,11 @@ export class UserService {
       fromDate,
       toDate,
     });
-    qb.andWhere(
-      new Brackets((sub) => {
-        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub2 = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
-            return `EXISTS ${sub2}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
+    qb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
+    qb.andWhere('p.ownerUserId = :userId', { userId });
 
-    const rows = await qb.getRawMany<{ pm_mediaId: string }>();
-    const ids = rows.map((row) => row.pm_mediaId).filter(Boolean);
+    const mediaList = await qb.getMany();
+    const ids = mediaList.map((pm) => pm.mediaId).filter(Boolean);
     return Array.from(new Set(ids));
   }
 
@@ -504,77 +473,6 @@ export class UserService {
 
     // 날짜 오름차순 정렬되어 있음
     return results;
-  }
-
-  /**
-   * 해당 연도의 모든 이미지(월 커버 후보) 조회
-   */
-  async getYearlyImages(userId: string, year: number): Promise<string[]> {
-    const start = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
-      'year',
-    );
-    const end = start.endOf('year');
-    const fromDate = start.toJSDate();
-    const toDate = end.toJSDate();
-
-    // 1. 해당 연도의 내 포스트(기여 포함) IDs 조회
-    const postsQb = this.postRepo.createQueryBuilder('p');
-    postsQb.select('p.id');
-
-    postsQb.where(
-      new Brackets((qb) => {
-        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
-          (subQb: SelectQueryBuilder<Post>) => {
-            const sub = subQb
-              .subQuery()
-              .select('1')
-              .from(PostContributor, 'pc')
-              .where('pc.postId = p.id')
-              .andWhere('pc.userId = :userId')
-              .andWhere('pc.role IN (:...roles)')
-              .getQuery();
-            return `EXISTS ${sub}`;
-          },
-          { userId, roles: ['AUTHOR', 'EDITOR'] },
-        );
-      }),
-    );
-    postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
-      fromDate,
-      toDate,
-    });
-    // 최신순 정렬
-    postsQb.orderBy('p.eventAt', 'DESC');
-
-    const posts = await postsQb.getMany();
-    if (posts.length === 0) {
-      return [];
-    }
-    const postIds = posts.map((p) => p.id);
-
-    // 2. 이미지 블록 조회
-    const blocks = await this.postBlockRepo.find({
-      where: {
-        postId: In(postIds),
-        type: PostBlockType.IMAGE,
-      },
-      order: {
-        // 같은 포스트 내에서는 순서대로
-        layoutRow: 'ASC',
-        layoutCol: 'ASC',
-      },
-    });
-
-    // 3. mediaIds 추출 평탄화
-    const assetIds: string[] = [];
-    for (const b of blocks) {
-      const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
-      if (val.mediaIds) {
-        assetIds.push(...val.mediaIds);
-      }
-    }
-
-    return assetIds;
   }
 
   /**

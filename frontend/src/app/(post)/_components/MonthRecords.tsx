@@ -57,8 +57,8 @@ export default function MonthRecords({
   };
 
   const cacheKey = groupId
-    ? ['group', groupId, 'records', 'month', year]
-    : ['my', 'records', 'month', year];
+    ? ['group', groupId, 'records', 'month']
+    : ['my', 'records', 'month'];
 
   const coverEndpoint = groupId
     ? `/api/groups/${groupId}/archives/months/${activeMonthId}/cover`
@@ -98,7 +98,7 @@ export default function MonthRecords({
       );
     });
 
-    updateCover({ assetId, sourcePostId: recordId });
+    updateCover({ assetId });
   };
 
   if (months.length === 0) {

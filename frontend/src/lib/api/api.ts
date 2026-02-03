@@ -237,15 +237,10 @@ export async function fetchApi<T>(
   }
 
   // 서버 환경에서 fetch 실행시 쿠키 전달
-  const finalOptions: RequestInit = {
-    ...fetchOptions,
-    headers: defaultHeaders,
-  };
-
   if (typeof window === 'undefined') {
     const { cookies } = await import('next/headers');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (finalOptions.headers as any).cookie = (await cookies()).toString();
+    (defaultHeaders as any).cookie = (await cookies()).toString();
   }
 
   return fetchWithRetry<T>(

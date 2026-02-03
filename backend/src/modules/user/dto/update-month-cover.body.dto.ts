@@ -8,5 +8,5 @@ export class UpdateMonthCoverBodyDto {
   })
   @IsString()
   @IsNotEmpty()
-  coverAssetId: string;
+  assetId: string;
 }

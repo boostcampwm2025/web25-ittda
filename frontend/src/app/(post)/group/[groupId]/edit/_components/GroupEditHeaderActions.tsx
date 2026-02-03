@@ -3,6 +3,7 @@
 import { useGroupEdit } from './GroupEditContext';
 import Back from '@/components/Back';
 import { useApiPatch } from '@/hooks/useApi';
+import { refreshSharedData } from '@/lib/actions/revalidate';
 import {
   GroupEditResponse,
   GroupProfileCoverResponse,
@@ -48,7 +49,12 @@ export default function GroupEditHeaderActions({
       }
 
       await Promise.all(tasks);
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['group', groupId] }),
+        queryClient.invalidateQueries({ queryKey: ['shared'] }),
+        refreshSharedData(),
+      ]);
       toast.success('수정되었습니다.');
     } catch (error) {
       console.error('update failed', error);

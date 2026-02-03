@@ -65,10 +65,10 @@ export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
           >
             <Image
               src={url}
-              fill
-              className="object-cover"
+              width={56}
+              height={56}
+              className="w-full h-full object-cover rounded-2xl"
               alt={`첨부 사진 ${url}`}
-              sizes="60px"
               unoptimized={true}
             />
             {idx === MAX_VISIBLE - 1 && hasMore && (

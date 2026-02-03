@@ -36,29 +36,30 @@ export default async function GroupHeader({
           </div>
         </div>
         <div className="flex -space-x-2">
-          {groupInfo.members
-            ?.slice(0, 5)
-            .map((m) =>
-              m.profileImageId ? (
+          {groupInfo.members?.slice(0, 5).map((m) => (
+            <div
+              key={m.memberId}
+              className="w-8 h-8 bg-white rounded-full overflow-hidden border-2 shadow-sm dark:border-[#121212] border-white"
+            >
+              {m.profileImageId ? (
                 <AssetImage
-                  key={m.memberId}
                   width={32}
                   height={32}
                   assetId={m.profileImageId}
                   alt="멤버의 프로필"
-                  className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white object-cover"
+                  className="w-full h-full rounded-full object-cover"
                 />
               ) : (
                 <Image
-                  key={m.memberId}
                   width={32}
                   height={32}
                   src={'/profile_base.png'}
                   alt="멤버의 프로필"
-                  className="w-8 h-8 rounded-full border-2 shadow-sm bg-white dark:border-[#121212] border-white object-cover"
+                  className="w-full h-full rounded-full object-cover"
                 />
-              ),
-            )}
+              )}
+            </div>
+          ))}
           {groupInfo.members && groupInfo.members.length > 5 && (
             <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
               <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">

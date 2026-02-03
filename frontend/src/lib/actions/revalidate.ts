@@ -14,3 +14,7 @@ export async function refreshRecordData() {
 export async function refreshGroupData(groupId: string) {
   revalidatePath(`/group/${groupId}`);
 }
+
+export async function refreshSharedData() {
+  revalidatePath('/shared');
+}
