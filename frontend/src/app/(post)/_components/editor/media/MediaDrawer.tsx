@@ -127,7 +127,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                       placeholder="이름을 입력하세요"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      className="w-full bg-[#F4F4F4] dark:bg-white/5 border-none rounded-xl px-12 py-4 text-sm font-medium focus:ring-2 focus:ring-[#10B981]/20 transition-all outline-none text-itta-black dark:text-white"
+                      className="w-full bg-[#F4F4F4] dark:bg-white/5 border-none rounded-xl px-12 py-4 text-base font-medium focus:ring-2 focus:ring-[#10B981]/20 transition-all outline-none text-itta-black dark:text-white"
                     />
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     {query && (

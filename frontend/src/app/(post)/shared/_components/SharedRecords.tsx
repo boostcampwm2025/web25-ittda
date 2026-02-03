@@ -24,6 +24,7 @@ import { useApiPatch } from '@/hooks/useApi';
 
 interface SharedRecordProps {
   searchParams: string;
+  initialGroups?: GroupSummary[];
 }
 
 const sortGroups = (
@@ -43,11 +44,17 @@ const sortGroups = (
   }
 };
 
-export default function SharedRecords({ searchParams }: SharedRecordProps) {
+export default function SharedRecords({
+  searchParams,
+  initialGroups = [],
+}: SharedRecordProps) {
   const queryClient = useQueryClient();
   const sortBy = (searchParams as GroupSortOption) || 'latest';
 
-  const { data: groups = [] } = useQuery(groupListOptions());
+  const { data: groups = initialGroups } = useQuery({
+    ...groupListOptions(),
+    initialData: initialGroups,
+  });
 
   const sortedGroups = useMemo(() => {
     if (sortBy === 'latest') return groups;

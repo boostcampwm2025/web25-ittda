@@ -59,11 +59,11 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
             <div className="w-24 h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
               {groupThumbnail?.assetId ? (
                 <AssetImage
-                  width={200}
-                  height={200}
+                  width={96}
+                  height={96}
                   assetId={groupThumbnail.assetId}
                   alt="그룹 썸네일"
-                  className="w-full h-full object-cover opacity-80"
+                  className="w-full h-full object-cover rounded-[32px]"
                 />
               ) : (
                 <div className="flex items-center justify-center">
@@ -144,22 +144,22 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
           onClick={() => router.push(`/group/${groupId}/edit/profile`)}
           className="cursor-pointer mt-4 w-full flex items-center justify-between p-5 rounded-3xl border transition-all active:scale-[0.98] dark:bg-[#10B981]/5 dark:border-[#10B981]/10 dark:hover:bg-[#10B981]/10 bg-[#10B981]/5 border-[#10B981]/10 hover:bg-[#10B981]/10"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center rounded-2xl gap-4 overflow-hidden">
             {me.profileImage?.assetId ? (
               <AssetImage
-                width={50}
-                height={50}
+                width={48}
+                height={48}
                 assetId={me.profileImage.assetId}
                 alt="유저 프로필"
-                className="w-12 h-12 rounded-2xl border bg-white shadow-sm shrink-0"
+                className="object-cover rounded-2xl border bg-white shadow-sm shrink-0"
               />
             ) : (
               <Image
-                width={50}
-                height={50}
+                width={48}
+                height={48}
                 src={'/profile_base.png'}
                 alt="프로필"
-                className="w-12 h-12 rounded-2xl border bg-white shadow-sm shrink-0"
+                className="rounded-2xl border bg-white shadow-sm shrink-0 object-cover"
               />
             )}
             <div className="text-left">

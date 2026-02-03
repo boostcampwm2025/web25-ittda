@@ -94,7 +94,7 @@ export default function MetadataSelectionDrawer({
             <>
               {/* 이미지 선택 그리드 */}
               <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide">
-                <div className="grid grid-cols-3 gap-3 py-2">
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3 py-2">
                   {imagesWithMetadata.map((img, idx) => (
                     <div
                       key={idx}
@@ -107,9 +107,10 @@ export default function MetadataSelectionDrawer({
                     >
                       <Image
                         src={img.imageUrl}
-                        fill
+                        width={200}
+                        height={200}
                         alt={`사진 ${idx + 1}`}
-                        className="object-cover"
+                        className="w-full h-full object-cover rounded-2xl"
                       />
                       {selectedIndex === idx && (
                         <div className="absolute inset-0 bg-[#10B981]/20 flex items-center justify-center">

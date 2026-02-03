@@ -84,13 +84,8 @@ export class UserController {
 
     const { year, month } = parseYearMonth(yyyy_mm);
 
-    await this.userService.updateMonthCover(
-      userId,
-      year,
-      month,
-      body.coverAssetId,
-    );
-    return { data: { coverAssetId: body.coverAssetId } };
+    await this.userService.updateMonthCover(userId, year, month, body.assetId);
+    return { data: { assetId: body.assetId } };
   }
 
   @Get('archives/days')
