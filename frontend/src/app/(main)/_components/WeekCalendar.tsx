@@ -103,7 +103,7 @@ export default function WeekCalendar() {
       <div
         className="px-6 py-2 flex items-center gap-1 group cursor-pointer self-start"
         onClick={() =>
-          router.push(`/my/month/${selectedDateStr.substring(0, 7)}`)
+          router.push(`/my/month/${displayYearMonth.replace('.', '-')}`)
         }
       >
         <span className="text-base font-semibold dark:text-white text-itta-black">
