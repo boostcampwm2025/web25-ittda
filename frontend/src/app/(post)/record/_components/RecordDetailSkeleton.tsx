@@ -1,6 +1,6 @@
 export default function RecordDetailSkeleton() {
   return (
-    <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
+    <div className="-mt-6 h-full transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
         {/* Back button */}
         <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse" />

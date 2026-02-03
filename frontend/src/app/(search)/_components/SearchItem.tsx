@@ -22,9 +22,9 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
           <AssetImage
             assetId={record.imageUrl}
             alt={record.title}
-            fill
-            sizes="48px"
-            className="object-cover"
+            width={48}
+            height={48}
+            className="w-full h-full object-cover rounded-xl"
           />
         </div>
       ) : (

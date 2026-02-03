@@ -13,6 +13,7 @@ import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { isInAppBrowser } from '@/lib/utils/browserDetect';
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
@@ -118,6 +119,16 @@ export default function LoginContent({
     guestLogin({});
   };
 
+  const handleSocialLogin = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isInAppBrowser()) {
+      e.preventDefault();
+      toast.error(
+        '인앱 브라우저에서는 로그인이 제한될 수 있습니다.\n기본 브라우저(Chrome, Safari 등)에서 열어주세요.',
+        { duration: 5000 },
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex flex-col transition-colors duration-500 dark:bg-[#0F1115] bg-[#FFFFFF]">
       {/* 상단 로고 및 슬로건 영역 */}
@@ -160,6 +171,7 @@ export default function LoginContent({
           <Link
             aria-label="구글로 로그인하기"
             href={getRedirectUri({ provider: 'google' })}
+            onClick={handleSocialLogin}
             className="bg-white border-gray-100 w-14 h-14 rounded-full flex items-center justify-center border shadow-sm transition-all hover:shadow-md active:scale-90"
           >
             <svg viewBox="0 0 24 24" className="w-6 h-6">
@@ -186,6 +198,7 @@ export default function LoginContent({
           <Link
             aria-label="카카오로 로그인하기"
             href={getRedirectUri({ provider: 'kakao' })}
+            onClick={handleSocialLogin}
             className="w-14 h-14 rounded-full bg-[#FEE500] flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90"
           >
             <svg viewBox="0 0 24 24" className="w-7 h-7 fill-[#3C1E1E]">

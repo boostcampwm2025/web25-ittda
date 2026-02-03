@@ -3,6 +3,7 @@
 import { userProfileOptions } from '@/lib/api/profile';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
+import { BarChart3 } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -76,13 +77,18 @@ export default function MonthlyUsageChart() {
             월별 사용 그래프
           </h2>
         </div>
-        <div className="h-44 w-full pb-3 flex flex-col items-center justify-center gap-1.5">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            아직 기록이 없어요
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            첫 기록을 작성해보세요
-          </p>
+        <div className="h-44 w-full pb-3 flex flex-col items-center justify-center gap-2">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+            <BarChart3 className="w-5 h-5 text-[#10B981]" />
+          </div>
+          <div className="space-y-1 text-center">
+            <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+              아직 기록이 없어요
+            </p>
+            <p className="text-xs text-gray-400">
+              첫 기록을 작성해보세요
+            </p>
+          </div>
         </div>
       </section>
     );

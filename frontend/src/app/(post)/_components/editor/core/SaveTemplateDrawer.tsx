@@ -62,7 +62,7 @@ export default function SaveTemplateDrawer({
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 placeholder="어떤 구성을 위한 템플릿인가요?"
-                className="w-full border-b bg-transparent py-2 text-sm font-medium transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-gray-400 border-gray-100 focus:border-[#10B981] text-gray-600"
+                className="w-full border-b bg-transparent py-2 text-base font-medium transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-gray-400 border-gray-100 focus:border-[#10B981] text-gray-600"
               />
             </div>
           </div>

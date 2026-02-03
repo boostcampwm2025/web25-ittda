@@ -1,6 +1,7 @@
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import { PostMood } from '@/enums/post-mood.enum';
+import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import {
   ApiExtraModels,
   ApiProperty,
@@ -45,6 +46,26 @@ export class FeedBlockDto {
   layout: BlockLayoutDto;
 }
 
+export class FeedContributorDto {
+  @ApiProperty({ format: 'uuid' })
+  userId: string;
+
+  @ApiProperty({ enum: PostContributorRole })
+  role: PostContributorRole;
+
+  @ApiPropertyOptional()
+  nickname?: string | null;
+
+  @ApiPropertyOptional()
+  groupNickname?: string | null;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  profileImageId?: string | null;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  groupProfileImageId?: string | null;
+}
+
 export class FeedCardResponseDto {
   @ApiProperty({ format: 'uuid' })
   postId: string;
@@ -75,6 +96,8 @@ export class FeedCardResponseDto {
   rating: number | null;
   @ApiProperty({ type: () => [FeedBlockDto] })
   blocks: FeedBlockDto[];
+  @ApiProperty({ type: () => [FeedContributorDto] })
+  contributors: FeedContributorDto[];
   constructor(init: FeedCardResponseDto) {
     Object.assign(this, init);
   }

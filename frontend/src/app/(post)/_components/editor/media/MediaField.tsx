@@ -53,14 +53,14 @@ export default function MediaField({
           : 'px-4 py-3 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl shadow-sm' // 에디터 필드 스타일
       }`}
     >
-      <div className="relative w-14 h-20 rounded-md overflow-hidden flex-shrink-0 bg-gray-100 border border-black/5">
+      <div className="relative w-14 h-20 rounded-md overflow-hidden shrink-0 bg-gray-100 border border-black/5">
         {data.imageUrl ? (
           <Image
             src={data.imageUrl}
             alt={data.title}
-            fill
-            sizes="56px"
-            className="object-cover group-hover:scale-105 transition-transform"
+            width={56}
+            height={80}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">

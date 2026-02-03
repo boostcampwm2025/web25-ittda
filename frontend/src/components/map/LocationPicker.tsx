@@ -491,7 +491,7 @@ function LocationPickerContent({
             alt="location pin"
             width={40}
             height={40}
-            // className="-translate-y-[85%]"
+            className="object-cover"
           />
 
           <div className="mt-4 pointer-events-auto">
