@@ -41,12 +41,15 @@ export default function GroupHeaderActions({
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
 
   const queryClient = useQueryClient();
-  const { mutate: leaveGroup } = useApiDelete(`/api/${groupId}/members/me`, {
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['share'] });
-      router.push('/shared');
+  const { mutate: leaveGroup } = useApiDelete(
+    `/api/groups/${groupId}/members/me`,
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['share'] });
+        router.push('/shared');
+      },
     },
-  });
+  );
 
   const handleLeaveGroup = () => {
     const { userId } = useAuthStore.getState();
