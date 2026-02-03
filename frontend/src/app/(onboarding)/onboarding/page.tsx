@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const ONBOARDING_DATA = [
   {
@@ -30,10 +31,13 @@ const ONBOARDING_DATA = [
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const router = useRouter();
+  const userId = useAuthStore((state) => state.userId);
   const isLastStep = step === ONBOARDING_DATA.length - 1;
 
   const finishOnboarding = () => {
-    localStorage.setItem('has_seen_onboarding', 'true');
+    if (userId) {
+      localStorage.setItem(`has_seen_onboarding_${userId}`, 'true');
+    }
     router.replace('/');
   };
 
