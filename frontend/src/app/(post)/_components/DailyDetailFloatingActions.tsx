@@ -52,9 +52,7 @@ export default function DailyDetailFloatingActions({
       <ViewOnMapButton
         className="bottom-24"
         routePath={
-          groupId
-            ? `/map?scope=group&groupId=${groupId}&start=${date}`
-            : `/map?start=${date}`
+          groupId ? `/group/${groupId}/map?start=${date}` : `/map?start=${date}`
         }
       />
 
