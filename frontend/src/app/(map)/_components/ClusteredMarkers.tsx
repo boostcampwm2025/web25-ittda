@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Marker, MarkerClusterer } from '@googlemaps/markerclusterer';
 import type { MapPostItem } from '@/lib/types/record';
 import { PinMarker } from './PinMarker';
+import { CustomClusterRenderer } from './CustomClusterRenderer';
 
 // 클러스터 이벤트 타입용
 interface ClusterClickEvent {
@@ -16,9 +17,11 @@ interface ClusterClickEvent {
 export const ClusteredPostMarkers = ({
   posts,
   onSelectPost,
+  selectedPostId,
 }: {
   posts: MapPostItem[];
   onSelectPost: (id: string | string[] | null) => void;
+  selectedPostId: string | string[] | null;
 }) => {
   const [markers, setMarkers] = useState<{ [key: string]: Marker }>({});
   const map = useMap();
@@ -26,7 +29,10 @@ export const ClusteredPostMarkers = ({
 
   const clusterer = useMemo(() => {
     if (!map) return null;
-    return new MarkerClusterer({ map });
+    return new MarkerClusterer({
+      map,
+      renderer: new CustomClusterRenderer(),
+    });
   }, [map]);
 
   // 클러스터 클릭 이벤트 핸들러
@@ -86,14 +92,20 @@ export const ClusteredPostMarkers = ({
 
   return (
     <>
-      {posts.map((post) => (
-        <PinMarker
-          key={post.id}
-          post={post}
-          onClick={(id) => onSelectPost(id)}
-          setMarkerRef={setMarkerRef}
-        />
-      ))}
+      {posts.map((post) => {
+        const isSelected =
+          selectedPostId === post.id ||
+          (Array.isArray(selectedPostId) && selectedPostId.includes(post.id));
+        return (
+          <PinMarker
+            key={post.id}
+            post={post}
+            onClick={(id) => onSelectPost(id)}
+            setMarkerRef={setMarkerRef}
+            isSelected={isSelected}
+          />
+        );
+      })}
     </>
   );
 };

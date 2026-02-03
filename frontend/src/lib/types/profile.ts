@@ -52,6 +52,7 @@ export interface UserProfile extends BaseUser {
 export interface GuestInfo {
   guest: boolean;
   guestSessionId: string;
+  guestAccessToken: string;
   expiresAt: string;
 }
 

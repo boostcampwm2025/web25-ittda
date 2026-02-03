@@ -45,14 +45,21 @@ export default function ProfileInfo({
 
   // 닉네임 유효성 검사
   const getNicknameError = () => {
-    if (nickname.length === 0) return null;
     if (nickname.length < 2) return '닉네임은 최소 2자 이상이어야 합니다.';
     if (nickname.length > 10) return '닉네임은 최대 10자까지 입력 가능합니다.';
-    const nicknameRegex = /^[가-힣a-zA-Z0-9\s]+$/;
 
-    if (!nicknameRegex.test(nickname)) {
-      return '특수문자는 사용할 수 없습니다. (한글, 영문, 숫자, 공백만 가능)';
+    // 자음/모음만 있는지 체크
+    const incompleteHangulRegex = /[ㄱ-ㅎㅏ-ㅣ]/;
+    if (incompleteHangulRegex.test(nickname)) {
+      return '완성된 한글을 입력해주세요';
     }
+
+    // 허용된 문자만 사용했는지 체크
+    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]+$/;
+    if (!groupNameRegex.test(nickname)) {
+      return '한글, 영문, 숫자, 공백만 사용할 수 있어요';
+    }
+
     return null;
   };
 

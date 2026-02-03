@@ -46,9 +46,12 @@ export const getCachedRecordPreviewList = cache(
 // ============================================
 
 export interface MapRecordListParams {
-  lat: number;
-  lng: number;
+  maxLat: number;
+  maxLng: number;
+  minLat: number;
+  minLng: number;
   scope: 'personal' | 'group';
+  emotions?: string;
   groupId?: string;
   radius?: number;
   from?: string;
@@ -59,12 +62,15 @@ export interface MapRecordListParams {
 }
 
 export const mapRecordListOptions = ({
-  lat,
-  lng,
+  maxLat,
+  maxLng,
+  minLat,
+  minLng,
   scope,
   groupId,
   radius,
   from,
+  emotions,
   to,
   tags,
   cursor,
@@ -76,19 +82,24 @@ export const mapRecordListOptions = ({
       'records',
       scope,
       ...(scope === 'group' && groupId ? [groupId] : []),
-      lat,
-      lng,
+      maxLat,
+      maxLng,
+      minLat,
+      minLng,
       radius,
       from,
       to,
       tags,
       cursor,
       limit,
+      emotions,
     ],
     queryFn: async () => {
       const params: Record<string, string | number> = {
-        lat,
-        lng,
+        maxLat,
+        maxLng,
+        minLat,
+        minLng,
         scope,
       };
 
@@ -101,6 +112,7 @@ export const mapRecordListOptions = ({
       if (tags) params.tags = tags;
       if (cursor) params.cursor = cursor;
       if (limit !== undefined) params.limit = limit;
+      if (emotions) params.emotions = emotions;
 
       const response = await get<MapListResponse>(`/api/map/posts`, params);
 
