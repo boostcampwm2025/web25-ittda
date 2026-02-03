@@ -87,7 +87,7 @@ export type RecordScope = 'PERSONAL' | 'GROUP';
 export type CreateRecordBlock = Omit<Block, 'id'> & { id?: string };
 
 export interface CreateRecordRequest {
-  scope: RecordScope;
+  scope?: RecordScope;
   groupId?: string | null;
   title: string;
   thumbnailMediaId?: string;

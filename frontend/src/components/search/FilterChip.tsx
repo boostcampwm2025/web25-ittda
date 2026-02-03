@@ -34,7 +34,8 @@ export const FilterChip = ({
   const Icon = iconMap[type];
 
   return (
-    <div
+    <button
+      type="button"
       className={cn(
         'px-4 flex items-center gap-1 shrink-0 rounded-lg text-xs font-semibold transition-all duration-200 border',
         isActive
@@ -43,16 +44,16 @@ export const FilterChip = ({
         className,
       )}
     >
-      <button
+      <div
         onClick={onClick}
         className="py-2 gap-1.5 flex items-center text-[11px] h-9 font-bold active:scale-95 transition-transform"
       >
         <Icon size={13} strokeWidth={isActive ? 2.5 : 2} />
         <span className="truncate max-w-25">{label}</span>
-      </button>
+      </div>
 
       {isActive && (
-        <button
+        <div
           onClick={(e) => {
             e.stopPropagation();
             onClear();
@@ -60,8 +61,8 @@ export const FilterChip = ({
           className="hover:bg-black/10 dark:hover:bg-white/20 rounded-full transition-colors p-0.5"
         >
           <X size={12} strokeWidth={3} />
-        </button>
+        </div>
       )}
-    </div>
+    </button>
   );
 };

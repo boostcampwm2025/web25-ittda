@@ -5,7 +5,7 @@ import { FieldType, LocationValue } from '@/lib/types/record';
 import { RecordBlock, BlockValue, PhotoValue } from '@/lib/types/recordField';
 import { TemplateRecord } from '@/lib/types/template';
 
-import { FIELD_META } from '@/lib/constants/record';
+import { FIELD_META, MULTI_INSTANCE_LIMITS } from '@/lib/constants/record';
 import {
   getDefaultValue,
   isRecordBlockEmpty,
@@ -268,16 +268,45 @@ export function usePostEditorBlocks({
   const addOrShowBlock = useCallback(
     (type: FieldType, initialValue?: BlockValue) => {
       const meta = FIELD_META[type];
-      const existing = blocks.find((b) => b.type === type);
+      const existingBlocks = blocks.filter((b) => b.type === type);
+      const limit = MULTI_INSTANCE_LIMITS[type];
+
+      if (type === 'location') {
+        let targetId: string | undefined = existingBlocks[0]?.id;
+
+        if (!targetId) {
+          targetId = updateFieldValue(
+            getDefaultValue('location'),
+            undefined,
+            'location',
+          );
+        }
+
+        if (targetId) {
+          if (draftId) requestLock(`block:${targetId}`);
+          setActiveDrawer({ type: 'location', id: targetId });
+        }
+        return;
+      }
+
       // 단일 블록이고 이미 존재하는 경우
-      if (meta.isSingle && existing) {
+      if (meta.isSingle && existingBlocks.length > 0) {
+        const existing = existingBlocks[0];
         if (initialValue) {
           updateFieldValue(initialValue, existing.id);
         } else {
-          // 그냥 클릭은 락 걸고 드로어 오픈
           if (draftId) requestLock(`block:${existing.id}`);
           setActiveDrawer({ type, id: existing.id });
         }
+        return;
+      }
+
+      // 개수 제한
+      if (!meta.isSingle && limit && existingBlocks.length >= limit) {
+        const fieldName = meta.label || type;
+        toast.warning(
+          `${fieldName} 필드는 최대 ${limit}개까지만 추가할 수 있습니다.`,
+        );
         return;
       }
 
@@ -424,10 +453,6 @@ export function usePostEditorBlocks({
     addOrShowBlock,
     removeBlock,
     handleApplyTemplate,
-    //handlePhotoUpload,
-    //pendingMetadata,
-    //handleApplyMetadata,
-    //handleSkipMetadata,
     applyPendingMetadata,
     handleEditMetadata,
   };
