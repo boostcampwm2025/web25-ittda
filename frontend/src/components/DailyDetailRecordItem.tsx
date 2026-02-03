@@ -62,7 +62,10 @@ export default function DailyDetailRecordItem({
   };
 
   const handleRecordClick = (recordId: string) => {
-    router.push(`/record/${recordId}`);
+    const path = groupId
+      ? `/record/${recordId}?scope=group&groupId=${groupId}`
+      : `/record/${recordId}`;
+    router.push(path);
   };
 
   const time = getSingleBlockValue<TimeValue>(record, 'TIME')?.time || '';
