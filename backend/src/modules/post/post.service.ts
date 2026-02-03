@@ -500,8 +500,14 @@ export class PostService {
       if (member.role === GroupRoleEnum.VIEWER) {
         throw new ForbiddenException('Insufficient permission.');
       }
-    }
-    if (post.ownerUserId !== requesterId) {
+      const isAdmin = member.role === GroupRoleEnum.ADMIN;
+      const isOwner = post.ownerUserId === requesterId;
+      if (!isAdmin && !isOwner) {
+        throw new ForbiddenException(
+          'Only the owner or admin can delete this post',
+        );
+      }
+    } else if (post.ownerUserId !== requesterId) {
       throw new ForbiddenException('Only the owner can delete this post');
     }
     await this.postRepository.softDelete(postId);
