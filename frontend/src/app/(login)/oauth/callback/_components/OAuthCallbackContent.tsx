@@ -46,9 +46,11 @@ export default function OAuthCallbackContent({
         router.push('/login?error=login_failed');
       } else {
         // 유저 프로필 조회 및 캐시 저장
+        let userId: string | null = null;
         try {
           const profileData =
             await queryClient.fetchQuery(userProfileOptions());
+          userId = profileData.userId;
           const userInfo = {
             id: profileData.userId,
             email: profileData.user.email ?? 'example.com',
@@ -94,11 +96,19 @@ export default function OAuthCallbackContent({
           );
         }
 
-        const hasSeenOnboarding = localStorage.getItem('has_seen_onboarding');
-        if (hasSeenOnboarding === 'true') {
-          router.replace('/'); // 이미 봤다면 홈으로
+        // 온보딩 체크 (userId별로 저장)
+        if (userId) {
+          const hasSeenOnboarding = localStorage.getItem(
+            `has_seen_onboarding_${userId}`,
+          );
+          if (hasSeenOnboarding === 'true') {
+            router.replace('/'); // 이미 봤다면 홈으로
+          } else {
+            router.replace('/onboarding'); // 안 봤다면 온보딩으로
+          }
         } else {
-          router.replace('/onboarding'); // 안 봤다면 온보딩으로
+          // userId를 가져오지 못한 경우 기본적으로 홈으로
+          router.replace('/');
         }
       }
     };
