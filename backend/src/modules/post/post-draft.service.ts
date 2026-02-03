@@ -428,6 +428,28 @@ export class PostDraftService {
   }
 
   private ensureBlockValueValid(block: PostBlockDto) {
+    if (block.type === PostBlockType.MOOD) {
+      const mood = (block.value as { mood?: unknown } | undefined)?.mood;
+      if (mood === undefined || mood === null || mood === '') {
+        return;
+      }
+    }
+    if (block.type === PostBlockType.MEDIA) {
+      const media = block.value as
+        | { title?: unknown; type?: unknown; externalId?: unknown }
+        | undefined;
+      if (
+        !media ||
+        typeof media.title !== 'string' ||
+        media.title.trim().length === 0 ||
+        typeof media.type !== 'string' ||
+        media.type.trim().length === 0 ||
+        typeof media.externalId !== 'string' ||
+        media.externalId.trim().length === 0
+      ) {
+        return;
+      }
+    }
     const candidate = plainToInstance(PostBlockDto, block); // 일반 객체를 DTO 인스턴스로 변환하는 함수
     const errors = validateSync(candidate, { forbidUnknownValues: false }); // class-validator로 즉시(동기) 검증하는 함수
     if (errors.length === 0) return;
