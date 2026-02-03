@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  MinLength,
   ValidateNested,
   IsUUID,
   IsArray,
@@ -24,6 +25,7 @@ export class CreatePostDto {
 
   @ApiProperty({ example: 'string' })
   @IsString()
+  @MinLength(1)
   @MaxLength(200)
   title: string;
 

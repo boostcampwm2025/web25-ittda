@@ -29,6 +29,8 @@ import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { CreatePostDto } from './dto/create-post.dto';
 import { validateBlocks } from './validator/blocks.validator';
+import { validateBlockValues } from './validator/block-values.validator';
+import { validatePostTitle } from './validator/post-title.validator';
 import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
@@ -104,7 +106,9 @@ export class PostPublishService {
           );
 
           const snapshotBlocks = snapshot.blocks;
+          validatePostTitle(snapshot.title);
           validateBlocks(snapshotBlocks);
+          validateBlockValues(snapshotBlocks);
           this.ensureBlockIds(snapshotBlocks);
           this.ensureNoDuplicateBlockIds(snapshotBlocks);
 
@@ -269,8 +273,10 @@ export class PostPublishService {
 
         const snapshot = this.parseGroupDraftSnapshot(draft.snapshot, groupId);
 
+        validatePostTitle(snapshot.title);
         const blocks = snapshot.blocks;
         validateBlocks(blocks);
+        validateBlockValues(blocks);
         this.ensureBlockIds(blocks);
         this.ensureNoDuplicateBlockIds(blocks);
 

@@ -26,6 +26,8 @@ import { PostBlockType } from '@/enums/post-block-type.enum';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { validateBlocks } from './validator/blocks.validator';
+import { validateBlockValues } from './validator/block-values.validator';
+import { validatePostTitle } from './validator/post-title.validator';
 import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
@@ -57,7 +59,9 @@ export class PostService {
    */
   async createPost(ownerUserId: string, dto: CreatePostDto) {
     // 블록 검증 → 메타 추출 → eventAt 생성 순서로 선행 처리
+    validatePostTitle(dto.title);
     validateBlocks(dto.blocks);
+    validateBlockValues(dto.blocks);
 
     const owner = await this.userRepository.findOne({
       where: { id: ownerUserId },
@@ -388,7 +392,9 @@ export class PostService {
       }
     }
 
+    validatePostTitle(dto.title);
     validateBlocks(dto.blocks);
+    validateBlockValues(dto.blocks);
     this.ensureNoDuplicateBlockIds(dto.blocks);
 
     const meta = extractMetaFromBlocks(dto.blocks);
