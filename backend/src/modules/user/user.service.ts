@@ -309,8 +309,8 @@ export class UserService {
     qb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
     qb.andWhere('p.ownerUserId = :userId', { userId });
 
-    const rows = await qb.getRawMany<{ pm_mediaId: string }>();
-    const ids = rows.map((row) => row.pm_mediaId).filter(Boolean);
+    const mediaList = await qb.getMany();
+    const ids = mediaList.map((pm) => pm.mediaId).filter(Boolean);
     return Array.from(new Set(ids));
   }
 
