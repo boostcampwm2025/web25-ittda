@@ -7,7 +7,12 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Repository } from 'typeorm';
+import {
+  In,
+  IsNull,
+  Repository,
+  OptimisticLockVersionMismatchError,
+} from 'typeorm';
 import type { Point } from 'geojson';
 
 import { Post } from './entity/post.entity';
@@ -272,6 +277,7 @@ export class PostService {
       title: post.title,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
+      version: post.version,
       blocks: blocks.map((b) => ({
         id: b.id,
         type: b.type,
@@ -324,6 +330,7 @@ export class PostService {
 
     const snapshot: EditPostDto = {
       title: post.title,
+      version: post.version,
       blocks: blocks.map((b) => ({
         id: b.id,
         type: b.type,
@@ -389,8 +396,20 @@ export class PostService {
         tags: meta.tags ?? null,
         emotion: meta.emotion ?? null,
         rating: meta.rating ?? null,
+        version: dto.version,
       });
-      const saved = await postRepo.save(updated);
+
+      let saved: Post;
+      try {
+        saved = await postRepo.save(updated);
+      } catch (error) {
+        if (error instanceof OptimisticLockVersionMismatchError) {
+          throw new ConflictException(
+            'Post version mismatch. Please refresh and try again.',
+          );
+        }
+        throw error;
+      }
 
       if (deleteIds.length > 0) {
         await blockRepo.delete({ id: In(deleteIds) });
@@ -471,6 +490,7 @@ export class PostService {
         groupId: true,
         scope: true,
         title: true,
+        version: true,
       },
     });
     if (!post) throw new NotFoundException('Post not found');

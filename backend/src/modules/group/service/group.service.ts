@@ -5,9 +5,14 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import {
+  Repository,
+  DataSource,
+  OptimisticLockVersionMismatchError,
+} from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -103,7 +108,12 @@ export class GroupService {
   }
 
   /** 그룹 정보 수정 */
-  async updateGroup(userId: string, groupId: string, name: string) {
+  async updateGroup(
+    userId: string,
+    groupId: string,
+    name: string,
+    version: number,
+  ): Promise<{ name: string; version: number }> {
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
       relations: ['owner'],
@@ -113,7 +123,25 @@ export class GroupService {
       throw new NotFoundException('존재하지 않는 그룹입니다.');
     }
 
-    await this.groupRepo.update(groupId, { name });
+    if (group.owner.id !== userId) {
+      throw new ForbiddenException('그룹 정보를 수정할 권한이 없습니다.');
+    }
+
+    group.name = name;
+    group.version = version;
+
+    try {
+      await this.groupRepo.save(group);
+    } catch (error: unknown) {
+      if (error instanceof OptimisticLockVersionMismatchError) {
+        throw new ConflictException(
+          'Group version mismatch. Please refresh and try again.',
+        );
+      }
+      throw error;
+    }
+
+    return { name: group.name, version: group.version };
   }
 
   /** 그룹 목록 조회 (최신 활동 순) - N+1 최적화 */

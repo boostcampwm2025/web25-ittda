@@ -117,6 +117,7 @@ export class GroupManagementController {
       groupId,
       dto.assetId,
       dto.sourcePostId,
+      dto.version,
     );
   }
 

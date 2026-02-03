@@ -6,9 +6,10 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import type { Request, Response } from 'express';
 import { catchError, tap } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
+
+import type { Request, Response } from 'express';
 import type { Logger } from 'winston';
 
 type HttpRequest = Request & {

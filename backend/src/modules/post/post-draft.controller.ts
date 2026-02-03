@@ -8,10 +8,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
-
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 import { User } from '@/common/decorators/user.decorator';
-import type { MyJwtPayload } from '../auth/auth.type';
 import { GroupRoleGuard } from '../group/guards/group-roles.guard';
 import { GroupRoles } from '../group/guards/group-roles.decorator';
 import { PostDraftService } from './post-draft.service';
@@ -25,6 +23,8 @@ import {
 import { PostDetailDto } from './dto/post-detail.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
+
+import type { MyJwtPayload } from '../auth/auth.type';
 
 @UseGuards(JwtAuthGuard, GroupRoleGuard)
 @GroupRoles(GroupRoleEnum.EDITOR)

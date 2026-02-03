@@ -1,4 +1,4 @@
-import { IsString, Length, Matches } from 'class-validator';
+import { IsInt, IsString, Length, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateGroupDto {
@@ -12,4 +12,8 @@ export class UpdateGroupDto {
     message: '그룹 이름은 한글, 영문, 숫자, 공백만 허용됩니다.',
   })
   name: string;
+
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  version: number;
 }

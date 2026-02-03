@@ -5,9 +5,10 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, OptimisticLockVersionMismatchError } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -209,6 +210,7 @@ export class GroupManagementService {
     groupId: string,
     assetId: string,
     sourcePostId: string,
+    version: number,
   ): Promise<UpdateGroupCoverResponseDto> {
     // 1. 그룹 존재 확인 및 멤버 여부 확인
     const member = await this.groupMemberRepo.findOne({
@@ -256,10 +258,21 @@ export class GroupManagementService {
     }
 
     // 4. 그룹 정보 업데이트
-    await this.groupRepo.update(groupId, {
-      coverMediaId: assetId,
-      coverSourcePostId: sourcePostId,
-    });
+    const group = member.group;
+    group.coverMediaId = assetId;
+    group.coverSourcePostId = sourcePostId;
+    group.version = version;
+
+    try {
+      await this.groupRepo.save(group);
+    } catch (error: unknown) {
+      if (error instanceof OptimisticLockVersionMismatchError) {
+        throw new ConflictException(
+          'Group version mismatch. Please refresh and try again.',
+        );
+      }
+      throw error;
+    }
 
     // 5. 응답 반환
     return {
@@ -271,6 +284,7 @@ export class GroupManagementService {
         mimeType: postMedia.media.mimeType || 'application/octet-stream',
       },
       updatedAt: new Date(),
+      version: group.version,
     };
   }
 
@@ -321,6 +335,7 @@ export class GroupManagementService {
       groupId: group.id,
       name: group.name,
       createdAt: group.createdAt,
+      version: group.version,
       ownerUserId: group.owner.id,
       cover: group.coverMedia
         ? {

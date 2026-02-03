@@ -24,6 +24,9 @@ export class GroupSettingInfoDto {
   @ApiProperty({ description: '생성 일시' })
   createdAt: Date;
 
+  @ApiProperty({ description: '버전' })
+  version: number;
+
   @ApiProperty({ description: '방장 유저 ID' })
   ownerUserId: string;
 

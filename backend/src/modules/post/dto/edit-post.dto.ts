@@ -5,6 +5,7 @@ import {
   ValidateNested,
   IsOptional,
   IsUUID,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -15,6 +16,10 @@ export class EditPostDto {
   @IsString()
   @MaxLength(200)
   title: string;
+
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  version: number;
 
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()

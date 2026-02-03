@@ -90,12 +90,26 @@ export class GroupController {
     description: '관리자가 그룹의 이름을 수정합니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: '새로운 그룹' },
+        version: { type: 'number', example: 0 },
+      },
+    },
+  })
   @ApiWrappedOkResponse({ type: Object })
   async updateGroup(
     @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
     @Body() dto: UpdateGroupDto,
   ) {
-    return this.groupService.updateGroup(user.sub, groupId, dto.name);
+    return this.groupService.updateGroup(
+      user.sub,
+      groupId,
+      dto.name,
+      dto.version,
+    );
   }
 }

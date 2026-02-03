@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  VersionColumn,
 } from 'typeorm';
 
 import { User } from '../../user/entity/user.entity';
@@ -43,6 +44,6 @@ export class Group {
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  //   @DeleteDateColumn()
-  //   deletedAt?: Date;
+  @VersionColumn({ name: 'version' })
+  version: number;
 }

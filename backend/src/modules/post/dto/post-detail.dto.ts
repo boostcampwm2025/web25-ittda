@@ -42,6 +42,8 @@ export class PostDetailDto {
   createdAt: Date;
   @ApiProperty()
   updatedAt: Date;
+  @ApiProperty()
+  version: number;
   @ApiProperty({ type: () => [PostBlockDto] })
   blocks: PostBlockDto[];
   @ApiProperty({ type: () => [PostContributorDto] })

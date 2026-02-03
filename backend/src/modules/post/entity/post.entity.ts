@@ -9,6 +9,7 @@ import {
   DeleteDateColumn,
   JoinColumn,
   OneToMany,
+  VersionColumn,
 } from 'typeorm';
 
 import type { Point } from 'geojson';
@@ -79,4 +80,7 @@ export class Post {
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
   deletedAt?: Date | null;
+
+  @VersionColumn({ name: 'version' })
+  version: number;
 }

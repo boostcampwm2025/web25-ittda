@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsInt } from 'class-validator';
 import { GroupCoverDto } from './get-groups.dto';
 
 export class UpdateGroupCoverDto {
@@ -7,6 +8,10 @@ export class UpdateGroupCoverDto {
 
   @ApiProperty({ description: '해당 Asset이 포함된 게시글 ID' })
   sourcePostId: string;
+
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  version: number;
 }
 
 export class UpdateGroupCoverResponseDto {
@@ -18,4 +23,7 @@ export class UpdateGroupCoverResponseDto {
 
   @ApiProperty({ description: '업데이트 일시' })
   updatedAt: Date;
+
+  @ApiProperty({ description: '수정된 버전' })
+  version: number;
 }

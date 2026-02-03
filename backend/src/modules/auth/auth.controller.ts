@@ -6,8 +6,8 @@ import {
   UseGuards,
   Res,
   UnauthorizedException,
-  ForbiddenException,
-  NotFoundException,
+  // ForbiddenException,
+  // NotFoundException,
   Body,
   Headers,
   HttpCode,
@@ -23,11 +23,11 @@ import {
   ApiNoContentResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
+//import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 
 import type { Request, Response } from 'express';
 import type { OAuthUserType } from './auth.type';
-import { DevTokenRequestDto } from './dto/dev-token.dto';
+//import { DevTokenRequestDto } from './dto/dev-token.dto';
 
 interface AuthenticatedRequest extends Request {
   user: { sub: string; email?: string };
@@ -229,50 +229,50 @@ export class AuthController {
   }
 
   // TODO: 운영환경에서는 주석하는 것 추천
-  @Post('dev/token')
-  @ApiOperation({
-    summary: '개발용 토큰 발급',
-    description:
-      '개발 또는 테스트 환경에서 특정 유저의 토큰을 간편하게 발급받습니다.',
-  })
-  @ApiBody({ type: DevTokenRequestDto })
-  @ApiWrappedOkResponse({ type: Object })
-  async issueDevToken(
-    @Body() dto: DevTokenRequestDto,
-    @Headers('x-dev-key') devKey?: string,
-  ) {
-    const nodeEnv = this.configService.get<string>('NODE_ENV');
-    const allowed =
-      nodeEnv === 'development' || nodeEnv === 'test' || nodeEnv === 'local';
-    const configuredKey = this.configService.get<string>('DEV_AUTH_KEY');
+  // @Post('dev/token')
+  // @ApiOperation({
+  //   summary: '개발용 토큰 발급',
+  //   description:
+  //     '개발 또는 테스트 환경에서 특정 유저의 토큰을 간편하게 발급받습니다.',
+  // })
+  // @ApiBody({ type: DevTokenRequestDto })
+  // @ApiWrappedOkResponse({ type: Object })
+  // async issueDevToken(
+  //   @Body() dto: DevTokenRequestDto,
+  //   @Headers('x-dev-key') devKey?: string,
+  // ) {
+  //   const nodeEnv = this.configService.get<string>('NODE_ENV');
+  //   const allowed =
+  //     nodeEnv === 'development' || nodeEnv === 'test' || nodeEnv === 'local';
+  //   const configuredKey = this.configService.get<string>('DEV_AUTH_KEY');
 
-    if (!allowed || !configuredKey) {
-      throw new NotFoundException();
-    }
-    if (!devKey || devKey !== configuredKey) {
-      throw new ForbiddenException('Invalid dev key');
-    }
+  //   if (!allowed || !configuredKey) {
+  //     throw new NotFoundException();
+  //   }
+  //   if (!devKey || devKey !== configuredKey) {
+  //     throw new ForbiddenException('Invalid dev key');
+  //   }
 
-    const provider = dto.provider ?? 'kakao';
-    const providerId = dto.providerId ?? `dev-${Date.now()}`;
-    const nickname = dto.nickname ?? `dev-user-${providerId.slice(-6)}`;
-    const oauthUser: OAuthUserType = {
-      provider,
-      providerId,
-      nickname,
-      email: dto.email,
-    };
+  //   const provider = dto.provider ?? 'kakao';
+  //   const providerId = dto.providerId ?? `dev-${Date.now()}`;
+  //   const nickname = dto.nickname ?? `dev-user-${providerId.slice(-6)}`;
+  //   const oauthUser: OAuthUserType = {
+  //     provider,
+  //     providerId,
+  //     nickname,
+  //     email: dto.email,
+  //   };
 
-    const { user, accessToken, refreshToken, expiresAt } =
-      await this.authService.oauthLogin(oauthUser);
+  //   const { user, accessToken, refreshToken, expiresAt } =
+  //     await this.authService.oauthLogin(oauthUser);
 
-    return {
-      userId: user.id,
-      accessToken,
-      refreshToken,
-      expiresAt,
-    };
-  }
+  //   return {
+  //     userId: user.id,
+  //     accessToken,
+  //     refreshToken,
+  //     expiresAt,
+  //   };
+  // }
 }
 
 /*
