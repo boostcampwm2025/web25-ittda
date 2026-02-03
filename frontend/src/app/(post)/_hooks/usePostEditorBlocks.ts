@@ -18,6 +18,8 @@ import {
   extractExifFromDataUrl,
   ExifMetadata,
 } from '@/lib/utils/exifExtractor';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface UsePostEditorBlocksProps {
   blocks: RecordBlock[];
@@ -395,7 +397,18 @@ export function usePostEditorBlocks({
         toast.error('메타데이터가 있는 이미지가 없습니다.');
       }
     } catch (error) {
-      console.error('메타데이터 추출 중 오류:', error);
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: {
+          context: 'image-metadata',
+          operation: 'extract-image-metadata',
+        },
+        extra: {
+          imageUrls: allUrls,
+        },
+      });
+      logger.error('메타데이터 추출 중 오류', error);
+
       toast.error('메타데이터 추출에 실패했습니다.');
     }
   };

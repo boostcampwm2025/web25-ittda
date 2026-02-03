@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 import { isInAppBrowser } from '@/lib/utils/browserDetect';
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -42,6 +44,12 @@ export default function LoginContent({
         if (response.data && accessToken) {
           setGuestInfo({ ...response.data, guestAccessToken: accessToken });
 
+          // Sentry에 게스트 사용자 정보 설정
+          Sentry.setUser({
+            id: `guest-${response.data.guestSessionId}`,
+            username: 'Guest User',
+          });
+
           if (inviteCode) {
             joinGroup(
               {},
@@ -63,7 +71,36 @@ export default function LoginContent({
           setTimeout(() => {
             router.replace('/');
           }, 500);
+        } else {
+          // 응답은 성공했지만 데이터나 토큰이 없는 경우
+          const error = new Error(
+            '게스트 로그인 응답에 필요한 데이터가 없습니다',
+          );
+          Sentry.captureException(error, {
+            level: 'error',
+            tags: {
+              context: 'auth',
+              operation: 'guest-login-invalid-response',
+            },
+            extra: {
+              hasData: !!response.data,
+              hasAccessToken: !!accessToken,
+            },
+          });
+          logger.error('게스트 로그인 응답에 필요한 데이터가 없습니다');
+          toast.error('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
         }
+      },
+      onError: (error) => {
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: {
+            context: 'auth',
+            operation: 'guest-login',
+          },
+        });
+        logger.error('게스트 로그인 실패', error);
+        toast.error('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
       },
     },
   );

@@ -14,6 +14,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { revalidateGroupProfile } from '../../actions';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GroupProfileEditClientProps {
   groupId: string;
@@ -57,7 +59,18 @@ export default function GroupProfileEditClient({
 
       toast.success('프로필 정보가 수정되었습니다.');
     } catch (error) {
-      console.error('그룹 내 내정보 수정 실패', error);
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'group-user-profile',
+          operation: 'update-profile-in-group',
+        },
+        extra: {
+          nickname: data.nickname,
+          groupId: groupId,
+        },
+      });
+      logger.error('그룹 내 내정보 수정 실패', error);
     } finally {
       setIsPending(false);
     }

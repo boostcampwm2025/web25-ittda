@@ -12,6 +12,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GroupEditHeaderActionsProps {
   groupId: string;
@@ -57,7 +59,18 @@ export default function GroupEditHeaderActions({
       ]);
       toast.success('수정되었습니다.');
     } catch (error) {
-      console.error('update failed', error);
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'group-info',
+          operation: 'update-group-info',
+        },
+        extra: {
+          groupName: editData.groupName,
+          assetId: editData.groupThumbnail,
+        },
+      });
+      logger.error('그룹 정보 수정 실패', error);
     } finally {
       setIsPending(false);
     }

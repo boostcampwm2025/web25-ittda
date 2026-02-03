@@ -3,6 +3,8 @@ import PostEditor from '../_components/editor/RecordEditor';
 import { QueryClient } from '@tanstack/react-query';
 import { RecordBlock } from '@/lib/types/record';
 import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface AddPostPageProps {
   searchParams: Promise<{ mode: string; postId: string; groupId: string }>;
@@ -30,7 +32,19 @@ export default async function AddPostPage({ searchParams }: AddPostPageProps) {
       };
     }
   } catch (error) {
-    console.error('데이터 로드 실패:', error);
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        context: 'post-editor',
+        operation: 'load-blocks',
+      },
+      extra: {
+        postId: postId,
+        groupId: groupId,
+        mode: mode,
+      },
+    });
+    logger.error('post editor 데이터 로드 실패', error);
   }
 
   return <PostEditor groupId={groupId} mode={mode} initialPost={initialPost} />;

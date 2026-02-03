@@ -5,6 +5,8 @@ import {
 } from '@/lib/api/presignMedia';
 import { getImageDimensions } from '@/lib/utils/image';
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 export const useMediaUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -43,7 +45,19 @@ export const useMediaUpload = () => {
 
       return successIds; // 최종적으로 전달할 mediaId 배열 반환
     } catch (error) {
-      console.error('Media Upload Error:', error);
+      Sentry.captureException(error, {
+        tags: {
+          context: 'media',
+          operation: 'upload-multiple',
+        },
+        extra: {
+          filesCount: files.length,
+          fileTypes: files.map((f) => f.type),
+          totalSize: files.reduce((sum, f) => sum + f.size, 0),
+        },
+      });
+      logger.error('이미지 업로드 실패', error);
+
       throw error;
     } finally {
       setIsUploading(false);

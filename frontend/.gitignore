@@ -50,3 +50,5 @@ storybook-static
 # AI
 .agents/*
 .claude/*
+# Sentry Config File
+.env.sentry-build-plugin
