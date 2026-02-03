@@ -19,6 +19,8 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useDebouncedValue } from '@/hooks/useDebounce';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -37,6 +39,7 @@ export default function RecordMapContent({
   scope,
   groupId,
 }: RecordMapContentProps) {
+  const router = useRouter();
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
@@ -222,15 +225,25 @@ export default function RecordMapContent({
         {/* 검색 및 필터*/}
         <div className="absolute top-4 left-0 w-full z-10 px-4">
           <div className="flex flex-col gap-3">
-            <MapSearchBar
-              onSelect={handleSelectPlace}
-              placeholder="장소를 검색하세요"
-              searchResults={searchResults}
-              onSearch={handleSearch}
-              isSearching={isProcessing}
-              hasSelectedLocation={!!searchedLocation}
-              onClear={handleClearSearch}
-            />
+            <div className="flex gap-2 items-center">
+              <button
+                className="bg-white dark:bg-[#1E1E1E] rounded-full p-2 shrink-0"
+                onClick={() => router.back()}
+              >
+                <ChevronLeft className="w-6 h-6 dark:text-gray-300 text-gray-400" />
+              </button>
+              <div className="flex-1">
+                <MapSearchBar
+                  onSelect={handleSelectPlace}
+                  placeholder="장소를 검색하세요"
+                  searchResults={searchResults}
+                  onSearch={handleSearch}
+                  isSearching={isProcessing}
+                  hasSelectedLocation={!!searchedLocation}
+                  onClear={handleClearSearch}
+                />
+              </div>
+            </div>
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               <FilterChip
                 type="tag"
