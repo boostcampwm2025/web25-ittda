@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { getAccessToken, refreshAccessToken } from '@/lib/api/auth';
+import { SocketExceptionResponse } from '@/lib/types/recordCollaboration';
+import { toast } from 'sonner';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 
@@ -59,42 +61,67 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
       set({ isConnected: false });
     });
 
-    // 에러 발생 시 처리
-    socket.on('connect_error', async (err: { message: string }) => {
-      if (err.message === 'Unauthorized') {
-        console.debug('소켓 인증 에러 발생, 토큰 재발급 시도...');
-        const newToken = await refreshAccessToken();
-
-        if (newToken) {
-          // 토큰 갱신 후 재연결
-          socket.auth = { token: newToken };
-          socket.connect();
-        } else {
-          // 토큰 모두 만료된 경우 - 재로그인 필요
-          Sentry.captureException(new Error('소켓 인증 실패: 모든 토큰 만료'), {
-            level: 'warning',
-            tags: {
-              context: 'socket',
-              operation: 'auth',
-            },
-          });
-          get().disconnectSocket();
-        }
+    // 토큰 갱신 및 재연결 함수
+    const handleAuthError = async () => {
+      console.debug('소켓 인증 에러, 토큰 재발급');
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        socket.auth = { token: newToken };
+        // 연결을 끊고 새 토큰으로 다시 연결
+        socket.disconnect().connect();
       } else {
-        // 인증 외 다른 연결 에러
-        Sentry.captureException(err, {
-          level: 'error',
+        // 토큰 모두 만료된 경우 - 재로그인 필요
+        Sentry.captureException(new Error('소켓 인증 실패: 모든 토큰 만료'), {
+          level: 'warning',
           tags: {
             context: 'socket',
-            operation: 'connect',
-          },
-          extra: {
-            errorMessage: err.message,
+            operation: 'auth',
           },
         });
-        logger.error('소켓 연결', err);
+        get().disconnectSocket();
+      }
+    };
+
+    // 에러 발생 시 처리
+    socket.on('connect_error', async (err: { message: string }) => {
+      if (err.message === 'Unauthorized' || err.message.includes('token')) {
+        await handleAuthError();
+      } else {
+        Sentry.captureException(err, {
+          level: 'error',
+          tags: { context: 'socket', operation: 'connect' },
+          extra: { message: err.message },
+        });
+        logger.error('소켓 연결 에러', err);
       }
     });
+
+    socket.on('exception', async (data: SocketExceptionResponse) => {
+      console.error('소켓 서버 예외 발생:', data);
+
+      if (data.message === 'Invalid access token.' || data.status === 'error') {
+        await handleAuthError();
+        return;
+      }
+      if (data.message === 'draftId mismatch.') {
+        toast.warning('동기화 오류가 발생하여 이전 화면으로 이동합니다.', {
+          duration: 1500,
+        });
+
+        setTimeout(() => {
+          window.history.back();
+        }, 1500);
+        return;
+      }
+
+      Sentry.captureMessage(`소켓 서버 예외: ${data.message}`, {
+        level: 'error',
+        tags: { context: 'socket', operation: 'server_exception' },
+        extra: { serverData: data },
+      });
+      logger.error('소켓 연결', data);
+    });
+
     set({ socket });
   },
   setSessionId: (id: string | null) => set({ sessionId: id }),

@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import AssetImage from './AssetImage';
@@ -98,13 +97,15 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
   if (images.length === 1) {
     return (
       <div className="w-full rounded-sm overflow-hidden border dark:border-white/10 border-gray-100">
-        <Image
-          src={images[0]}
-          unoptimized={true}
-          className="w-full h-full object-cover rounded-sm"
-          alt="게시글 이미지"
+        <AssetImage
+          assetId={images[0]}
+          alt={`게시글 이미지`}
           width={780}
           height={780}
+          draggable={false}
+          unoptimized={true}
+          sizes="(max-width: 768px) 100vw, 800px"
+          className="select-none pointer-events-none w-full h-full object-cover rounded-sm"
         />
       </div>
     );

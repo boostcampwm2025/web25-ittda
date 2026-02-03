@@ -67,8 +67,9 @@ export function useRecordCollaboration(
     // 스트림 중단 시 롤백 (임시값 제거)
     socket.on('STREAM_ABORTED', ({ blockId }) => {
       setStreamingValues((prev) => {
-        const { [blockId]: _, ...rest } = prev;
-        return rest;
+        const next = { ...prev };
+        delete next[blockId];
+        return next;
       });
     });
 
@@ -162,19 +163,20 @@ export function useRecordCollaboration(
     socket.on('DRAFT_PUBLISHED', ({ postId }) => {
       setTimeout(() => {
         setIsPublishing(false);
-        toast.success(
-          '공동 기록이 저장되었습니다.\n저장된 내용을 확인해보세요.',
-          {
-            duration: 3000,
-            style: {
-              whiteSpace: 'pre-wrap',
-            },
-          },
-        );
+        router.replace(`/record/${postId}`);
+
         setTimeout(() => {
-          router.replace(`/record/${postId}`);
-        }, 2_000);
-      }, 2_000);
+          toast.success(
+            '공동 기록이 저장되었습니다.\n저장된 내용을 확인해보세요.',
+            {
+              duration: 3000,
+              style: {
+                whiteSpace: 'pre-wrap',
+              },
+            },
+          );
+        }, 1_000);
+      }, 500);
     });
 
     return () => {
