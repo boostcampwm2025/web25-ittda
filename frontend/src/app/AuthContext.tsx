@@ -39,7 +39,7 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
       signOut({ redirectTo: '/login' });
       return; // 조기 종료로 중복 실행 방지
     }
-  }, [status, userType, logout, router, pathname, session]);
+  }, [status, session, pathname]);
 
   return <>{children}</>;
 }
