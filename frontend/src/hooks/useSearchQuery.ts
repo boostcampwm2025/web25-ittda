@@ -47,6 +47,7 @@ export const useSearchQuery = (filters: SearchFilters) => {
           latitude: filters.location?.lat,
           longitude: filters.location?.lng,
           radius: filters.location?.radius || 10,
+          emotions: filters.emotions,
           // TODO: 현재는 감정 없음. 이후 추가 고려
         },
       );
