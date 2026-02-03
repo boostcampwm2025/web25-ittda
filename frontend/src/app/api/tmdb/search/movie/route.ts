@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -13,8 +15,19 @@ export async function GET(request: NextRequest) {
   }
 
   if (!apiKey) {
+    // API 키 미설정은 심각한 설정 오류
+    const error = new Error('TMDB API 키가 설정되지 않았습니다');
+    Sentry.captureException(error, {
+      level: 'fatal',
+      tags: {
+        context: 'tmdb-api',
+        operation: 'search-movie',
+        configError: 'missing-api-key',
+      },
+    });
+    logger.error('TMDB API 키가 설정되지 않았습니다');
     return NextResponse.json(
-      { error: 'TMDB API key is not configured' },
+      { success: false, error: 'TMDB API key is not configured', data: null },
       { status: 500 },
     );
   }
@@ -30,15 +43,41 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      logger.error('TMDB API 응답 에러');
+
+      const error = new Error(`TMDB API 응답 에러: ${response.status}`);
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'tmdb-api',
+          operation: 'search-movie',
+        },
+        extra: {
+          statusCode: response.status,
+          query,
+        },
+      });
+      throw error;
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('TMDB API Error:', error);
+    // TMDB API 호출 실패
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        context: 'tmdb-api',
+        operation: 'search-movie',
+      },
+      extra: {
+        query,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      },
+    });
+    logger.error('TMDB API Error', error);
     return NextResponse.json(
-      { error: 'Failed to fetch movie data' },
+      { success: false, error: 'Failed to fetch movie data', data: null },
       { status: 500 },
     );
   }
