@@ -37,13 +37,20 @@ export class UserService {
 
     let user = await this.userRepo.findOne({
       where: { provider, providerId },
+      withDeleted: true,
     });
 
-    if (!user) {
-      user = this.userRepo.create(params);
-
-      await this.userRepo.save(user);
+    if (user) {
+      if (user.deletedAt) {
+        await this.userRepo.recover(user);
+      }
+      user.email = params.email ?? user.email;
+      user.nickname = params.nickname ?? user.nickname;
+      return this.userRepo.save(user);
     }
+
+    user = this.userRepo.create(params);
+    await this.userRepo.save(user);
 
     return user;
   }
