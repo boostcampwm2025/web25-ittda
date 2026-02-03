@@ -15,7 +15,7 @@ import {
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
 import LocationPermissionChecker from '@/components/LocationPermissionChecker';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useDebouncedValue } from '@/hooks/useDebounce';
@@ -102,7 +102,12 @@ export default function RecordMapContent({
   } = useSearchFilters();
 
   // 지도 기록 데이터 가져오기 (debounced center 사용)
-  const { data: mapData } = useQuery({
+  const {
+    data: mapData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     ...mapRecordListOptions({
       maxLat: mapBounds
         ? mapBounds.getNorthEast().lat()
@@ -129,21 +134,43 @@ export default function RecordMapContent({
       debouncedMapCenter !== null || (latitude !== null && longitude !== null),
   });
 
+  // 무한 스크롤 관찰자
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastItemRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (isFetchingNextPage) return;
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextPage) {
+            fetchNextPage();
+          }
+        },
+        { rootMargin: '200px' },
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [isFetchingNextPage, hasNextPage, fetchNextPage],
+  );
+
   // 지도에 표시할 모든 posts (필터링 없이)
   const allPosts = useMemo(() => {
-    let results = mapData?.items ?? [];
+    // 모든 페이지의 items를 합치기
+    const allItems = mapData?.pages.flatMap((page) => page.items) ?? [];
 
     // 검색어 필터링만 적용
     if (query.trim()) {
       const lowerQuery = query.toLowerCase();
-      results = results.filter(
+      return allItems.filter(
         (r) =>
           r.title.toLowerCase().includes(lowerQuery) ||
           r.placeName?.toLowerCase().includes(lowerQuery),
       );
     }
 
-    return results;
+    return allItems;
   }, [mapData, query]);
 
   // Drawer에 표시할 posts (클러스터 선택 시 필터링)
@@ -277,6 +304,8 @@ export default function RecordMapContent({
           selectedPostId={selectedPostId}
           onSelectPost={setSelectedPostId}
           isLoading={isLoading}
+          lastItemRef={lastItemRef}
+          isFetchingNextPage={isFetchingNextPage}
         />
         <FilterDrawerRenderer
           activeDrawer={activeDrawer}
