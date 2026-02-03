@@ -278,6 +278,19 @@ export function usePostEditorBlocks({
       const existingBlocks = blocks.filter((b) => b.type === type);
       const limit = MULTI_INSTANCE_LIMITS[type];
 
+      if (meta.isSingle && existingBlocks.length > 0) {
+        const existing = existingBlocks[0];
+        const lockKey = `block:${existing.id}`;
+        const ownerSessionId = locks?.[lockKey];
+        const isLockedByOther =
+          !!ownerSessionId && ownerSessionId !== mySessionId;
+
+        // 타인이 락을 쥐고 있다면 동작 차단
+        if (isLockedByOther) {
+          toast.error('현재 다른 사용자가 해당 필드를 편집 중입니다.');
+          return;
+        }
+      }
       if (type === 'location') {
         let targetId: string | undefined = existingBlocks[0]?.id;
 
@@ -332,7 +345,15 @@ export function usePostEditorBlocks({
         updateFieldValue(getDefaultValue(type), undefined, type);
       }
     },
-    [blocks, draftId, releaseLock, requestLock, updateFieldValue],
+    [
+      blocks,
+      draftId,
+      releaseLock,
+      requestLock,
+      updateFieldValue,
+      locks,
+      mySessionId,
+    ],
   );
 
   // 메타데이터 실제 적용
