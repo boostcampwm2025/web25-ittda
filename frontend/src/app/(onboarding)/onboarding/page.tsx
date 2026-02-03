@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 
 const ONBOARDING_DATA = [
@@ -31,6 +31,8 @@ const ONBOARDING_DATA = [
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callback = searchParams.get('callback');
   const userId = useAuthStore((state) => state.userId);
   const isLastStep = step === ONBOARDING_DATA.length - 1;
 
@@ -38,7 +40,8 @@ export default function OnboardingPage() {
     if (userId) {
       localStorage.setItem(`has_seen_onboarding_${userId}`, 'true');
     }
-    router.replace('/');
+    // callback이 있으면 해당 페이지로, 없으면 홈으로
+    router.replace(callback || '/');
   };
 
   const nextStep = () => {
