@@ -37,5 +37,14 @@ export function useDebounce<T extends (...args: any[]) => void>(
     }
   }, []);
 
+  // 컴포넌트 unmount 시 타이머 정리 (메모리 누수 방지)
+  useEffect(() => {
+    return () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+    };
+  }, []);
+
   return { debounced, cancel };
 }
