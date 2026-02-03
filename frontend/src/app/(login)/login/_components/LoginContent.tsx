@@ -70,7 +70,34 @@ export default function LoginContent({
           setTimeout(() => {
             router.replace('/');
           }, 500);
+        } else {
+          // 응답은 성공했지만 데이터나 토큰이 없는 경우
+          const error = new Error(
+            '게스트 로그인 응답에 필요한 데이터가 없습니다',
+          );
+          Sentry.captureException(error, {
+            level: 'error',
+            tags: {
+              context: 'auth',
+              operation: 'guest-login-invalid-response',
+            },
+            extra: {
+              hasData: !!response.data,
+              hasAccessToken: !!accessToken,
+            },
+          });
+          toast.error('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
         }
+      },
+      onError: (error) => {
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: {
+            context: 'auth',
+            operation: 'guest-login',
+          },
+        });
+        toast.error('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
       },
     },
   );
