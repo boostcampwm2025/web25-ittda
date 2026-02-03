@@ -63,7 +63,7 @@ export class PostController {
       throw new UnauthorizedException('Access token is required.');
     }
     await this.postService.ensureCanViewPost(id, requesterId);
-    return this.postService.findOne(id);
+    return this.postService.findOne(id, requesterId);
   }
 
   @Get(':postId/edit')

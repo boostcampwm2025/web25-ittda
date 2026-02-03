@@ -38,6 +38,7 @@ export class FeedPersonalQueryService {
     postsQb.select([
       'p.id',
       'p.groupId',
+      'p.ownerUserId',
       'p.eventAt',
       'p.createdAt',
       'p.updatedAt',
@@ -54,6 +55,7 @@ export class FeedPersonalQueryService {
       this.postContributorRepo,
       this.groupMemberRepo,
       this.logger,
+      userId,
     );
   }
 }

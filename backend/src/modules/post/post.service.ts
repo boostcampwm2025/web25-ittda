@@ -220,13 +220,13 @@ export class PostService {
       },
     );
 
-    return this.findOne(postId);
+    return this.findOne(postId, ownerUserId);
   }
 
   /**
    * 게시글 상세 조회: Post 기본 정보에 블록과 기여자 정보를 합쳐 반환한다.
    */
-  async findOne(postId: string) {
+  async findOne(postId: string, requesterId: string) {
     const post = await this.postRepository.findOne({
       where: { id: postId, deletedAt: IsNull() },
       relations: ['ownerUser', 'group'],
@@ -276,6 +276,19 @@ export class PostService {
       };
     });
 
+    const isOwner = post.ownerUserId === requesterId;
+    let permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null = null;
+
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId: requesterId },
+        select: { role: true },
+      });
+      permission = member?.role ?? null;
+    } else {
+      permission = isOwner ? 'OWNER' : null;
+    }
+
     const dto: PostDetailDto = {
       id: post.id,
       scope: post.scope,
@@ -295,6 +308,7 @@ export class PostService {
         },
       })),
       contributors: contributorDtos,
+      permission,
     };
     return dto;
   }
@@ -458,7 +472,7 @@ export class PostService {
       }
     });
 
-    return this.findOne(postId);
+    return this.findOne(postId, requesterId);
   }
 
   /**

@@ -98,6 +98,11 @@ export class FeedCardResponseDto {
   blocks: FeedBlockDto[];
   @ApiProperty({ type: () => [FeedContributorDto] })
   contributors: FeedContributorDto[];
+  @ApiProperty({
+    description: '요청자 기준 권한 정보',
+    example: 'EDITOR',
+  })
+  permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null;
   constructor(init: FeedCardResponseDto) {
     Object.assign(this, init);
   }

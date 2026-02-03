@@ -26,7 +26,7 @@ export class FeedGroupQueryService {
     private readonly groupMemberRepo: Repository<GroupMember>,
   ) {}
 
-  async getGroupFeed(groupId: string, query: GetFeedQueryDto) {
+  async getGroupFeed(groupId: string, userId: string, query: GetFeedQueryDto) {
     const { from, to } = dayRange(query.date, query.tz ?? 'Asia/Seoul');
 
     const postsQb = this.postRepo.createQueryBuilder('p');
@@ -38,6 +38,7 @@ export class FeedGroupQueryService {
     postsQb.select([
       'p.id',
       'p.groupId',
+      'p.ownerUserId',
       'p.eventAt',
       'p.createdAt',
       'p.updatedAt',
@@ -54,6 +55,7 @@ export class FeedGroupQueryService {
       this.postContributorRepo,
       this.groupMemberRepo,
       this.logger,
+      userId,
     );
   }
 }
