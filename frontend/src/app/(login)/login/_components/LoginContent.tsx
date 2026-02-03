@@ -12,6 +12,7 @@ import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
@@ -85,6 +86,7 @@ export default function LoginContent({
               hasAccessToken: !!accessToken,
             },
           });
+          logger.error('게스트 로그인 응답에 필요한 데이터가 없습니다');
           toast.error('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
         }
       },
@@ -96,6 +98,7 @@ export default function LoginContent({
             operation: 'guest-login',
           },
         });
+        logger.error('게스트 로그인 실패', error);
         toast.error('게스트 로그인에 실패했습니다. 다시 시도해주세요.');
       },
     },
