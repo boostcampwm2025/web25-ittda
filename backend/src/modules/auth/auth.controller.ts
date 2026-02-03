@@ -27,6 +27,7 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
 
 import type { Request, Response } from 'express';
 import type { OAuthUserType } from './auth.type';
+import { KakaoAuthGuard } from './guards/kakao-auth.guard';
 import { DevTokenRequestDto } from './dto/dev-token.dto';
 
 interface AuthenticatedRequest extends Request {
@@ -88,7 +89,7 @@ export class AuthController {
   }
 
   @Get('kakao')
-  @UseGuards(AuthGuard('kakao'))
+  @UseGuards(KakaoAuthGuard)
   @ApiOperation({
     summary: 'Kakao 로그인',
     description: 'Kakao OAuth2 로그인 페이지로 리다이렉트합니다.',
@@ -96,7 +97,7 @@ export class AuthController {
   async kakaoLogin() {}
 
   @Get('kakao/callback')
-  @UseGuards(AuthGuard('kakao'))
+  @UseGuards(KakaoAuthGuard)
   @ApiOperation({
     summary: 'Kakao 로그인 콜백',
     description: 'Kakao 인증 완료 후 호출되며, FE로 리다이렉트합니다.',
