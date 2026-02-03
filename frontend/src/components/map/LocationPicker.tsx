@@ -363,7 +363,7 @@ function LocationPickerContent({
   return (
     <div
       className={cn(
-        'w-full h-125 md:h-150 flex flex-col relative overflow-hidden bg-white',
+        'w-full h-full flex flex-col relative overflow-hidden bg-white',
         className,
       )}
     >
