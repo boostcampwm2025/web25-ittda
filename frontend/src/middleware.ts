@@ -34,7 +34,7 @@ export default auth((req) => {
   if (!isLoggedIn && !isPublicPath && !hasInviteCode) {
     const loginUrl = new URL('/login', nextUrl);
     // 원래 가려던 주소를 저장해두면 로그인 후 되돌려보낼 때 유용
-    loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
+    loginUrl.searchParams.set('callback', nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }
 

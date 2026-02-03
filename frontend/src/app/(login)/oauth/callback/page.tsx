@@ -4,19 +4,19 @@ import OAuthCallbackContent from './_components/OAuthCallbackContent';
 import { Suspense } from 'react';
 
 interface OAuthCallbackPageProps {
-  searchParams: Promise<{ code?: string; error?: string }>;
+  searchParams: Promise<{ code?: string; error?: string; callback?: string }>;
 }
 
 export default async function OAuthCallbackPage({
   searchParams,
 }: OAuthCallbackPageProps) {
-  const { code, error } = await searchParams;
+  const { code, error, callback } = await searchParams;
 
   return (
     <>
       <LoginContent error={error} />
       <Suspense fallback={<AuthLoadingScreen />}>
-        <OAuthCallbackContent code={code} error={error} />
+        <OAuthCallbackContent code={code} error={error} callback={callback} />
       </Suspense>
       <AuthLoadingScreen />
     </>
