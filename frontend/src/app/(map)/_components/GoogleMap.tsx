@@ -166,6 +166,8 @@ export default function GoogleMap({
   return (
     <div className="bg-yellow-50 w-full h-full relative">
       <Map
+        minZoom={3}
+        maxZoom={20}
         colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
         mapId={mapId}
         defaultCenter={{ lat: 37.5665, lng: 126.978 }}
