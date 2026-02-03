@@ -13,6 +13,8 @@ interface Props {
   selectedPostId: string | string[] | null; // 단일 ID 또는 클러스터 ID
   onSelectPost: (id: string | string[] | null) => void;
   isLoading: boolean;
+  lastItemRef?: (node: HTMLDivElement | null) => void;
+  isFetchingNextPage?: boolean;
 }
 
 export default function RecordMapDrawer({
@@ -20,6 +22,8 @@ export default function RecordMapDrawer({
   selectedPostId,
   onSelectPost,
   isLoading,
+  lastItemRef,
+  isFetchingNextPage,
 }: Props) {
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -142,20 +146,32 @@ export default function RecordMapDrawer({
                 <Loader2 className="w-8 h-8 animate-spin text-itta-point" />
               </div>
             ) : displayPosts.length ? (
-              displayPosts.map((post) => {
-                return (
-                  <MapRecordItem
-                    key={post.id}
-                    post={post}
-                    isHighlighted={selectedPostId === post.id}
-                    onSelect={(e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      onSelectPost(post.id);
-                    }}
-                    onNavigate={() => router.push(`/record/${post.id}`)}
-                  />
-                );
-              })
+              <>
+                {displayPosts.map((post, idx) => {
+                  const isLastItem = idx === displayPosts.length - 1;
+                  return (
+                    <div
+                      key={post.id}
+                      ref={isLastItem ? lastItemRef : null}
+                    >
+                      <MapRecordItem
+                        post={post}
+                        isHighlighted={selectedPostId === post.id}
+                        onSelect={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          onSelectPost(post.id);
+                        }}
+                        onNavigate={() => router.push(`/record/${post.id}`)}
+                      />
+                    </div>
+                  );
+                })}
+                {isFetchingNextPage && (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-itta-point" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="pt-3 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl dark:bg-white/5 bg-white">
                 <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
