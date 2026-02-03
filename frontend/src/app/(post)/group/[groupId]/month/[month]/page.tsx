@@ -51,7 +51,7 @@ export default async function GroupMonthlyDetailPage({
               month={month}
               serverSideData={dailyRecords}
               routePath={`/group/${groupId}/detail`}
-              viewMapRoutePath={`/group/${groupId}/map/month/${month}`}
+              viewMapRoutePath={`/group/${groupId}/map?start=${startDate}&end=${endDate}`}
             />
           ) : (
             <MonthlyDetailRecords
@@ -59,7 +59,7 @@ export default async function GroupMonthlyDetailPage({
               month={month}
               serverSideData={dailyRecords}
               routePath={`/group/${groupId}/detail`}
-              viewMapRoutePath={`/map?scope=group&groupId=${groupId}&start=${startDate}&end=${endDate}`}
+              viewMapRoutePath={`/group/${groupId}/map?start=${startDate}&end=${endDate}`}
             />
           )}
         </HydrationBoundary>
