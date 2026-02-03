@@ -73,7 +73,6 @@ export default function PostEditor({
   postId,
 }: PostEditorProps) {
   const queryClient = useQueryClient();
-
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const [blocks, setBlocks] = useState<RecordBlock[]>([]);
 
@@ -142,10 +141,10 @@ export default function PostEditor({
   const {
     gridRef,
     isDraggingId,
-    handleDragStart,
-    handleDragOver,
     handleGridDragOver,
     handleDragEnd,
+    handlePointerDown,
+    handlePointerMove,
   } = useRecordEditorDnD(
     blocks,
     setBlocks,
@@ -601,12 +600,12 @@ export default function PostEditor({
             const isLastContentBlock = contentBlockCount === 1;
             return (
               <div
+                data-block-id={block.id}
                 key={block.id}
-                draggable
-                onDragStart={() => handleDragStart(block.id)}
-                onDragOver={(e) => handleDragOver(e, block.id)}
-                onDragEnd={handleDragEnd}
-                className={`relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
+                onPointerDown={(e) => handlePointerDown(e, block.id)}
+                onPointerMove={(e) => handlePointerMove(e)}
+                onPointerUp={handleDragEnd}
+                className={`cursor-grab touch-none relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
               >
                 <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
                   <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
