@@ -2,14 +2,13 @@ import { MediaValue } from '../types/recordField';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '../utils/logger';
 
-const MOVIE_API_KEY = process.env.NEXT_PUBLIC_MOVIE_API_KEY;
 const KOPIS_API_KEY = process.env.NEXT_PUBLIC_KOPIS_API_KEY;
 
 //TMDB 영화 검색 API
 export const searchMovies = async (query: string): Promise<MediaValue[]> => {
   try {
     const response = await fetch(
-      `/api/tmdb/search/movie?api_key=${MOVIE_API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR`,
+      `/api/tmdb/search/movie?query=${encodeURIComponent(query)}`,
     );
     const data = await response.json();
 
