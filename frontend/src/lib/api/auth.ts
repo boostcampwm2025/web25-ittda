@@ -56,37 +56,41 @@ export async function getAccessToken() {
   } else {
     const now = Date.now();
 
-    // 메모리에 유효한 캐시가 있다면 즉시 반환
-    if (cachedSession && now < cacheExpiry) {
+    // 메모리에 유효한 캐시가 있고 accessToken이 있다면 즉시 반환
+    if (cachedSession && now < cacheExpiry && cachedSession.accessToken) {
       return cachedSession.accessToken;
     }
 
     // 이미 세션을 가져오는 중이라면 그 Promise를 같이 기다림
     if (sessionPromise) {
       const session = await sessionPromise;
-      return session?.accessToken;
+      if (session?.accessToken) return session.accessToken;
     }
 
     // 캐시도 없고 진행 중인 요청도 없다면 새로 요청
-    try {
-      sessionPromise = getSession();
-      const session = await sessionPromise;
+    if (!sessionPromise) {
+      try {
+        sessionPromise = getSession();
+        const session = await sessionPromise;
 
-      // 성공 시 캐싱 업데이트
-      cachedSession = session;
-      cacheExpiry = Date.now() + CACHE_TIME;
-
-      if (session?.accessToken) return session?.accessToken;
-
-      const { guestAccessToken } = useAuthStore.getState();
-      if (guestAccessToken) return guestAccessToken;
-
-      // Zustand가 비어있다면 클라이언트 쿠키에서 직접 읽기 (새로고침 대비)
-      return getCookie('x-guest-access-token') || null;
-    } finally {
-      // 요청이 끝났으므로 Promise 참조 제거 (다음 요청을 위해)
-      sessionPromise = null;
+        // 성공 시 캐싱 업데이트 (accessToken이 있을 때만)
+        if (session?.accessToken) {
+          cachedSession = session;
+          cacheExpiry = Date.now() + CACHE_TIME;
+          return session.accessToken;
+        }
+      } finally {
+        // 요청이 끝났으므로 Promise 참조 제거 (다음 요청을 위해)
+        sessionPromise = null;
+      }
     }
+
+    // 소셜 로그인 세션이 없으면 게스트 토큰 확인
+    const { guestAccessToken } = useAuthStore.getState();
+    if (guestAccessToken) return guestAccessToken;
+
+    // Zustand가 비어있다면 클라이언트 쿠키에서 직접 읽기 (새로고침 대비)
+    return getCookie('x-guest-access-token') || null;
   }
 }
 

@@ -27,7 +27,7 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     let accessToken = await getAccessToken();
     if (!accessToken) {
       // 토큰이 없다면 재발급 시도
-      accessToken = (await refreshAccessToken()) ?? undefined;
+      accessToken = await refreshAccessToken();
     }
 
     if (!accessToken) {
