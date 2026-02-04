@@ -63,6 +63,8 @@ function LocationPickerContent({
   );
   const isSelectedFromSearch = useRef(false);
   const isInitialLocationLoaded = useRef(false);
+  const mapIdleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { latitude: geoLat, longitude: geoLng } = useGeolocation({
     reverseGeocode: true,
@@ -85,6 +87,18 @@ function LocationPickerContent({
       placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
     }
   }, [placesLib]);
+
+  // 컴포넌트 언마운트 시 pending requests와 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (mapIdleTimeoutRef.current) {
+        clearTimeout(mapIdleTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (geoLat && geoLng && mapRef.current) {
@@ -114,6 +128,11 @@ function LocationPickerContent({
             },
           });
           logger.error('geocode 초기화 실패', error);
+
+          // API 실패 시 기본 메시지 표시 및 초기화 완료 표시
+          setCenterAddress('주소를 불러올 수 없습니다.');
+          setCenterPlaceName('');
+          isInitialLocationLoaded.current = true; // handleMapIdle 활성화
         } finally {
           setIsAddressLoading(false);
         }
@@ -156,10 +175,18 @@ function LocationPickerContent({
         reject(new Error('Google Maps API not loaded'));
         return;
       }
+
+      // 5초 timeout 설정
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Geocoding timeout'));
+      }, 5000);
+
       const geocoder = new google.maps.Geocoder();
       geocoder.geocode(
         { location: { lat, lng }, language: 'ko' },
         (results, status) => {
+          clearTimeout(timeoutId);
+
           if (status === 'OK' && results?.[0]) {
             // address_components에서 동/구 수준까지만 조합
             const components = results[0].address_components;
@@ -211,6 +238,11 @@ function LocationPickerContent({
     }
 
     return new Promise((resolve) => {
+      // 5초 timeout 설정
+      const timeoutId = setTimeout(() => {
+        resolve(null);
+      }, 5000);
+
       const center = new google.maps.LatLng(lat, lng);
       const request: google.maps.places.PlaceSearchRequest = {
         location: center,
@@ -220,6 +252,8 @@ function LocationPickerContent({
 
       try {
         placesServiceRef.current!.nearbySearch(request, (results, status) => {
+          clearTimeout(timeoutId);
+
           // status가 OK가 아니거나 결과가 빈 배열일 경우 모두 resolve(null)
           if (
             status === google.maps.places.PlacesServiceStatus.OK &&
@@ -241,10 +275,12 @@ function LocationPickerContent({
             }
           }
 
-          // 어떤 조건에도 해당하지 않으면 null 반환 (여기서 무한 로딩 방지)
+          // 어떤 조건에도 해당하지 않으면 null 반환
           resolve(null);
         });
       } catch (error) {
+        clearTimeout(timeoutId);
+
         // 근처 장소 검색 실패는 정보성 경고 (주소는 여전히 표시됨)
         Sentry.captureException(error, {
           level: 'warning',
@@ -277,7 +313,7 @@ function LocationPickerContent({
   /**
    * 지도가 멈췄을 때(Idle) 중심 좌표의 주소를 갱신
    */
-  const handleMapIdle = async () => {
+  const handleMapIdle = () => {
     const service = getPlacesService();
     if (!service || !mapRef.current) return;
     if (isSelectedFromSearch.current) {
@@ -292,41 +328,76 @@ function LocationPickerContent({
     const center = mapRef.current.getCenter();
     if (!center) return;
 
-    setIsAddressLoading(true);
-    try {
-      // 먼저 근처 POI 찾기
-      const placeName = await findNearbyPlace(center.lat(), center.lng());
-
-      if (placeName) {
-        setCenterPlaceName(placeName);
-        // 주소도 함께 가져오기
-        const addr = await reverseGeocode(center.lat(), center.lng());
-        setCenterAddress(addr);
-      } else {
-        // POI가 없으면 주소만 표시
-        const addr = await reverseGeocode(center.lat(), center.lng());
-        setCenterAddress(addr);
-        setCenterPlaceName('');
-      }
-    } catch (error) {
-      // 지도 이동 후 주소 조회 실패는 UX에 영향
-      Sentry.captureException(error, {
-        level: 'warning',
-        tags: {
-          context: 'location-picker',
-          operation: 'map-idle-geocode',
-        },
-        extra: {
-          hasCenter: !!mapRef.current?.getCenter(),
-        },
-      });
-      logger.error('handleMapIdle', error);
-
-      setCenterAddress('주소를 불러올 수 없습니다.');
-      setCenterPlaceName('');
-    } finally {
-      setIsAddressLoading(false);
+    // 이전 타이머가 있으면 취소 (debounce)
+    if (mapIdleTimeoutRef.current) {
+      clearTimeout(mapIdleTimeoutRef.current);
     }
+
+    // 이전 요청이 진행 중이면 취소
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    setIsAddressLoading(true);
+
+    // 500ms 후에 실제 API 호출 (debounce)
+    mapIdleTimeoutRef.current = setTimeout(async () => {
+      abortControllerRef.current = new AbortController();
+
+      try {
+        // 먼저 근처 POI 찾기
+        const placeName = await findNearbyPlace(center.lat(), center.lng());
+
+        // abort 되었는지 확인
+        if (abortControllerRef.current?.signal.aborted) return;
+
+        if (placeName) {
+          setCenterPlaceName(placeName);
+          // 주소도 함께 가져오기
+          const addr = await reverseGeocode(center.lat(), center.lng());
+
+          if (abortControllerRef.current?.signal.aborted) return;
+
+          setCenterAddress(addr);
+        } else {
+          // POI가 없으면 주소만 표시
+          const addr = await reverseGeocode(center.lat(), center.lng());
+
+          if (abortControllerRef.current?.signal.aborted) return;
+
+          setCenterAddress(addr);
+          setCenterPlaceName('');
+        }
+      } catch (error) {
+        // abort된 경우는 에러 무시
+        if (
+          error instanceof Error &&
+          (error.name === 'AbortError' ||
+            abortControllerRef.current?.signal.aborted)
+        ) {
+          return;
+        }
+
+        // 지도 이동 후 주소 조회 실패는 UX에 영향
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: {
+            context: 'location-picker',
+            operation: 'map-idle-geocode',
+          },
+          extra: {
+            hasCenter: !!mapRef.current?.getCenter(),
+          },
+        });
+        logger.error('handleMapIdle', error);
+
+        setCenterAddress('주소를 불러올 수 없습니다.');
+        setCenterPlaceName('');
+      } finally {
+        setIsAddressLoading(false);
+        abortControllerRef.current = null;
+      }
+    }, 300);
   };
 
   const handleSelectPlace = (place: google.maps.places.PlaceResult) => {
