@@ -15,6 +15,7 @@ import { normalizeLayout } from '../_utils/recordLayoutHelper';
 import { MULTI_INSTANCE_LIMITS } from '@/lib/constants/record';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 
 interface ImageWithMetadata {
   imageUrl: string;
@@ -46,6 +47,8 @@ interface RecordEditorPhotos {
   handleDone: (val: BlockValue, shouldClose?: boolean) => void;
   draftId?: string;
   uploadMultipleMedia?: (files: File[]) => Promise<string[]>;
+  applyPatch?: (patch: PatchApplyPayload | PatchApplyPayload[]) => void;
+  releaseLock?: (lockKey: string) => void;
 }
 const PHOTO_LIMIT = MULTI_INSTANCE_LIMITS['photos'] || 10;
 export function useRecordEditorPhotos({
@@ -56,12 +59,15 @@ export function useRecordEditorPhotos({
   handleDone,
   draftId,
   uploadMultipleMedia,
+  applyPatch,
+  releaseLock,
 }: RecordEditorPhotos) {
   // EXIF 메타데이터 상태
   const pendingFilesRef = useRef<Map<string, File>>(new Map());
   const [pendingMetadata, setPendingMetadata] = useState<{
     images: ImageWithMetadata[];
     newImageUrls: string[];
+    uploadedIds?: string[]; // draft 모드에서 이미 업로드된 mediaIds
     selectedMetadata?: SelectedMetadata;
     appliedMetadata?: {
       [imageUrl: string]: {
@@ -157,6 +163,7 @@ export function useRecordEditorPhotos({
         setPendingMetadata((prev) => ({
           images: allImagesWithMetadata,
           newImageUrls: newImages,
+          uploadedIds: uploadedIds.length > 0 ? uploadedIds : undefined,
           appliedMetadata: prev?.appliedMetadata || {},
         }));
       } else {
@@ -221,6 +228,16 @@ export function useRecordEditorPhotos({
           id: photosBlockId,
         });
       }
+
+      // 업데이트된 블록들의 ID, 값, 최종 블록 정보 추적
+      const updatedBlocks: {
+        id: string;
+        value: BlockValue;
+        type?: 'date' | 'time' | 'location';
+        isNew?: boolean;
+        finalBlock?: RecordBlock;
+      }[] = [];
+
       // 모든 블록 업데이트를 하나의 setBlocks 호출로 처리
       setBlocks((prev) => {
         let updated = [...prev];
@@ -235,13 +252,23 @@ export function useRecordEditorPhotos({
             ? (updated[idx].value as PhotoValue)
             : { mediaIds: [], tempUrls: [] };
 
-        const nextValue: PhotoValue = {
-          ...currentPhotoValue,
-          tempUrls: [
-            ...(currentPhotoValue.tempUrls || []),
-            ...pendingMetadata.newImageUrls,
-          ],
-        };
+        // draft 모드: uploadedIds가 있으면 추가
+        // 일반 모드: newImageUrls가 있으면 추가
+        const nextValue: PhotoValue = draftId
+          ? {
+              mediaIds: [
+                ...(currentPhotoValue.mediaIds || []),
+                ...(pendingMetadata.uploadedIds || []),
+              ],
+              tempUrls: [],
+            }
+          : {
+              mediaIds: currentPhotoValue.mediaIds || [],
+              tempUrls: [
+                ...(currentPhotoValue.tempUrls || []),
+                ...(pendingMetadata.newImageUrls || []),
+              ],
+            };
 
         if (idx >= 0) {
           updated[idx] = { ...updated[idx], value: nextValue } as RecordBlock;
@@ -258,6 +285,9 @@ export function useRecordEditorPhotos({
           ]);
         }
 
+        // 사진 블록 추적
+        updatedBlocks.push({ id: photosBlockId!, value: nextValue });
+
         // date / time / location 블록 처리
         const applySingleField = (
           type: 'date' | 'time' | 'location',
@@ -265,17 +295,34 @@ export function useRecordEditorPhotos({
         ) => {
           const i = updated.findIndex((b) => b.type === type);
           if (i >= 0) {
+            // 기존 블록 업데이트
             updated[i] = { ...updated[i], value } as RecordBlock;
+            updatedBlocks.push({
+              id: updated[i].id,
+              value,
+              type,
+              isNew: false,
+            });
           } else {
-            updated = normalizeLayout([
-              ...updated,
-              {
-                id: uuidv4(),
-                type,
-                value,
-                layout: { row: 0, col: 0, span: 2 },
-              } as RecordBlock,
-            ]);
+            // 새 블록 생성
+            const newBlockId = uuidv4();
+            const newBlock = {
+              id: newBlockId,
+              type,
+              value,
+              layout: { row: 0, col: 0, span: 2 },
+            } as RecordBlock;
+            updated = normalizeLayout([...updated, newBlock]);
+
+            // normalizeLayout 적용된 최종 블록 찾기
+            const finalBlock = updated.find((b) => b.id === newBlockId);
+            updatedBlocks.push({
+              id: newBlockId,
+              value,
+              type,
+              isNew: true,
+              finalBlock,
+            });
           }
         };
 
@@ -300,14 +347,80 @@ export function useRecordEditorPhotos({
         return updated;
       });
 
-      setPendingMetadata({
-        images: [],
-        newImageUrls: [],
-        selectedMetadata: { metadata, imageUrl, fields },
-        appliedMetadata: pendingMetadata.appliedMetadata || {},
-      });
+      // draft 모드에서 서버에 동기화 (패치 큐 사용)
+      if (draftId && applyPatch) {
+        const patchBlock: PatchApplyPayload[] = [];
+        // 1. photos 블록 업데이트
+
+        if (photosBlockId) {
+          const photosUpdate = updatedBlocks.find(
+            (b) => b.id === photosBlockId,
+          );
+          if (photosUpdate) {
+            patchBlock.push({
+              type: 'BLOCK_SET_VALUE',
+              blockId: photosUpdate.id,
+              value: photosUpdate.value,
+            });
+          }
+        }
+
+        // 2. 새로 생성된 date/time/location 블록들
+        updatedBlocks
+          .filter((b) => b.isNew && b.finalBlock)
+          .forEach((b) => {
+            if (b.finalBlock) {
+              patchBlock.push({
+                type: 'BLOCK_INSERT',
+                block: b.finalBlock,
+              });
+            }
+          });
+
+        // 3. 기존 date/time/location 블록 업데이트
+        updatedBlocks
+          .filter((b) => !b.isNew && b.type)
+          .forEach((b) => {
+            patchBlock.push({
+              type: 'BLOCK_SET_VALUE',
+              blockId: b.id,
+              value: b.value,
+            });
+          });
+
+        // 큐 처리 시작
+        applyPatch(patchBlock);
+      }
+
+      // 메타데이터 필드 락 해제
+      if (draftId && releaseLock) {
+        const dateBlock = blocks.find((b) => b.type === 'date');
+        const timeBlock = blocks.find((b) => b.type === 'time');
+        const locationBlock = blocks.find((b) => b.type === 'location');
+
+        if (dateBlock && fields.applyDate) {
+          releaseLock(`block:${dateBlock.id}`);
+        }
+        if (timeBlock && fields.applyTime) {
+          releaseLock(`block:${timeBlock.id}`);
+        }
+        if (locationBlock && fields.applyLocation) {
+          releaseLock(`block:${locationBlock.id}`);
+        }
+      }
+
+      setPendingMetadata(null); // drawer 닫기
     },
-    [pendingMetadata, activeDrawer?.id, setBlocks, setActiveDrawer],
+    [
+      pendingMetadata,
+      activeDrawer?.id,
+      setBlocks,
+      setActiveDrawer,
+      draftId,
+      applyPatch,
+      releaseLock,
+      blocks,
+    ],
   );
 
   /**
@@ -338,13 +451,21 @@ export function useRecordEditorPhotos({
             b.id === photosBlockId && b.type === 'photos'
               ? {
                   ...b,
-                  value: {
-                    ...b.value,
-                    tempUrls: [
-                      ...(b.value.tempUrls || []),
-                      ...pendingMetadata.newImageUrls,
-                    ],
-                  },
+                  value: draftId
+                    ? {
+                        mediaIds: [
+                          ...(b.value.mediaIds || []),
+                          ...(pendingMetadata.uploadedIds || []),
+                        ],
+                        tempUrls: [],
+                      }
+                    : {
+                        mediaIds: b.value.mediaIds || [],
+                        tempUrls: [
+                          ...(b.value.tempUrls || []),
+                          ...(pendingMetadata.newImageUrls || []),
+                        ],
+                      },
                 }
               : b,
           ),
@@ -356,25 +477,26 @@ export function useRecordEditorPhotos({
           {
             id: photosBlockId!,
             type: 'photos',
-            value: {
-              mediaIds: [],
-              tempUrls: pendingMetadata.newImageUrls,
-            },
+            value: draftId
+              ? {
+                  mediaIds: pendingMetadata.uploadedIds || [],
+                  tempUrls: [],
+                }
+              : {
+                  mediaIds: [],
+                  tempUrls: pendingMetadata.newImageUrls || [],
+                },
             layout: { row: 0, col: 0, span: 2 },
           } as RecordBlock,
         ]);
       }
     });
 
-    setPendingMetadata({
-      images: [],
-      newImageUrls: [],
-      appliedMetadata: pendingMetadata.appliedMetadata || {},
-    });
+    setPendingMetadata(null); // drawer 닫기
   };
 
   /**
-   * 기존 사진 메타데이터 편집
+   * 기존 사진 메타데이터 편집 (개인 글에서만 작동)
    */
   const handleEditMetadata = async () => {
     const photoBlock = blocks.find(
@@ -383,14 +505,17 @@ export function useRecordEditorPhotos({
 
     if (!photoBlock) return;
 
-    const urls = [
-      ...(photoBlock.value.mediaIds || []),
-      ...(photoBlock.value.tempUrls || []),
-    ];
+    // tempUrls만 메타데이터 추출 가능 (data URL 형식)
+    const tempUrls = photoBlock.value.tempUrls || [];
+
+    if (tempUrls.length === 0) {
+      toast.error('메타데이터를 추출할 수 있는 이미지가 없습니다.');
+      return;
+    }
 
     const images = (
       await Promise.all(
-        urls.map(async (url) => ({
+        tempUrls.map(async (url) => ({
           imageUrl: url,
           metadata: await extractExifFromDataUrl(url),
         })),

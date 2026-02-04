@@ -219,7 +219,7 @@ export function useRecordCollaboration(
   );
 
   const applyPatch = useCallback(
-    (patch: PatchApplyPayload) => {
+    (patch: PatchApplyPayload | PatchApplyPayload[]) => {
       socket?.emit('PATCH_APPLY', {
         draftId,
         baseVersion: versionRef.current,

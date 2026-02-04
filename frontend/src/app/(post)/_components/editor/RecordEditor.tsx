@@ -139,6 +139,8 @@ export default function PostEditor({
     handleDone,
     draftId,
     uploadMultipleMedia,
+    applyPatch,
+    releaseLock,
   });
 
   const {
