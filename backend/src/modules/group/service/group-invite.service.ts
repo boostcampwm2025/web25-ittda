@@ -9,7 +9,9 @@ import { Repository } from 'typeorm';
 import { GroupInvite } from '../entity/group_invite.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
+import { GroupActivityType } from '@/enums/group-activity-type.enum';
 import { User } from '../../user/entity/user.entity';
+import { GroupActivityService } from './group-activity.service';
 import * as crypto from 'crypto';
 
 const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
@@ -25,6 +27,7 @@ export class GroupInviteService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly groupActivityService: GroupActivityService,
   ) {}
 
   /** 초대 링크 생성 */
@@ -106,7 +109,14 @@ export class GroupInviteService {
       nicknameInGroup: this.validateGroupNickname(user.nickname),
     });
 
-    return this.groupMemberRepo.save(member);
+    const saved = await this.groupMemberRepo.save(member);
+    await this.groupActivityService.recordActivity({
+      groupId: invite.groupId,
+      type: GroupActivityType.MEMBER_JOIN,
+      actorIds: [userId],
+      meta: { role: invite.permission },
+    });
+    return saved;
   }
 
   /** 초대 링크 삭제 */
