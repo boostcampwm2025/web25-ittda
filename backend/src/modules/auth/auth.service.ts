@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { randomUUID } from 'crypto';
-import { GuestSessionService } from '../guest/guest-session.service';
+import { GuestMigrationService } from '../guest/guest-migration.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from './refresh_token/refresh_token.entity';
@@ -25,10 +25,13 @@ interface CodePayload {
 export class AuthService {
   constructor(
     private readonly userService: UserService,
+
     private readonly jwtService: JwtService,
+
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepo: Repository<RefreshToken>,
-    private readonly guestSessionService: GuestSessionService,
+
+    private readonly guestMigrationService: GuestMigrationService,
   ) {}
 
   // userId -> CodePayload 저장
@@ -47,7 +50,7 @@ export class AuthService {
   /**
    * OAuth 로그인 처리: DB에 유저 생성/조회 + 토큰 발급
    */
-  async oauthLogin(oauthUser: OAuthUserType, guestSessionId?: string) {
+  async oauthLogin(oauthUser: OAuthUserType) {
     // 1. DB에서 유저 찾거나 생성
     const user = await this.userService.findOrCreateOAuthUser(oauthUser);
 
@@ -62,11 +65,6 @@ export class AuthService {
       token: refreshToken,
       expiresAt,
     });
-
-    // 4. 게스트 세션 병합 (있다면)
-    if (guestSessionId) {
-      await this.mergeGuestSession(user.id, guestSessionId);
-    }
 
     return { user, accessToken, refreshToken, expiresAt };
   }
@@ -98,6 +96,7 @@ export class AuthService {
     this.codeMap.delete(code);
 
     return {
+      userId: payload.userId,
       accessToken: payload.accessToken,
       refreshToken: payload.refreshToken,
       expiresAt: payload.expiresAt,
@@ -189,8 +188,7 @@ export class AuthService {
     await this.refreshTokenRepo.delete({ userId });
   }
 
-  private async mergeGuestSession(userId: string, guestSessionId: string) {
-    // TODO: guestSessionId에 담긴 활동 데이터를 userId에 병합하는 로직 구현
-    await this.guestSessionService.invalidate(guestSessionId);
+  async mergeGuestSession(userId: string, guestSessionId: string) {
+    await this.guestMigrationService.migrate(guestSessionId, userId);
   }
 }

@@ -26,7 +26,7 @@ export class MediaAsset {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, { onDelete: 'NO ACTION' }) // CASCADE 비추
+  @ManyToOne(() => User, { onDelete: 'NO ACTION' })
   @JoinColumn({ name: 'owner_user_id' })
   ownerUser: User;
 
@@ -60,6 +60,7 @@ export class MediaAsset {
 
   @Column({ type: 'int', nullable: true })
   height?: number;
+
   @Column({ name: 'uploaded_at', type: 'timestamptz', nullable: true })
   uploadedAt?: Date;
 

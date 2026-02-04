@@ -18,6 +18,7 @@ import { SearchModule } from './modules/search/search.module';
 import { MapModule } from './modules/map/map.module';
 import { TemplateModule } from './modules/template/template.module';
 import { MediaModule } from './modules/media/media.module';
+import { TrashModule } from './modules/trash/trash.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { MediaModule } from './modules/media/media.module';
     MapModule,
     TemplateModule,
     MediaModule,
+    TrashModule,
   ],
   controllers: [AppController],
   providers: [AppService],

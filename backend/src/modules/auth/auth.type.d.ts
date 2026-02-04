@@ -1,6 +1,6 @@
 import type { JwtPayload } from 'jsonwebtoken';
 
-export type OAuthProvider = 'google' | 'kakao';
+export type OAuthProvider = 'google' | 'kakao' | 'guest';
 
 export type OAuthUserType = {
   provider: OAuthProvider;

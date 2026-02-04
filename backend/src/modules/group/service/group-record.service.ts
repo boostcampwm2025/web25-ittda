@@ -152,7 +152,7 @@ export class GroupRecordService {
       qb.andWhere('p.eventAt >= :start AND p.eventAt <= :end', { start, end });
     }
 
-    const posts = await qb.orderBy('p.eventAt', 'DESC').getMany();
+    const posts = await qb.orderBy('p.eventAt', 'DESC').cache(true).getMany();
 
     if (posts.length === 0) {
       return [];
@@ -476,6 +476,8 @@ export class GroupRecordService {
       fromDate: from.toJSDate(),
       toDate: to.toJSDate(),
     });
+    qb.andWhere('p.deletedAt IS NULL');
+    qb.andWhere('ma.deletedAt IS NULL');
 
     // Cursor Pagination
     if (cursor) {
@@ -589,6 +591,8 @@ export class GroupRecordService {
 
     qb.where('p.groupId = :groupId', { groupId });
     qb.andWhere('pm.kind = :kind', { kind: PostMediaKind.BLOCK });
+    qb.andWhere('p.deletedAt IS NULL');
+    qb.andWhere('ma.deletedAt IS NULL');
 
     // Cursor Pagination
     if (cursor) {
