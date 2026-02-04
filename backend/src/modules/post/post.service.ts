@@ -35,6 +35,8 @@ import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 import { PresenceService } from './collab/presence.service';
+import { GroupActivityService } from '@/modules/group/service/group-activity.service';
+import { GroupActivityType } from '@/enums/group-activity-type.enum';
 
 @Injectable()
 export class PostService {
@@ -56,6 +58,7 @@ export class PostService {
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
     private readonly presenceService: PresenceService,
+    private readonly groupActivityService: GroupActivityService,
   ) {}
 
   /**
@@ -229,6 +232,16 @@ export class PostService {
       },
     );
 
+    if (dto.scope === PostScope.GROUP && dto.groupId) {
+      await this.groupActivityService.recordActivity({
+        groupId: dto.groupId,
+        type: GroupActivityType.POST_CREATE,
+        actorIds: [ownerUserId],
+        refId: postId,
+        meta: { title: dto.title },
+      });
+    }
+
     return this.findOne(postId, ownerUserId);
   }
 
@@ -384,6 +397,8 @@ export class PostService {
     dto: EditPostDto,
   ): Promise<PostDetailDto> {
     const post = await this.getPostForEdit(postId, requesterId);
+    const beforeTitle = post.title;
+    const groupId = post.groupId ?? null;
     if (post.scope === PostScope.GROUP && post.groupId) {
       const member = await this.groupMemberRepository.findOne({
         where: { groupId: post.groupId, userId: requesterId },
@@ -483,6 +498,20 @@ export class PostService {
       }
     });
 
+    if (post.scope === PostScope.GROUP && groupId) {
+      const meta =
+        beforeTitle !== dto.title
+          ? { beforeTitle, afterTitle: dto.title }
+          : null;
+      await this.groupActivityService.recordActivity({
+        groupId,
+        type: GroupActivityType.POST_UPDATE,
+        actorIds: [requesterId],
+        refId: postId,
+        meta,
+      });
+    }
+
     return this.findOne(postId, requesterId);
   }
 
@@ -531,6 +560,14 @@ export class PostService {
       });
       await this.groupRepository.update(post.groupId, {
         lastActivityAt: latest?.updatedAt ?? null,
+      });
+
+      await this.groupActivityService.recordActivity({
+        groupId: post.groupId,
+        type: GroupActivityType.POST_DELETE,
+        actorIds: [requesterId],
+        refId: postId,
+        meta: { title: post.title },
       });
     }
   }
