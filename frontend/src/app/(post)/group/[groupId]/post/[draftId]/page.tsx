@@ -45,20 +45,41 @@ export default async function PostDraftPage({
         version: data.version || 0,
       };
     } catch (error) {
-      Sentry.captureException(error, {
-        level: 'error',
-        tags: {
-          context: 'post-editor',
-          operation: 'load-draft-blocks',
-        },
-        extra: {
-          mode: mode,
-          postId: postId,
-          draftId: draftId,
-          groupId: groupId,
-        },
-      });
-      logger.error('공동 드래프트 로드 실패', error);
+      // Draft를 찾지 못한 경우 (이미 발행되었거나 삭제됨)
+      const isNotFound =
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        (error.message === 'Draft not found' ||
+          String(error.message).includes('Draft not found'));
+
+      if (isNotFound) {
+        // Draft를 찾지 못한 경우
+        // 발행 직후: DRAFT_PUBLISHED 이벤트로 클라이언트가 리다이렉트 처리
+        // 실제로 없는 draft: 클라이언트에서 에러 처리 필요
+        logger.error('Draft not found - client will handle', {
+          draftId,
+          groupId,
+        });
+        // initialPost: undefined로 렌더링
+        // PostEditor에서 클라이언트 측 처리 필요
+      } else {
+        // 실제 에러인 경우에만 Sentry 전송
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: {
+            context: 'post-editor',
+            operation: 'load-draft-blocks',
+          },
+          extra: {
+            mode: mode,
+            postId: postId,
+            draftId: draftId,
+            groupId: groupId,
+          },
+        });
+        logger.error('공동 드래프트 로드 실패', error);
+      }
     }
   }
 

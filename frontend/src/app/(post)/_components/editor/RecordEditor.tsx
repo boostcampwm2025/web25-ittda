@@ -172,6 +172,22 @@ export default function PostEditor({
     },
   });
 
+  // draftId가 있지만 initialPost가 없는 경우 처리
+  // (발행 직후 또는 잘못된 draft ID)
+  useEffect(() => {
+    if (!draftId || initialPost || !groupId) return;
+
+    // DRAFT_PUBLISHED 이벤트를 일정 시간 기다림
+    const timer = setTimeout(() => {
+      // 이벤트가 오지 않으면 실제로 draft가 없는 것
+      // 그룹 페이지로 리다이렉트
+      toast.error('기록을 찾을 수 없습니다.');
+      window.location.href = `/group/${groupId}`;
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [draftId, initialPost, groupId]);
+
   const { members } = useDraftPresence(draftId, groupId);
 
   // 서버의 LOCK_CHANGED 브로드캐스트 수신
@@ -265,6 +281,11 @@ export default function PostEditor({
   }, [pendingMetadata?.images.length, draftId]);
 
   const handleSave = async () => {
+    // 이미 발행 중이면 중복 요청 무시
+    if (isPublishing) {
+      return;
+    }
+
     const { isValid, message, filteredBlocks } = validateAndCleanRecord(
       title,
       blocks,

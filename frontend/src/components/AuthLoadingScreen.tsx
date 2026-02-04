@@ -14,7 +14,7 @@ const LOADING_MESSAGES: Record<LoadingType, { title: string; desc: string }> = {
   },
 
   publish: {
-    title: '공동 기록을 발행하는 중입니다',
+    title: '기록을 발행하는 중입니다',
     desc: '소중한 기억이 곧 업로드됩니다...',
   },
 };
