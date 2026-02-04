@@ -92,6 +92,8 @@ export class FeedCardResponseDto {
     example: { lat: 37.5665, lng: 126.978, address: '서울특별시 강남구' },
   })
   location: BlockValueMap[typeof PostBlockType.LOCATION] | null;
+  @ApiPropertyOptional({ example: '18:30' })
+  time?: string | null;
   @ApiPropertyOptional({ example: ['회식', '강남'] })
   tags: string[] | null;
   @ApiPropertyOptional({ enum: PostMood, example: [PostMood.HAPPY] })

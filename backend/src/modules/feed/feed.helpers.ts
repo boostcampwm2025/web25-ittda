@@ -92,6 +92,27 @@ export async function buildFeedCards(
     locationByPostId.set(b.postId, b.value);
   }
 
+  // TIME 메타 (미리보기 블록에 포함하지 않음)
+  type TimeBlockRow = {
+    postId: string;
+    value: BlockValueMap[typeof PostBlockType.TIME];
+  };
+
+  const timeBlocks: TimeBlockRow[] = postIds.length
+    ? ((await postBlockRepo.find({
+        where: { postId: In(postIds), type: PostBlockType.TIME },
+        select: { postId: true, value: true },
+      })) as TimeBlockRow[])
+    : [];
+
+  const timeByPostId = new Map<string, string>();
+  for (const b of timeBlocks) {
+    const value = b.value as { time?: string };
+    if (value?.time) {
+      timeByPostId.set(b.postId, value.time);
+    }
+  }
+
   // 2) 미리보기 블록 (row 7까지)
   type BlockRow = {
     postId: string;
@@ -206,6 +227,7 @@ export async function buildFeedCards(
 
   for (const p of posts) {
     const loc = locationByPostId.get(p.id) ?? null;
+    const time = timeByPostId.get(p.id) ?? null;
     const scope = p.groupId ? 'GROUP' : 'ME';
     if (!p.eventAt) {
       logger.warn(`eventAt is missing for postId=${p.id} title=${p.title}`);
@@ -247,6 +269,7 @@ export async function buildFeedCards(
               placeName: loc.placeName,
             }
           : null,
+        time,
         blocks: blockByPostId.get(p.id) ?? [],
         tags: p.tags ?? null,
         emotion: p.emotion ?? null,
