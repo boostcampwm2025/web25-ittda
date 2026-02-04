@@ -17,6 +17,7 @@ import { acquireLockWithEmit } from './lock-events';
 @Injectable()
 export class PatchStreamService implements OnModuleDestroy {
   private static readonly STREAM_DROP_BUFFER_LIMIT = 50;
+  private static readonly STREAM_ROOM_BYPASS_LIMIT = 30;
   private static readonly STREAM_FLUSH_INTERVAL_MS = 250;
   private readonly streamBuffer = new Map<string, BufferedStream>();
   private readonly logger = new Logger(PatchStreamService.name);
@@ -255,6 +256,14 @@ export class PatchStreamService implements OnModuleDestroy {
   private emitStream(entry: BufferedStream) {
     const roomSockets = entry.server.sockets.adapter.rooms.get(entry.room);
     if (!roomSockets || roomSockets.size === 0) return 0;
+    if (roomSockets.size >= PatchStreamService.STREAM_ROOM_BYPASS_LIMIT) {
+      entry.server.to(entry.room).volatile.emit('BLOCK_VALUE_STREAM', {
+        blockId: entry.blockId,
+        partialValue: entry.partialValue,
+        sessionId: entry.sessionId,
+      });
+      return 0;
+    }
     const payload = {
       blockId: entry.blockId,
       partialValue: entry.partialValue,
