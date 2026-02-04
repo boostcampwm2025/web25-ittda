@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from './entity/user.entity';
@@ -19,6 +19,8 @@ import type { OAuthUserType } from '@/modules/auth/auth.type';
 // User Service에서 기능 구현
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -69,6 +71,7 @@ export class UserService {
     userId: string,
     year: number,
   ): Promise<MonthRecordResponseDto[]> {
+    this.cleanupStaleUserMonthCovers(userId);
     // 1. 조회 기간 설정 (YYYY-01-01 ~ YYYY-12-31)
     // 타임존은 일단 KST/UTC 이슈 없이 "해당 연도에 포함된" 모든 글을 가져온 뒤 JS에서 월별로 그룹핑하는 전략
     // (DB Timezone issue를 피하기 위해 넉넉하게 가져와서 application level grouping)
@@ -122,11 +125,6 @@ export class UserService {
     const customCovers = await this.userMonthCoverRepo.find({
       where: { userId, year },
     });
-    const customCoverMap = new Map<string, string>(); // "yyyy-MM" -> url
-    for (const c of customCovers) {
-      const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
-      customCoverMap.set(key, c.coverAssetId ?? '');
-    }
 
     // 4. 각 월별 "대표(최신) 포스트 ID" 추출
     const monthKeys = Array.from(postsByMonth.keys()).sort().reverse(); // 최신 달부터
@@ -175,6 +173,50 @@ export class UserService {
       const list = imageBlocksByPostId.get(b.postId) ?? [];
       list.push(b);
       imageBlocksByPostId.set(b.postId, list);
+    }
+
+    const validMediaIdsByMonth = new Map<string, Set<string>>();
+    for (const [monthKey, monthPosts] of postsByMonth.entries()) {
+      const mediaIds = new Set<string>();
+      for (const post of monthPosts) {
+        const blocks = imageBlocksByPostId.get(post.id);
+        if (!blocks) continue;
+        for (const block of blocks) {
+          const val = block.value as { mediaIds?: string[] };
+          if (val.mediaIds && val.mediaIds.length > 0) {
+            val.mediaIds.forEach((id) => mediaIds.add(id));
+          }
+        }
+      }
+      validMediaIdsByMonth.set(monthKey, mediaIds);
+    }
+
+    const customCoverMap = new Map<string, string>(); // "yyyy-MM" -> assetId
+    const invalidCoverIds: string[] = [];
+    for (const c of customCovers) {
+      if (!c.coverAssetId) continue;
+      const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
+      const validSet = validMediaIdsByMonth.get(key);
+      if (!validSet || !validSet.has(c.coverAssetId)) {
+        invalidCoverIds.push(c.id);
+        continue;
+      }
+      customCoverMap.set(key, c.coverAssetId);
+    }
+    if (invalidCoverIds.length > 0) {
+      void this.userMonthCoverRepo
+        .createQueryBuilder()
+        .update()
+        .set({ coverAssetId: null })
+        .where('id IN (:...ids)', { ids: invalidCoverIds })
+        .execute()
+        .catch((error) => {
+          const message =
+            error instanceof Error ? error.message : 'unknown error';
+          this.logger.warn(
+            `Failed to cleanup invalid user month covers (userId=${userId}): ${message}`,
+          );
+        });
     }
 
     const locationBlocks = await this.postBlockRepo.find({
@@ -394,6 +436,25 @@ export class UserService {
       });
       await this.userMonthCoverRepo.save(newCover);
     }
+  }
+
+  private cleanupStaleUserMonthCovers(userId: string) {
+    void this.userMonthCoverRepo
+      .createQueryBuilder()
+      .update()
+      .set({ coverAssetId: null })
+      .where('userId = :userId', { userId })
+      .andWhere(
+        '"cover_media_asset_id" IN (SELECT id FROM media_assets WHERE deleted_at IS NOT NULL)',
+      )
+      .execute()
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(
+          `Failed to cleanup user month covers (userId=${userId}): ${message}`,
+        );
+      });
   }
 
   /**

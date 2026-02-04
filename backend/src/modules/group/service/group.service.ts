@@ -5,6 +5,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -24,6 +25,8 @@ const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
 
 @Injectable()
 export class GroupService {
+  private readonly logger = new Logger(GroupService.name);
+
   constructor(
     @InjectRepository(Group)
     private readonly groupRepo: Repository<Group>,
@@ -140,6 +143,9 @@ export class GroupService {
 
     const groupIds = members.map((m) => m.groupId);
     const roleByGroupId = new Map(members.map((m) => [m.groupId, m.role]));
+    if (groupIds.length > 0) {
+      this.cleanupStaleGroupCovers(groupIds);
+    }
 
     // 1. Batch: 그룹 정보 조회
     const groups = await this.groupRepo
@@ -218,14 +224,16 @@ export class GroupService {
       items.push({
         groupId: group.id,
         name: group.name,
-        cover: group.coverMedia
-          ? {
-              assetId: group.coverMedia.id,
-              width: group.coverMedia.width ?? 0,
-              height: group.coverMedia.height ?? 0,
-              mimeType: group.coverMedia.mimeType ?? 'application/octet-stream',
-            }
-          : null,
+        cover:
+          group.coverMedia && !group.coverMedia.deletedAt
+            ? {
+                assetId: group.coverMedia.id,
+                width: group.coverMedia.width ?? 0,
+                height: group.coverMedia.height ?? 0,
+                mimeType:
+                  group.coverMedia.mimeType ?? 'application/octet-stream',
+              }
+            : null,
         memberCount,
         recordCount,
         createdAt: group.createdAt,
@@ -300,5 +308,22 @@ export class GroupService {
       );
     }
     return trimmed;
+  }
+
+  private cleanupStaleGroupCovers(groupIds: string[]) {
+    void this.groupRepo
+      .createQueryBuilder()
+      .update()
+      .set({ coverMediaId: null, coverSourcePostId: null })
+      .where('id IN (:...groupIds)', { groupIds })
+      .andWhere(
+        '("cover_media_id" IN (SELECT id FROM media_assets WHERE deleted_at IS NOT NULL) OR "cover_source_post_id" IN (SELECT id FROM posts WHERE deleted_at IS NOT NULL))',
+      )
+      .execute()
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(`Failed to cleanup stale group covers: ${message}`);
+      });
   }
 }

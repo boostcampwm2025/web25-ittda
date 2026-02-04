@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -27,6 +28,8 @@ import {
 
 @Injectable()
 export class GroupRecordService {
+  private readonly logger = new Logger(GroupRecordService.name);
+
   constructor(
     @InjectRepository(Group)
     private readonly groupRepo: Repository<Group>,
@@ -62,6 +65,7 @@ export class GroupRecordService {
     if (!group) {
       throw new NotFoundException('그룹을 찾을 수 없습니다.');
     }
+    this.cleanupStaleGroupMonthCovers(groupId);
 
     // 2. 게시글 존재 및 그룹 소속 확인
     const post = await this.postRepo.findOne({
@@ -781,5 +785,24 @@ export class GroupRecordService {
       }
     }
     return null;
+  }
+
+  private cleanupStaleGroupMonthCovers(groupId: string) {
+    void this.groupMonthCoverRepo
+      .createQueryBuilder()
+      .update()
+      .set({ coverAssetId: null, sourcePostId: null })
+      .where('groupId = :groupId', { groupId })
+      .andWhere(
+        '("cover_media_asset_id" IN (SELECT id FROM media_assets WHERE deleted_at IS NOT NULL) OR "source_post_id" IN (SELECT id FROM posts WHERE deleted_at IS NOT NULL))',
+      )
+      .execute()
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(
+          `Failed to cleanup group month covers (groupId=${groupId}): ${message}`,
+        );
+      });
   }
 }
