@@ -73,7 +73,10 @@ export function useLockManager(draftId?: string) {
     socket.on('LOCK_GRANTED', ({ lockKey }: LockResponsePayload) => {
       if (pendingLockRef.current === lockKey) {
         pendingLockRef.current = null;
+      } else {
+        activeLockKeys.current.add(lockKey);
       }
+
       startHeartbeat(lockKey);
     });
 
