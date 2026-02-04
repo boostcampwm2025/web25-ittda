@@ -27,7 +27,6 @@ export default function RecordMapDrawer({
   isFetchingNextPage,
   topOffset = 0,
 }: Props) {
-  console.log(topOffset);
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastSnappedIdRef = useRef<string | string[] | null>(null);

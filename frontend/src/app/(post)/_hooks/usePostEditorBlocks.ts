@@ -229,7 +229,7 @@ export function usePostEditorBlocks({
             });
           }
         }
-        console.log('블록 넣을 때 상태', blocks, value);
+
         setBlocks(
           (prev) =>
             prev.map((b) =>
@@ -257,7 +257,6 @@ export function usePostEditorBlocks({
   // 드로어 내에서 아이템 클릭 시 호출
   const handleDone = (val: BlockValue, shouldClose = false) => {
     if (!activeDrawer) return;
-    console.log('여기서 호출될 떈', val);
     const updatedId = updateFieldValue(
       val,
       activeDrawer.id,

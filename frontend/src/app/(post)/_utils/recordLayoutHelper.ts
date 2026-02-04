@@ -150,7 +150,6 @@ export const isRecordBlockEmpty = (
 
   //미디어
   if ('externalId' in value) {
-    console.log('타입 검토', value);
     return !value.type || !value.title;
   }
 
