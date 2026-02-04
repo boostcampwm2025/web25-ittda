@@ -26,7 +26,7 @@ function getApiBaseUrl() {
   return backendUrl;
 }
 
-const API_BASE_URL = getApiBaseUrl();
+//const API_BASE_URL = getApiBaseUrl();
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
@@ -71,7 +71,13 @@ async function fetchWithRetry<T>(
   skipAuth: boolean,
 ) {
   try {
+    //console.log(`[Server Fetch] URL: ${url}, Options: `, fetchOptions);
+
     const response = await fetch(url, fetchOptions);
+
+    if (response.status === 401) {
+      console.error(`[401 Error] 발생한 API 경로: ${url}`);
+    }
 
     if (response.status === 204) {
       return {

@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
@@ -14,7 +18,11 @@ export class MyPageService {
   ) {}
 
   async findOne(userId: string): Promise<User> {
-    return this.userRepo.findOneByOrFail({ id: userId });
+    const user = await this.userRepo.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('존재하지 않는 사용자입니다.');
+    }
+    return user;
   }
 
   // Record<string, any> 대신 unknown 권장

@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager, QueryFailedError } from 'typeorm';
@@ -33,11 +34,17 @@ export class GuestMigrationService {
     });
 
     if (!session || !session.userId) {
-      return;
+      throw new NotFoundException('존재하지 않는 게스트 세션입니다.');
     }
 
     const guestUserId = session.userId;
-    if (guestUserId === targetUserId) return;
+
+    if (guestUserId === targetUserId) return; // 이미 로그인된 사용자의 게스트 세션이므로 병합 불필요
+
+    const user = await this.userRepo.findOneBy({ id: guestUserId });
+    if (!user) {
+      throw new NotFoundException('존재하지 않는 게스트 사용자입니다.');
+    }
 
     try {
       await this.userRepo.manager.transaction(async (em) => {

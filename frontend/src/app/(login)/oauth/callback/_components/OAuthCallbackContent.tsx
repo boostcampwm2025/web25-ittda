@@ -55,6 +55,10 @@ export default function OAuthCallbackContent({
       if (result?.error) {
         router.push('/login?error=login_failed');
       } else {
+        // 소셜 로그인 성공 시 게스트 쿠키 즉시 삭제 (프로필 조회 전에 삭제해야 함)
+        deleteCookie('x-guest-session-id');
+        deleteCookie('x-guest-access-token');
+
         // 유저 프로필 조회 및 캐시 저장
         let userId: string | null = null;
         try {

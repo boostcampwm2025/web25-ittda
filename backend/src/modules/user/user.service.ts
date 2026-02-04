@@ -52,7 +52,7 @@ export class UserService {
     }
 
     user = this.userRepo.create(params);
-    await this.userRepo.save(user);
+    await this.userRepo.save(user); // user.id 생성됨
 
     return user;
   }

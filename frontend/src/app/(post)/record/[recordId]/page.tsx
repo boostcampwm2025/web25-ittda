@@ -62,6 +62,10 @@ export async function generateMetadata({
       : `${process.env.NEXT_PUBLIC_CLIENT_URL}/thumbnail.png`;
 
     return {
+      metadataBase:
+        process.env.NODE_ENV == 'production'
+          ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
+          : 'http://localhost:3000',
       title: `${record.title} - 잇다`,
       description,
       openGraph: {

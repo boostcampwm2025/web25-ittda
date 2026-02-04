@@ -34,6 +34,8 @@ const setGuestCookie = (key: string, sessionId: string) => {
   });
 };
 
+// 수정: requestAnimationFrame을 제거하여 상태 업데이트의 즉각성을 보장하고,
+// 토큰 관리 로직을 정교화
 export const useAuthStore = create<State & Action>()(
   persist(
     (set, get) => ({
@@ -49,51 +51,50 @@ export const useAuthStore = create<State & Action>()(
 
         if (guestSessionId) {
           // 게스트 → 소셜 전환
-          requestAnimationFrame(() => {
-            set({
-              userType: 'social',
-              userId: socialUser.id,
-              isLoggedIn: true,
-              guestSessionId: null,
-              guestAccessToken: null,
-              guestSessionExpiresAt: null,
-            });
+          set({
+            userType: 'social',
+            userId: socialUser.id,
+            isLoggedIn: true,
+            guestSessionId: null,
+            guestAccessToken: null,
+            guestSessionExpiresAt: null,
           });
         } else {
-          requestAnimationFrame(() => {
-            set({
-              userType: 'social',
-              userId: socialUser.id,
-              isLoggedIn: true,
-            });
+          set({
+            userType: 'social',
+            userId: socialUser.id,
+            isLoggedIn: true,
           });
         }
-        Cookies.remove(guestCookieKey);
+        // 게스트 정보 쿠키 삭제
+        Cookies.remove(guestCookieKey, { path: '/' });
+        Cookies.remove(guestTokenKey, { path: '/' });
       },
 
       setSocialLogin: () => {
-        requestAnimationFrame(() => {
-          set({
-            userType: 'social',
-            isLoggedIn: true,
-          });
-          Cookies.remove(guestCookieKey);
+        set({
+          userType: 'social',
+          isLoggedIn: true,
+          guestAccessToken: null,
+          guestSessionId: null,
+          guestSessionExpiresAt: null,
         });
+
+        Cookies.remove(guestCookieKey, { path: '/' });
+        Cookies.remove(guestTokenKey, { path: '/' });
       },
 
       setGuestInfo: (guest) => {
-        requestAnimationFrame(() => {
-          set({
-            guestAccessToken: guest.guestAccessToken,
-            guestSessionId: guest.guestSessionId,
-            guestSessionExpiresAt: guest.guestSessionId,
-            userType: 'guest',
-            isLoggedIn: true,
-          });
-
-          setGuestCookie(guestCookieKey, guest.guestSessionId);
-          setGuestCookie(guestTokenKey, guest.guestAccessToken);
+        set({
+          guestAccessToken: guest.guestAccessToken,
+          guestSessionId: guest.guestSessionId,
+          guestSessionExpiresAt: guest.expiresAt, // 수정: 정확한 필드 매핑
+          userType: 'guest',
+          isLoggedIn: true,
         });
+
+        setGuestCookie(guestCookieKey, guest.guestSessionId);
+        setGuestCookie(guestTokenKey, guest.guestAccessToken);
       },
 
       logout: () => {
@@ -106,8 +107,9 @@ export const useAuthStore = create<State & Action>()(
           guestSessionExpiresAt: null,
         });
         // 로그아웃 시 쿠키 명시적 삭제
-        Cookies.remove(guestCookieKey);
-        Cookies.remove(guestTokenKey);
+        Cookies.remove(guestCookieKey, { path: '/' });
+        Cookies.remove(guestTokenKey, { path: '/' });
+        localStorage.removeItem('auth-storage'); // 스토리지 강제 초기화
       },
     }),
     { name: 'auth-storage' },

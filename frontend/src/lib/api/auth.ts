@@ -1,11 +1,15 @@
 import { auth } from '@/auth';
 import { getSession, signOut } from 'next-auth/react';
 import { deleteCookie, getCookie } from '../utils/cookie';
-import { guestCookieKey, useAuthStore } from '@/store/useAuthStore';
-import type { Session } from 'next-auth';
+import {
+  guestCookieKey,
+  guestTokenKey,
+  useAuthStore,
+} from '@/store/useAuthStore';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '../utils/logger';
 
+import type { Session } from 'next-auth';
 const INSTANCE_ID =
   typeof window !== 'undefined'
     ? Math.random().toString(36).substring(2, 15)
@@ -45,15 +49,31 @@ let sessionPromise: Promise<Session | null> | null = null;
  */
 export async function getAccessToken() {
   if (typeof window === 'undefined') {
-    // 서버 환경이므로 Auth 서버 세션에서 가져옴
-    const session = await auth();
-
-    if (session?.accessToken) return session.accessToken;
-
+    // 서버 컴포넌트 환경 처리
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
-    return cookieStore.get('x-guest-access-token')?.value || null;
+
+    // NextAuth 세션을 먼저 확인 (소셜 로그인 우선)
+    const session = await auth();
+    if (session?.accessToken) {
+      return session.accessToken;
+    }
+
+    // 세션이 없을 때만 게스트 토큰 확인 (게스트 상태)
+    const guestToken = cookieStore.get('x-guest-access-token')?.value;
+    if (guestToken) return guestToken;
+
+    return null;
   } else {
+    // 클라이언트 환경 처리
+    const authState = useAuthStore.getState();
+
+    // 게스트라면 복잡한 캐시 로직 없이 즉시 반환 (게스트 세션은 메모리 캐시보다 스토어가 정확함)
+    if (authState.userType === 'guest' && authState.guestAccessToken) {
+      return authState.guestAccessToken || getCookie('x-guest-access-token');
+    }
+
+    // 소셜 로그인 유저를 위한 캐시 및 세션 로직
     const now = Date.now();
 
     // 메모리에 유효한 캐시가 있다면 즉시 반환
@@ -77,12 +97,6 @@ export async function getAccessToken() {
       cacheExpiry = Date.now() + CACHE_TIME;
 
       if (session?.accessToken) return session?.accessToken;
-
-      const { guestAccessToken } = useAuthStore.getState();
-      if (guestAccessToken) return guestAccessToken;
-
-      // Zustand가 비어있다면 클라이언트 쿠키에서 직접 읽기 (새로고침 대비)
-      return getCookie('x-guest-access-token') || null;
     } finally {
       // 요청이 끝났으므로 Promise 참조 제거 (다음 요청을 위해)
       sessionPromise = null;
@@ -230,6 +244,7 @@ export async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
 
     deleteCookie(guestCookieKey);
+    deleteCookie(guestTokenKey);
 
     await signOut({ callbackUrl: '/login' });
   } catch (error) {

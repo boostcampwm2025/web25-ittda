@@ -6,11 +6,11 @@ import {
   UseGuards,
   Res,
   UnauthorizedException,
-  // ForbiddenException,
-  // NotFoundException,
   Body,
   Headers,
   HttpCode,
+  // ForbiddenException,
+  // NotFoundException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -72,12 +72,12 @@ export class AuthController {
     @Res() res: Response,
   ) {
     // 1. DB에 유저 생성/조회 + 토큰 발급 (실제 oauthLogin 호출)
-    const { accessToken, refreshToken, expiresAt } =
+    const { user, accessToken, refreshToken, expiresAt } =
       await this.authService.oauthLogin(req.user);
 
     // 2. 토큰 정보를 담은 임시 code 생성
     const code = this.authService.createTemporaryCode({
-      userId: req.user.provider + '_' + req.user.providerId, // 실제론 user.id 사용
+      userId: user.id, // DB user.id (UUID) 사용
       accessToken,
       refreshToken,
       expiresAt,
@@ -107,11 +107,11 @@ export class AuthController {
     @Res() res: Response,
   ) {
     // Google과 동일한 로직
-    const { accessToken, refreshToken, expiresAt } =
+    const { user, accessToken, refreshToken, expiresAt } =
       await this.authService.oauthLogin(req.user);
 
     const code = this.authService.createTemporaryCode({
-      userId: req.user.provider + '_' + req.user.providerId,
+      userId: user.id,
       accessToken,
       refreshToken,
       expiresAt,
@@ -138,7 +138,6 @@ export class AuthController {
   @ApiNoContentResponse({
     description: '인증 성공 (토큰은 쿠키 및 헤더에 설정됨)',
   })
-  //@ApiWrappedOkResponse({ type: Object })
   async exchangeCode(
     @Body('code') code: string,
     @Res({ passthrough: true }) res: Response,
@@ -150,6 +149,11 @@ export class AuthController {
 
     if (guestSessionId) {
       // 게스트 세션 병합
+      res.clearCookie('x-guest-access-token', {
+        httpOnly: false,
+        sameSite: 'lax',
+      });
+
       await this.authService.mergeGuestSession(userId, guestSessionId);
     }
 

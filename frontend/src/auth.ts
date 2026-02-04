@@ -1,4 +1,3 @@
-// auth.ts
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { refreshServerAccessToken } from './lib/api/auth';
@@ -7,13 +6,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       name: 'OAuthExchange',
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        // request는 NextAuth가 호출할 때 넘겨주는 요청 객체
+        let guestSessionId: string | undefined;
+        if (request) {
+          const cookieHeader = request.headers.get('cookie') || '';
+          const match = cookieHeader.match(
+            /(?:^|;)\s*x-guest-session-id=([^;]*)/,
+          );
+          if (match) {
+            guestSessionId = match[1];
+          }
+        }
+
         // credentials로 전달받은 code를 백엔드에 전달
         const exchangeRes = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/exchange`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(guestSessionId
+                ? { 'x-guest-session-id': guestSessionId }
+                : {}),
+            },
             body: JSON.stringify({ code: credentials.code }),
           },
         );
@@ -66,7 +82,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       // 토큰 만료 시 새 토큰으로 갱신
-      //console.log('토큰 갱신!', token);
       return refreshServerAccessToken(token);
     },
     async session({ session, token }) {

@@ -44,6 +44,10 @@ export async function generateMetadata({
       : `${process.env.NEXT_PUBLIC_CLIENT_URL}/thumbnail.png`;
 
     return {
+      metadataBase:
+        process.env.NODE_ENV == 'production'
+          ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
+          : 'http://localhost:3000',
       title: `${groupName} - 잇다`,
       description: `${groupName}의 함께 만드는 추억`,
       openGraph: {
@@ -60,6 +64,7 @@ export async function generateMetadata({
         ],
       },
     };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // 에러 발생 시 기본 메타데이터 반환
     return {
