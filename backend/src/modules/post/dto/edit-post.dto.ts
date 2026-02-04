@@ -2,6 +2,7 @@ import {
   IsArray,
   IsString,
   MaxLength,
+  MinLength,
   ValidateNested,
   IsOptional,
   IsUUID,
@@ -14,6 +15,7 @@ import { PostBlockDto } from './post-block.dto';
 export class EditPostDto {
   @ApiProperty({ example: 'string' })
   @IsString()
+  @MinLength(1)
   @MaxLength(200)
   title: string;
 

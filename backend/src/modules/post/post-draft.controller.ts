@@ -147,7 +147,7 @@ export class PostDraftController {
       groupId,
       dto,
     );
-    return this.postService.findOne(postId);
+    return this.postService.findOne(postId, requesterId);
   }
 
   @Post('posts/:postId/edit/publish')
@@ -174,6 +174,6 @@ export class PostDraftController {
       postId,
       dto,
     );
-    return this.postService.findOne(updatedPostId);
+    return this.postService.findOne(updatedPostId, requesterId);
   }
 }

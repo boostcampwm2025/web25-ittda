@@ -31,6 +31,8 @@ import { PostBlockType } from '@/enums/post-block-type.enum';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { validateBlocks } from './validator/blocks.validator';
+import { validateBlockValues } from './validator/block-values.validator';
+import { validatePostTitle } from './validator/post-title.validator';
 import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
@@ -62,7 +64,9 @@ export class PostService {
    */
   async createPost(ownerUserId: string, dto: CreatePostDto) {
     // 블록 검증 → 메타 추출 → eventAt 생성 순서로 선행 처리
+    validatePostTitle(dto.title);
     validateBlocks(dto.blocks);
+    validateBlockValues(dto.blocks);
 
     const owner = await this.userRepository.findOne({
       where: { id: ownerUserId },
@@ -102,6 +106,18 @@ export class PostService {
         where: { id: dto.groupId },
       });
       if (!group) throw new NotFoundException('Group not found');
+    }
+    if (dto.scope === PostScope.GROUP && dto.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: dto.groupId, userId: ownerUserId },
+        select: { role: true },
+      });
+      if (!member) {
+        throw new ForbiddenException('Not a group member.');
+      }
+      if (member.role === GroupRoleEnum.VIEWER) {
+        throw new ForbiddenException('Insufficient permission.');
+      }
     }
 
     const meta = extractMetaFromBlocks(dto.blocks);
@@ -213,13 +229,13 @@ export class PostService {
       },
     );
 
-    return this.findOne(postId);
+    return this.findOne(postId, ownerUserId);
   }
 
   /**
    * 게시글 상세 조회: Post 기본 정보에 블록과 기여자 정보를 합쳐 반환한다.
    */
-  async findOne(postId: string) {
+  async findOne(postId: string, requesterId: string) {
     const post = await this.postRepository.findOne({
       where: { id: postId, deletedAt: IsNull() },
       relations: ['ownerUser', 'group'],
@@ -269,6 +285,19 @@ export class PostService {
       };
     });
 
+    const isOwner = post.ownerUserId === requesterId;
+    let permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null = null;
+
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId: requesterId },
+        select: { role: true },
+      });
+      permission = member?.role ?? null;
+    } else {
+      permission = isOwner ? 'OWNER' : null;
+    }
+
     const dto: PostDetailDto = {
       id: post.id,
       scope: post.scope,
@@ -289,6 +318,7 @@ export class PostService {
         },
       })),
       contributors: contributorDtos,
+      permission,
     };
     return dto;
   }
@@ -356,8 +386,22 @@ export class PostService {
     dto: EditPostDto,
   ): Promise<PostDetailDto> {
     const post = await this.getPostForEdit(postId, requesterId);
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId: requesterId },
+        select: { role: true },
+      });
+      if (!member) {
+        throw new ForbiddenException('Not a group member.');
+      }
+      if (member.role === GroupRoleEnum.VIEWER) {
+        throw new ForbiddenException('Insufficient permission.');
+      }
+    }
 
+    validatePostTitle(dto.title);
     validateBlocks(dto.blocks);
+    validateBlockValues(dto.blocks);
     this.ensureNoDuplicateBlockIds(dto.blocks);
 
     const meta = extractMetaFromBlocks(dto.blocks);
@@ -453,7 +497,7 @@ export class PostService {
       }
     });
 
-    return this.findOne(postId);
+    return this.findOne(postId, requesterId);
   }
 
   /**
@@ -464,7 +508,25 @@ export class PostService {
       where: { id: postId, deletedAt: IsNull() },
     });
     if (!post) throw new NotFoundException('Post not found');
-    if (post.ownerUserId !== requesterId) {
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId: requesterId },
+        select: { role: true },
+      });
+      if (!member) {
+        throw new ForbiddenException('Not a group member.');
+      }
+      if (member.role === GroupRoleEnum.VIEWER) {
+        throw new ForbiddenException('Insufficient permission.');
+      }
+      const isAdmin = member.role === GroupRoleEnum.ADMIN;
+      const isOwner = post.ownerUserId === requesterId;
+      if (!isAdmin && !isOwner) {
+        throw new ForbiddenException(
+          'Only the owner or admin can delete this post',
+        );
+      }
+    } else if (post.ownerUserId !== requesterId) {
       throw new ForbiddenException('Only the owner can delete this post');
     }
     await this.postRepository.softDelete(postId);

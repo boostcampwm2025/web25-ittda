@@ -146,16 +146,20 @@ export class GroupService {
 
   /** 그룹 목록 조회 (최신 활동 순) - N+1 최적화 */
   async getGroups(userId: string): Promise<GetGroupsResponseDto> {
-    const members = await this.groupMemberRepo.find({
-      where: { userId },
-      select: ['groupId'],
-    });
+    const members = await this.groupMemberRepo
+      .createQueryBuilder('gm')
+      .innerJoin('gm.user', 'u')
+      .select(['gm.groupId', 'gm.role'])
+      .where('gm.userId = :userId', { userId })
+      .andWhere('u.deletedAt IS NULL')
+      .getMany();
 
     if (members.length === 0) {
       return { items: [] };
     }
 
     const groupIds = members.map((m) => m.groupId);
+    const roleByGroupId = new Map(members.map((m) => [m.groupId, m.role]));
 
     // 1. Batch: 그룹 정보 조회
     const groups = await this.groupRepo
@@ -173,9 +177,11 @@ export class GroupService {
     // 2. Batch: 그룹별 멤버 수 집계
     const memberCounts = await this.groupMemberRepo
       .createQueryBuilder('gm')
+      .innerJoin('gm.user', 'u')
       .select('gm.groupId', 'groupId')
       .addSelect('COUNT(gm.id)', 'count')
       .where('gm.groupId IN (:...groupIds)', { groupIds })
+      .andWhere('u.deletedAt IS NULL')
       .groupBy('gm.groupId')
       .getRawMany<{ groupId: string; count: string }>();
 
@@ -252,6 +258,7 @@ export class GroupService {
               placeName: null,
             }
           : null,
+        permission: roleByGroupId.get(groupId) ?? null,
       });
     }
 

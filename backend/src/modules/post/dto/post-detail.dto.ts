@@ -48,4 +48,9 @@ export class PostDetailDto {
   blocks: PostBlockDto[];
   @ApiProperty({ type: () => [PostContributorDto] })
   contributors: PostContributorDto[];
+  @ApiProperty({
+    description: '요청자 기준 권한 정보',
+    example: 'EDITOR',
+  })
+  permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null;
 }

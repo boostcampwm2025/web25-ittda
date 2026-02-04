@@ -103,7 +103,7 @@ export class StatsService {
 
   private async getRecentEmotions(userId: string): Promise<EmotionCount[]> {
     const res = await this.postRepo.find({
-      where: { ownerUserId: userId },
+      where: { ownerUserId: userId, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
       select: ['emotion'],
     });
@@ -124,7 +124,7 @@ export class StatsService {
     userId: string,
     limit?: number,
   ): Promise<{ items: EmotionCount[]; totalCount: number }> {
-    const items = await this.getEmotions(userId, 'frequent');
+    const items = await this.getEmotions(userId, 'recent');
     const totalCount = items.reduce((sum, item) => sum + item.count, 0);
     const limited = limit !== undefined ? items.slice(0, limit) : items;
     return { items: limited, totalCount };
