@@ -3,7 +3,7 @@ import { get, post } from '@/lib/api/api';
 import { createApiError } from '@/lib/utils/errorHandler';
 
 /** 단건 미디어 조회 응답 */
-interface SingleResolveResponse {
+export interface SingleResolveResponse {
   url: string;
   expiresAt: string;
 }
