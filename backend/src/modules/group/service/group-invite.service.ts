@@ -110,8 +110,11 @@ export class GroupInviteService {
   }
 
   /** 초대 링크 삭제 */
-  async deleteInvite(inviteId: string) {
-    await this.inviteRepo.delete(inviteId);
+  async deleteInvite(groupId: string, inviteId: string) {
+    await this.inviteRepo.delete({
+      id: inviteId,
+      groupId: groupId,
+    });
   }
 
   private validateGroupNickname(nickname: string): string {

@@ -14,7 +14,6 @@ import { GroupRoleGuard } from '../guards/group-roles.guard';
 import { GroupRoles } from '../guards/group-roles.decorator';
 import { CreateInviteDto } from '../dto/create-invite.dto';
 import { User } from '@/common/decorators/user.decorator';
-import type { MyJwtPayload } from '../../auth/auth.type';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import {
   ApiTags,
@@ -23,6 +22,8 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
+
+import type { MyJwtPayload } from '../../auth/auth.type';
 
 @ApiTags('groups')
 @ApiBearerAuth('bearerAuth')
@@ -95,7 +96,7 @@ export class GroupInviteController {
     @Param('groupId') groupId: string,
     @Param('inviteId') inviteId: string,
   ) {
-    await this.groupInviteService.deleteInvite(inviteId);
+    await this.groupInviteService.deleteInvite(groupId, inviteId);
     return;
   }
 }
