@@ -34,6 +34,7 @@ export interface RecordPreview {
   scope: 'ME' | 'GROUP';
   contributors: Contributor[];
   groupId: string | null;
+  groupName?: string | null;
   title: string;
   eventAt: string;
   createdAt: string;
