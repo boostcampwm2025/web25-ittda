@@ -30,7 +30,7 @@ interface FieldRendererProps {
   block: RecordBlock;
   streamingValue?: BlockValue;
   requestLock: (key: string) => void;
-  onUpdate: (blockId: string, val: BlockValue) => void;
+  onUpdate: (blockId: string, val: BlockValue, shouldStream?: boolean) => void;
   onCommit: (blockId: string, val: BlockValue) => void;
   onRemove: (blockId: string) => void;
   onOpenDrawer: (
@@ -135,7 +135,7 @@ export function RecordFieldRenderer({
             const newVal = {
               tags: (displayValue as TagValue).tags.filter((t) => t !== tag),
             };
-            onUpdate(block.id, newVal);
+            onUpdate(block.id, newVal, false);
             onCommit(block.id, newVal);
           }}
           onAdd={handleLockAndAction}
