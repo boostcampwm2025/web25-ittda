@@ -4,15 +4,18 @@ import { join } from 'path';
 
 export const getTypeOrmConfig = (
   configService: ConfigService,
-): TypeOrmModuleOptions => ({
-  type: 'postgres',
-  url: configService.get<string>('DATABASE_URL'),
-  entities: [join(__dirname, '../../**/*.entity.{ts,js}')],
-  migrations: [join(__dirname, '../../../migrations/*.{ts,js}')],
-  synchronize: process.env.NODE_ENV === 'test',
-  migrationsRun: false,
-  logging:
-    configService.get<string>('NODE_ENV') === 'production'
-      ? ['error', 'warn']
-      : ['error', 'warn', 'migration', 'info', 'log'],
-});
+): TypeOrmModuleOptions => {
+  const nodeEnv = configService.get<string>('NODE_ENV');
+  return {
+    type: 'postgres',
+    url: configService.get<string>('DATABASE_URL'),
+    entities: [join(__dirname, '../../**/*.entity.{ts,js}')],
+    migrations: [join(__dirname, '../../../migrations/*.{ts,js}')],
+    synchronize: false,
+    migrationsRun: false,
+    logging:
+      nodeEnv === 'production'
+        ? ['error', 'warn']
+        : ['error', 'warn', 'migration', 'info', 'log'],
+  };
+};

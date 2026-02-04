@@ -31,6 +31,9 @@ export const getDefaultValue = (type: FieldType): RecordBlock['value'] => {
           ['', ''],
         ],
       };
+    case 'media':
+      return { title: '', type: '', externalId: '' };
+
     default:
       return {};
   }
@@ -94,8 +97,17 @@ export const canBeHalfWidth = (type: FieldType) =>
   ].includes(type);
 
 // 레코드 블록의 값인 객체의 내부 내용이 비어있는지 확인
-export const isRecordBlockEmpty = (value: BlockValue): boolean => {
+export const isRecordBlockEmpty = (
+  value: BlockValue,
+  isSaveMode: boolean = false,
+): boolean => {
   if (!value) return true;
+
+  // 텍스트
+  if ('text' in value) {
+    if (!isSaveMode) return false;
+    return !value.text || value.text.trim().length === 0;
+  }
 
   // 태그
   if ('tags' in value) {
@@ -123,5 +135,58 @@ export const isRecordBlockEmpty = (value: BlockValue): boolean => {
     return !value.lat || !value.lng;
   }
 
+  //테이블
+  if ('cells' in value) {
+    if (!isSaveMode) return false;
+    // 모든 셀이 비어있거나 행/열이 0인 경우
+    return (
+      !value.cells ||
+      value.cells.length === 0 ||
+      value.cells.every((row) =>
+        row.every((cell) => !cell || cell.trim() === ''),
+      )
+    );
+  }
+
+  //미디어
+  if ('externalId' in value) {
+    console.log('타입 검토', value);
+    return !value.type || !value.title;
+  }
+
   return false;
+};
+
+/**
+ * 기록 저장 전 유효성 검사 및 빈 블록 필터링
+ */
+export const validateAndCleanRecord = (
+  title: string,
+  blocks: RecordBlock[],
+) => {
+  // 제목 검사
+  if (!title.trim()) {
+    return {
+      isValid: false,
+      message: '기록의 제목을 입력해주세요.',
+      filteredBlocks: [],
+    };
+  }
+
+  // 빈 블록 필터링
+  const filteredBlocks = blocks.filter(
+    (block) => !isRecordBlockEmpty(block.value, true),
+  );
+
+  // 최소 1개 이상 텍스트 블록이 있는지
+  const hasContent = filteredBlocks.some((b) => b.type === 'content');
+  if (!hasContent) {
+    return {
+      isValid: false,
+      message: '최소 하나 이상의 내용을 입력해주세요.',
+      filteredBlocks,
+    };
+  }
+
+  return { isValid: true, filteredBlocks, message: '' };
 };

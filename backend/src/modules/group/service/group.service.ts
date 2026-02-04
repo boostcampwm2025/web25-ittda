@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -116,82 +116,131 @@ export class GroupService {
     await this.groupRepo.update(groupId, { name });
   }
 
-  /** 그룹 목록 조회 (최신 활동 순) */
+  /** 그룹 목록 조회 (최신 활동 순) - N+1 최적화 */
   async getGroups(userId: string): Promise<GetGroupsResponseDto> {
-    const members = await this.groupMemberRepo.find({
-      where: { userId },
-      select: ['groupId'],
-    });
+    const members = await this.groupMemberRepo
+      .createQueryBuilder('gm')
+      .innerJoin('gm.user', 'u')
+      .select(['gm.groupId', 'gm.role'])
+      .where('gm.userId = :userId', { userId })
+      .andWhere('u.deletedAt IS NULL')
+      .getMany();
 
     if (members.length === 0) {
       return { items: [] };
     }
 
     const groupIds = members.map((m) => m.groupId);
+    const roleByGroupId = new Map(members.map((m) => [m.groupId, m.role]));
 
-    const items = await Promise.all(
-      groupIds.map(async (groupId) => {
-        const group = await this.groupRepo.findOne({
-          where: { id: groupId },
-          relations: ['coverMedia'],
-        });
+    // 1. Batch: 그룹 정보 조회
+    const groups = await this.groupRepo
+      .createQueryBuilder('g')
+      .leftJoinAndSelect('g.coverMedia', 'coverMedia')
+      .whereInIds(groupIds)
+      .cache(true)
+      .getMany();
 
-        if (!group) return null;
+    const groupMap = new Map<string, Group>();
+    for (const g of groups) {
+      groupMap.set(g.id, g);
+    }
 
-        const memberCount = await this.groupMemberRepo
-          .createQueryBuilder('member')
-          .innerJoin('member.user', 'user', 'user.deleted_at IS NULL')
-          .where('member.group_id = :groupId', { groupId })
-          .getCount();
+    // 2. Batch: 그룹별 멤버 수 집계
+    const memberCounts = await this.groupMemberRepo
+      .createQueryBuilder('gm')
+      .innerJoin('gm.user', 'u')
+      .select('gm.groupId', 'groupId')
+      .addSelect('COUNT(gm.id)', 'count')
+      .where('gm.groupId IN (:...groupIds)', { groupIds })
+      .andWhere('u.deletedAt IS NULL')
+      .groupBy('gm.groupId')
+      .getRawMany<{ groupId: string; count: string }>();
 
-        const recordCount = await this.postRepo.count({
-          where: { groupId, deletedAt: IsNull() },
-        });
+    const memberCountMap = new Map<string, number>();
+    for (const row of memberCounts) {
+      memberCountMap.set(row.groupId, parseInt(row.count, 10));
+    }
 
-        const latestPost = await this.postRepo.findOne({
-          where: { groupId, deletedAt: IsNull() },
-          order: { eventAt: 'DESC' },
-          select: ['id', 'title', 'eventAt', 'location', 'createdAt'],
-        });
+    // 3. Batch: 그룹별 게시글 수 집계 (soft delete 제외)
+    const recordCounts = await this.postRepo
+      .createQueryBuilder('p')
+      .select('p.groupId', 'groupId')
+      .addSelect('COUNT(p.id)', 'count')
+      .where('p.groupId IN (:...groupIds)', { groupIds })
+      .andWhere('p.deletedAt IS NULL')
+      .groupBy('p.groupId')
+      .getRawMany<{ groupId: string; count: string }>();
 
-        const lastActivityAt = group.lastActivityAt || group.createdAt;
+    const recordCountMap = new Map<string, number>();
+    for (const row of recordCounts) {
+      recordCountMap.set(row.groupId, parseInt(row.count, 10));
+    }
 
-        return {
-          groupId: group.id,
-          name: group.name,
-          cover: group.coverMedia
-            ? {
-                assetId: group.coverMedia.id,
-                width: group.coverMedia.width,
-                height: group.coverMedia.height,
-                mimeType: group.coverMedia.mimeType,
-              }
-            : null,
-          memberCount,
-          recordCount,
-          createdAt: group.createdAt,
-          lastActivityAt,
-          latestPost: latestPost
-            ? {
-                postId: latestPost.id,
-                title: latestPost.title,
-                eventAt: latestPost.eventAt || latestPost.createdAt,
-                placeName: null,
-              }
-            : null,
-        };
-      }),
-    );
+    // 4. Batch: 그룹별 최신 게시글 조회 (sub-select로 최신 1건 가져오기)
+    // Simple approach: 모든 게시글 중 groupId 기준 최신 1개씩 (DISTINCT ON PostgreSQL)
+    // 하지만 TypeORM에서 DISTINCT ON은 DB 종속적. 대안: 그룹별 최신 eventAt 조회 후 매핑.
+    // 여기서는 단순화하여 조회 후 JS에서 첫 번째만 사용.
+    const latestPosts = await this.postRepo
+      .createQueryBuilder('p')
+      .select(['p.id', 'p.groupId', 'p.title', 'p.eventAt', 'p.createdAt'])
+      .where('p.groupId IN (:...groupIds)', { groupIds })
+      .andWhere('p.deletedAt IS NULL')
+      .orderBy('p.eventAt', 'DESC')
+      .getMany();
 
-    const validItems = items.filter((item) => item !== null) as GroupItemDto[];
+    const latestPostMap = new Map<string, Post>();
+    for (const post of latestPosts) {
+      if (post.groupId && !latestPostMap.has(post.groupId)) {
+        latestPostMap.set(post.groupId, post);
+      }
+    }
 
-    validItems.sort((a, b) => {
+    // 5. 결과 조립
+    const items: GroupItemDto[] = [];
+    for (const groupId of groupIds) {
+      const group = groupMap.get(groupId);
+      if (!group) continue;
+
+      const memberCount = memberCountMap.get(groupId) ?? 0;
+      const recordCount = recordCountMap.get(groupId) ?? 0;
+      const latestPost = latestPostMap.get(groupId) ?? null;
+      const lastActivityAt = group.lastActivityAt || group.createdAt;
+
+      items.push({
+        groupId: group.id,
+        name: group.name,
+        cover: group.coverMedia
+          ? {
+              assetId: group.coverMedia.id,
+              width: group.coverMedia.width ?? 0,
+              height: group.coverMedia.height ?? 0,
+              mimeType: group.coverMedia.mimeType ?? 'application/octet-stream',
+            }
+          : null,
+        memberCount,
+        recordCount,
+        createdAt: group.createdAt,
+        lastActivityAt,
+        latestPost: latestPost
+          ? {
+              postId: latestPost.id,
+              title: latestPost.title,
+              eventAt: latestPost.eventAt || latestPost.createdAt,
+              placeName: null,
+            }
+          : null,
+        permission: roleByGroupId.get(groupId) ?? null,
+      });
+    }
+
+    items.sort((a, b) => {
       const timeA = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
       const timeB = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
       return timeB - timeA;
     });
 
-    return { items: validItems };
+    return { items };
   }
 
   private validateGroupNickname(nickname: string): string {

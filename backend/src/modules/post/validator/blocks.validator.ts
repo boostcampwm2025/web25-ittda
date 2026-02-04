@@ -1,14 +1,16 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { isUUID } from 'class-validator';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 
 type ValidateBlocksOptions = {
   requireDateTimeBlocks?: boolean; // default true
   enforceSingleMetaBlocks?: boolean; // default true
+  layoutErrorMessage?: string;
 };
 
 type Layout = { row: number; col: number; span: number };
 type BlockDto = {
+  id?: string;
   type: PostBlockType;
   value: Record<string, any>;
   layout: Layout;
@@ -113,35 +115,59 @@ function validateImageMediaIds(blocks: BlockDto[]) {
   }
 }
 
-function validateLayout(blocks: BlockDto[]) {
+function validateLayout(blocks: BlockDto[], layoutErrorMessage?: string) {
+  const logger = new Logger('BlocksValidator');
+  const logLayoutError = (
+    reason: string,
+    block: BlockDto,
+    idx: number,
+    extra?: Record<string, unknown>,
+  ) => {
+    logger.warn(
+      JSON.stringify({
+        reason,
+        index: idx,
+        blockId: block?.id,
+        type: block?.type,
+        value: block?.value,
+        layout: block?.layout,
+        ...extra,
+      }),
+    );
+  };
+  const throwLayoutError = (message: string) => {
+    throw new BadRequestException(layoutErrorMessage ?? message);
+  };
   // 레이아웃 점유 셀 충돌 검사 준비
   const used = new Map<string, number>(); // cellKey -> blockIndex
 
   blocks.forEach((b, idx) => {
-    if (!b.layout)
-      throw new BadRequestException(`blocks[${idx}].layout is required`);
+    if (!b.layout) {
+      logLayoutError('layout_missing', b, idx);
+      throwLayoutError(`blocks[${idx}].layout is required`);
+    }
 
     const { row, col, span } = b.layout;
 
     if (!Number.isInteger(row) || row < MIN_ROW) {
-      throw new BadRequestException(
+      logLayoutError('layout_row_invalid', b, idx);
+      throwLayoutError(
         `blocks[${idx}].layout.row must be integer >= ${MIN_ROW}`,
       );
     }
     if (!Number.isInteger(col) || col < MIN_COL || col > MAX_COL) {
-      throw new BadRequestException(
-        `blocks[${idx}].layout.col must be 1..${MAX_COL}`,
-      );
+      logLayoutError('layout_col_invalid', b, idx);
+      throwLayoutError(`blocks[${idx}].layout.col must be 1..${MAX_COL}`);
     }
     if (!Number.isInteger(span) || span < MIN_SPAN || span > MAX_SPAN) {
-      throw new BadRequestException(
-        `blocks[${idx}].layout.span must be 1..${MAX_SPAN}`,
-      );
+      logLayoutError('layout_span_invalid', b, idx);
+      throwLayoutError(`blocks[${idx}].layout.span must be 1..${MAX_SPAN}`);
     }
 
     // 2열 고정일 때 span=2면 col=1만 가능
     if (span === 2 && col !== 1) {
-      throw new BadRequestException(
+      logLayoutError('layout_span_requires_col1', b, idx);
+      throwLayoutError(
         `blocks[${idx}] span=2 requires col=1 in 2-column layout`,
       );
     }
@@ -150,7 +176,8 @@ function validateLayout(blocks: BlockDto[]) {
     const cells = occupiedCells(b.layout);
     for (const [r, c] of cells) {
       if (c > MAX_COL) {
-        throw new BadRequestException(
+        logLayoutError('layout_exceeds_column', b, idx, { row: r, col: c });
+        throwLayoutError(
           `blocks[${idx}] layout exceeds column limit: row=${r}, col=${c}`,
         );
       }
@@ -158,7 +185,19 @@ function validateLayout(blocks: BlockDto[]) {
       const key = cellKey(r, c);
       if (used.has(key)) {
         const prev = used.get(key)!;
-        throw new BadRequestException(
+        const prevBlock = blocks[prev];
+        logLayoutError('layout_conflict', b, idx, {
+          conflict: {
+            row: r,
+            col: c,
+            prevIndex: prev,
+            prevBlockId: prevBlock?.id,
+            prevType: prevBlock?.type,
+            prevValue: prevBlock?.value,
+            prevLayout: prevBlock?.layout,
+          },
+        });
+        throwLayoutError(
           `layout conflict at (${r},${c}): blocks[${prev}] and blocks[${idx}] overlap`,
         );
       }
@@ -178,8 +217,11 @@ export function validateBlocks(
   options: ValidateBlocksOptions = {},
 ) {
   // DATE/TIME 필수 여부와 메타 블록 중복 제한 등 기본 규칙을 검사
-  const { requireDateTimeBlocks = true, enforceSingleMetaBlocks = true } =
-    options;
+  const {
+    requireDateTimeBlocks = true,
+    enforceSingleMetaBlocks = true,
+    layoutErrorMessage,
+  } = options;
 
   if (!blocks || blocks.length === 0) {
     if (requireDateTimeBlocks) {
@@ -200,5 +242,5 @@ export function validateBlocks(
 
   validateImageMediaIds(blocks);
 
-  validateLayout(blocks);
+  validateLayout(blocks, layoutErrorMessage);
 }

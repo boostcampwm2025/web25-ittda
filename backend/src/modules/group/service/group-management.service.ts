@@ -22,6 +22,7 @@ import { UpdateGroupCoverResponseDto } from '../dto/update-group-cover.dto';
 import { GetGroupSettingsResponseDto } from '../dto/get-group-settings.dto';
 import { GetGroupMemberMeResponseDto } from '../dto/get-group-member-me.dto';
 import { UpdateGroupMemberMeDto } from '../dto/update-group-member-me.dto';
+import { GetGroupPermissionResponseDto } from '../dto/get-group-permission.dto';
 import {
   GetGroupCoverCandidatesQueryDto,
   GetGroupCoverCandidatesResponseDto,
@@ -393,6 +394,27 @@ export class GroupManagementService {
       role: member.role,
       updatedAt: member.updatedAt,
     };
+  }
+
+  /** 그룹 내 내 권한(role)만 조회 */
+  async getGroupPermission(
+    userId: string,
+    groupId: string,
+  ): Promise<GetGroupPermissionResponseDto> {
+    const member = await this.groupMemberRepo.findOne({
+      where: { groupId, userId },
+      select: { role: true },
+    });
+    if (!member) {
+      const groupExists = await this.groupRepo.exists({
+        where: { id: groupId },
+      });
+      if (!groupExists) {
+        throw new NotFoundException('존재하지 않는 그룹입니다.');
+      }
+      throw new ForbiddenException('그룹 멤버가 아닙니다.');
+    }
+    return { role: member.role };
   }
 
   /** 그룹 내 내 설정 정보 수정 */

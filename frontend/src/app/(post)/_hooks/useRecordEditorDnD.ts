@@ -152,6 +152,14 @@ export const useRecordEditorDnD = (
     setIsDraggingId(null);
   };
   const handlePointerDown = (e: React.PointerEvent, id: string) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('textarea') ||
+      target.closest('input') ||
+      target.closest('button')
+    ) {
+      return;
+    }
     e.preventDefault();
     isPointerDraggingRef.current = true;
     handleDragStart(id);

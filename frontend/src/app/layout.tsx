@@ -27,14 +27,27 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: '잇다-',
-    template: '%s - 잇다-',
+    default: '잇다-개인의 기록을 넘어, 함께 만드는 추억',
+    template: '%s',
   },
-  description: '기억과 맥락을 이어주는 기록 서비스',
+  description: '친구들과 쉽게 공유하고 소통할 수 있는 새로운 방법, 잇다-',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/web-app-icon-192x192.png',
     apple: '/apple-icon.png',
+  },
+  openGraph: {
+    title: '개인의 기록을 넘어, 함께 만드는 추억',
+    description: '친구들과 쉽게 공유하고 소통할 수 있는 새로운 방법, 잇다-',
+    type: 'website',
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_CLIENT_URL}/thumbnail.png`,
+        width: 1200,
+        height: 630,
+        alt: '잇다- 서비스 설명',
+      },
+    ],
   },
 };
 

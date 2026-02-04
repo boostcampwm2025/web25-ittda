@@ -1,5 +1,9 @@
 // group-invite.service.ts: 초대 링크 관련 비즈니스 로직
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GroupInvite } from '../entity/group_invite.entity';
@@ -88,7 +92,8 @@ export class GroupInviteService {
     });
 
     if (existingMember) {
-      throw new BadRequestException('이미 그룹의 멤버입니다.');
+      // 이미 멤버라면 에러 던짐
+      throw new ConflictException('이미 그룹에 가입된 사용자입니다.');
     }
 
     // 멤버 추가

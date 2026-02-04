@@ -22,6 +22,7 @@ import { GetGroupSettingsResponseDto } from '../dto/get-group-settings.dto';
 import { GetGroupMembersResponseDto } from '../dto/get-group-members.dto';
 import { GetGroupMemberMeResponseDto } from '../dto/get-group-member-me.dto';
 import { UpdateGroupMemberMeDto } from '../dto/update-group-member-me.dto';
+import { GetGroupPermissionResponseDto } from '../dto/get-group-permission.dto';
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../../auth/auth.type';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -74,8 +75,8 @@ export class GroupManagementController {
       properties: {
         role: {
           type: 'string',
-          enum: [GroupRoleEnum.ADMIN, GroupRoleEnum.EDITOR],
-          example: GroupRoleEnum.EDITOR,
+          enum: Object.values(GroupRoleEnum),
+          example: GroupRoleEnum.VIEWER,
         },
       },
     },
@@ -151,6 +152,20 @@ export class GroupManagementController {
     @Param('groupId') groupId: string,
   ): Promise<GetGroupMemberMeResponseDto> {
     return this.groupManagementService.getGroupMemberMe(user.sub, groupId);
+  }
+
+  @Get(':groupId/members/me/role')
+  @ApiOperation({
+    summary: '그룹 내 내 권한(role) 조회',
+    description: '특정 그룹에서의 내 권한(role)만 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: GetGroupPermissionResponseDto })
+  async getGroupPermission(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+  ): Promise<GetGroupPermissionResponseDto> {
+    return this.groupManagementService.getGroupPermission(user.sub, groupId);
   }
 
   @UseGuards(GroupRoleGuard)

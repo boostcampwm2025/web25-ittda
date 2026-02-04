@@ -25,6 +25,12 @@ export default function DailyDetailRecordActions({
   const [shareOpen, setShareOpen] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
 
+  const router = useRouter();
+  const { mutateAsync: startGroupEdit } = useEditPostDraft(
+    record.groupId || '',
+    record.postId,
+  );
+
   const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
   const image = record.blocks.find(isImageBlock);
 
@@ -38,7 +44,7 @@ export default function DailyDetailRecordActions({
     requestAnimationFrame(() => {
       setCurrentUrl(`${window.location.origin}/record/${record.postId}`);
     });
-  }, []);
+  }, [record.postId]);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -104,7 +110,7 @@ export default function DailyDetailRecordActions({
               공유하기
             </button>
             <button
-              onClick={(e) => handleEdit(record, e)}
+              onClick={handleEdit}
               className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
             >
               수정하기

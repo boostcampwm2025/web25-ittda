@@ -29,6 +29,8 @@ import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { CreatePostDto } from './dto/create-post.dto';
 import { validateBlocks } from './validator/blocks.validator';
+import { validateBlockValues } from './validator/block-values.validator';
+import { validatePostTitle } from './validator/post-title.validator';
 import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
@@ -104,7 +106,11 @@ export class PostPublishService {
           );
 
           const snapshotBlocks = snapshot.blocks;
-          validateBlocks(snapshotBlocks);
+          validatePostTitle(snapshot.title);
+          validateBlocks(snapshotBlocks, {
+            layoutErrorMessage: 'Layout is invalid.',
+          });
+          validateBlockValues(snapshotBlocks);
           this.ensureBlockIds(snapshotBlocks);
           this.ensureNoDuplicateBlockIds(snapshotBlocks);
 
@@ -130,7 +136,7 @@ export class PostPublishService {
             emotion: meta.emotion ?? null,
             rating: meta.rating ?? null,
           });
-          const saved = await postRepo.save(created);
+          const saved = await postRepo.save(created, { reload: true });
 
           await groupRepo.update(groupId, {
             lastActivityAt: saved.updatedAt,
@@ -269,8 +275,12 @@ export class PostPublishService {
 
         const snapshot = this.parseGroupDraftSnapshot(draft.snapshot, groupId);
 
+        validatePostTitle(snapshot.title);
         const blocks = snapshot.blocks;
-        validateBlocks(blocks);
+        validateBlocks(blocks, {
+          layoutErrorMessage: 'Layout is invalid.',
+        });
+        validateBlockValues(blocks);
         this.ensureBlockIds(blocks);
         this.ensureNoDuplicateBlockIds(blocks);
 
@@ -304,7 +314,7 @@ export class PostPublishService {
           emotion: meta.emotion ?? null,
           rating: meta.rating ?? null,
         });
-        const saved = await postRepo.save(updated);
+        const saved = await postRepo.save(updated, { reload: true });
 
         if (deleteIds.length > 0) {
           await blockRepo.delete({ id: In(deleteIds) });

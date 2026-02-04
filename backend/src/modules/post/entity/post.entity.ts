@@ -11,12 +11,13 @@ import {
   OneToMany,
 } from 'typeorm';
 
-import type { Point } from 'geojson';
 import { User } from '@/modules/user/entity/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { PostScope } from '@/enums/post-scope.enum';
 import { PostMood } from '@/enums/post-mood.enum';
 import { PostMedia } from './post-media.entity';
+
+import type { Point } from 'geojson';
 
 @Entity('posts')
 @Index('IDX_posts_location_gist', ['location'], { spatial: true })

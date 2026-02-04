@@ -15,6 +15,26 @@ interface HomePageProps {
   searchParams: Promise<{ date?: string }>;
 }
 
+export async function generateMetadata() {
+  return {
+    title: '잇다-개인의 기록을 넘어, 함께 만드는 추억',
+    description: '친구들과 쉽게 공유하고 소통할 수 있는 새로운 방법, 잇다-',
+    openGraph: {
+      title: '개인의 기록을 넘어, 함께 만드는 추억',
+      description: '친구들과 쉽게 공유하고 소통할 수 있는 새로운 방법, 잇다-',
+      type: 'website',
+      images: [
+        {
+          url: `${process.env.NEXT_PUBLIC_CLIENT_URL}/thumbnail.png`,
+          width: 1200,
+          height: 630,
+          alt: '잇다- 서비스 설명',
+        },
+      ],
+    },
+  };
+}
+
 export default async function HomePage({ searchParams }: HomePageProps) {
   const { date } = await searchParams;
   const selectedDate = date || formatDateISO();

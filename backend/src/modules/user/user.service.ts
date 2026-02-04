@@ -11,12 +11,10 @@ import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { PostScope } from '@/enums/post-scope.enum';
+import { UserMonthCover } from './entity/user-month-cover.entity';
+import { DayRecordResponseDto } from './dto/day-record.response.dto';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
-
-import { UserMonthCover } from './entity/user-month-cover.entity';
-
-import { DayRecordResponseDto } from './dto/day-record.response.dto';
 
 // User Service에서 기능 구현
 @Injectable()
@@ -39,13 +37,20 @@ export class UserService {
 
     let user = await this.userRepo.findOne({
       where: { provider, providerId },
+      withDeleted: true,
     });
 
-    if (!user) {
-      user = this.userRepo.create(params);
-
-      await this.userRepo.save(user);
+    if (user) {
+      if (user.deletedAt) {
+        await this.userRepo.recover(user);
+      }
+      user.email = params.email ?? user.email;
+      user.nickname = params.nickname ?? user.nickname;
+      return this.userRepo.save(user);
     }
+
+    user = this.userRepo.create(params);
+    await this.userRepo.save(user);
 
     return user;
   }
@@ -83,7 +88,9 @@ export class UserService {
     postsQb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
 
     postsQb.andWhere('p.eventAt >= :from AND p.eventAt <= :to', { from, to });
+    postsQb.andWhere('p.deletedAt IS NULL');
     postsQb.orderBy('p.eventAt', 'DESC'); // 최신순 정렬
+    postsQb.cache(true);
 
     const posts = await postsQb.getMany();
 
@@ -248,6 +255,8 @@ export class UserService {
     qb.andWhere('p.ownerUserId = :userId', { userId });
     qb.orderBy('p.eventAt', 'DESC');
     qb.addOrderBy('pm.id', 'DESC');
+    qb.andWhere('p.deletedAt IS NULL');
+    qb.andWhere('ma.deletedAt IS NULL');
 
     const mediaList = await qb.getMany();
 
@@ -306,8 +315,25 @@ export class UserService {
       fromDate,
       toDate,
     });
-    qb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
-    qb.andWhere('p.ownerUserId = :userId', { userId });
+    qb.andWhere(
+      new Brackets((sub) => {
+        sub.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub2 = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+            return `EXISTS ${sub2}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+    qb.andWhere('p.deletedAt IS NULL');
 
     const mediaList = await qb.getMany();
     const ids = mediaList.map((pm) => pm.mediaId).filter(Boolean);
@@ -375,6 +401,7 @@ export class UserService {
       fromDate,
       toDate,
     });
+    postsQb.andWhere('p.deletedAt IS NULL');
     postsQb.orderBy('p.eventAt', 'DESC');
 
     const posts = await postsQb.getMany();
@@ -476,6 +503,79 @@ export class UserService {
   }
 
   /**
+   * 해당 연도의 모든 이미지(월 커버 후보) 조회
+   */
+  async getYearlyImages(userId: string, year: number): Promise<string[]> {
+    const start = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
+      'year',
+    );
+    const end = start.endOf('year');
+    const fromDate = start.toJSDate();
+    const toDate = end.toJSDate();
+
+    // 1. 해당 연도의 내 포스트(기여 포함) IDs 조회
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.select('p.id');
+
+    postsQb.where(
+      new Brackets((qb) => {
+        qb.where('p.ownerUserId = :userId', { userId }).orWhere(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+    postsQb.andWhere('p.eventAt >= :fromDate AND p.eventAt <= :toDate', {
+      fromDate,
+      toDate,
+    });
+    // 최신순 정렬
+    postsQb.orderBy('p.eventAt', 'DESC');
+    postsQb.andWhere('p.deletedAt IS NULL');
+    postsQb.cache(true);
+
+    const posts = await postsQb.getMany();
+    if (posts.length === 0) {
+      return [];
+    }
+    const postIds = posts.map((p) => p.id);
+
+    // 2. 이미지 블록 조회
+    const blocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(postIds),
+        type: PostBlockType.IMAGE,
+      },
+      order: {
+        // 같은 포스트 내에서는 순서대로
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+      },
+    });
+
+    // 3. mediaIds 추출 평탄화
+    const assetIds: string[] = [];
+    for (const b of blocks) {
+      const val = b.value as BlockValueMap[typeof PostBlockType.IMAGE];
+      if (val.mediaIds) {
+        assetIds.push(...val.mediaIds);
+      }
+    }
+
+    return assetIds;
+  }
+
+  /**
    * 해당 월 중 기록(게시글)이 있는 날짜 조회 (YYYY-MM-DD)
    */
   async getRecordedDays(
@@ -514,6 +614,7 @@ export class UserService {
       fromDate,
       toDate,
     });
+    postsQb.andWhere('p.deletedAt IS NULL');
     postsQb.orderBy('p.eventAt', 'DESC');
 
     const posts = await postsQb.getMany();

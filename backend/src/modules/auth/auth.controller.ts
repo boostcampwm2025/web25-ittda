@@ -27,6 +27,7 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
 
 import type { Request, Response } from 'express';
 import type { OAuthUserType } from './auth.type';
+import { KakaoAuthGuard } from './guards/kakao-auth.guard';
 import { DevTokenRequestDto } from './dto/dev-token.dto';
 
 interface AuthenticatedRequest extends Request {
@@ -69,11 +70,10 @@ export class AuthController {
   async googleCallback(
     @Req() req: Request & { user: OAuthUserType },
     @Res() res: Response,
-    @Headers('x-guest-session-id') guestSessionId?: string,
   ) {
     // 1. DB에 유저 생성/조회 + 토큰 발급 (실제 oauthLogin 호출)
     const { accessToken, refreshToken, expiresAt } =
-      await this.authService.oauthLogin(req.user, guestSessionId);
+      await this.authService.oauthLogin(req.user);
 
     // 2. 토큰 정보를 담은 임시 code 생성
     const code = this.authService.createTemporaryCode({
@@ -89,7 +89,7 @@ export class AuthController {
   }
 
   @Get('kakao')
-  @UseGuards(AuthGuard('kakao'))
+  @UseGuards(KakaoAuthGuard)
   @ApiOperation({
     summary: 'Kakao 로그인',
     description: 'Kakao OAuth2 로그인 페이지로 리다이렉트합니다.',
@@ -97,7 +97,7 @@ export class AuthController {
   async kakaoLogin() {}
 
   @Get('kakao/callback')
-  @UseGuards(AuthGuard('kakao'))
+  @UseGuards(KakaoAuthGuard)
   @ApiOperation({
     summary: 'Kakao 로그인 콜백',
     description: 'Kakao 인증 완료 후 호출되며, FE로 리다이렉트합니다.',
@@ -105,11 +105,10 @@ export class AuthController {
   async kakaoCallback(
     @Req() req: Request & { user: OAuthUserType },
     @Res() res: Response,
-    @Headers('x-guest-session-id') guestSessionId?: string,
   ) {
     // Google과 동일한 로직
     const { accessToken, refreshToken, expiresAt } =
-      await this.authService.oauthLogin(req.user, guestSessionId);
+      await this.authService.oauthLogin(req.user);
 
     const code = this.authService.createTemporaryCode({
       userId: req.user.provider + '_' + req.user.providerId,
@@ -126,7 +125,7 @@ export class AuthController {
   @ApiOperation({
     summary: '인증 코드 교환',
     description:
-      'OAuth 콜백에서 받은 코드를 Access Token과 Refresh Token으로 교환합니다.',
+      'OAuth 콜백에서 받은 코드를 Access Token과 Refresh Token으로 교환합니다. 게스트 세션이 있다면 유저로 병합도 수행합니다.',
   })
   @ApiBody({
     schema: {
@@ -139,13 +138,20 @@ export class AuthController {
   @ApiNoContentResponse({
     description: '인증 성공 (토큰은 쿠키 및 헤더에 설정됨)',
   })
-  exchangeCode(
+  //@ApiWrappedOkResponse({ type: Object })
+  async exchangeCode(
     @Body('code') code: string,
     @Res({ passthrough: true }) res: Response,
+    @Headers('x-guest-session-id') guestSessionId?: string,
   ) {
     // code 검증 후 저장된 토큰 반환
-    const { accessToken, refreshToken } =
+    const { userId, accessToken, refreshToken } =
       this.authService.exchangeCodeForTokens(code);
+
+    if (guestSessionId) {
+      // 게스트 세션 병합
+      await this.authService.mergeGuestSession(userId, guestSessionId);
+    }
 
     // HttpOnly 쿠키에 refresh token 저장
     res.cookie('refreshToken', refreshToken, {
@@ -228,6 +234,7 @@ export class AuthController {
     return;
   }
 
+  // TODO: 운영환경에서는 주석하는 것 추천
   @Post('dev/token')
   @ApiOperation({
     summary: '개발용 토큰 발급',

@@ -53,7 +53,7 @@ export default function RecordDetailHeaderActions({
     requestAnimationFrame(() => {
       setCurrentUrl(`${window.location.origin}/record/${record.id}`);
     });
-  }, []);
+  }, [record.id]);
 
   // TEXT 타입 블록에서 내용 추출
   const shareData = {
