@@ -74,6 +74,10 @@ export class FeedCardResponseDto {
   @ApiPropertyOptional({ format: 'uuid' })
   // 그룹 글이면 groupId, 개인 글이면 null
   groupId?: string | null;
+  @ApiPropertyOptional({
+    description: '그룹 이름 (그룹 글일 때만 제공)',
+  })
+  groupName?: string | null;
   // 카드에 보여줄 것들(프로젝트 스펙에 맞게 수정)
   @ApiProperty({ example: '부스트캠프 회식' })
   title: string;
