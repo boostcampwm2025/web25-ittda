@@ -10,9 +10,8 @@ import { GroupInvite } from '../entity/group_invite.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { User } from '../../user/entity/user.entity';
+import { resolveGroupNickname } from '../utils/group-nickname';
 import * as crypto from 'crypto';
-
-const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
 
 @Injectable()
 export class GroupInviteService {
@@ -103,7 +102,7 @@ export class GroupInviteService {
       group: { id: invite.groupId },
       user,
       role: invite.permission,
-      nicknameInGroup: this.validateGroupNickname(user.nickname),
+      nicknameInGroup: resolveGroupNickname(user.nickname),
     });
 
     return this.groupMemberRepo.save(member);
@@ -112,20 +111,5 @@ export class GroupInviteService {
   /** 초대 링크 삭제 */
   async deleteInvite(inviteId: string) {
     await this.inviteRepo.delete(inviteId);
-  }
-
-  private validateGroupNickname(nickname: string): string {
-    const trimmed = nickname.trim();
-    if (trimmed.length < 2 || trimmed.length > 50) {
-      throw new BadRequestException(
-        '닉네임은 2자 이상 50자 이하이어야 합니다.',
-      );
-    }
-    if (!GROUP_NICKNAME_REGEX.test(trimmed)) {
-      throw new BadRequestException(
-        '닉네임은 한글, 영문, 숫자, 공백만 허용됩니다.',
-      );
-    }
-    return trimmed;
   }
 }

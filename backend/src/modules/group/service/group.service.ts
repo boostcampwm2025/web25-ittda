@@ -20,8 +20,7 @@ import {
 } from '@/modules/post/entity/post-media.entity';
 import { PostScope } from '@/enums/post-scope.enum';
 import { GetGroupsResponseDto, GroupItemDto } from '../dto/get-groups.dto';
-
-const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
+import { resolveGroupNickname } from '../utils/group-nickname';
 
 @Injectable()
 export class GroupService {
@@ -64,7 +63,7 @@ export class GroupService {
           group: savedGroup,
           user: { id: ownerId } as User,
           role: GroupRoleEnum.ADMIN,
-          nicknameInGroup: this.validateGroupNickname(owner.nickname),
+          nicknameInGroup: resolveGroupNickname(owner.nickname),
         });
         await manager.save(ownerMember);
 
@@ -305,21 +304,6 @@ export class GroupService {
       height: latestMedia.media.height,
       mimeType: latestMedia.media.mimeType,
     };
-  }
-
-  private validateGroupNickname(nickname: string): string {
-    const trimmed = nickname.trim();
-    if (trimmed.length < 2 || trimmed.length > 50) {
-      throw new BadRequestException(
-        '닉네임은 2자 이상 50자 이하이어야 합니다.',
-      );
-    }
-    if (!GROUP_NICKNAME_REGEX.test(trimmed)) {
-      throw new BadRequestException(
-        '닉네임은 한글, 영문, 숫자, 공백만 허용됩니다.',
-      );
-    }
-    return trimmed;
   }
 
   private cleanupStaleGroupCovers(groupIds: string[]) {

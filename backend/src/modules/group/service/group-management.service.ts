@@ -29,8 +29,10 @@ import {
   GetGroupCoverCandidatesResponseDto,
   CoverCandidateItemDto,
 } from '../dto/get-group-cover-candidates.dto';
-
-const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
+import {
+  resolveGroupNickname,
+  validateGroupNickname,
+} from '../utils/group-nickname';
 
 @Injectable()
 export class GroupManagementService {
@@ -70,7 +72,7 @@ export class GroupManagementService {
         group,
         user,
         role,
-        nicknameInGroup: this.validateGroupNickname(user.nickname),
+        nicknameInGroup: resolveGroupNickname(user.nickname),
       });
 
       return this.groupMemberRepo.save(member);
@@ -460,7 +462,7 @@ export class GroupManagementService {
       if (nicknameInGroup === member.nicknameInGroup) {
         // 이미 동일한 닉네임이면 무시하거나 처리 (여기서는 전체 변경 없음을 체크했으므로 진행)
       } else {
-        member.nicknameInGroup = this.validateGroupNickname(nicknameInGroup);
+        member.nicknameInGroup = validateGroupNickname(nicknameInGroup);
       }
     }
 
@@ -660,20 +662,5 @@ export class GroupManagementService {
           `Failed to cleanup stale group cover (groupId=${groupId}): ${message}`,
         );
       });
-  }
-
-  private validateGroupNickname(nickname: string): string {
-    const trimmed = nickname.trim();
-    if (trimmed.length < 2 || trimmed.length > 50) {
-      throw new BadRequestException(
-        '닉네임은 2자 이상 50자 이하이어야 합니다.',
-      );
-    }
-    if (!GROUP_NICKNAME_REGEX.test(trimmed)) {
-      throw new BadRequestException(
-        '닉네임은 한글, 영문, 숫자, 공백만 허용됩니다.',
-      );
-    }
-    return trimmed;
   }
 }
