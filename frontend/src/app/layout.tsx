@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/web-app-icon-192x192.png',
-    apple: '/web-app-icon-192x192.png',
+    apple: '/apple-icon.png',
   },
   openGraph: {
     title: '개인의 기록을 넘어, 함께 만드는 추억',
