@@ -458,26 +458,26 @@ export default function PostEditor({
     if (!activeDrawer) return null;
     const { type, id } = activeDrawer;
 
-    if (type === 'layout') {
-      return (
-        <LayoutTemplateDrawer
-          isOpen={true}
-          onClose={() => setActiveDrawer(null)}
-          customTemplates={[]} //TODO: 커스텀 필드 관련 데이터
-          onSelect={handleApplyTemplate}
-        />
-      );
-    }
+    // if (type === 'layout') {
+    //   return (
+    //     <LayoutTemplateDrawer
+    //       isOpen={true}
+    //       onClose={() => setActiveDrawer(null)}
+    //       customTemplates={[]} //TODO: 커스텀 필드 관련 데이터
+    //       onSelect={handleApplyTemplate}
+    //     />
+    //   );
+    // }
 
-    if (type === 'saveLayout') {
-      return (
-        <SaveTemplateDrawer
-          isOpen={true}
-          onClose={() => setActiveDrawer(null)}
-          onSave={() => {}} // TODO: 사용자 맞춤 템플릿 저장 로직
-        />
-      );
-    }
+    // if (type === 'saveLayout') {
+    //   return (
+    //     <SaveTemplateDrawer
+    //       isOpen={true}
+    //       onClose={() => setActiveDrawer(null)}
+    //       onSave={() => {}} // TODO: 사용자 맞춤 템플릿 저장 로직
+    //     />
+    //   );
+    // }
 
     const block = id ? blocks.find((b) => b.id === id) : null;
     const initialValue = block
