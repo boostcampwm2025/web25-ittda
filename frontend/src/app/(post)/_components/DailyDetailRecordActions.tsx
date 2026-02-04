@@ -89,11 +89,14 @@ export default function DailyDetailRecordActions({
   return (
     <>
       <button
+        disabled={isViewer}
         onClick={(e) => {
           e.stopPropagation();
-          setActiveMenuId(
-            activeMenuId === record.postId ? null : record.postId,
-          );
+          if (!isViewer) {
+            setActiveMenuId(
+              activeMenuId === record.postId ? null : record.postId,
+            );
+          }
         }}
         className="cursor-pointer p-1 text-gray-400 hover:text-gray-600 transition-colors active:scale-90"
       >
@@ -113,23 +116,21 @@ export default function DailyDetailRecordActions({
             >
               공유하기
             </button>
-            {!isViewer && (
-              <>
-                <button
-                  onClick={(e) => handleEdit(record, e)}
-                  className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
-                >
-                  수정하기
-                </button>
-                <div className="h-px mx-3 my-1 dark:bg-white/5 bg-gray-100" />
-                <button
-                  onClick={handleDeleteClick}
-                  className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold text-red-500 transition-colors dark:hover:bg-red-500/10 hover:bg-red-50"
-                >
-                  삭제하기
-                </button>
-              </>
-            )}
+            <>
+              <button
+                onClick={(e) => handleEdit(record, e)}
+                className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
+              >
+                수정하기
+              </button>
+              <div className="h-px mx-3 my-1 dark:bg-white/5 bg-gray-100" />
+              <button
+                onClick={handleDeleteClick}
+                className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold text-red-500 transition-colors dark:hover:bg-red-500/10 hover:bg-red-50"
+              >
+                삭제하기
+              </button>
+            </>
           </div>
         </>
       )}
