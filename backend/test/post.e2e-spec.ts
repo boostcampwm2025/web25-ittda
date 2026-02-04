@@ -334,7 +334,7 @@ describe('PostController (e2e)', () => {
     await groupRepository.delete({ id: group.id });
   });
 
-  it('GET /groups/:groupId/posts/new should reuse active draft', async () => {
+  it('POST /groups/:groupId/posts/new should reuse active draft', async () => {
     const group = await groupRepository.save(
       groupRepository.create({
         name: 'draft 그룹',
@@ -351,9 +351,9 @@ describe('PostController (e2e)', () => {
     );
 
     const firstRes = await request(app.getHttpServer())
-      .get(`/groups/${group.id}/posts/new`)
+      .post(`/groups/${group.id}/posts/new`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .expect(200);
+      .expect(201);
 
     const firstDraftId = (
       firstRes.body as { redirectUrl: string }
@@ -361,9 +361,9 @@ describe('PostController (e2e)', () => {
     expect(firstDraftId).toBeDefined();
 
     const secondRes = await request(app.getHttpServer())
-      .get(`/groups/${group.id}/posts/new`)
+      .post(`/groups/${group.id}/posts/new`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .expect(200);
+      .expect(201);
 
     const secondDraftId = (
       secondRes.body as { redirectUrl: string }

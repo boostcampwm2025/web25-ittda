@@ -1,17 +1,11 @@
-import { useApiPost, useApiQuery } from './useApi';
+import { useApiPost } from './useApi';
 
 interface NewPostDraftResponse {
   redirectUrl: string;
 }
 
 export const useNewPostDraft = (groupId: string) => {
-  return useApiQuery<NewPostDraftResponse>(
-    ['groupd', 'draft', groupId],
-    `/api/groups/${groupId}/posts/new`,
-    {
-      enabled: false,
-    },
-  );
+  return useApiPost<NewPostDraftResponse>(`/api/groups/${groupId}/posts/new`);
 };
 
 /** 그룹 수정 시 새 draft 생성 */

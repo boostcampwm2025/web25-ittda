@@ -37,11 +37,11 @@ export class PostDraftController {
     private readonly postService: PostService,
   ) {}
 
-  @Get('posts/new')
+  @Post('posts/new')
   @ApiResponse({
-    status: 200,
+    status: 201,
     description:
-      'Redirects to the active draft edit URL. 그룹 ADMIN/EDITOR만 접근 가능합니다.',
+      'Creates or redirects to the active draft edit URL. 그룹 ADMIN/EDITOR만 접근 가능합니다.',
     headers: {
       Location: {
         description: 'Draft edit URL.',

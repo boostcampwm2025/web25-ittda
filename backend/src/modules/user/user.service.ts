@@ -93,7 +93,7 @@ export class UserService {
     postsQb.andWhere('p.eventAt >= :from AND p.eventAt <= :to', { from, to });
     postsQb.andWhere('p.deletedAt IS NULL');
     postsQb.orderBy('p.eventAt', 'DESC'); // 최신순 정렬
-    postsQb.cache(true);
+    postsQb.cache(true); // Redis 캐시 활성화 (설정된 10초간 유지)
 
     const posts = await postsQb.getMany();
 
@@ -644,7 +644,7 @@ export class UserService {
     // 최신순 정렬
     postsQb.orderBy('p.eventAt', 'DESC');
     postsQb.andWhere('p.deletedAt IS NULL');
-    postsQb.cache(true);
+    postsQb.cache(true); // Redis 캐시 활성화 (설정된 10초간 유지)
 
     const posts = await postsQb.getMany();
     if (posts.length === 0) {

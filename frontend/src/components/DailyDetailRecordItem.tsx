@@ -183,7 +183,8 @@ export default function DailyDetailRecordItem({
                     >
                       {sortedBlocks.map((block) => (
                         <div
-                          key={block.id}
+                          // 수정: key를 block.id에서 row포함 고유하게 변경
+                          key={`${rowNumber}-${block.id}`}
                           className={cn(
                             'min-w-0 shrink',
                             block.layout.col === 2 ? 'text-right' : 'text-left',

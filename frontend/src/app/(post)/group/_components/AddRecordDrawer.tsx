@@ -26,13 +26,13 @@ export function AddRecordDrawer({
   groupId,
 }: AddRecordDrawerProps) {
   const router = useRouter();
-  const { refetch: getNewPostDraft } = useNewPostDraft(groupId || '');
+  const { mutateAsync: getNewPostDraft } = useNewPostDraft(groupId || '');
 
   const handleGroupRecord = async () => {
     if (!groupId) return;
 
     try {
-      const { data: refetchedData } = await getNewPostDraft();
+      const { data: refetchedData } = await getNewPostDraft({});
 
       if (refetchedData?.redirectUrl) {
         router.push(refetchedData.redirectUrl);

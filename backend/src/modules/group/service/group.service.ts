@@ -180,7 +180,7 @@ export class GroupService {
       .createQueryBuilder('g')
       .leftJoinAndSelect('g.coverMedia', 'coverMedia')
       .whereInIds(groupIds)
-      .cache(true)
+      .cache(true) // Redis 캐시 활성화 (설정된 10초간 유지)
       .getMany();
 
     const groupMap = new Map<string, Group>();
