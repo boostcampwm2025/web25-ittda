@@ -5,6 +5,7 @@ import type { Server, Socket } from 'socket.io';
 
 import { DraftStateService } from './draft-state.service';
 import { LockService } from './lock.service';
+import { DraftQueueService } from './draft-queue.service';
 import { PostDraftService } from '../post-draft.service';
 import type { PatchApplyPayload, StreamPayload } from './types';
 import { acquireLockWithEmit } from './lock-events';
@@ -15,6 +16,7 @@ export class PatchStreamService {
     private readonly lockService: LockService,
     private readonly draftStateService: DraftStateService,
     private readonly postDraftService: PostDraftService,
+    private readonly draftQueueService: DraftQueueService,
   ) {}
 
   handleBlockValueStream(
@@ -92,62 +94,69 @@ export class PatchStreamService {
       }
       this.ensureLockOwner(draftId, sessionId, blockId);
     }
-
-    type ApplyPatchResult = Awaited<ReturnType<PostDraftService['applyPatch']>>;
-    let result: ApplyPatchResult;
-    try {
-      result = await this.postDraftService.applyPatch(
-        draftId,
-        payload.baseVersion,
-        payload.patch,
-      );
-    } catch (error) {
-      if (error instanceof WsException) {
-        throw error;
-      }
-      if (error instanceof HttpException) {
-        const response = error.getResponse();
-        const message =
-          typeof response === 'string'
-            ? response
-            : ((response as { message?: string }).message ??
-              error.message ??
-              'Bad request');
-        throw new WsException(message);
-      }
-      throw new WsException('Internal server error');
-    }
-    if (result.status === 'stale') {
-      socket.emit('PATCH_REJECTED_STALE', {
-        currentVersion: result.currentVersion,
-      });
-      return;
-    }
-
-    this.draftStateService.addTouchedBy(draftId, actorId);
-    server.to(room).emit('PATCH_COMMITTED', {
-      version: result.version,
-      patch: payload.patch,
-      authorSessionId: sessionId,
-    });
-
-    if (insertedBlockIds.length > 0) {
-      insertedBlockIds.forEach((blockId) => {
-        if (!isUUID(blockId)) return;
-        const lockKey = `block:${blockId}`;
-        const lockResult = acquireLockWithEmit(
-          this.lockService,
-          server,
-          room,
-          socket,
+    // 잘못된 payload나 권한 없는 요청은 아예 큐에 들어가지 않음.
+    await this.draftQueueService.run(draftId, async () => {
+      type ApplyPatchResult = Awaited<
+        ReturnType<PostDraftService['applyPatch']>
+      >;
+      let result: ApplyPatchResult;
+      try {
+        result = await this.postDraftService.applyPatch(
           draftId,
-          lockKey,
-          actorId,
-          sessionId,
+          payload.baseVersion,
+          payload.patch,
         );
-        if (!lockResult.ok) return;
+        // DB 업데이트, 상태 변경, 이벤트 브로드캐스트가 안전하게 순차 처리
+      } catch (error) {
+        if (error instanceof WsException) {
+          throw error;
+        }
+        if (error instanceof HttpException) {
+          const response = error.getResponse();
+          const message =
+            typeof response === 'string'
+              ? response
+              : ((response as { message?: string }).message ??
+                error.message ??
+                'Bad request');
+          throw new WsException(message);
+        }
+        throw new WsException('Internal server error');
+      }
+
+      if (result.status === 'stale') {
+        socket.emit('PATCH_REJECTED_STALE', {
+          currentVersion: result.currentVersion,
+        });
+        return;
+      }
+
+      this.draftStateService.addTouchedBy(draftId, actorId);
+
+      server.to(room).emit('PATCH_COMMITTED', {
+        version: result.version,
+        patch: payload.patch,
+        authorSessionId: sessionId,
       });
-    }
+
+      if (insertedBlockIds.length > 0) {
+        insertedBlockIds.forEach((blockId) => {
+          if (!isUUID(blockId)) return;
+          const lockKey = `block:${blockId}`;
+          const lockResult = acquireLockWithEmit(
+            this.lockService,
+            server,
+            room,
+            socket,
+            draftId,
+            lockKey,
+            actorId,
+            sessionId,
+          );
+          if (!lockResult.ok) return;
+        });
+      }
+    });
   }
 
   private ensureNotPublishing(draftId: string) {

@@ -181,10 +181,10 @@ export default function DailyDetailRecordItem({
                       key={rowNumber}
                       className="flex justify-between items-center gap-3 w-full overflow-hidden"
                     >
-                      {sortedBlocks.map((block) => (
+                      {sortedBlocks.map((block, blockIndex) => (
+                        // key에서 block.id가 undefined 문제가 있어서 수정함
                         <div
-                          // 수정: key를 block.id에서 row포함 고유하게 변경
-                          key={`${rowNumber}-${block.id}`}
+                          key={`${rowNumber}-${block.layout.col}-${blockIndex}`}
                           className={cn(
                             'min-w-0 shrink',
                             block.layout.col === 2 ? 'text-right' : 'text-left',

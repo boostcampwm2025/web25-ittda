@@ -10,6 +10,7 @@ import { DraftStateService } from './collab/draft-state.service';
 import { PostService } from './post.service';
 import { PostPublishService } from './post-publish.service';
 import { PatchStreamService } from './collab/patch-stream.service';
+import { DraftQueueService } from './collab/draft-queue.service';
 
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
@@ -49,6 +50,7 @@ import { GroupModule } from '../group/group.module';
     DraftStateService,
     PostPublishService,
     PatchStreamService,
+    DraftQueueService,
   ],
 })
 export class PostModule {}

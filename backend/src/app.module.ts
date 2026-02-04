@@ -21,6 +21,7 @@ import { MapModule } from './modules/map/map.module';
 import { TemplateModule } from './modules/template/template.module';
 import { MediaModule } from './modules/media/media.module';
 import { TrashModule } from './modules/trash/trash.module';
+import { RedisModule } from '@liaoliaots/nestjs-redis';
 
 @Module({
   imports: [
@@ -32,7 +33,13 @@ import { TrashModule } from './modules/trash/trash.module';
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60, limit: 20 }], // 1분당 20회 제한
     }),
-
+    RedisModule.forRoot({
+      config: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379,
+        // password: 'redis_password', // 필요한 경우
+      },
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: getTypeOrmConfig,

@@ -92,10 +92,8 @@ export class PostDraftGateway
 
     const sessionId = randomUUID();
     const actorId = this.resolveActorId(socket);
-    const { displayName, role, profileImageId } = await this.resolveMemberInfo(
-      actorId,
-      draftId,
-    );
+    const { displayName, role, profileImageId, version } =
+      await this.resolveMemberInfo(actorId, draftId);
     const member: PresenceMember = {
       sessionId,
       displayName,
@@ -136,7 +134,7 @@ export class PostDraftGateway
       sessionId,
       members: this.presenceService.getMembersArray(draftId),
       locks: this.lockService.getLocks(draftId),
-      version: 0,
+      version,
     });
 
     socket.to(room).emit('PRESENCE_JOINED', { member });
@@ -421,7 +419,7 @@ export class PostDraftGateway
   private async resolveMemberInfo(actorId: string, draftId: string) {
     const draft = await this.postDraftRepository.findOne({
       where: { id: draftId, isActive: true },
-      select: { id: true, groupId: true },
+      select: { id: true, groupId: true, version: true },
     });
     if (!draft) {
       throw new WsException('Draft not found.');
@@ -452,6 +450,7 @@ export class PostDraftGateway
       displayName,
       role: member.role,
       profileImageId,
+      version: draft.version,
     };
   }
 
