@@ -200,11 +200,7 @@ export class PatchStreamService implements OnModuleDestroy {
       if (!this.isStreamOwner(entry.draftId, entry.blockId, entry.sessionId)) {
         return;
       }
-      entry.server.to(entry.room).emit('BLOCK_VALUE_STREAM', {
-        blockId: entry.blockId,
-        partialValue: entry.partialValue,
-        sessionId: entry.sessionId,
-      });
+      this.emitStream(entry);
     });
 
     if (this.streamBuffer.size > 0) {
@@ -237,6 +233,14 @@ export class PatchStreamService implements OnModuleDestroy {
       `table:${blockId}`,
     );
     return blockOwner === sessionId || tableOwner === sessionId;
+  }
+
+  private emitStream(entry: BufferedStream) {
+    entry.server.to(entry.room).volatile.emit('BLOCK_VALUE_STREAM', {
+      blockId: entry.blockId,
+      partialValue: entry.partialValue,
+      sessionId: entry.sessionId,
+    });
   }
 
   private ensureTitleLockOwner(draftId: string, sessionId: string) {
