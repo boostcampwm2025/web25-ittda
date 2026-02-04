@@ -109,7 +109,7 @@ export default function MonthRecords({
       );
     });
 
-    updateCover({ assetId });
+    updateCover(groupId ? { assetId, sourcePostId: recordId } : { assetId });
   };
 
   if (months.length === 0) {
