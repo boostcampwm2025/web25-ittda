@@ -118,10 +118,13 @@ export class GroupService {
 
   /** 그룹 목록 조회 (최신 활동 순) - N+1 최적화 */
   async getGroups(userId: string): Promise<GetGroupsResponseDto> {
-    const members = await this.groupMemberRepo.find({
-      where: { userId },
-      select: ['groupId', 'role'],
-    });
+    const members = await this.groupMemberRepo
+      .createQueryBuilder('gm')
+      .innerJoin('gm.user', 'u')
+      .select(['gm.groupId', 'gm.role'])
+      .where('gm.userId = :userId', { userId })
+      .andWhere('u.deletedAt IS NULL')
+      .getMany();
 
     if (members.length === 0) {
       return { items: [] };
