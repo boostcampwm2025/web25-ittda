@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import NavItem from './NavItem';
 import GroupSelectDrawer from './GroupSelectDrawer';
 import {
@@ -20,6 +20,7 @@ import { groupListOptions } from '@/lib/api/group';
 export default function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isGroupSelectOpen, setIsGroupSelectOpen] = useState(false);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false); // 그룹 상세용 기록 방식 선택
 
@@ -55,23 +56,30 @@ export default function BottomNavigation() {
   const groupMatch = pathname.match(/\/group\/([^/]+)/);
   const pathGroupId = groupMatch ? groupMatch[1] : null;
 
+  // searchParams에서 groupId 가져오기 (pathname에 없는 경우)
+  const searchParamsGroupId = searchParams.get('groupId');
+  const scope = searchParams.get('scope');
+
+  // pathname에서 groupId를 찾거나, scope가 'group'이면 searchParams의 groupId 사용
+  const effectiveGroupId = pathGroupId || (scope === 'group' ? searchParamsGroupId : null);
+
   if (!showNav) return null;
   if (isGroupDetail) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-8 py-4 pb-6 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
-      {pathGroupId ? (
+      {effectiveGroupId ? (
         <>
           <NavItem
             icon={<Book />}
-            active={pathname === `/group/${pathGroupId}`}
-            onClick={() => router.push(`/group/${pathGroupId}`)}
+            active={pathname === `/group/${effectiveGroupId}`}
+            onClick={() => router.push(`/group/${effectiveGroupId}`)}
             isGroup
           />
           <NavItem
             icon={<MapIcon />}
-            active={pathname === `/group/${pathGroupId}/map`}
-            onClick={() => router.push(`/group/${pathGroupId}/map`)}
+            active={pathname === `/group/${effectiveGroupId}/map`}
+            onClick={() => router.push(`/group/${effectiveGroupId}/map`)}
             isGroup
           />
           <button
@@ -82,8 +90,8 @@ export default function BottomNavigation() {
           </button>
           <NavItem
             icon={<MessageSquare />}
-            active={pathname === `/group/${pathGroupId}/notifications`}
-            onClick={() => router.push(`/group/${pathGroupId}/notifications`)}
+            active={pathname === `/group/${effectiveGroupId}/notifications`}
+            onClick={() => router.push(`/group/${effectiveGroupId}/notifications`)}
             isGroup
           />
           <NavItem
@@ -137,7 +145,7 @@ export default function BottomNavigation() {
       <AddRecordDrawer
         isOpen={isAddDrawerOpen}
         onOpenChange={setIsAddDrawerOpen}
-        groupId={pathGroupId ?? undefined}
+        groupId={effectiveGroupId ?? undefined}
       />
     </nav>
   );

@@ -6,7 +6,12 @@ import { CreateRecordRequest } from '@/lib/types/record';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiResponse } from '@/lib/types/response';
-import { refreshHomeData, refreshRecordData } from '@/lib/actions/revalidate';
+import {
+  refreshGroupData,
+  refreshHomeData,
+  refreshRecordData,
+  refreshSharedData,
+} from '@/lib/actions/revalidate';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { handlePublishError } from '@/lib/utils/error/publishHandler';
 
@@ -46,6 +51,11 @@ export const useCreateRecord = (
         queryClient.invalidateQueries({
           queryKey: ['group', groupId, 'records'],
         }),
+        queryClient.invalidateQueries({
+          queryKey: ['shared'],
+        }),
+        refreshGroupData(groupId),
+        refreshSharedData(),
       );
     }
 
@@ -65,7 +75,13 @@ export const useCreateRecord = (
   /**개인 게시글 수정 */
   const updateMutation = useApiPatch<RecordDetail, CreateRecordRequest>(
     `/api/posts/${postId}`,
-    { onSuccess: handleSuccess },
+    {
+      onSuccess: (res) => {
+        queryClient.invalidateQueries({ queryKey: ['record', postId] });
+        queryClient.invalidateQueries({ queryKey: ['posts'] });
+        handleSuccess(res);
+      },
+    },
   );
 
   // 공동 기록 게시글 생성
@@ -74,7 +90,11 @@ export const useCreateRecord = (
       ? `/api/groups/${groupId}/posts/${postId}/edit/publish` // 그룹 수정 발행
       : `/api/groups/${groupId}/posts/publish`,
     {
-      onSuccess: handleSuccess,
+      onSuccess: (res) => {
+        queryClient.invalidateQueries({ queryKey: ['record', postId] });
+        queryClient.invalidateQueries({ queryKey: ['posts'] });
+        handleSuccess(res);
+      },
       onError: (error) => {
         const apiError = error as ApiError;
         handlePublishError(apiError, router, groupId);
@@ -88,7 +108,6 @@ export const useCreateRecord = (
   async function handleSuccess(res: ApiResponse<RecordDetail>) {
     if (res.success && res.data?.id) {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['records'] }),
         queryClient.invalidateQueries({ queryKey: ['me'] }),
         queryClient.invalidateQueries({ queryKey: ['summary'] }),
         queryClient.invalidateQueries({ queryKey: ['pattern'] }),

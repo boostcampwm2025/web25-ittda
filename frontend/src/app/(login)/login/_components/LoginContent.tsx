@@ -23,8 +23,10 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 export default function LoginContent({
   error,
+  callback,
 }: {
   error?: string | undefined;
+  callback?: string | undefined;
 }) {
   const router = useRouter();
   const inviteCode = getCookie('invite-code') || '';
@@ -34,7 +36,7 @@ export default function LoginContent({
   const { mutate: guestLogin, isPending } = useApiPost<GuestInfo>(
     '/api/auth/guest',
     {
-      onSuccess: (response) => {
+      onSuccess: async (response) => {
         const authHeader =
           response.headers?.get('Authorization') ||
           response.headers?.get('authorization');
@@ -50,26 +52,46 @@ export default function LoginContent({
             username: 'Guest User',
           });
 
+          // 초대 코드 기반 그룹 자동 가입
+          let inviteGroupId: string | null = null;
           if (inviteCode) {
-            joinGroup(
-              {},
-              {
-                onSuccess: (response) => {
-                  const groupId = response.data.groupId;
-                  //const groupName = response.data.group.name;
-                  if (!groupId) createApiError(response);
-                  deleteCookie('invite-code');
-                  toast.success(`그룹에 참여되었습니다!`);
-                  router.replace(`/group/${groupId}`);
+            try {
+              const groupResponse = await joinGroup({});
+              inviteGroupId = groupResponse.data.groupId;
+              if (!inviteGroupId) createApiError(groupResponse);
+              deleteCookie('invite-code');
+              toast.success(`그룹에 참여되었습니다!`);
+            } catch (error) {
+              // 그룹 가입 실패 시에도 로그인은 계속 진행
+              toast.error('그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.');
+              deleteCookie('invite-code'); // 실패한 초대 코드 제거
+
+              Sentry.captureException(error, {
+                level: 'warning',
+                tags: {
+                  context: 'invite',
+                  operation: 'join-invited-group',
                 },
-              },
-            );
+                extra: {
+                  inviteCode: inviteCode,
+                  loginType: 'guest',
+                },
+              });
+              logger.error('그룹 가입 실패', error);
+            }
           }
+
+          // 최종 리디렉션 경로 결정 (우선순위: 초대 그룹 > callback > 홈)
+          const redirectPath = inviteGroupId
+            ? `/group/${inviteGroupId}`
+            : callback || '/';
+
+          // 게스트는 온보딩을 보지 않으므로 바로 리디렉션
           toast.info(
             `게스트 모드는 3일 뒤에 작성하신 데이터가 삭제되니\n소중한 기록을 잃지 않도록 계정을 연동해 주세요.`,
           );
           setTimeout(() => {
-            router.replace('/');
+            router.replace(redirectPath);
           }, 500);
         } else {
           // 응답은 성공했지만 데이터나 토큰이 없는 경우
@@ -126,6 +148,12 @@ export default function LoginContent({
         '인앱 브라우저에서는 로그인이 제한될 수 있습니다.\n기본 브라우저(Chrome, Safari 등)에서 열어주세요.',
         { duration: 5000 },
       );
+      return;
+    }
+
+    // callback을 sessionStorage에 저장 (백엔드가 전달하지 않는 경우 대비)
+    if (callback) {
+      sessionStorage.setItem('auth_callback', callback);
     }
   };
 
@@ -170,7 +198,7 @@ export default function LoginContent({
           {/* 구글 로그인 */}
           <Link
             aria-label="구글로 로그인하기"
-            href={getRedirectUri({ provider: 'google' })}
+            href={getRedirectUri({ provider: 'google', callback })}
             onClick={handleSocialLogin}
             className="bg-white border-gray-100 w-14 h-14 rounded-full flex items-center justify-center border shadow-sm transition-all hover:shadow-md active:scale-90"
           >
@@ -197,7 +225,7 @@ export default function LoginContent({
           {/* 카카오 로그인 */}
           <Link
             aria-label="카카오로 로그인하기"
-            href={getRedirectUri({ provider: 'kakao' })}
+            href={getRedirectUri({ provider: 'kakao', callback })}
             onClick={handleSocialLogin}
             className="w-14 h-14 rounded-full bg-[#FEE500] flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90"
           >

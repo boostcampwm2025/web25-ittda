@@ -11,6 +11,7 @@ import ThemeColorSetter from '@/components/ThemeColorSetter';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import KakaoScript from '@/lib/services/kakaoScript';
 import AuthContext from './AuthContext';
+import { Suspense } from 'react';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -95,7 +96,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
           strategy="beforeInteractive"
         />
         <KakaoScript />
@@ -112,7 +113,9 @@ export default function RootLayout({
                 <PWAInstallBanner />
                 <ConditionalHeader />
                 {children}
-                <BottomNavigation />
+                <Suspense fallback={null}>
+                  <BottomNavigation />
+                </Suspense>
               </div>
             </ThemeProvider>
           </Providers>

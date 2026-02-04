@@ -12,7 +12,7 @@ export default async function ProfileAllTagsPage() {
   ]);
 
   return (
-    <div className="w-full flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+    <div className="w-full pb-20 flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
       <ProfileAllTagsHeaderActions />
 
       <div className="p-5">

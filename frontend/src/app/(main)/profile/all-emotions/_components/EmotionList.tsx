@@ -25,7 +25,7 @@ export default function EmotionList({
   };
 
   const handleSingleTagSearch = (tagName: string) => {
-    router.push(`/search?emotion=${tagName}`);
+    router.push(`/search?emotions=${tagName}`);
   };
 
   return (

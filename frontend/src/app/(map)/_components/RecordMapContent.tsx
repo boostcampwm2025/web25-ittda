@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import GoogleMap from './GoogleMap';
+import RecordMapDrawer from './RecordMapDrawer';
 import { FilterChip } from '@/components/search/FilterChip';
 import { APIProvider, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MapSearchBar } from '@/components/map/MapSearchBar';
@@ -14,12 +15,12 @@ import {
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
 import LocationPermissionChecker from '@/components/LocationPermissionChecker';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useDebouncedValue } from '@/hooks/useDebounce';
-import GoogleMap from '../../_components/GoogleMap';
-import RecordMapDrawer from '../../_components/RecordMapDrawer';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -29,12 +30,16 @@ const DEFAULT_CENTER_LNG = 126.978;
 // 기본 범위 (약 10km)
 const DEFAULT_BOUNDS_DELTA = 0.1;
 
-export default function RecordMapClient() {
-  const searchParams = useSearchParams();
-  const scope =
-    (searchParams.get('scope') as 'personal' | 'group') || 'personal';
-  const groupId = searchParams.get('groupId') || undefined;
+interface RecordMapContentProps {
+  scope: 'personal' | 'group';
+  groupId?: string;
+}
 
+export default function RecordMapContent({
+  scope,
+  groupId,
+}: RecordMapContentProps) {
+  const router = useRouter();
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
@@ -53,6 +58,7 @@ export default function RecordMapClient() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [bannerHeight, setBannerHeight] = useState(0);
 
   const [searchResults, setSearchResults] = useState<
     google.maps.places.PlaceResult[]
@@ -70,6 +76,27 @@ export default function RecordMapClient() {
     const dummy = document.createElement('div');
     placesServiceRef.current = new placesLib.PlacesService(dummy);
   }, [placesLib]);
+
+  // PWA 배너 높이 측정
+  useEffect(() => {
+    const measureBannerHeight = () => {
+      // PWA 배너는 layout.tsx에서 렌더링되므로 전체 페이지에서 찾아야 함
+      const banner = document.querySelector('[data-pwa-banner]');
+      if (banner) {
+        setBannerHeight((banner as HTMLElement).offsetHeight);
+      } else {
+        setBannerHeight(0);
+      }
+    };
+
+    // 초기 측정
+    measureBannerHeight();
+
+    // 배너가 동적으로 나타나거나 사라질 수 있으므로 주기적으로 확인
+    const interval = setInterval(measureBannerHeight, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 사용자 위치 가져오기
   const { latitude, longitude } = useGeolocation({
@@ -97,7 +124,12 @@ export default function RecordMapClient() {
   } = useSearchFilters();
 
   // 지도 기록 데이터 가져오기 (debounced center 사용)
-  const { data: mapData } = useQuery({
+  const {
+    data: mapData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     ...mapRecordListOptions({
       maxLat: mapBounds
         ? mapBounds.getNorthEast().lat()
@@ -124,21 +156,43 @@ export default function RecordMapClient() {
       debouncedMapCenter !== null || (latitude !== null && longitude !== null),
   });
 
+  // 무한 스크롤 관찰자
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastItemRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (isFetchingNextPage) return;
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextPage) {
+            fetchNextPage();
+          }
+        },
+        { rootMargin: '200px' },
+      );
+
+      if (node) observerRef.current.observe(node);
+    },
+    [isFetchingNextPage, hasNextPage, fetchNextPage],
+  );
+
   // 지도에 표시할 모든 posts (필터링 없이)
   const allPosts = useMemo(() => {
-    let results = mapData?.items ?? [];
+    // 모든 페이지의 items를 합치기
+    const allItems = mapData?.pages.flatMap((page) => page.items) ?? [];
 
     // 검색어 필터링만 적용
     if (query.trim()) {
       const lowerQuery = query.toLowerCase();
-      results = results.filter(
+      return allItems.filter(
         (r) =>
           r.title.toLowerCase().includes(lowerQuery) ||
           r.placeName?.toLowerCase().includes(lowerQuery),
       );
     }
 
-    return results;
+    return allItems;
   }, [mapData, query]);
 
   // Drawer에 표시할 posts (클러스터 선택 시 필터링)
@@ -220,15 +274,25 @@ export default function RecordMapClient() {
         {/* 검색 및 필터*/}
         <div className="absolute top-4 left-0 w-full z-10 px-4">
           <div className="flex flex-col gap-3">
-            <MapSearchBar
-              onSelect={handleSelectPlace}
-              placeholder="장소를 검색하세요"
-              searchResults={searchResults}
-              onSearch={handleSearch}
-              isSearching={isProcessing}
-              hasSelectedLocation={!!searchedLocation}
-              onClear={handleClearSearch}
-            />
+            <div className="flex gap-2 items-center">
+              <button
+                className="bg-white dark:bg-[#1E1E1E] rounded-full p-2 shrink-0"
+                onClick={() => router.back()}
+              >
+                <ChevronLeft className="w-6 h-6 dark:text-gray-300 text-gray-400" />
+              </button>
+              <div className="flex-1">
+                <MapSearchBar
+                  onSelect={handleSelectPlace}
+                  placeholder="장소를 검색하세요"
+                  searchResults={searchResults}
+                  onSearch={handleSearch}
+                  isSearching={isProcessing}
+                  hasSelectedLocation={!!searchedLocation}
+                  onClear={handleClearSearch}
+                />
+              </div>
+            </div>
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               <FilterChip
                 type="tag"
@@ -262,6 +326,9 @@ export default function RecordMapClient() {
           selectedPostId={selectedPostId}
           onSelectPost={setSelectedPostId}
           isLoading={isLoading}
+          lastItemRef={lastItemRef}
+          isFetchingNextPage={isFetchingNextPage}
+          topOffset={bannerHeight}
         />
         <FilterDrawerRenderer
           activeDrawer={activeDrawer}
