@@ -66,6 +66,7 @@ export interface GroupSummary {
   createdAt: string;
   lastActivityAt: string;
   latestPost: LatestPost | null;
+  permission: 'ADMIN' | 'EDITOR' | 'VIEWER';
 }
 
 export interface Unread {

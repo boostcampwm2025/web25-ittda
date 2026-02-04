@@ -153,21 +153,24 @@ export default function SharedRecords({
   return (
     <>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {sortedGroups.map((g) => (
-          <RecordCard
-            key={g.groupId}
-            id={g.groupId}
-            name={g.name}
-            count={`${g.memberCount}명 • ${g.recordCount}기록`}
-            latestTitle={g.latestPost?.title || '최신 기록이 없어요'}
-            latestLocation={g.latestPost?.placeName}
-            hasNotification={false}
-            cover={g.cover}
-            onClick={() => router.push(`/group/${g.groupId}`)}
-            onChangeCover={() => openGallery(g.groupId)}
-            createdAt={formatDateISO(new Date(g.createdAt))}
-          />
-        ))}
+        {sortedGroups.map((g) => {
+          const isViewer = g.permission === 'VIEWER';
+          return (
+            <RecordCard
+              key={g.groupId}
+              id={g.groupId}
+              name={g.name}
+              count={`${g.memberCount}명 • ${g.recordCount}기록`}
+              latestTitle={g.latestPost?.title || '최신 기록이 없어요'}
+              latestLocation={g.latestPost?.placeName}
+              hasNotification={false}
+              cover={g.cover}
+              onClick={() => router.push(`/group/${g.groupId}`)}
+              onChangeCover={isViewer ? undefined : () => openGallery(g.groupId)}
+              createdAt={formatDateISO(new Date(g.createdAt))}
+            />
+          );
+        })}
       </div>
 
       {/* 커버 변경 Drawer */}

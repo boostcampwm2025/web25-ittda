@@ -20,11 +20,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { groupMyRoleOptions } from '@/lib/api/group';
 
 interface RecordDetailHeaderActionsProps {
   record: RecordDetailResponse;
@@ -42,6 +43,14 @@ export default function RecordDetailHeaderActions({
     record.groupId || '',
     record.id,
   );
+
+  // 그룹 게시글인 경우 권한 확인
+  const { data: roleData } = useQuery({
+    ...groupMyRoleOptions(record.groupId!),
+    enabled: !!record.groupId,
+  });
+
+  const isViewer = roleData?.role === 'VIEWER';
 
   const textBlock = record.blocks.find((block) => block.type === 'TEXT');
   const content =
@@ -114,7 +123,10 @@ export default function RecordDetailHeaderActions({
       <Back />
       <div className="relative">
         <Popover>
-          <PopoverTrigger className="cursor-pointer p-1 active:scale-90 transition-transform text-gray-400">
+          <PopoverTrigger
+            disabled={isViewer}
+            className="cursor-pointer p-1 active:scale-90 transition-transform text-gray-400"
+          >
             <MoreHorizontal className="w-6 h-6" />
           </PopoverTrigger>
           <PopoverContent

@@ -71,12 +71,19 @@ export default function GroupSelectDrawer({
               </div>
             </div>
           ) : (
-            groups.map((group) => (
-              <button
-                key={group.groupId}
-                onClick={() => handleSelectGroup(group.groupId)}
-                className="flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100"
-              >
+            groups.map((group) => {
+              const isViewer = group.permission === 'VIEWER';
+              return (
+                <button
+                  key={group.groupId}
+                  onClick={() => !isViewer && handleSelectGroup(group.groupId)}
+                  disabled={isViewer}
+                  className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${
+                    isViewer
+                      ? 'opacity-50 cursor-not-allowed dark:bg-white/5 bg-gray-50'
+                      : 'active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
                 <div className="w-12 h-12 rounded-lg overflow-hidden border-2 shadow-sm dark:border-[#121212] border-white">
                   {group.cover?.assetId ? (
                     <AssetImage
@@ -106,7 +113,8 @@ export default function GroupSelectDrawer({
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </button>
-            ))
+              );
+            })
           )}
 
           {groups.length === 0 && (

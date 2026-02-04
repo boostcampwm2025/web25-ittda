@@ -41,7 +41,7 @@ export default function GroupEditClient({
       initialMembers={members}
     >
       <header className="sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/95 bg-white/95">
-        <GroupEditHeaderActions groupId={groupId} />
+        <GroupEditHeaderActions groupId={groupId} me={me} />
       </header>
 
       <div className="-mb-20 p-6 flex-1 pb-0 space-y-10 overflow-y-auto hide-scrollbar">

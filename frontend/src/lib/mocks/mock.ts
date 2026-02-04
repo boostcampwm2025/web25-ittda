@@ -264,6 +264,7 @@ export const createMockGroupList = (): GroupListResponse => ({
         eventAt: new Date().toISOString(),
         placeName: '성수동',
       },
+      permission: 'ADMIN',
     },
     {
       groupId: 'group-2',
@@ -284,6 +285,7 @@ export const createMockGroupList = (): GroupListResponse => ({
         eventAt: new Date().toISOString(),
         placeName: '협재 해수욕장',
       },
+      permission: 'ADMIN',
     },
     {
       groupId: 'group-3',
@@ -304,6 +306,7 @@ export const createMockGroupList = (): GroupListResponse => ({
         eventAt: '2026-01-19T08:00:00Z',
         placeName: '강남역 모임장소',
       },
+      permission: 'ADMIN',
     },
   ],
 });

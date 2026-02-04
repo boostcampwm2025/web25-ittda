@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { isImageBlock } from '@/lib/utils/mediaResolver';
+import { useQuery } from '@tanstack/react-query';
+import { groupMyRoleOptions } from '@/lib/api/group';
 
 interface DailyDetailRecordActionsProps {
   record: RecordPreview;
@@ -29,6 +31,14 @@ export default function DailyDetailRecordActions({
     record.groupId || '',
     record.postId,
   );
+
+  // 그룹 게시글인 경우 권한 확인
+  const { data: roleData } = useQuery({
+    ...groupMyRoleOptions(record.groupId!),
+    enabled: !!record.groupId,
+  });
+
+  const isViewer = roleData?.role === 'VIEWER';
 
   const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
   const image = record.blocks.find(isImageBlock);
@@ -103,19 +113,23 @@ export default function DailyDetailRecordActions({
             >
               공유하기
             </button>
-            <button
-              onClick={(e) => handleEdit(record, e)}
-              className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
-            >
-              수정하기
-            </button>
-            <div className="h-px mx-3 my-1 dark:bg-white/5 bg-gray-100" />
-            <button
-              onClick={handleDeleteClick}
-              className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold text-red-500 transition-colors dark:hover:bg-red-500/10 hover:bg-red-50"
-            >
-              삭제하기
-            </button>
+            {!isViewer && (
+              <>
+                <button
+                  onClick={(e) => handleEdit(record, e)}
+                  className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
+                >
+                  수정하기
+                </button>
+                <div className="h-px mx-3 my-1 dark:bg-white/5 bg-gray-100" />
+                <button
+                  onClick={handleDeleteClick}
+                  className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold text-red-500 transition-colors dark:hover:bg-red-500/10 hover:bg-red-50"
+                >
+                  삭제하기
+                </button>
+              </>
+            )}
           </div>
         </>
       )}

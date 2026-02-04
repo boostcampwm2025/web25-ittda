@@ -20,7 +20,10 @@ import {
 import { useApiPatch } from '@/hooks/useApi';
 import { myMonthlyRecordListOptions } from '@/lib/api/my';
 import { convertMontRecords } from '../_utils/convertMonthRecords';
-import { groupMonthlyRecordListOptions } from '@/lib/api/group';
+import {
+  groupMonthlyRecordListOptions,
+  groupMyRoleOptions,
+} from '@/lib/api/group';
 
 interface MonthRecordsProps {
   monthRecords?: MonthlyRecordList[];
@@ -50,6 +53,14 @@ export default function MonthRecords({
     ...(monthRecords && { initialData: monthRecords }),
     select: (data: MonthlyRecordList[]) => convertMontRecords(data),
   });
+
+  // 그룹 게시글인 경우 권한 확인
+  const { data: roleData } = useQuery({
+    ...groupMyRoleOptions(groupId!),
+    enabled: !!groupId,
+  });
+
+  const isViewer = roleData?.role === 'VIEWER';
 
   const openGallery = (monthId: string) => {
     setActiveMonthId(monthId);
@@ -116,11 +127,17 @@ export default function MonthRecords({
         <button
           type="button"
           onClick={() =>
-            groupId
+            !isViewer &&
+            (groupId
               ? router.push(`/add?groupId=${groupId}`)
-              : router.push('/add')
+              : router.push('/add'))
           }
-          className="mt-2 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-itta-black shadow-lg shadow-itta-black/20 hover:bg-itta-black/80 active:scale-95 transition-all"
+          disabled={groupId ? isViewer : false}
+          className={`mt-2 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all ${
+            groupId && isViewer
+              ? 'opacity-50 cursor-not-allowed bg-gray-400 text-gray-200 shadow-gray-400/20'
+              : 'text-white bg-itta-black shadow-itta-black/20 hover:bg-itta-black/80 active:scale-95'
+          }`}
         >
           <Plus className="w-4 h-4" />
           기록 추가하기
@@ -142,7 +159,7 @@ export default function MonthRecords({
             latestLocation={m.latestLocation}
             cover={m.cover}
             onClick={() => router.push(`${cardRoute}/${m.id}`)}
-            onChangeCover={openGallery}
+            onChangeCover={groupId && isViewer ? undefined : openGallery}
           />
         ))}
       </div>

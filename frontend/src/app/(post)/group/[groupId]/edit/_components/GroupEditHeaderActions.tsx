@@ -17,10 +17,12 @@ import { logger } from '@/lib/utils/logger';
 
 interface GroupEditHeaderActionsProps {
   groupId: string;
+  me: GroupEditResponse['me'];
 }
 
 export default function GroupEditHeaderActions({
   groupId,
+  me,
 }: GroupEditHeaderActionsProps) {
   const { getEditData } = useGroupEdit();
   const queryClient = useQueryClient();
@@ -84,7 +86,7 @@ export default function GroupEditHeaderActions({
       </h2>
       <button
         onClick={handleSave}
-        disabled={isPending}
+        disabled={isPending || me.role === 'VIEWER'}
         className="cursor-pointer font-bold text-sm text-[#10B981] active:scale-95 transition-all"
       >
         {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '저장'}
