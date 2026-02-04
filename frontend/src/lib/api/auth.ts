@@ -22,7 +22,11 @@ let cachedSession: Session | null = null;
 let cacheExpiry = 0;
 const CACHE_TIME = 5 * 60 * 1000; // 5분
 
-export const getIsRefreshing = () => isRefreshing;
+/** 세션 캐시 무효화 (로그인 전환 시 호출) */
+export function invalidateSessionCache() {
+  cachedSession = null;
+  cacheExpiry = 0;
+}
 
 // BroadcastChannel로 다른 탭/토큰 갱신 감지 시 캐시 무효화
 if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {

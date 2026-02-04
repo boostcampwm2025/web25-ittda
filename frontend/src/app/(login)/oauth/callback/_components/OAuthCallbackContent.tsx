@@ -4,6 +4,7 @@ import LoginContent from '@/app/(login)/login/_components/LoginContent';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { userProfileOptions } from '@/lib/api/profile';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
+import { invalidateSessionCache } from '@/lib/api/auth';
 import { createApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useQueryClient } from '@tanstack/react-query';
@@ -55,9 +56,13 @@ export default function OAuthCallbackContent({
       if (result?.error) {
         router.push('/login?error=login_failed');
       } else {
-        // 소셜 로그인 성공 시 게스트 쿠키 즉시 삭제 (프로필 조회 전에 삭제해야 함)
+        // 소셜 로그인 성공 시 세션 캐시 및 게스트 쿠키 즉시 무효화/삭제
+        invalidateSessionCache();
         deleteCookie('x-guest-session-id');
         deleteCookie('x-guest-access-token');
+
+        // 프로필 조회 전에 userType을 social로 변경 (getAccessToken이 게스트 토큰을 사용하지 않도록)
+        setSocialLogin();
 
         // 유저 프로필 조회 및 캐시 저장
         let userId: string | null = null;
