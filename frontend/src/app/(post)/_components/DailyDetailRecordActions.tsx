@@ -25,13 +25,13 @@ export default function DailyDetailRecordActions({
   const [shareOpen, setShareOpen] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
 
-  const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
-  const image = record.blocks.find(isImageBlock);
-
   const { mutateAsync: startGroupEdit } = useEditPostDraft(
     record.groupId || '',
     record.postId,
   );
+
+  const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
+  const image = record.blocks.find(isImageBlock);
 
   // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
