@@ -80,7 +80,7 @@ export interface RecordSearchItem {
   address: string;
   date: string;
   content: string;
-  imageUrl: string;
+  thumbnailMediaId: string;
 }
 
 export type RecordScope = 'PERSONAL' | 'GROUP';
