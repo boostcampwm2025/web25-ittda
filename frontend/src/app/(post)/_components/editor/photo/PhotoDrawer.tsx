@@ -60,7 +60,7 @@ export default function PhotoDrawer({
             <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
               사진 관리 ({allPhotos.length})
             </DrawerTitle>
-            {onEditMetadata && allPhotos.length > 0 && (
+            {!draftId && onEditMetadata && allPhotos.length > 0 && (
               <button
                 onClick={onEditMetadata}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-medium hover:bg-gray-200 dark:hover:bg-white/20 active:scale-95 transition-all"
