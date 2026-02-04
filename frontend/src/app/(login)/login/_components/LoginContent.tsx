@@ -21,12 +21,19 @@ const ERROR_MESSAGES: Record<string, string> = {
   login_failed: '로그인에 실패했습니다. 다시 시도해주세요.',
 };
 
+const REASON_MESSAGES: Record<string, string> = {
+  'guest-expired': '게스트 유효기간이 만료되었습니다.\n계속 이용하시려면 다시 로그인해주세요.',
+  expired: '세션이 만료되었습니다. 다시 로그인해주세요.',
+};
+
 export default function LoginContent({
   error,
   callback,
+  reason,
 }: {
   error?: string | undefined;
   callback?: string | undefined;
+  reason?: string | undefined;
 }) {
   const router = useRouter();
   const inviteCode = getCookie('invite-code') || '';
@@ -135,7 +142,15 @@ export default function LoginContent({
       // URL에서 error 파라미터 제거
       router.replace('/login');
     }
-  }, [router, error]);
+
+    if (reason) {
+      const message = REASON_MESSAGES[reason] || '다시 로그인해주세요.';
+      toast.info(message, { duration: 5000 });
+
+      // URL에서 reason 파라미터 제거
+      router.replace('/login');
+    }
+  }, [router, error, reason]);
 
   const handleLoginGuest = async () => {
     guestLogin({});
