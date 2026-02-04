@@ -16,13 +16,12 @@ import { RecordPreview } from '@/lib/types/recordResponse';
 import { Block } from '@/lib/types/record';
 import BlockContent from '@/components/BlockContent'; // BlockContent 컴포넌트 임포트 필요
 import { cn } from '@/lib/utils';
-import { getSingleBlockValue } from '@/lib/utils/record';
-import { TimeValue } from '@/lib/types/recordField';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApiDelete } from '@/hooks/useApi';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/utils/errorHandler';
 import AssetImage from './AssetImage';
+import { formatTime } from '@/lib/date';
 
 interface DailyDetailRecordItemProps {
   record: RecordPreview;
@@ -68,7 +67,7 @@ export default function DailyDetailRecordItem({
     router.push(path);
   };
 
-  const time = getSingleBlockValue<TimeValue>(record, 'TIME')?.time || '';
+  const time = record.eventAt ? formatTime(new Date(record.eventAt)) : '';
 
   return (
     <>
