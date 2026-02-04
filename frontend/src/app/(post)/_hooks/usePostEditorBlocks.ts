@@ -85,8 +85,12 @@ export function usePostEditorBlocks({
   const removeBlock = useCallback(
     (id: string) => {
       // 블록 타입 확인하여 메타데이터 적용 상태 업데이트
+
       const block = blocks.find((b) => b.id === id);
-      if (block && pendingMetadata?.appliedMetadata) {
+
+      if (!block) return;
+
+      if (pendingMetadata?.appliedMetadata) {
         const fieldType = block.type;
         if (
           fieldType === 'date' ||
@@ -115,7 +119,12 @@ export function usePostEditorBlocks({
 
       if (draftId) {
         const lockKey = `block:${id}`;
-        requestLock(lockKey);
+        const isLockedByMe = locks?.[lockKey] === mySessionId;
+
+        // 본인이 락을 이미 가지고 있다면 requestLock 스킵
+        if (!isLockedByMe) {
+          requestLock(lockKey);
+        }
         applyPatch({
           type: 'BLOCK_DELETE',
           blockId: id,
@@ -134,6 +143,8 @@ export function usePostEditorBlocks({
       applyPatch,
       releaseLock,
       setBlocks,
+      locks,
+      mySessionId,
     ],
   );
 
@@ -218,7 +229,7 @@ export function usePostEditorBlocks({
             });
           }
         }
-
+        console.log('블록 넣을 때 상태', blocks, value);
         setBlocks(
           (prev) =>
             prev.map((b) =>
@@ -246,7 +257,7 @@ export function usePostEditorBlocks({
   // 드로어 내에서 아이템 클릭 시 호출
   const handleDone = (val: BlockValue, shouldClose = false) => {
     if (!activeDrawer) return;
-
+    console.log('여기서 호출될 떈', val);
     const updatedId = updateFieldValue(
       val,
       activeDrawer.id,
@@ -267,10 +278,24 @@ export function usePostEditorBlocks({
 
   const addOrShowBlock = useCallback(
     (type: FieldType, initialValue?: BlockValue) => {
+      //debugger;
       const meta = FIELD_META[type];
       const existingBlocks = blocks.filter((b) => b.type === type);
       const limit = MULTI_INSTANCE_LIMITS[type];
 
+      if (meta.isSingle && existingBlocks.length > 0) {
+        const existing = existingBlocks[0];
+        const lockKey = `block:${existing.id}`;
+        const ownerSessionId = locks?.[lockKey];
+        const isLockedByOther =
+          !!ownerSessionId && ownerSessionId !== mySessionId;
+
+        // 타인이 락을 쥐고 있다면 동작 차단
+        if (isLockedByOther) {
+          toast.error('현재 다른 사용자가 해당 필드를 편집 중입니다.');
+          return;
+        }
+      }
       if (type === 'location') {
         let targetId: string | undefined = existingBlocks[0]?.id;
 
@@ -301,7 +326,7 @@ export function usePostEditorBlocks({
         return;
       }
 
-      // 개수 제한
+      // 개수 제한 (여러개 가능 + limit 존재 + 초과 했을 때)
       if (!meta.isSingle && limit && existingBlocks.length >= limit) {
         const fieldName = meta.label || type;
         toast.warning(
@@ -309,6 +334,20 @@ export function usePostEditorBlocks({
         );
         return;
       }
+
+      // if (type === 'location') {
+      //   let targetId: string | undefined = existingBlocks[0]?.id;
+
+      //   if (!targetId) {
+      //     targetId = updateFieldValue(
+      //       getDefaultValue('location'),
+      //       undefined,
+      //       'location',
+      //     );
+      //   }
+
+      //   return;
+      // }
 
       // 받아온 데이터 있는데 블록 없는 경우
       if (initialValue) {
@@ -319,13 +358,20 @@ export function usePostEditorBlocks({
         }
         return;
       }
+      const targetId = updateFieldValue(getDefaultValue(type), undefined, type);
       if (meta.requiresDrawer) {
-        setActiveDrawer({ type, id: undefined });
-      } else {
-        updateFieldValue(getDefaultValue(type), undefined, type);
+        setActiveDrawer({ type, id: targetId });
       }
     },
-    [blocks, draftId, releaseLock, requestLock, updateFieldValue],
+    [
+      blocks,
+      draftId,
+      releaseLock,
+      requestLock,
+      updateFieldValue,
+      locks,
+      mySessionId,
+    ],
   );
 
   // 메타데이터 실제 적용

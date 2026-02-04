@@ -130,7 +130,7 @@ export class PostPublishService {
             emotion: meta.emotion ?? null,
             rating: meta.rating ?? null,
           });
-          const saved = await postRepo.save(created);
+          const saved = await postRepo.save(created, { reload: true });
 
           await groupRepo.update(groupId, {
             lastActivityAt: saved.updatedAt,
@@ -304,7 +304,7 @@ export class PostPublishService {
           emotion: meta.emotion ?? null,
           rating: meta.rating ?? null,
         });
-        const saved = await postRepo.save(updated);
+        const saved = await postRepo.save(updated, { reload: true });
 
         if (deleteIds.length > 0) {
           await blockRepo.delete({ id: In(deleteIds) });

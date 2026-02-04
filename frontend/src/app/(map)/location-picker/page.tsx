@@ -18,7 +18,7 @@ export default function LocationPickerPage() {
       newParams.delete('from');
       newParams.set('lat', String(data.lat));
       newParams.set('lng', String(data.lng));
-      newParams.set('address', data.address || '');
+      newParams.set('address', data.placeName || data.address || '');
       newParams.set('radius', String(data.radius || 100));
 
       router.replace(`/search?${newParams.toString()}`);

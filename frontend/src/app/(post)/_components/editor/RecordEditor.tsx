@@ -34,6 +34,7 @@ import {
   canBeHalfWidth,
   getDefaultValue,
   isRecordBlockEmpty,
+  validateAndCleanRecord,
 } from '../../_utils/recordLayoutHelper';
 import SaveTemplateDrawer from './core/SaveTemplateDrawer';
 import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
@@ -57,6 +58,7 @@ import { refreshGroupData } from '@/lib/actions/revalidate';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
 import LocationDrawer from '@/components/map/LocationDrawer';
+import { toast } from 'sonner';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -261,6 +263,15 @@ export default function PostEditor({
   }, [pendingMetadata?.images.length, draftId]);
 
   const handleSave = async () => {
+    const { isValid, message, filteredBlocks } = validateAndCleanRecord(
+      title,
+      blocks,
+    );
+
+    if (!isValid) {
+      toast.error(message);
+      return;
+    }
     const scope = (groupId ? 'GROUP' : 'PERSONAL') as RecordScope;
     const isDraft = !!draftId;
 
@@ -281,7 +292,7 @@ export default function PostEditor({
 
     // 개인용 게시글 이미지 -> id 변환 로직
     const finalizedBlocks = await Promise.all(
-      blocks.map(async (block) => {
+      filteredBlocks.map(async (block) => {
         if (block.type === 'photos') {
           const tempUrls = block.value.tempUrls || [];
           const filesToUpload: File[] = [];
@@ -336,18 +347,26 @@ export default function PostEditor({
     3000,
   ); // 3초 간격
 
-  const handleFieldUpdate = (blockId: string, newValue: BlockValue) => {
+  const handleFieldUpdate = (
+    blockId: string,
+    newValue: BlockValue,
+    shouldStream: boolean = true,
+  ) => {
     // 내 화면 업데이트
     updateFieldValue(newValue, blockId);
 
     // 다른 사람 스트리밍
-    throttledEmitStream(blockId, newValue);
+    if (shouldStream) {
+      throttledEmitStream(blockId, newValue);
+    }
   };
 
   // 공통 커밋 함수
   const handleFieldCommit = (id: string, value: BlockValue) => {
     if (!draftId) return;
-
+    if (isRecordBlockEmpty(value)) {
+      return;
+    }
     const lockKey = `block:${id}`;
     const ownerSessionId = locks[lockKey];
 
@@ -382,49 +401,38 @@ export default function PostEditor({
       setActiveDrawer(null);
       return;
     }
-    const currentBlock = blocks.find((b) => b.id === id);
-    const valueToCheck = finalValue || currentBlock?.value;
 
-    if (valueToCheck && isRecordBlockEmpty(valueToCheck)) {
+    const currentBlock = blocks.find((b) => b.id === id);
+    if (!currentBlock) {
+      setActiveDrawer(null);
+      return;
+    }
+    const valueToCommit = finalValue || currentBlock.value;
+    const isEmpty = isRecordBlockEmpty(valueToCommit);
+    if (isEmpty) {
       // 값이 비어있다면 블록 삭제
       removeBlock(id);
     } else if (draftId) {
-      const currentBlock = blocks.find((b) => b.id === id);
-      //여기서 커밋하기
       if (currentBlock) {
-        const valueToCommit = finalValue || currentBlock.value;
-
+        // 값이 있으면 최종 커밋
         applyPatch({
           type: 'BLOCK_SET_VALUE',
           blockId: id,
-          value: valueToCommit,
+          value: finalValue || currentBlock.value,
         });
       }
-      //락 해제
+
+      // 어떤 경우든 락 해제
       releaseLock(`block:${id}`);
     }
-    // if (draftId) {
-    //   const currentBlock = blocks.find((b) => b.id === id);
-    //   //여기서 커밋하기
-    //   if (currentBlock) {
-    //     const valueToCommit = finalValue || currentBlock.value;
 
-    //     applyPatch({
-    //       type: 'BLOCK_SET_VALUE',
-    //       blockId: id,
-    //       value: valueToCommit,
-    //     });
-    //   }
-    //   //락 해제
-    //   releaseLock(`block:${id}`);
-    // }
     setActiveDrawer(null);
   };
 
   // 선택과 동시에 커밋되도록 하는 드로어
   const handleImmediateCommit = (newValue: BlockValue) => {
     if (!activeDrawer) return;
-
+    console.log('커밋될때', newValue);
     const id = updateFieldValue(
       newValue,
       activeDrawer.id,
@@ -567,7 +575,8 @@ export default function PostEditor({
         return (
           <MediaDrawer
             onSelect={(v) => {
-              handleDrawerDone(v);
+              //handleDrawerDone(v);
+              handleImmediateCommit(v);
             }}
             onClose={() => handleCloseDrawer(id)}
           />
@@ -609,7 +618,7 @@ export default function PostEditor({
         <div
           ref={gridRef}
           onDragOver={handleGridDragOver}
-          className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300"
+          className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300 px-3"
         >
           {blocks.map((block) => {
             const lockKey = `block:${block.id}`;
@@ -628,12 +637,14 @@ export default function PostEditor({
               <div
                 data-block-id={block.id}
                 key={block.id}
-                onPointerDown={(e) => handlePointerDown(e, block.id)}
-                onPointerMove={(e) => handlePointerMove(e)}
-                onPointerUp={handleDragEnd}
                 className={`cursor-grab touch-none relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
               >
-                <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing">
+                <div
+                  onPointerDown={(e) => handlePointerDown(e, block.id)}
+                  onPointerMove={(e) => handlePointerMove(e)}
+                  onPointerUp={handleDragEnd}
+                  className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
+                >
                   <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
                 </div>
 

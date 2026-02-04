@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { PresenceMember } from '@/hooks/useDraftPresence';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 import { cn } from '@/lib/utils';
+import AssetImage from '@/components/AssetImage';
 
 interface RecordTitleInputProps {
   title: string;
@@ -64,16 +65,26 @@ export default function RecordTitleInput({
 
   return (
     <div className="w-full flex flex-row gap-2 items-center group/title">
-      {isLockedByOther && (
-        <div className="relative w-8 h-8 rounded-full shrink-0 overflow-hidden">
-          <Image
-            src="/profile-ex.jpeg" //TODO: 실제 유저 프로필로 보여주기
-            className="w-full h-full object-cover rounded-full ring-2 ring-itta-point animate-pulse"
-            width={32}
-            height={32}
-            alt={`제목 편집 중인 유저 ${lockOwner?.displayName}`}
-            title={lockOwner?.displayName}
-          />
+      {isLockedByOther && lockOwner && (
+        <div className="shrink-0">
+          {lockOwner.profileImageId ? (
+            <AssetImage
+              assetId={lockOwner.profileImageId}
+              alt={`${lockOwner.displayName} 편집 중`}
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full ring-2 ring-itta-point animate-pulse object-cover"
+              title={lockOwner.displayName}
+            />
+          ) : (
+            <Image
+              width={32}
+              height={32}
+              src="/profile_base.png"
+              alt={`${lockOwner.displayName} 편집 중`}
+              className="w-8 h-8 rounded-full ring-2 ring-itta-point animate-pulse"
+            />
+          )}
         </div>
       )}
 

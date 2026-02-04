@@ -17,7 +17,7 @@ export const FIELD_META: Record<
   table: { label: '표', isSingle: false, requiresDrawer: false },
   date: { label: '날짜', isSingle: true, requiresDrawer: true },
   time: { label: '시간', isSingle: true, requiresDrawer: true },
-  media: { label: '미디어', isSingle: false, requiresDrawer: true },
+  media: { label: '미디어', isSingle: true, requiresDrawer: true },
 };
 
 export const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {

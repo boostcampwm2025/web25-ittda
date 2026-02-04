@@ -8,7 +8,7 @@ import SearchItem from '../_components/SearchItem';
 import { useDebounce } from '@/lib/utils/useDebounce';
 import {
   makeDateLabel,
-  // makeEmotionLabel,
+  makeEmotionLabel,
   makeLocationLabel,
   makeTagLabel,
 } from '@/lib/utils/filterLabels';
@@ -107,7 +107,11 @@ export default function SearchPage() {
     updateUrl({ q: val });
   };
   const isInitialState =
-    !query && selectedTags.length === 0 && !startDate && !location;
+    !query &&
+    selectedTags.length === 0 &&
+    !startDate &&
+    !location &&
+    selectedEmotions.length === 0;
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-4 space-y-4">
@@ -143,13 +147,13 @@ export default function SearchPage() {
             onClick={() => setActiveDrawer('tag')}
             onClear={() => updateUrl({ tags: null })}
           />
-          {/* <FilterChip
+          <FilterChip
             type="emotion"
             label={makeEmotionLabel(selectedEmotions)}
             isActive={selectedEmotions.length > 0}
             onClick={() => setActiveDrawer('emotion')}
             onClear={() => updateUrl({ emotions: null })}
-          /> */}
+          />
           <FilterChip
             type="date"
             label={makeDateLabel(startDate, endDate)}

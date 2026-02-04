@@ -1,11 +1,14 @@
 'use client';
 
 import SocialShareDrawer from '@/components/SocialShareDrawer';
+import { useEditPostDraft } from '@/hooks/useGrouprRecord';
 import { ContentValue } from '@/lib/types/recordField';
 import { RecordPreview } from '@/lib/types/recordResponse';
 import { getSingleBlockValue } from '@/lib/utils/record';
 import { MoreHorizontal } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface DailyDetailRecordActionsProps {
   record: RecordPreview;
@@ -20,6 +23,12 @@ export default function DailyDetailRecordActions({
   const [shareOpen, setShareOpen] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
 
+  const router = useRouter();
+  const { mutateAsync: startGroupEdit } = useEditPostDraft(
+    record.groupId || '',
+    record.postId,
+  );
+
   const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
   const image = record.blocks.find((block) => block.type === 'IMAGE');
 
@@ -28,7 +37,7 @@ export default function DailyDetailRecordActions({
     requestAnimationFrame(() => {
       setCurrentUrl(`${window.location.origin}/record/${record.postId}`);
     });
-  }, []);
+  }, [record.postId]);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -36,23 +45,25 @@ export default function DailyDetailRecordActions({
     setShareOpen(true);
   };
 
-  const handleEdit = (record: RecordPreview, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActiveMenuId(null);
-    // router.push('/add', {
-    //   state: {
-    //     ...record,
-    //     selectedEmotion: record.data.emotion,
-    //     selectedTags: record.data.tags,
-    //     selectedRating: record.data.rating.value,
-    //     selectedLocation: record.data.location,
-    //     attachedPhotos: record.data.photos,
-    //     selectedMedia: record.data.media,
-    //     tableData: record.data.table,
-    //     isEdit: true,
-    //     groupId: groupId,
-    //   },
-    // });
+  const handleEdit = async () => {
+    if (record.scope === 'ME') {
+      router.push(`/add?mode=edit&postId=${record.postId}`);
+    } else {
+      if (!record.groupId) {
+        toast.error('그룹 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      const response = await startGroupEdit({});
+
+      if (response.success && response.data?.redirectUrl) {
+        router.push(
+          `${response.data.redirectUrl}?mode=edit&postId=${record.postId}`,
+        );
+      } else {
+        toast.error('편집 세션을 시작할 수 없습니다.');
+      }
+    }
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -89,7 +100,7 @@ export default function DailyDetailRecordActions({
               공유하기
             </button>
             <button
-              onClick={(e) => handleEdit(record, e)}
+              onClick={handleEdit}
               className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
             >
               수정하기

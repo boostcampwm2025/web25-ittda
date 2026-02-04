@@ -176,7 +176,7 @@ export function useRecordCollaboration(
             },
           );
         }, 1_000);
-      }, 500);
+      }, 1_500);
     });
 
     return () => {

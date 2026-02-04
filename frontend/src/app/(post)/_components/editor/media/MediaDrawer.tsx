@@ -172,7 +172,6 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                           data={item}
                           onClick={() => {
                             onSelect(item);
-                            onClose();
                           }}
                           mode="search"
                         />
