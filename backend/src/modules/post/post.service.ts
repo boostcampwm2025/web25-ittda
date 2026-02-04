@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -17,7 +18,9 @@ import { PostDraft } from './entity/post-draft.entity';
 import { PostMedia, PostMediaKind } from './entity/post-media.entity';
 import { User } from '@/modules/user/entity/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
+import { GroupMonthCover } from '@/modules/group/entity/group-month-cover.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
+import { UserMonthCover } from '@/modules/user/entity/user-month-cover.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { EditPostDto } from './dto/edit-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
@@ -35,6 +38,8 @@ import { PresenceService } from './collab/presence.service';
 
 @Injectable()
 export class PostService {
+  private readonly logger = new Logger(PostService.name);
+
   constructor(
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
@@ -512,6 +517,12 @@ export class PostService {
     }
     await this.postRepository.softDelete(postId);
 
+    void this.cleanupCoversForDeletedPost(
+      postId,
+      post.ownerUserId,
+      post.groupId,
+    );
+
     if (post.groupId) {
       const latest = await this.postRepository.findOne({
         where: { groupId: post.groupId, deletedAt: IsNull() },
@@ -521,6 +532,88 @@ export class PostService {
       await this.groupRepository.update(post.groupId, {
         lastActivityAt: latest?.updatedAt ?? null,
       });
+    }
+  }
+
+  private async cleanupCoversForDeletedPost(
+    postId: string,
+    ownerUserId: string,
+    groupId?: string | null,
+  ) {
+    try {
+      const postMediaRepo =
+        this.postRepository.manager.getRepository(PostMedia);
+      const groupMonthCoverRepo =
+        this.groupRepository.manager.getRepository(GroupMonthCover);
+      const userMonthCoverRepo =
+        this.userRepository.manager.getRepository(UserMonthCover);
+
+      const mediaRows = await postMediaRepo.find({
+        where: { postId, kind: PostMediaKind.BLOCK },
+        select: { mediaId: true },
+      });
+      const mediaIds = Array.from(
+        new Set(mediaRows.map((row) => row.mediaId).filter(Boolean)),
+      );
+
+      const updateTasks: Array<Promise<unknown>> = [];
+
+      if (mediaIds.length > 0 && groupId) {
+        updateTasks.push(
+          this.groupRepository
+            .createQueryBuilder()
+            .update()
+            .set({ coverMediaId: null, coverSourcePostId: null })
+            .where('id = :groupId', { groupId })
+            .andWhere('coverMediaId IN (:...mediaIds)', { mediaIds })
+            .execute(),
+          groupMonthCoverRepo
+            .createQueryBuilder()
+            .update()
+            .set({ coverAssetId: null, sourcePostId: null })
+            .where('groupId = :groupId', { groupId })
+            .andWhere('coverAssetId IN (:...mediaIds)', { mediaIds })
+            .execute(),
+        );
+      }
+
+      if (mediaIds.length > 0) {
+        updateTasks.push(
+          userMonthCoverRepo
+            .createQueryBuilder()
+            .update()
+            .set({ coverAssetId: null })
+            .where('userId = :userId', { userId: ownerUserId })
+            .andWhere('coverAssetId IN (:...mediaIds)', { mediaIds })
+            .execute(),
+        );
+      }
+
+      if (groupId) {
+        updateTasks.push(
+          this.groupRepository
+            .createQueryBuilder()
+            .update()
+            .set({ coverMediaId: null, coverSourcePostId: null })
+            .where('id = :groupId', { groupId })
+            .andWhere('coverSourcePostId = :postId', { postId })
+            .execute(),
+          groupMonthCoverRepo
+            .createQueryBuilder()
+            .update()
+            .set({ coverAssetId: null, sourcePostId: null })
+            .where('groupId = :groupId', { groupId })
+            .andWhere('sourcePostId = :postId', { postId })
+            .execute(),
+        );
+      }
+
+      await Promise.all(updateTasks);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.warn(
+        `Failed to cleanup covers (groupId=${groupId ?? 'N/A'}, postId=${postId}): ${message}`,
+      );
     }
   }
 

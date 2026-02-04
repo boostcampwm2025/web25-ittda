@@ -74,6 +74,10 @@ export class FeedCardResponseDto {
   @ApiPropertyOptional({ format: 'uuid' })
   // 그룹 글이면 groupId, 개인 글이면 null
   groupId?: string | null;
+  @ApiPropertyOptional({
+    description: '그룹 이름 (그룹 글일 때만 제공)',
+  })
+  groupName?: string | null;
   // 카드에 보여줄 것들(프로젝트 스펙에 맞게 수정)
   @ApiProperty({ example: '부스트캠프 회식' })
   title: string;
@@ -88,6 +92,8 @@ export class FeedCardResponseDto {
     example: { lat: 37.5665, lng: 126.978, address: '서울특별시 강남구' },
   })
   location: BlockValueMap[typeof PostBlockType.LOCATION] | null;
+  @ApiPropertyOptional({ example: '18:30' })
+  time?: string | null;
   @ApiPropertyOptional({ example: ['회식', '강남'] })
   tags: string[] | null;
   @ApiPropertyOptional({ enum: PostMood, example: [PostMood.HAPPY] })

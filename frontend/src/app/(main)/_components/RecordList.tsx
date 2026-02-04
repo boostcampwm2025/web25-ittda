@@ -52,9 +52,18 @@ export default function RecordList({ initialPreviews }: RecordListProps) {
                   {record.title}
                 </h4>
                 {record.scope === 'GROUP' ? (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
-                    <Users className="w-3 h-3" />
-                    <span>그룹</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
+                      <Users className="w-3 h-3" />
+                      <span>그룹</span>
+                    </div>
+
+                    {/* 그룹명 전용 뱃지 (동그란 점 포함) */}
+                    <div className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+                      <span className="truncate max-w-[70px] inline-block align-bottom">
+                        {record.groupName}
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 shrink-0">

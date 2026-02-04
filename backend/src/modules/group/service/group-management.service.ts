@@ -5,6 +5,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -33,6 +34,8 @@ const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
 
 @Injectable()
 export class GroupManagementService {
+  private readonly logger = new Logger(GroupManagementService.name);
+
   constructor(
     @InjectRepository(Group)
     private readonly groupRepo: Repository<Group>,
@@ -318,17 +321,23 @@ export class GroupManagementService {
     const meMember = activeMembers.find((m) => m.userId === userId);
     if (!meMember) throw new ForbiddenException('그룹 멤버가 아닙니다.');
 
+    if (group.coverMediaId || group.coverSourcePostId) {
+      this.cleanupStaleGroupCover(groupId);
+    }
+    const coverMedia =
+      group.coverMedia && !group.coverMedia.deletedAt ? group.coverMedia : null;
+
     const groupDto = {
       groupId: group.id,
       name: group.name,
       createdAt: group.createdAt,
       ownerUserId: group.owner.id,
-      cover: group.coverMedia
+      cover: coverMedia
         ? {
-            assetId: group.coverMedia.id,
+            assetId: coverMedia.id,
             sourcePostId: group.coverSourcePostId || '',
           }
-        : null,
+        : await this.findLatestGroupCover(groupId),
     };
 
     const memberDtos = activeMembers.map((m) => ({
@@ -607,6 +616,50 @@ export class GroupManagementService {
         nextCursor,
       },
     };
+  }
+
+  private async findLatestGroupCover(
+    groupId: string,
+  ): Promise<{ assetId: string; sourcePostId: string } | null> {
+    const latestMedia = await this.postMediaRepo
+      .createQueryBuilder('pm')
+      .innerJoin('pm.post', 'post')
+      .where('post.groupId = :groupId', { groupId })
+      .andWhere('post.deletedAt IS NULL')
+      .andWhere('pm.kind = :kind', { kind: PostMediaKind.BLOCK })
+      .orderBy('post.eventAt', 'DESC')
+      .addOrderBy('post.createdAt', 'DESC')
+      .addOrderBy('pm.sortOrder', 'ASC')
+      .addOrderBy('pm.createdAt', 'ASC')
+      .getOne();
+
+    if (!latestMedia) {
+      return null;
+    }
+
+    return {
+      assetId: latestMedia.mediaId,
+      sourcePostId: latestMedia.postId,
+    };
+  }
+
+  private cleanupStaleGroupCover(groupId: string) {
+    void this.groupRepo
+      .createQueryBuilder()
+      .update()
+      .set({ coverMediaId: null, coverSourcePostId: null })
+      .where('id = :groupId', { groupId })
+      .andWhere(
+        '("cover_media_id" IN (SELECT id FROM media_assets WHERE deleted_at IS NOT NULL) OR "cover_source_post_id" IN (SELECT id FROM posts WHERE deleted_at IS NOT NULL))',
+      )
+      .execute()
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(
+          `Failed to cleanup stale group cover (groupId=${groupId}): ${message}`,
+        );
+      });
   }
 
   private validateGroupNickname(nickname: string): string {

@@ -432,7 +432,6 @@ export default function PostEditor({
   // 선택과 동시에 커밋되도록 하는 드로어
   const handleImmediateCommit = (newValue: BlockValue) => {
     if (!activeDrawer) return;
-    console.log('커밋될때', newValue);
     const id = updateFieldValue(
       newValue,
       activeDrawer.id,

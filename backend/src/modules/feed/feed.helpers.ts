@@ -6,6 +6,7 @@ import { DateTime } from 'luxon';
 import { PostBlock } from '../post/entity/post-block.entity';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
+import { Group } from '../group/entity/group.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -24,6 +25,10 @@ type FeedWarning = {
     postId: string;
     title: string;
   };
+};
+type BuildFeedCardsOptions = {
+  includeGroupName?: boolean;
+  groupRepo?: Repository<Group>;
 };
 
 export function dayRange(day: string, tz: string): DayRange {
@@ -47,13 +52,25 @@ export async function buildFeedCards(
   groupMemberRepo: Repository<GroupMember>,
   logger: Logger,
   userId?: string,
+  options: BuildFeedCardsOptions = {},
 ): Promise<{ cards: FeedCardResponseDto[]; warnings: FeedWarning[] }> {
+  const { includeGroupName = false, groupRepo } = options;
   const requesterId = userId ?? '';
   const postIds = posts.map((p) => p.id);
   const postById = new Map(posts.map((p) => [p.id, p]));
   const groupIds = Array.from(
     new Set(posts.map((p) => p.groupId).filter(Boolean) as string[]),
   );
+  const groupNameByGroupId = new Map<string, string>();
+  if (includeGroupName && groupRepo && groupIds.length > 0) {
+    const groups = await groupRepo.find({
+      where: { id: In(groupIds) },
+      select: ['id', 'name'],
+    });
+    groups.forEach((group) => {
+      groupNameByGroupId.set(group.id, group.name);
+    });
+  }
 
   // 1) LOCATION 블록 한번에 조회 (postIds IN ...)
   // - type='LOCATION'만
@@ -73,6 +90,27 @@ export async function buildFeedCards(
   const locationByPostId = new Map<string, LocationBlockRow['value']>();
   for (const b of locationBlocks) {
     locationByPostId.set(b.postId, b.value);
+  }
+
+  // TIME 메타 (미리보기 블록에 포함하지 않음)
+  type TimeBlockRow = {
+    postId: string;
+    value: BlockValueMap[typeof PostBlockType.TIME];
+  };
+
+  const timeBlocks: TimeBlockRow[] = postIds.length
+    ? ((await postBlockRepo.find({
+        where: { postId: In(postIds), type: PostBlockType.TIME },
+        select: { postId: true, value: true },
+      })) as TimeBlockRow[])
+    : [];
+
+  const timeByPostId = new Map<string, string>();
+  for (const b of timeBlocks) {
+    const value = b.value as { time?: string };
+    if (value?.time) {
+      timeByPostId.set(b.postId, value.time);
+    }
   }
 
   // 2) 미리보기 블록 (row 7까지)
@@ -189,6 +227,7 @@ export async function buildFeedCards(
 
   for (const p of posts) {
     const loc = locationByPostId.get(p.id) ?? null;
+    const time = timeByPostId.get(p.id) ?? null;
     const scope = p.groupId ? 'GROUP' : 'ME';
     if (!p.eventAt) {
       logger.warn(`eventAt is missing for postId=${p.id} title=${p.title}`);
@@ -215,6 +254,9 @@ export async function buildFeedCards(
         postId: p.id,
         scope,
         groupId: p.groupId ?? null,
+        groupName: p.groupId
+          ? (groupNameByGroupId.get(p.groupId) ?? null)
+          : null,
         eventAt: new Date(p.eventAt),
         createdAt: new Date(p.createdAt),
         updatedAt: new Date(p.updatedAt),
@@ -227,6 +269,7 @@ export async function buildFeedCards(
               placeName: loc.placeName,
             }
           : null,
+        time,
         blocks: blockByPostId.get(p.id) ?? [],
         tags: p.tags ?? null,
         emotion: p.emotion ?? null,
