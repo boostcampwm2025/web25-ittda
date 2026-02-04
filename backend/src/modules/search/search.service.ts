@@ -3,13 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder, Brackets } from 'typeorm';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostBlock } from '@/modules/post/entity/post-block.entity';
-import { PostMediaKind } from '@/modules/post/entity/post-media.entity';
+import {
+  PostMedia,
+  PostMediaKind,
+} from '@/modules/post/entity/post-media.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import {
   SearchPostsDto,
   PaginatedSearchResponseDto,
   SearchResultItemDto,
 } from './dto/search.dto';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class SearchService {
@@ -37,6 +41,26 @@ export class SearchService {
     }
     if (dto.tags && dto.tags.length > 0) {
       this.trackTags(userId, dto.tags);
+    }
+
+    const isDateOnly = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+    let startDate = dto.startDate;
+    let endDate = dto.endDate;
+
+    if (startDate && !endDate) {
+      if (isDateOnly(startDate)) {
+        const startOfDay = DateTime.fromISO(startDate, {
+          zone: 'Asia/Seoul',
+        }).startOf('day');
+        const endOfDay = startOfDay.endOf('day');
+        startDate = startOfDay.toISO() ?? undefined;
+        endDate = endOfDay.toISO() ?? undefined;
+      } else {
+        const startDt = DateTime.fromISO(startDate, { setZone: true });
+        if (startDt.isValid) {
+          endDate = startDt.endOf('day').toISO() ?? undefined;
+        }
+      }
     }
     const query = this.postRepository
       .createQueryBuilder('post')
@@ -68,13 +92,13 @@ export class SearchService {
     }
 
     // Date Range Search
-    if (dto.startDate) {
+    if (startDate) {
       query.andWhere('post.eventAt >= :startDate', {
-        startDate: dto.startDate,
+        startDate,
       });
     }
-    if (dto.endDate) {
-      query.andWhere('post.eventAt <= :endDate', { endDate: dto.endDate });
+    if (endDate) {
+      query.andWhere('post.eventAt <= :endDate', { endDate });
     }
 
     // Tag Search
@@ -115,7 +139,26 @@ export class SearchService {
 
     const resultItems: SearchResultItemDto[] = await Promise.all(
       items.map(async (post) => {
-        const thumbnail = post.postMedia?.[0]?.media;
+        const firstImageBlock = await this.postRepository.manager.findOne(
+          PostBlock,
+          {
+            where: { postId: post.id, type: PostBlockType.IMAGE },
+            order: { layoutRow: 'ASC', layoutCol: 'ASC' },
+            select: { id: true },
+          },
+        );
+        const firstImageMedia = firstImageBlock
+          ? await this.postRepository.manager.findOne(PostMedia, {
+              where: {
+                postId: post.id,
+                kind: PostMediaKind.BLOCK,
+                blockId: firstImageBlock.id,
+              },
+              order: { sortOrder: 'ASC', createdAt: 'ASC' },
+              select: { mediaId: true },
+            })
+          : null;
+        const firstImageMediaId = firstImageMedia?.mediaId;
 
         // Snippet extraction (first text block)
         const firstTextBlock = await this.postRepository.manager.findOne(
@@ -136,7 +179,7 @@ export class SearchService {
 
         return {
           id: post.id,
-          thumbnailUrl: thumbnail?.url,
+          thumbnailMediaId: firstImageMediaId,
           title: post.title,
           eventAt: post.eventAt!,
           location: locationBlock

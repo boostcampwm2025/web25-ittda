@@ -65,6 +65,7 @@ export class FeedQueryService {
     postsQb.select([
       'p.id',
       'p.groupId',
+      'p.ownerUserId',
       'p.eventAt',
       'p.createdAt',
       'p.updatedAt',
@@ -83,6 +84,7 @@ export class FeedQueryService {
       this.postContributorRepo,
       this.groupMemberRepo,
       this.logger,
+      userId,
     );
   }
 }

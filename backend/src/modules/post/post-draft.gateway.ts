@@ -275,7 +275,13 @@ export class PostDraftGateway
     @ConnectedSocket() socket: Socket,
   ) {
     const socketData = this.getSocketData(socket);
-    if (payload?.draftId && payload.draftId !== socketData.draftId) {
+    if (!payload) {
+      throw new WsException('payload is required.');
+    }
+    if (payload.draftId === undefined || payload.draftId === null) {
+      throw new WsException('draftId is required.');
+    }
+    if (payload.draftId !== socketData.draftId) {
       throw new WsException('draftId mismatch.');
     }
     this.leaveCurrentDraft(socket);
@@ -287,7 +293,13 @@ export class PostDraftGateway
     @ConnectedSocket() socket: Socket,
   ) {
     const socketData = this.getSocketData(socket);
-    if (payload?.draftId && payload.draftId !== socketData.draftId) {
+    if (!payload) {
+      throw new WsException('payload is required.');
+    }
+    if (payload.draftId === undefined || payload.draftId === null) {
+      throw new WsException('draftId is required.');
+    }
+    if (payload.draftId !== socketData.draftId) {
       throw new WsException('draftId mismatch.');
     }
     if (!socketData.draftId || !socketData.sessionId) {

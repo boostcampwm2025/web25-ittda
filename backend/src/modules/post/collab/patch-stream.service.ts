@@ -49,7 +49,13 @@ export class PatchStreamService {
     payload: PatchApplyPayload,
   ) {
     this.ensureNotPublishing(draftId);
-    if (!payload?.draftId || payload.draftId !== draftId) {
+    if (!payload) {
+      throw new WsException('payload is required.');
+    }
+    if (payload.draftId === undefined || payload.draftId === null) {
+      throw new WsException('draftId is required.');
+    }
+    if (payload.draftId !== draftId) {
       throw new WsException('draftId mismatch.');
     }
     if (typeof payload.baseVersion !== 'number') {

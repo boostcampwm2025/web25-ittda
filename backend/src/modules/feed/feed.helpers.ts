@@ -8,6 +8,7 @@ import { PostContributor } from '../post/entity/post-contributor.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
+import { GroupRoleEnum } from '@/enums/group-role.enum';
 import {
   FeedBlockDto,
   FeedContributorDto,
@@ -45,9 +46,14 @@ export async function buildFeedCards(
   postContributorRepo: Repository<PostContributor>,
   groupMemberRepo: Repository<GroupMember>,
   logger: Logger,
+  userId?: string,
 ): Promise<{ cards: FeedCardResponseDto[]; warnings: FeedWarning[] }> {
+  const requesterId = userId ?? '';
   const postIds = posts.map((p) => p.id);
   const postById = new Map(posts.map((p) => [p.id, p]));
+  const groupIds = Array.from(
+    new Set(posts.map((p) => p.groupId).filter(Boolean) as string[]),
+  );
 
   // 1) LOCATION 블록 한번에 조회 (postIds IN ...)
   // - type='LOCATION'만
@@ -166,6 +172,17 @@ export async function buildFeedCards(
     });
   }
 
+  const groupRoleByGroupId = new Map<string, GroupRoleEnum>();
+  if (groupIds.length > 0) {
+    const memberRows = await groupMemberRepo.find({
+      where: groupIds.map((groupId) => ({ groupId, userId: requesterId })),
+      select: ['groupId', 'role'],
+    });
+    memberRows.forEach((member) => {
+      groupRoleByGroupId.set(member.groupId, member.role);
+    });
+  }
+
   const cards: FeedCardResponseDto[] = [];
   const warnings: FeedWarning[] = [];
   const addWarning = (warning: FeedWarning) => warnings.push(warning);
@@ -184,6 +201,14 @@ export async function buildFeedCards(
         },
       });
       continue;
+    }
+    const isOwner = p.ownerUserId === requesterId;
+    let permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null = null;
+    if (p.groupId) {
+      const role = groupRoleByGroupId.get(p.groupId);
+      permission = role ?? null;
+    } else {
+      permission = isOwner ? 'OWNER' : null;
     }
     cards.push(
       new FeedCardResponseDto({
@@ -207,6 +232,7 @@ export async function buildFeedCards(
         emotion: p.emotion ?? null,
         rating: p.rating ?? null,
         contributors: contributorsByPostId.get(p.id) ?? [],
+        permission,
       }),
     );
   }

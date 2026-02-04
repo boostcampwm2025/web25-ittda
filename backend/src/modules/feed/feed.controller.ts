@@ -93,14 +93,20 @@ export class FeedController {
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiFeedOkResponse()
   async getGroupFeed(
+    @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
     @Query() query: GetFeedQueryDto,
   ): Promise<{
     data: FeedCardResponseDto[];
     meta: { warnings: unknown[]; feedLength: number };
   }> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
     const { cards, warnings } = await this.feedGroupQuery.getGroupFeed(
       groupId,
+      userId,
       query,
     );
     return { data: cards, meta: { warnings, feedLength: cards.length } };

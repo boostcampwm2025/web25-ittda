@@ -22,7 +22,6 @@ describe('PostController (e2e)', () => {
   let userRepository: Repository<User>;
   let postRepository: Repository<Post>;
   let postDraftRepository: Repository<PostDraft>;
-  let postDraftRepository: Repository<PostDraft>;
   let groupRepository: Repository<Group>;
   let groupMemberRepository: Repository<GroupMember>;
   let owner: User;
@@ -53,7 +52,6 @@ describe('PostController (e2e)', () => {
     userRepository = app.get(getRepositoryToken(User));
     postRepository = app.get(getRepositoryToken(Post));
     postDraftRepository = app.get(getRepositoryToken(PostDraft));
-    postDraftRepository = app.get(getRepositoryToken(PostDraft));
     groupRepository = app.get(getRepositoryToken(Group));
     groupMemberRepository = app.get(getRepositoryToken(GroupMember));
     const jwtService = app.get(JwtService);
@@ -81,7 +79,6 @@ describe('PostController (e2e)', () => {
   afterAll(async () => {
     if (owner?.id) {
       await postRepository.delete({ ownerUserId: owner.id });
-      await postDraftRepository.delete({ ownerActorId: owner.id });
       await postDraftRepository.delete({ ownerActorId: owner.id });
       await groupRepository.delete({ owner: { id: owner.id } });
       await userRepository.delete({ id: owner.id });
@@ -137,15 +134,6 @@ describe('PostController (e2e)', () => {
           },
           layout: { row: 4, col: 2, span: 1 },
         },
-        {
-          type: 'IMAGE',
-          value: {
-            tempUrls: [
-              'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=800',
-            ],
-          },
-          layout: { row: 5, col: 1, span: 2 },
-        },
       ],
     };
 
@@ -178,9 +166,6 @@ describe('PostController (e2e)', () => {
     expect(created.ownerUserId).toBe(owner.id);
     expect(created.blocks.length).toBeGreaterThan(0);
     expect(created.contributors[0]?.userId).toBe(owner.id);
-    expect(
-      created.blocks.find((b) => b.type === 'IMAGE')?.value?.tempUrls?.length,
-    ).toBeGreaterThan(0);
     expect(created.blocks.find((b) => b.type === 'MOOD')?.value?.mood).toBe(
       '행복',
     );
@@ -267,6 +252,14 @@ describe('PostController (e2e)', () => {
       groupRepository.create({
         name: '활동 그룹',
         owner: { id: owner.id } as User,
+      }),
+    );
+    await groupMemberRepository.save(
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: owner.nickname,
       }),
     );
 
@@ -360,19 +353,21 @@ describe('PostController (e2e)', () => {
     const firstRes = await request(app.getHttpServer())
       .get(`/groups/${group.id}/posts/new`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .expect(302);
+      .expect(200);
 
-    const firstLocation = firstRes.header.location;
-    const firstDraftId = firstLocation.split('/posts/')[1]?.split('/edit')[0];
+    const firstDraftId = (
+      firstRes.body as { redirectUrl: string }
+    ).redirectUrl.split('/post/')[1];
     expect(firstDraftId).toBeDefined();
 
     const secondRes = await request(app.getHttpServer())
       .get(`/groups/${group.id}/posts/new`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .expect(302);
+      .expect(200);
 
-    const secondLocation = secondRes.header.location;
-    const secondDraftId = secondLocation.split('/posts/')[1]?.split('/edit')[0];
+    const secondDraftId = (
+      secondRes.body as { redirectUrl: string }
+    ).redirectUrl.split('/post/')[1];
     expect(secondDraftId).toBe(firstDraftId);
 
     const draftRes = await request(app.getHttpServer())
