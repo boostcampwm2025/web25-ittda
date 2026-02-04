@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -37,6 +38,8 @@ import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 
 @Injectable()
 export class PostPublishService {
+  private readonly logger = new Logger(PostPublishService.name);
+
   constructor(
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
@@ -136,11 +139,7 @@ export class PostPublishService {
             emotion: meta.emotion ?? null,
             rating: meta.rating ?? null,
           });
-          const saved = await postRepo.save(created, { reload: true });
-
-          await groupRepo.update(groupId, {
-            lastActivityAt: saved.updatedAt,
-          });
+          const saved = await postRepo.save(created);
 
           const touchedBy = this.draftStateService.getTouchedBy(draftId);
           const contributorIds = Array.from(
@@ -193,6 +192,7 @@ export class PostPublishService {
       );
 
       this.draftStateService.clearTouchedBy(draftId);
+      this.updateGroupLastActivity(groupId, postId);
       this.postDraftGateway.broadcastDraftPublished(draftId, postId);
       return postId;
     } catch (error) {
@@ -230,7 +230,6 @@ export class PostPublishService {
         const blockRepo = manager.getRepository(PostBlock);
         const contributorRepo = manager.getRepository(PostContributor);
         const mediaRepo = manager.getRepository(PostMedia);
-        const groupRepo = manager.getRepository(Group);
         const memberRepo = manager.getRepository(GroupMember);
 
         const draft = await draftRepo.findOne({
@@ -318,7 +317,7 @@ export class PostPublishService {
           emotion: meta.emotion ?? null,
           rating: meta.rating ?? null,
         });
-        const saved = await postRepo.save(updated, { reload: true });
+        const saved = await postRepo.save(updated);
 
         if (deleteIds.length > 0) {
           await blockRepo.delete({ id: In(deleteIds) });
@@ -358,13 +357,10 @@ export class PostPublishService {
 
         draft.isActive = false;
         await draftRepo.save(draft);
-
-        await groupRepo.update(groupId, {
-          lastActivityAt: saved.updatedAt,
-        });
       });
 
       this.draftStateService.clearTouchedBy(draftId);
+      this.updateGroupLastActivity(groupId, postId);
       this.postDraftGateway.broadcastDraftPublished(draftId, postId);
       return postId;
     } catch (error) {
@@ -395,6 +391,26 @@ export class PostPublishService {
       return error.message;
     }
     return '발행에 실패했습니다.';
+  }
+
+  private updateGroupLastActivity(groupId: string, postId: string) {
+    void this.postRepository.manager
+      .getRepository(Group)
+      .createQueryBuilder()
+      .update()
+      .set({
+        lastActivityAt: () =>
+          '(SELECT updated_at FROM posts WHERE id = :postId)',
+      })
+      .where('id = :groupId', { groupId, postId })
+      .execute()
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(
+          `Failed to update group lastActivityAt (groupId=${groupId}, postId=${postId}): ${message}`,
+        );
+      });
   }
 
   private ensureBlockIds(blocks: CreatePostDto['blocks']) {
