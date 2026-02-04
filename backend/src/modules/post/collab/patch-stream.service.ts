@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { isUUID } from 'class-validator';
 import type { Server, Socket } from 'socket.io';
@@ -10,7 +10,11 @@ import type { PatchApplyPayload, StreamPayload } from './types';
 import { acquireLockWithEmit } from './lock-events';
 
 @Injectable()
-export class PatchStreamService {
+export class PatchStreamService implements OnModuleDestroy {
+  private static readonly STREAM_FLUSH_INTERVAL_MS = 250;
+  private readonly streamBuffer = new Map<string, BufferedStream>();
+  private streamFlushTimer?: NodeJS.Timeout;
+
   constructor(
     private readonly lockService: LockService,
     private readonly draftStateService: DraftStateService,
@@ -32,11 +36,7 @@ export class PatchStreamService {
     }
     this.ensureLockOwner(draftId, sessionId, blockId);
 
-    server.to(room).emit('BLOCK_VALUE_STREAM', {
-      blockId,
-      partialValue: payload.partialValue ?? null,
-      sessionId,
-    });
+    this.bufferStream(server, room, draftId, blockId, sessionId, payload);
   }
 
   async handlePatchApply(
@@ -156,6 +156,62 @@ export class PatchStreamService {
     }
   }
 
+  onModuleDestroy() {
+    if (this.streamFlushTimer) {
+      clearTimeout(this.streamFlushTimer);
+      this.streamFlushTimer = undefined;
+    }
+    this.streamBuffer.clear();
+  }
+
+  private bufferStream(
+    server: Server,
+    room: string,
+    draftId: string,
+    blockId: string,
+    sessionId: string,
+    payload: StreamPayload,
+  ) {
+    const key = `${draftId}:${blockId}:${sessionId}`;
+    this.streamBuffer.set(key, {
+      server,
+      room,
+      draftId,
+      blockId,
+      sessionId,
+      partialValue: payload.partialValue ?? null,
+    });
+    this.scheduleStreamFlush();
+  }
+
+  private scheduleStreamFlush() {
+    if (this.streamFlushTimer) return;
+    this.streamFlushTimer = setTimeout(() => {
+      this.flushStreams();
+    }, PatchStreamService.STREAM_FLUSH_INTERVAL_MS);
+  }
+
+  private flushStreams() {
+    const entries = Array.from(this.streamBuffer.values());
+    this.streamBuffer.clear();
+    this.streamFlushTimer = undefined;
+
+    entries.forEach((entry) => {
+      if (!this.isStreamOwner(entry.draftId, entry.blockId, entry.sessionId)) {
+        return;
+      }
+      entry.server.to(entry.room).emit('BLOCK_VALUE_STREAM', {
+        blockId: entry.blockId,
+        partialValue: entry.partialValue,
+        sessionId: entry.sessionId,
+      });
+    });
+
+    if (this.streamBuffer.size > 0) {
+      this.scheduleStreamFlush();
+    }
+  }
+
   private ensureLockOwner(draftId: string, sessionId: string, blockId: string) {
     const blockOwner = this.lockService.getActiveLockOwnerSessionId(
       draftId,
@@ -171,6 +227,18 @@ export class PatchStreamService {
     throw new WsException('Lock owner only.');
   }
 
+  private isStreamOwner(draftId: string, blockId: string, sessionId: string) {
+    const blockOwner = this.lockService.getActiveLockOwnerSessionId(
+      draftId,
+      `block:${blockId}`,
+    );
+    const tableOwner = this.lockService.getActiveLockOwnerSessionId(
+      draftId,
+      `table:${blockId}`,
+    );
+    return blockOwner === sessionId || tableOwner === sessionId;
+  }
+
   private ensureTitleLockOwner(draftId: string, sessionId: string) {
     const owner = this.lockService.getActiveLockOwnerSessionId(
       draftId,
@@ -182,3 +250,12 @@ export class PatchStreamService {
     throw new WsException('Lock owner only.');
   }
 }
+
+type BufferedStream = {
+  server: Server;
+  room: string;
+  draftId: string;
+  blockId: string;
+  sessionId: string;
+  partialValue: unknown;
+};
