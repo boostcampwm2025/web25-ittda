@@ -6,6 +6,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import RecordDetailHeaderActions from './RecordDetailHeaderActions';
 import BlockContent from '@/components/BlockContent';
 import { cn } from '@/lib/utils';
+import AssetImage from '@/components/AssetImage';
 
 interface RecordDetailProps {
   recordId: string;
@@ -33,12 +34,12 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
         <RecordDetailHeaderActions record={record} />
       </header>
 
-      <main className="flex-grow flex flex-col max-w-3xl mx-auto">
+      <main className="grow flex flex-col max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
           {record.title}
         </h1>
 
-        <div className="flex-grow space-y-3">
+        <div className="grow space-y-3">
           {sortedRows.map(([rowNumber, blocks]) => {
             // 각 row의 블록을 col 순서대로 정렬
             const sortedBlocks = blocks.sort(
@@ -97,8 +98,21 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                 key={contributor.userId}
                 className="flex items-center gap-2 text-[13px]"
               >
+                <div className="w-7.5 h-7.5 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white">
+                  <AssetImage
+                    width={30}
+                    height={30}
+                    className="w-full h-full object-cover rounded-full"
+                    assetId={
+                      contributor.groupProfileImageId ||
+                      contributor.profileImageId ||
+                      '/profile_base.png'
+                    }
+                    alt={`${contributor.groupNickname || contributor.nickname}의 프로필`}
+                  />
+                </div>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
-                  {contributor.nickname}
+                  {contributor.groupNickname || contributor.nickname}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800">
                   {contributor.role === 'AUTHOR' ? '작성자' : '편집자'}

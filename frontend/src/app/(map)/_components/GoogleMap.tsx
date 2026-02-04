@@ -12,6 +12,9 @@ import {
 import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
 import { useTheme } from 'next-themes';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GoogleMapProps {
   posts: MapPostItem[];
@@ -36,12 +39,29 @@ function FlyToOnSelect({
   const map = useMap();
   useEffect(() => {
     if (!map) return;
-    map.panTo({ lat, lng });
-    // 필요하면 줌도 고정
-    // map.setZoom(13);
+    try {
+      map.panTo({ lat, lng });
+      // 필요하면 줌도 고정
+      // map.setZoom(13);
 
-    if (offsetX !== 0) {
-      map.panBy(-offsetX, 0);
+      if (offsetX !== 0) {
+        map.panBy(-offsetX, 0);
+      }
+    } catch (error) {
+      // 지도 이동 실패는 UX에 영향을 주므로 추적
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: {
+          context: 'map',
+          operation: 'pan-to-location',
+        },
+        extra: {
+          lat,
+          lng,
+          offsetX,
+        },
+      });
+      logger.error('지도 이동 실패', error);
     }
   }, [map, lat, lng, offsetX]);
   return null;
@@ -59,6 +79,11 @@ export default function GoogleMap({
 }: GoogleMapProps) {
   const { theme } = useTheme();
   const placesLib = useMapsLibrary('places');
+
+  const { latitude: geoLat, longitude: geoLng } = useGeolocation({
+    reverseGeocode: true,
+  });
+
   const selectedPost = useMemo(() => {
     if (typeof selectedPostId === 'string') {
       return posts.find((p) => p.id === selectedPostId) ?? null;
@@ -69,33 +94,97 @@ export default function GoogleMap({
   useEffect(() => {
     if (!placesLib || !mapRef.current || placesServiceRef.current) return;
 
-    placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
+    try {
+      placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
+    } catch (error) {
+      // Places API 초기화 실패는 검색 기능에 영향
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'map',
+          operation: 'initialize-places-service',
+        },
+      });
+      logger.error('Places Service 초기화 실패', error);
+    }
   }, [placesLib, mapRef, placesServiceRef]);
 
+  // 초기 유저의 위치로 지도 이동
+  useEffect(() => {
+    if (geoLat && geoLng && mapRef.current) {
+      try {
+        mapRef.current.panTo({ lat: geoLat, lng: geoLng });
+      } catch (error) {
+        // 사용자 위치로 이동 실패
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: {
+            context: 'map',
+            operation: 'pan-to-user-location',
+          },
+          extra: {
+            lat: geoLat,
+            lng: geoLng,
+          },
+        });
+        logger.error('사용자 위치로 지도 이동 실패', error);
+      }
+    }
+  }, [geoLat, geoLng, mapRef]);
+
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID;
 
   // 전역 에러에서 잡아 에러 페이지 뜨도록
-  if (!apiKey) throw new Error('지도 호출 에러');
+  if (!apiKey) {
+    const error = new Error('Google Maps API 키가 설정되지 않았습니다');
+    Sentry.captureException(error, {
+      level: 'fatal', // 앱 사용 불가능한 심각한 에러
+      tags: {
+        context: 'map',
+        operation: 'initialize',
+        configError: 'missing-api-key',
+      },
+    });
+    throw error;
+  }
+  if (!mapId) {
+    const error = new Error('Google Maps ID가 설정되지 않았습니다');
+    Sentry.captureException(error, {
+      level: 'fatal',
+      tags: {
+        context: 'map',
+        operation: 'initialize',
+        configError: 'missing-map-id',
+      },
+    });
+    logger.error('NEXT_PUBLIC_GOOGLE_MAPS_ID is not defined');
+
+    throw error;
+  }
 
   return (
     <div className="bg-yellow-50 w-full h-full relative">
       <Map
         colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
-        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
+        mapId={mapId}
         defaultCenter={{ lat: 37.5665, lng: 126.978 }}
-        defaultZoom={12}
+        defaultZoom={16}
         gestureHandling="greedy"
         disableDefaultUI={true}
         onClick={() => onMapClick?.()}
         onIdle={(e) => onBoundsChange?.(e.map.getBounds() ?? null)}
       >
-        <ClusteredPostMarkers posts={posts} onSelectPost={onSelectPost} />
+        <ClusteredPostMarkers
+          posts={posts}
+          onSelectPost={onSelectPost}
+          selectedPostId={selectedPostId}
+        />
 
         {selectedPost && (
           <FlyToOnSelect
             lat={Number(selectedPost.lat)}
             lng={Number(selectedPost.lng)}
-            offsetX={250}
           />
         )}
         <MapHandler
@@ -104,7 +193,7 @@ export default function GoogleMap({
           }}
         />
         {searchedLocation && (
-          <AdvancedMarker position={searchedLocation}>
+          <AdvancedMarker position={searchedLocation} zIndex={1000}>
             <Pin background={'#FB4E4E'} glyphColor={'#FFFFFF'} />
           </AdvancedMarker>
         )}

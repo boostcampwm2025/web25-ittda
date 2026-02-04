@@ -1,12 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt } from 'class-validator';
 import { GroupCoverDto } from './get-groups.dto';
 
 export class UpdateGroupCoverDto {
   @ApiProperty({ description: '커버로 사용할 Asset ID' })
+  @IsString()
+  @IsNotEmpty()
   assetId: string;
 
   @ApiProperty({ description: '해당 Asset이 포함된 게시글 ID' })
+  @IsString()
+  @IsNotEmpty()
   sourcePostId: string;
 
   @ApiProperty({ example: 1 })

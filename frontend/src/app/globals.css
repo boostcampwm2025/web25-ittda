@@ -186,6 +186,15 @@ main {
   button:disabled {
     cursor: not-allowed;
   }
+
+  /* 테이블 셀 input: 12px처럼 보이지만 확대되지 않음 */
+  .table-cell-input {
+    font-size: 16px !important;
+    transform: scale(0.75); /* 16px * 0.75 = 12px */
+    transform-origin: left center;
+    width: 133.3333% !important; /* 1 / 0.75 = 133.3333% - scale 후에도 전체 공간 차지 */
+    height: 133.3333% !important; /* 1 / 0.75 = 133.3333% - scale 후에도 전체 공간 차지 */
+  }
 }
 
 @media (max-width: 768px) {

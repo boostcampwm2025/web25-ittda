@@ -3,11 +3,13 @@ export interface SuccessResponse<T> {
   data: T;
   meta: Record<string, string>;
   error: null;
+  headers?: Headers;
 }
 
 export interface ErrorResponse {
   success: false;
   data: null;
+  headers?: Headers;
   error: {
     code: string;
     message: string;

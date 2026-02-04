@@ -119,8 +119,9 @@ export default function SocialShareDrawer({
                     <Image
                       src="/kakao_logo.png"
                       alt="카카오톡 로고"
-                      fill
-                      className="rounded-full"
+                      width={60}
+                      height={60}
+                      className="w-full h-full object-cover rounded-full"
                     />
                   </div>
                   <SocialName name="Kakao" />

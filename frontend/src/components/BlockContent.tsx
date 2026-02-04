@@ -1,12 +1,23 @@
+'use client';
+
 import { Block, ImageValue } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
-import { Calendar, Clock, MapPin, Star } from 'lucide-react';
+import { Calendar, Clock, Film, MapPin, Star } from 'lucide-react';
 import Image from 'next/image';
 import ImageCarousel from './ImageCarousel';
+import ImageTileGrid from './ImageTileGrid';
 import { EMOTION_MAP } from '@/lib/constants/constants';
-// import { useMediaResolveMulti } from '@/hooks/useMediaResolve';
+import { useMediaResolveMulti } from '@/hooks/useMediaResolve';
 
-export default function BlockContent({ block }: { block: Block }) {
+type ImageLayout = 'carousel' | 'tile';
+
+export default function BlockContent({
+  block,
+  imageLayout = 'carousel',
+}: {
+  block: Block;
+  imageLayout?: ImageLayout;
+}) {
   if (!block.value) return null;
 
   switch (block.type) {
@@ -77,7 +88,9 @@ export default function BlockContent({ block }: { block: Block }) {
 
     case 'IMAGE':
       if ('mediaIds' in block.value || 'tempUrls' in block.value) {
-        return <ImageBlock value={block.value as ImageValue} />;
+        return (
+          <ImageBlock value={block.value as ImageValue} layout={imageLayout} />
+        );
       }
       return null;
     case 'LOCATION':
@@ -138,15 +151,21 @@ export default function BlockContent({ block }: { block: Block }) {
       if ('title' in block.value && 'type' in block.value) {
         return (
           <div className="flex items-center gap-3 p-4 rounded-xl border transition-colors dark:bg-white/3 dark:border-white/5 bg-gray-50/50 border-gray-100">
-            {block.value.imageUrl && (
-              <Image
-                src={block.value.imageUrl}
-                className="w-12 h-16 object-cover rounded shadow-sm"
-                alt={block.value.title}
-                width={50}
-                height={50}
-              />
-            )}
+            <div className="relative w-14 h-20 rounded-md overflow-hidden flex-shrink-0 bg-gray-100 border border-black/5">
+              {block.value.imageUrl ? (
+                <Image
+                  src={block.value.imageUrl}
+                  className="w-full h-full object-cover rounded shadow-sm"
+                  alt={block.value.title}
+                  width={56}
+                  height={80}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <Film className="w-5 h-5" />
+                </div>
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 {block.value.type}
@@ -174,30 +193,41 @@ export default function BlockContent({ block }: { block: Block }) {
  * 이미지 블록 처리하는 내부 컴포넌트
  * imageId를 통한 solve를 위해 분리
  */
-function ImageBlock({ value }: { value: ImageValue }) {
-  // TODO: 이미지 관련 에러 수정
-  // const { mediaIds = [], tempUrls = [], resolvedUrls = [] } = value;
-  // const shouldResolveOnClient =
-  //   mediaIds.length > 0 && resolvedUrls.length === 0;
+function ImageBlock({
+  value,
+  layout = 'carousel',
+}: {
+  value: ImageValue;
+  layout?: ImageLayout;
+}) {
+  const { mediaIds = [], tempUrls = [], resolvedUrls = [] } = value;
+  const shouldResolveOnClient =
+    mediaIds.length > 0 && resolvedUrls.length === 0;
 
-  // const { data, isLoading } = useMediaResolveMulti(
-  //   shouldResolveOnClient ? mediaIds : [],
-  // );
+  const { data, isLoading } = useMediaResolveMulti(
+    shouldResolveOnClient ? mediaIds : [],
+  );
 
-  // const hookUrls = data?.items.map((item) => item.url) || [];
+  const hookUrls = data?.items.map((item) => item.url) || [];
 
-  // const displayImages =
-  //   resolvedUrls.length > 0
-  //     ? resolvedUrls
-  //     : hookUrls.length > 0
-  //       ? hookUrls
-  //       : tempUrls;
+  const displayImages =
+    resolvedUrls.length > 0
+      ? resolvedUrls
+      : hookUrls.length > 0
+        ? hookUrls
+        : tempUrls;
 
-  // if (displayImages.length === 0) return null;
+  if (displayImages.length === 0) return null;
 
   return (
-    <div className={'relative w-full'}>
-      <ImageCarousel images={value.mediaIds || []} />
+    <div
+      className={cn('relative w-full', isLoading && 'opacity-70 animate-pulse')}
+    >
+      {layout === 'tile' ? (
+        <ImageTileGrid images={displayImages} />
+      ) : (
+        <ImageCarousel images={displayImages} />
+      )}
     </div>
   );
 }

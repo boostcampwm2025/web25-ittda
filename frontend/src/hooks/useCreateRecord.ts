@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiResponse } from '@/lib/types/response';
 import { refreshHomeData, refreshRecordData } from '@/lib/actions/revalidate';
+import { ApiError } from '@/lib/utils/errorHandler';
+import { handlePublishError } from '@/lib/utils/error/publishHandler';
 
 export interface PublishRecordRequest {
   draftId: string;
@@ -74,7 +76,8 @@ export const useCreateRecord = (
     {
       onSuccess: handleSuccess,
       onError: (error) => {
-        toast.error('기록 저장 중 오류가 발생했습니다.');
+        const apiError = error as ApiError;
+        handlePublishError(apiError, router, groupId);
         options?.onError?.(error);
       },
     },
@@ -97,7 +100,9 @@ export const useCreateRecord = (
         } else {
           await invalidateQuery();
         }
-        toast.success('기록이 성공적으로 저장되었습니다.');
+        setTimeout(() => {
+          toast.success('기록이 성공적으로 저장되었습니다.');
+        }, 1000);
       }
 
       router.replace(`/record/${res.data?.id}`);

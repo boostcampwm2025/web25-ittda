@@ -2,6 +2,7 @@
 
 import { userProfileOptions } from '@/lib/api/profile';
 import { cn } from '@/lib/utils';
+import { MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 export default function PlaceDashboard() {
@@ -78,9 +79,19 @@ export default function PlaceDashboard() {
             ))}
           </div>
         ) : (
-          <p className="w-full text-center py-4 text-[11px] text-gray-400">
-            저장된 장소가 없습니다.
-          </p>
+          <div className="py-8 flex flex-col items-center justify-center gap-2">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+              <MapPin className="w-5 h-5 text-[#10B981]" />
+            </div>
+            <div className="space-y-1 text-center">
+              <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+                아직 방문한 장소가 없어요
+              </p>
+              <p className="text-xs text-gray-400">
+                장소를 추가하여 기록해보세요
+              </p>
+            </div>
+          </div>
         )}
       </div>
     </section>

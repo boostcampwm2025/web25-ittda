@@ -12,6 +12,9 @@ import {
 } from '@/lib/utils/exifExtractor';
 
 import { normalizeLayout } from '../_utils/recordLayoutHelper';
+import { MULTI_INSTANCE_LIMITS } from '@/lib/constants/record';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface ImageWithMetadata {
   imageUrl: string;
@@ -44,6 +47,7 @@ interface RecordEditorPhotos {
   draftId?: string;
   uploadMultipleMedia?: (files: File[]) => Promise<string[]>;
 }
+const PHOTO_LIMIT = MULTI_INSTANCE_LIMITS['photos'] || 10;
 export function useRecordEditorPhotos({
   blocks,
   setBlocks,
@@ -82,7 +86,28 @@ export function useRecordEditorPhotos({
       mediaIds: [],
       tempUrls: [],
     };
-    const filesToRead = Array.from(files);
+    // 10개인 상태에서 추가할 때
+    const currentCount =
+      (currentPhotoValue.mediaIds?.length || 0) +
+      (currentPhotoValue.tempUrls?.length || 0);
+
+    const availableSlot = PHOTO_LIMIT - currentCount;
+
+    if (availableSlot <= 0) {
+      toast.warning(`사진은 최대 ${PHOTO_LIMIT}장까지만 추가할 수 있습니다.`);
+      e.target.value = ''; // 선택 초기화
+      return;
+    }
+
+    let filesToRead = Array.from(files);
+
+    // 10개 초과 시 남은 것만 채우기
+    if (filesToRead.length > availableSlot) {
+      toast.warning(
+        `최대 개수를 초과하여 앞의 ${availableSlot}장의 사진만 추가됩니다.`,
+      );
+      filesToRead = filesToRead.slice(0, availableSlot);
+    }
     const isDraft = !!draftId;
     let uploadedIds: string[] = [];
     try {
@@ -155,7 +180,18 @@ export function useRecordEditorPhotos({
         handleDone(updatedPhotoValue, false);
       }
     } catch (err) {
-      console.error(err);
+      Sentry.captureException(err, {
+        level: 'error',
+        tags: {
+          context: 'post-editor',
+          operation: 'image-upload',
+        },
+        extra: {
+          isDraft: isDraft,
+        },
+      });
+      logger.error('이미지 업로드에 실패', err);
+
       toast.error('이미지 업로드에 실패했습니다.');
     } finally {
       e.target.value = '';
@@ -278,26 +314,57 @@ export function useRecordEditorPhotos({
    * 메타데이터 스킵
    */
   const handleSkipMetadata = () => {
-    if (!pendingMetadata || !activeDrawer?.id) return;
+    if (!pendingMetadata) return;
 
-    setBlocks((prev) =>
-      normalizeLayout(
-        prev.map((b) =>
-          b.id === activeDrawer.id && b.type === 'photos'
-            ? {
-                ...b,
-                value: {
-                  ...b.value,
-                  tempUrls: [
-                    ...(b.value.tempUrls || []),
-                    ...pendingMetadata.newImageUrls,
-                  ],
-                },
-              }
-            : b,
-        ),
-      ),
-    );
+    // photos 블록 ID 결정
+    let photosBlockId = activeDrawer?.id;
+    if (!photosBlockId) {
+      photosBlockId = uuidv4();
+      setActiveDrawer({
+        type: 'photos',
+        id: photosBlockId,
+      });
+    }
+
+    setBlocks((prev) => {
+      const idx = prev.findIndex(
+        (b) => b.id === photosBlockId && b.type === 'photos',
+      );
+
+      if (idx >= 0) {
+        // 기존 블록 업데이트
+        return normalizeLayout(
+          prev.map((b) =>
+            b.id === photosBlockId && b.type === 'photos'
+              ? {
+                  ...b,
+                  value: {
+                    ...b.value,
+                    tempUrls: [
+                      ...(b.value.tempUrls || []),
+                      ...pendingMetadata.newImageUrls,
+                    ],
+                  },
+                }
+              : b,
+          ),
+        );
+      } else {
+        // 새 블록 생성
+        return normalizeLayout([
+          ...prev,
+          {
+            id: photosBlockId!,
+            type: 'photos',
+            value: {
+              mediaIds: [],
+              tempUrls: pendingMetadata.newImageUrls,
+            },
+            layout: { row: 0, col: 0, span: 2 },
+          } as RecordBlock,
+        ]);
+      }
+    });
 
     setPendingMetadata({
       images: [],

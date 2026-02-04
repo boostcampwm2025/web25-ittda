@@ -1,3 +1,5 @@
+import { Contributor } from './recordResponse';
+
 export type TemplateType =
   | 'diary'
   | 'travel'
@@ -85,7 +87,7 @@ export type RecordScope = 'PERSONAL' | 'GROUP';
 export type CreateRecordBlock = Omit<Block, 'id'> & { id?: string };
 
 export interface CreateRecordRequest {
-  scope: RecordScope;
+  scope?: RecordScope;
   groupId?: string | null;
   title: string;
   thumbnailMediaId?: string;
@@ -225,7 +227,7 @@ export interface RecordDetailResponse {
   createdAt: string;
   updatedAt: string;
   blocks: Block[];
-  contributors: RecordContributor[];
+  contributors: Contributor[];
 }
 
 // 지도 리스트 아이템
@@ -234,7 +236,7 @@ export interface MapPostItem {
   lat: number;
   lng: number;
   title: string;
-  thumbnailUrl: string;
+  thumbnailMediaId: string;
   createdAt: string;
   tags: string[];
   placeName: string | null;

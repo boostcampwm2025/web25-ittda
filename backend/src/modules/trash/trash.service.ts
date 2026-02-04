@@ -3,13 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Not, LessThan, In } from 'typeorm';
 import { Post } from '../post/entity/post.entity';
 import { User } from '../user/entity/user.entity';
-import { GuestSession } from '../guest/guest-session.entity';
+//import { GuestSession } from '../guest/guest-session.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { TrashPostResponseDto } from './dto/trash.dto';
 import { DateTime } from 'luxon';
-
-import { PostMediaKind } from '../post/entity/post-media.entity';
 
 @Injectable()
 export class TrashService {
@@ -18,8 +16,6 @@ export class TrashService {
     private readonly postRepo: Repository<Post>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(GuestSession)
-    private readonly guestSessionRepo: Repository<GuestSession>,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
@@ -34,20 +30,15 @@ export class TrashService {
       },
       withDeleted: true,
       order: { deletedAt: 'DESC' },
-      relations: ['postMedia', 'postMedia.media'],
     });
 
     return posts.map((p) => {
-      const thumbnailMedia = p.postMedia?.find(
-        (m) => m.kind === PostMediaKind.THUMBNAIL,
-      );
       return {
         id: p.id,
         title: p.title,
         scope: p.scope,
         deletedAt: p.deletedAt!,
         groupId: p.groupId ?? null,
-        thumbnailUrl: thumbnailMedia?.media?.url ?? null,
       };
     });
   }
@@ -139,16 +130,16 @@ export class TrashService {
 
     const guestIds = guests.map((g) => g.id);
 
-    // 2. 관련 데이터 삭제 (트랜잭션 권장)
+    // 2. 관련 데이터 소프트 삭제 (트랜잭션 권장)
     await this.userRepo.manager.transaction(async (em) => {
       // Post 삭제 (관련 PostBlock, PostContributor, PostMedia는 CASCADE 반영됨)
-      await em.delete(Post, { ownerUserId: In(guestIds) });
+      //await em.softDelete(Post, { ownerUserId: In(guestIds) });
 
       // GuestSession 삭제
-      await em.delete(GuestSession, { userId: In(guestIds) });
+      //await em.softDelete(GuestSession, { userId: In(guestIds) });
 
       // 유저 자체 삭제
-      await em.delete(User, { id: In(guestIds) });
+      await em.softDelete(User, { id: In(guestIds) });
     });
 
     this.logger.log(

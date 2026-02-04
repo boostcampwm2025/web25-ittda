@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -41,7 +43,15 @@ export function usePWAInstall() {
             return true;
           }
         } catch (error) {
-          console.error('getInstalledRelatedApps 확인 실패:', error);
+          // PWA 설치 상태 확인 실패는 정보성 경고
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              context: 'pwa',
+              operation: 'check-installed-apps',
+            },
+          });
+          logger.error('getInstalledRelatedApps 확인 실패', error);
         }
       }
 
@@ -77,7 +87,18 @@ export function usePWAInstall() {
 
         setDeferredPrompt(null);
         return outcome;
-      } catch {
+      } catch (error) {
+        // PWA 설치 프롬프트 실패는 UX에 영향
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: {
+            context: 'pwa',
+            operation: 'install-prompt',
+          },
+          extra: {
+            hasDeferredPrompt: !!deferredPrompt,
+          },
+        });
         toast.error('앱 설치에 실패했습니다.\n잠시후 다시 시도해주세요.');
         return 'error';
       }

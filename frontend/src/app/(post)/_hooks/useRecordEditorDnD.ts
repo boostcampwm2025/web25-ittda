@@ -14,8 +14,12 @@ export const useRecordEditorDnD = (
   const [isDraggingId, setIsDraggingId] = useState<string | null>(null);
   const lastUpdateRef = useRef<number>(0);
   const gridRef = useRef<HTMLDivElement>(null);
+  const isPointerDraggingRef = useRef(false);
 
-  const handleDragStart = (id: string) => setIsDraggingId(id);
+  const handleDragStart = (id: string) => {
+    setIsDraggingId(id);
+    isPointerDraggingRef.current = true;
+  };
 
   const handleDragOver = (
     e: React.DragEvent,
@@ -111,7 +115,24 @@ export const useRecordEditorDnD = (
     }
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isPointerDraggingRef.current || !gridRef.current) return;
+
+    const targetEl = document
+      .elementFromPoint(e.clientX, e.clientY)
+      ?.closest('[data-block-id]') as HTMLElement | null;
+
+    if (!targetEl) return;
+
+    const targetId = targetEl.getAttribute('data-block-id');
+    if (targetId) {
+      handleDragOver(e as unknown as React.DragEvent, targetId, targetEl);
+    }
+  };
+
   const handleDragEnd = () => {
+    isPointerDraggingRef.current = false;
+
     if (!isDraggingId || !draftId) {
       setIsDraggingId(null);
       return;
@@ -130,13 +151,19 @@ export const useRecordEditorDnD = (
 
     setIsDraggingId(null);
   };
+  const handlePointerDown = (e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    isPointerDraggingRef.current = true;
+    handleDragStart(id);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
 
   return {
     gridRef,
     isDraggingId,
-    handleDragStart,
-    handleDragOver,
     handleGridDragOver,
     handleDragEnd,
+    handlePointerDown,
+    handlePointerMove,
   };
 };

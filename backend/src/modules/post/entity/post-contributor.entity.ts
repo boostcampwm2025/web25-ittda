@@ -24,7 +24,7 @@ export class PostContributor {
   @JoinColumn({ name: 'post_id' })
   post: Post;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'NO ACTION' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 

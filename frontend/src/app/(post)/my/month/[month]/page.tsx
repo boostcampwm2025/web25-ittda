@@ -1,6 +1,7 @@
 import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
 import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
 import { getCachedMyDailyRecordList } from '@/lib/api/my';
+import { getMonthRange } from '@/lib/date';
 import { createMockDailyRecord } from '@/lib/mocks/mock';
 import { DailyRecordList } from '@/lib/types/recordResponse';
 import {
@@ -30,8 +31,9 @@ export default async function MyMonthlyDetailPage({
     queryClient.setQueryData(['my', 'records', 'daily', month], dailyRecords);
   }
 
+  const { startDate, endDate } = getMonthRange(month);
   return (
-    <div className="-mt-6 min-h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
+    <div className="-mt-6 h-full transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <div className="-mx-6 py-6 px-6 sticky top-0 z-50 transition-colors duration-300 dark:bg-[#121212] bg-white">
         <header className="flex items-center justify-between">
           <MonthlyDetailHeaderActions month={month} title="Memory archive" />
@@ -50,8 +52,9 @@ export default async function MyMonthlyDetailPage({
           ) : (
             <MonthlyDetailRecords
               month={month}
+              serverSideData={dailyRecords}
               routePath="/my/detail"
-              viewMapRoutePath={`my/map/month/${month}`}
+              viewMapRoutePath={`/map?start=${startDate}&end=${endDate}`}
             />
           )}
         </HydrationBoundary>

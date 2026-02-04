@@ -16,14 +16,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     () =>
       new QueryClient({
         queryCache: new QueryCache({
-          onError: (error) => {
+          onError: (error, query) => {
+            if (query.meta?.silent) return;
             // 쿼리 에러 시 토스트 표시
             const message = getErrorMessage(error);
             toast.error(message);
           },
         }),
         mutationCache: new MutationCache({
-          onError: (error) => {
+          onError: (error, variables, context, mutation) => {
+            if (mutation.meta?.silent) return;
             // mutation 에러 시 토스트 표시
             const message = getErrorMessage(error);
             toast.error(message);

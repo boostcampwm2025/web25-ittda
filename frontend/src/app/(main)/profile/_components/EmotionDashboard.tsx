@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import MonthlyPatternChart from '../../_components/MonthlyPatternChart';
 import { cn } from '@/lib/utils';
+import { Smile } from 'lucide-react';
 import { EMOTION_MAP } from '@/lib/constants/constants';
 import { useQuery } from '@tanstack/react-query';
 import { userProfileEmotionSummaryOptions } from '@/lib/api/profile';
@@ -35,6 +36,32 @@ export default function EmotionDashboard() {
     );
   }
 
+  // 데이터가 전혀 없는 경우
+  if (currentEmotions.totalCount === 0 || currentEmotions.emotion.length === 0) {
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-[13px] font-bold dark:text-white text-itta-black">
+            자주 사용된 감정
+          </h2>
+        </div>
+        <div className="py-12 flex flex-col items-center justify-center gap-2">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+            <Smile className="w-5 h-5 text-[#10B981]" />
+          </div>
+          <div className="space-y-1 text-center">
+            <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+              아직 기록한 감정이 없어요
+            </p>
+            <p className="text-xs text-gray-400">
+              오늘의 기분을 기록해보세요
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
@@ -56,61 +83,55 @@ export default function EmotionDashboard() {
         </div>
         {/* 리스트 형태로 감정 데이터 표시 */}
         <div className="mt-5 mb-6">
-          {currentEmotions.emotion.length > 0 ? (
-            <div className="space-y-2">
-              {[...currentEmotions.emotion]
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 5)
-                .map((emotion, index) => {
-                  const totalCount = currentEmotions.totalCount;
-                  const percentage = (
-                    (emotion.count / totalCount) *
-                    100
-                  ).toFixed(1);
+          <div className="space-y-2">
+            {[...currentEmotions.emotion]
+              .sort((a, b) => b.count - a.count)
+              .slice(0, 5)
+              .map((emotion, index) => {
+                const totalCount = currentEmotions.totalCount;
+                const percentage = (
+                  (emotion.count / totalCount) *
+                  100
+                ).toFixed(1);
 
-                  return (
-                    <div
-                      key={emotion.emotion}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg dark:bg-white/5 bg-white transition-colors"
+                return (
+                  <div
+                    key={emotion.emotion}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg dark:bg-white/5 bg-white transition-colors"
+                  >
+                    {/* 순위 */}
+                    <span
+                      className={cn(
+                        'text-[13px] font-semobold text-itta-point w-5 text-center',
+                        index > 0 && 'text-gray-400',
+                      )}
                     >
-                      {/* 순위 */}
-                      <span
-                        className={cn(
-                          'text-[13px] font-semobold text-itta-point w-5 text-center',
-                          index > 0 && 'text-gray-400',
-                        )}
-                      >
-                        {index + 1}
-                      </span>
+                      {index + 1}
+                    </span>
 
-                      {/* 이모지 */}
-                      <span className="text-lg">
-                        {EMOTION_MAP[emotion.emotion]}
-                      </span>
+                    {/* 이모지 */}
+                    <span className="text-lg">
+                      {EMOTION_MAP[emotion.emotion]}
+                    </span>
 
-                      {/* 감정명 */}
-                      <span className="text-[13px] font-medium dark:text-gray-200 text-itta-black flex-1">
-                        {emotion.emotion}
-                      </span>
+                    {/* 감정명 */}
+                    <span className="text-[13px] font-medium dark:text-gray-200 text-itta-black flex-1">
+                      {emotion.emotion}
+                    </span>
 
-                      {/* 횟수 */}
-                      <span className="text-[12px] font-bold text-[#10B981]/90">
-                        {emotion.count}회
-                      </span>
+                    {/* 횟수 */}
+                    <span className="text-[12px] font-bold text-[#10B981]/90">
+                      {emotion.count}회
+                    </span>
 
-                      {/* 퍼센티지 */}
-                      <span className="text-[11px] font-medium text-gray-400 w-12 text-right">
-                        {percentage}%
-                      </span>
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            <p className="w-full text-center py-4 text-[11px] text-gray-400">
-              사용된 감정이 없습니다.
-            </p>
-          )}
+                    {/* 퍼센티지 */}
+                    <span className="text-[11px] font-medium text-gray-400 w-12 text-right">
+                      {percentage}%
+                    </span>
+                  </div>
+                );
+              })}
+          </div>
         </div>
       </div>
 

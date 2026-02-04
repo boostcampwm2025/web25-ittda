@@ -28,23 +28,21 @@ export class GuestMigrationService {
   ) {}
 
   async migrate(guestSessionId: string, targetUserId: string): Promise<void> {
+    const session = await this.guestSessionRepo.findOne({
+      where: { id: guestSessionId },
+    });
+
+    if (!session || !session.userId) {
+      return;
+    }
+
+    const guestUserId = session.userId;
+    if (guestUserId === targetUserId) return;
+
     try {
-      const session = await this.guestSessionRepo.findOne({
-        where: { id: guestSessionId },
-      });
-
-      if (!session || !session.userId) {
-        return;
-      }
-
-      const guestUserId = session.userId;
-      if (guestUserId === targetUserId) return;
-
       await this.userRepo.manager.transaction(async (em) => {
-        // 1. 프로필 정보 이관 (대상 유저의 정보가 없는 경우에만)
         await this.migrateProfile(em, guestUserId, targetUserId);
 
-        // 2. 소유권 기반 데이터 이관 (Post, MediaAsset, Template)
         await em.update(
           Post,
           { ownerUserId: guestUserId },
@@ -61,28 +59,23 @@ export class GuestMigrationService {
           { ownerUserId: targetUserId },
         );
 
-        // 3. 중복 방지가 필요한 관계 데이터 이관 (GroupMember, PostContributor, UserMonthCover)
         await this.migrateGroupMembers(em, guestUserId, targetUserId);
         await this.migratePostContributors(em, guestUserId, targetUserId);
         await this.migrateUserMonthCovers(em, guestUserId, targetUserId);
 
-        // 4. 게스트 유저 및 세션 삭제
         await em.delete(GuestSession, { id: guestSessionId });
         await em.delete(User, { id: guestUserId });
       });
     } catch (error) {
       if (error instanceof QueryFailedError) {
-        // DB 에러 로깅 (상세)
         this.logger.error('DB Query Failed', {
-          message: (error as Error).message,
-          stack: (error as Error).stack,
+          message: error.message,
+          stack: error.stack,
         });
-        // 사용자 친화적 에러 변환
         throw new InternalServerErrorException(
           '데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         );
       }
-      // 그 외 에러는 그대로 던지되 로깅
       this.logger.error('Unexpected error in GuestMigrationService', {
         message: (error as Error).message,
         stack: (error as Error).stack,

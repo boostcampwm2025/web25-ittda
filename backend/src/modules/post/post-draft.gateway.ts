@@ -410,7 +410,7 @@ export class PostDraftGateway
 
     const member = await this.groupMemberRepository.findOne({
       where: { groupId: draft.groupId, userId: actorId },
-      select: { role: true, nicknameInGroup: true },
+      select: { role: true, nicknameInGroup: true, profileMediaId: true },
     });
     const user = await this.userRepository.findOne({
       where: { id: actorId },
@@ -421,7 +421,7 @@ export class PostDraftGateway
     }
 
     const displayName = member?.nicknameInGroup ?? user.nickname ?? 'User';
-    const profileImageId = user.profileImageId ?? null;
+    const profileImageId = member?.profileMediaId ?? null;
     if (!member) {
       throw new WsException('Group membership is required.');
     }

@@ -77,8 +77,8 @@ export default function EmotionDrawer({
                 초기화
               </button>
             )}
-            <DrawerClose className="flex-1 w-full py-4 rounded-2xl font-bold text-sm bg-[#333333] text-white dark:bg-white dark:text-[#121212] active:scale-95 transition-transform">
-              {mode === 'edit' ? '닫기' : '완료'}
+            <DrawerClose className="flex-1 w-full py-4 rounded-2xl font-bold text-sm bg-[#333333] text-white active:scale-95 transition-transform">
+              확인
             </DrawerClose>
           </section>
         </div>
