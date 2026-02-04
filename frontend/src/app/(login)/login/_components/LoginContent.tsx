@@ -56,10 +56,10 @@ export default function LoginContent({
               {
                 onSuccess: (response) => {
                   const groupId = response.data.groupId;
-                  const groupName = response.data.group.name;
+                  //const groupName = response.data.group.name;
                   if (!groupId) createApiError(response);
                   deleteCookie('invite-code');
-                  toast.success(`${groupName} 그룹에 참여되었습니다!`);
+                  toast.success(`그룹에 참여되었습니다!`);
                   router.replace(`/group/${groupId}`);
                 },
               },
