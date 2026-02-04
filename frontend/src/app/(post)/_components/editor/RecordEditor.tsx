@@ -619,7 +619,9 @@ export default function PostEditor({
         <div
           ref={gridRef}
           onDragOver={handleGridDragOver}
-          className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300 pr-3"
+          className={`grid grid-cols-2 gap-x-3 gap-y-5 items-center pr-3 ${
+            isDraggingId ? '' : 'transition-all duration-300'
+          }`}
         >
           {blocks.map((block) => {
             const lockKey = `block:${block.id}`;
@@ -638,7 +640,7 @@ export default function PostEditor({
               <div
                 data-block-id={block.id}
                 key={block.id}
-                className={`cursor-grab touch-none relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95 pointer-events-none' : 'opacity-100'}`}
+                className={`cursor-grab touch-none relative group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95 pointer-events-none' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
               >
                 <div
                   className={`relative w-full flex flex-row gap-2 items-center ${
