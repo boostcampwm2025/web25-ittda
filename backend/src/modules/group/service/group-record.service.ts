@@ -212,18 +212,45 @@ export class GroupRecordService {
     const representativePostIds = slicedKeys.map(
       (k) => postsByMonth.get(k)![0].id,
     );
-    const blocks = await this.postBlockRepo.find({
+
+    const imageBlocks = await this.postBlockRepo.find({
       where: {
-        postId: In(representativePostIds),
-        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+        postId: In(posts.map((p) => p.id)),
+        type: PostBlockType.IMAGE,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
       },
     });
 
-    const blocksByPostId = new Map<string, PostBlock[]>();
-    for (const b of blocks) {
-      const list = blocksByPostId.get(b.postId) ?? [];
+    const imageBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of imageBlocks) {
+      const list = imageBlocksByPostId.get(b.postId) ?? [];
       list.push(b);
-      blocksByPostId.set(b.postId, list);
+      imageBlocksByPostId.set(b.postId, list);
+    }
+
+    const locationBlocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: PostBlockType.LOCATION,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
+      },
+    });
+
+    const locationBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of locationBlocks) {
+      const list = locationBlocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      locationBlocksByPostId.set(b.postId, list);
     }
 
     // 7. 결과 구성
@@ -231,7 +258,6 @@ export class GroupRecordService {
     for (const mKey of slicedKeys) {
       const monthPosts = postsByMonth.get(mKey)!;
       const latestPost = monthPosts[0];
-      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
 
       let coverAssetId: string | null = null;
       let sourcePostId: string | null = null;
@@ -241,22 +267,18 @@ export class GroupRecordService {
         coverAssetId = custom.assetId;
         sourcePostId = custom.sourcePostId;
       } else {
-        const imgBlock = relatedBlocks.find(
-          (b) => b.type === PostBlockType.IMAGE,
+        const latestImage = this.findLatestImageFromPosts(
+          monthPosts,
+          imageBlocksByPostId,
         );
-        if (imgBlock && imgBlock.value) {
-          const val = imgBlock.value as { mediaIds?: string[] };
-          if (val.mediaIds && val.mediaIds.length > 0) {
-            coverAssetId = val.mediaIds[0];
-            sourcePostId = latestPost.id;
-          }
+        if (latestImage) {
+          coverAssetId = latestImage.assetId;
+          sourcePostId = latestImage.sourcePostId;
         }
       }
 
       let placeName: string | null = null;
-      const locBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.LOCATION,
-      );
+      const locBlock = locationBlocksByPostId.get(latestPost.id)?.[0] ?? null;
       if (locBlock && locBlock.value) {
         const val = locBlock.value as { placeName?: string; address?: string };
         placeName = val.placeName || val.address || null;
@@ -354,44 +376,64 @@ export class GroupRecordService {
       representativePostIds.push(latestPost.id);
     }
 
-    // 6. 대표 포스트들의 블록 조회 (IMAGE, LOCATION)
-    const blocks = await this.postBlockRepo.find({
+    const imageBlocks = await this.postBlockRepo.find({
       where: {
-        postId: In(representativePostIds),
-        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+        postId: In(filteredPosts.map((p) => p.id)),
+        type: PostBlockType.IMAGE,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
       },
     });
 
-    const blocksByPostId = new Map<string, PostBlock[]>();
-    for (const b of blocks) {
-      const list = blocksByPostId.get(b.postId) ?? [];
+    const imageBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of imageBlocks) {
+      const list = imageBlocksByPostId.get(b.postId) ?? [];
       list.push(b);
-      blocksByPostId.set(b.postId, list);
+      imageBlocksByPostId.set(b.postId, list);
+    }
+
+    const locationBlocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: PostBlockType.LOCATION,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
+      },
+    });
+
+    const locationBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of locationBlocks) {
+      const list = locationBlocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      locationBlocksByPostId.set(b.postId, list);
     }
 
     // 7. DTO 조립
     const results: GroupDayRecordResponseDto[] = [];
     for (const dKey of dayKeys) {
       const { postCount, latestPost } = resultFromDay.get(dKey)!;
-      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
 
       // 커버 이미지 찾기
       let coverThumbnailId: string | null = null;
-      const imgBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.IMAGE,
+      const latestImage = this.findLatestImageFromPosts(
+        postsByDay.get(dKey)!,
+        imageBlocksByPostId,
       );
-      if (imgBlock && imgBlock.value) {
-        const val = imgBlock.value as { mediaIds?: string[] };
-        if (val.mediaIds && val.mediaIds.length > 0) {
-          coverThumbnailId = val.mediaIds[0];
-        }
+      if (latestImage) {
+        coverThumbnailId = latestImage.assetId;
       }
 
       // 장소명 찾기
       let placeName: string | null = null;
-      const locBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.LOCATION,
-      );
+      const locBlock = locationBlocksByPostId.get(latestPost.id)?.[0] ?? null;
       if (locBlock && locBlock.value) {
         const val = locBlock.value as { placeName?: string; address?: string };
         placeName = val.placeName || val.address || null;
@@ -722,5 +764,22 @@ export class GroupRecordService {
 
     // 최신순 정렬
     return Array.from(dateSet).sort().reverse();
+  }
+
+  private findLatestImageFromPosts(
+    posts: Post[],
+    imageBlocksByPostId: Map<string, PostBlock[]>,
+  ): { assetId: string; sourcePostId: string } | null {
+    for (const post of posts) {
+      const blocks = imageBlocksByPostId.get(post.id);
+      if (!blocks) continue;
+      for (const block of blocks) {
+        const val = block.value as { mediaIds?: string[] };
+        if (val.mediaIds && val.mediaIds.length > 0) {
+          return { assetId: val.mediaIds[0], sourcePostId: post.id };
+        }
+      }
+    }
+    return null;
   }
 }

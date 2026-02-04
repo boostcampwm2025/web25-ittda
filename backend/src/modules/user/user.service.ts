@@ -157,27 +157,51 @@ export class UserService {
       representativePostMap.set(latestPost.id, latestPost);
     }
 
-    // 5. 대표 포스트들의 메타데이터(이미지, 위치) 조회 (Batch)
-    // 필요한 Block Type: IMAGE(썸네일용), LOCATION(장소명용)
-    const blocks = await this.postBlockRepo.find({
+    const imageBlocks = await this.postBlockRepo.find({
       where: {
-        postId: In(representativePostIds),
-        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+        postId: In(posts.map((p) => p.id)),
+        type: PostBlockType.IMAGE,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
       },
     });
 
-    const blocksByPostId = new Map<string, PostBlock[]>();
-    for (const b of blocks) {
-      const list = blocksByPostId.get(b.postId) ?? [];
+    const imageBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of imageBlocks) {
+      const list = imageBlocksByPostId.get(b.postId) ?? [];
       list.push(b);
-      blocksByPostId.set(b.postId, list);
+      imageBlocksByPostId.set(b.postId, list);
+    }
+
+    const locationBlocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: PostBlockType.LOCATION,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
+      },
+    });
+
+    const locationBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of locationBlocks) {
+      const list = locationBlocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      locationBlocksByPostId.set(b.postId, list);
     }
 
     // 6. DTO 조립
     const results: MonthRecordResponseDto[] = [];
     for (const mKey of monthKeys) {
       const { postCount, latestPost } = resultFromMonth.get(mKey)!;
-      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
+      const monthPosts = postsByMonth.get(mKey)!;
 
       // 6-1. 커버 이미지 찾기 (AssetID 사용)
       // 우선순위: 1. UserSelected 2. Latest Post Image
@@ -187,22 +211,18 @@ export class UserService {
       if (customId) {
         coverAssetId = customId;
       } else {
-        const imageBlock = relatedBlocks.find(
-          (b) => b.type === PostBlockType.IMAGE,
+        const latestImage = this.findLatestImageFromPosts(
+          monthPosts,
+          imageBlocksByPostId,
         );
-        if (imageBlock) {
-          const val =
-            imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
-          if (val.mediaIds && val.mediaIds.length > 0) {
-            coverAssetId = val.mediaIds[0];
-          }
+        if (latestImage) {
+          coverAssetId = latestImage.assetId;
         }
       }
 
       // 6-2. 위치 이름 찾기
-      const locationBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.LOCATION,
-      );
+      const locationBlock =
+        locationBlocksByPostId.get(latestPost.id)?.[0] ?? null;
       let placeName: string | null = null;
       if (locationBlock) {
         const val =
@@ -444,45 +464,66 @@ export class UserService {
       representativePostIds.push(latestPost.id);
     }
 
-    // 4. 대표 포스트 메타데이터(이미지, 위치) Batch 조회
-    const blocks = await this.postBlockRepo.find({
+    const imageBlocks = await this.postBlockRepo.find({
       where: {
-        postId: In(representativePostIds),
-        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+        postId: In(posts.map((p) => p.id)),
+        type: PostBlockType.IMAGE,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
       },
     });
 
-    const blocksByPostId = new Map<string, PostBlock[]>();
-    for (const b of blocks) {
-      const list = blocksByPostId.get(b.postId) ?? [];
+    const imageBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of imageBlocks) {
+      const list = imageBlocksByPostId.get(b.postId) ?? [];
       list.push(b);
-      blocksByPostId.set(b.postId, list);
+      imageBlocksByPostId.set(b.postId, list);
+    }
+
+    const locationBlocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: PostBlockType.LOCATION,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
+      },
+    });
+
+    const locationBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of locationBlocks) {
+      const list = locationBlocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      locationBlocksByPostId.set(b.postId, list);
     }
 
     // 5. DTO 조립
     const results: DayRecordResponseDto[] = [];
     for (const dKey of dayKeys) {
       const { postCount, latestPost } = resultFromDay.get(dKey)!;
-      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
+      const dayPosts = postsByDay.get(dKey)!;
 
       // 커버 이미지
       let coverAssetId: string | null = null;
-      const imageBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.IMAGE,
+      const latestImage = this.findLatestImageFromPosts(
+        dayPosts,
+        imageBlocksByPostId,
       );
-      if (imageBlock) {
-        const val =
-          imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
-        if (val.mediaIds && val.mediaIds.length > 0) {
-          coverAssetId = val.mediaIds[0];
-        }
+      if (latestImage) {
+        coverAssetId = latestImage.assetId;
       }
 
       // 위치 이름
       let latestPlaceName: string | null = null;
-      const locationBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.LOCATION,
-      );
+      const locationBlock =
+        locationBlocksByPostId.get(latestPost.id)?.[0] ?? null;
       if (locationBlock) {
         const val =
           locationBlock.value as BlockValueMap[typeof PostBlockType.LOCATION];
@@ -629,5 +670,22 @@ export class UserService {
 
     // 최신순 정렬
     return Array.from(dateSet).sort().reverse();
+  }
+
+  private findLatestImageFromPosts(
+    posts: Post[],
+    imageBlocksByPostId: Map<string, PostBlock[]>,
+  ): { assetId: string; sourcePostId: string } | null {
+    for (const post of posts) {
+      const blocks = imageBlocksByPostId.get(post.id);
+      if (!blocks) continue;
+      for (const block of blocks) {
+        const val = block.value as { mediaIds?: string[] };
+        if (val.mediaIds && val.mediaIds.length > 0) {
+          return { assetId: val.mediaIds[0], sourcePostId: post.id };
+        }
+      }
+    }
+    return null;
   }
 }

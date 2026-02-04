@@ -328,7 +328,7 @@ export class GroupManagementService {
             assetId: group.coverMedia.id,
             sourcePostId: group.coverSourcePostId || '',
           }
-        : null,
+        : await this.findLatestGroupCover(groupId),
     };
 
     const memberDtos = activeMembers.map((m) => ({
@@ -606,6 +606,31 @@ export class GroupManagementService {
         hasNext,
         nextCursor,
       },
+    };
+  }
+
+  private async findLatestGroupCover(
+    groupId: string,
+  ): Promise<{ assetId: string; sourcePostId: string } | null> {
+    const latestMedia = await this.postMediaRepo
+      .createQueryBuilder('pm')
+      .innerJoin('pm.post', 'post')
+      .where('post.groupId = :groupId', { groupId })
+      .andWhere('post.deletedAt IS NULL')
+      .andWhere('pm.kind = :kind', { kind: PostMediaKind.BLOCK })
+      .orderBy('post.eventAt', 'DESC')
+      .addOrderBy('post.createdAt', 'DESC')
+      .addOrderBy('pm.sortOrder', 'ASC')
+      .addOrderBy('pm.createdAt', 'ASC')
+      .getOne();
+
+    if (!latestMedia) {
+      return null;
+    }
+
+    return {
+      assetId: latestMedia.mediaId,
+      sourcePostId: latestMedia.postId,
     };
   }
 

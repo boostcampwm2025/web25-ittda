@@ -13,6 +13,11 @@ import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { User } from '../../user/entity/user.entity';
 import { Post } from '@/modules/post/entity/post.entity';
+import {
+  PostMedia,
+  PostMediaKind,
+} from '@/modules/post/entity/post-media.entity';
+import { PostScope } from '@/enums/post-scope.enum';
 import { GetGroupsResponseDto, GroupItemDto } from '../dto/get-groups.dto';
 
 const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
@@ -31,6 +36,9 @@ export class GroupService {
 
     @InjectRepository(Post)
     private readonly postRepo: Repository<Post>,
+
+    @InjectRepository(PostMedia)
+    private readonly postMediaRepo: Repository<PostMedia>,
 
     private readonly dataSource: DataSource,
   ) {}
@@ -241,6 +249,42 @@ export class GroupService {
     });
 
     return { items };
+  }
+
+  private async resolveGroupCover(group: Group) {
+    if (group.coverMedia) {
+      return {
+        assetId: group.coverMedia.id,
+        width: group.coverMedia.width,
+        height: group.coverMedia.height,
+        mimeType: group.coverMedia.mimeType,
+      };
+    }
+
+    const latestMedia = await this.postMediaRepo
+      .createQueryBuilder('pm')
+      .innerJoin('pm.post', 'post')
+      .leftJoinAndSelect('pm.media', 'media')
+      .where('post.groupId = :groupId', { groupId: group.id })
+      .andWhere('post.deletedAt IS NULL')
+      .andWhere('post.scope = :scope', { scope: PostScope.GROUP })
+      .andWhere('pm.kind = :kind', { kind: PostMediaKind.BLOCK })
+      .orderBy('post.eventAt', 'DESC')
+      .addOrderBy('post.createdAt', 'DESC')
+      .addOrderBy('pm.sortOrder', 'ASC')
+      .addOrderBy('pm.createdAt', 'ASC')
+      .getOne();
+
+    if (!latestMedia?.media) {
+      return null;
+    }
+
+    return {
+      assetId: latestMedia.media.id,
+      width: latestMedia.media.width,
+      height: latestMedia.media.height,
+      mimeType: latestMedia.media.mimeType,
+    };
   }
 
   private validateGroupNickname(nickname: string): string {
