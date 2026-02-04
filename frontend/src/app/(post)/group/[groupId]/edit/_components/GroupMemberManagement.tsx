@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Check,
   ChevronRight,
+  Eye,
   Shield,
   ShieldCheck,
   UserMinus,
@@ -51,6 +52,12 @@ const ROLE: Role[] = [
     label: '멤버',
     desc: '그룹의 기록을 열람하고 새로운 기록을 자유롭게 남길 수 있습니다.',
     icon: <Shield className="w-4 h-4" />,
+  },
+  {
+    userId: 'VIEWER',
+    label: '뷰어',
+    desc: '그룹의 기록을 열람할 수 있지만, 수정하거나 새로운 기록을 남길 수 없습니다.',
+    icon: <Eye className="w-4 h-4" />,
   },
 ];
 
@@ -183,7 +190,11 @@ export default function GroupMemberManagement({
                   className="cursor-pointer flex items-center gap-1 group transition-all dark:text-gray-500 dark:hover:text-gray-300 text-gray-400 hover:text-gray-600"
                 >
                   <span className="text-[10px] text-gray-400">
-                    {member.role === 'ADMIN' ? '관리자' : '멤버'}
+                    {member.role === 'ADMIN'
+                      ? '관리자'
+                      : member.role === 'VIEWER'
+                        ? '뷰어'
+                        : '멤버'}
                   </span>
 
                   {me.userId !== member.userId && me.role === 'ADMIN' && (
@@ -264,7 +275,7 @@ export default function GroupMemberManagement({
                   key={role.userId}
                   onClick={() => handleRoleSelect(role.userId)}
                   className={cn(
-                    'cursor-pointer w-full flex items-center justify-between p-5 rounded-2xl border text-left transition-all active:scale-[0.98]',
+                    'gap-2 cursor-pointer w-full flex items-center justify-between p-5 rounded-2xl border text-left transition-all active:scale-[0.98]',
                     tempRole === role.userId
                       ? 'bg-[#10B981]/10 border-[#10B981] text-[#10B981]'
                       : 'dark:bg-white/5 dark:border-white/5 dark:text-gray-400 bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100',
@@ -289,7 +300,7 @@ export default function GroupMemberManagement({
                     </div>
                   </div>
                   {tempRole === role.userId && (
-                    <div className="w-6 h-6 rounded-full bg-[#10B981] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
+                    <div className="p-1 rounded-full bg-[#10B981] flex items-center justify-center shadow-lg shadow-[#10B981]/20">
                       <Check className="w-4 h-4 text-white" strokeWidth={3} />
                     </div>
                   )}

@@ -18,13 +18,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LogOut, MoreVertical, Settings, AlertCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
 import { cn } from '@/lib/utils';
 import { GroupMembersResponse } from '@/lib/types/groupResponse';
+import { groupMyRoleOptions } from '@/lib/api/group';
 
 interface GroupHeaderActionsProps {
   groupInfo: GroupMembersResponse;
@@ -51,6 +52,14 @@ export default function GroupHeaderActions({
     },
   );
 
+  // 현재 그룹의 role 조회
+  const { data: roleData } = useQuery({
+    ...groupMyRoleOptions(groupId),
+    enabled: !!groupId,
+  });
+
+  const isViewer = roleData?.role === 'VIEWER';
+
   const handleLeaveGroup = () => {
     const { userId } = useAuthStore.getState();
     if (userId) {
@@ -73,7 +82,7 @@ export default function GroupHeaderActions({
             보이스 연결
           </button>
         )} */}
-        <GroupInviteDrawer groupId={groupId || 'gruop'} />
+        {!isViewer && <GroupInviteDrawer groupId={groupId || 'gruop'} />}
 
         <DateSelectorDrawer
           className={className}

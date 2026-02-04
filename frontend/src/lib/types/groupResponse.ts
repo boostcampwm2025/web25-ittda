@@ -106,3 +106,7 @@ export interface GroupMembersResponse {
   groupMemberCount: number;
   members: { memberId: string; profileImageId: string | null }[];
 }
+
+export interface GroupMemberRoleResponse {
+  role: GroupRoleType;
+}

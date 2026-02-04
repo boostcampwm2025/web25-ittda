@@ -4,7 +4,10 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { myDailyRecordedDatesOption } from '@/lib/api/my';
-import { groupDailyRecordedDatesOption } from '@/lib/api/group';
+import {
+  groupDailyRecordedDatesOption,
+  groupMyRoleOptions,
+} from '@/lib/api/group';
 import ViewOnMapButton from './ViewOnMapButton';
 
 interface DailyDetailFloatingActionsProps {
@@ -24,6 +27,14 @@ export default function DailyDetailFloatingActions({
       ? groupDailyRecordedDatesOption(groupId, year, month)
       : myDailyRecordedDatesOption(year, month),
   );
+
+  // 그룹 게시글인 경우 권한 확인
+  const { data: roleData } = useQuery({
+    ...groupMyRoleOptions(groupId!),
+    enabled: !!groupId,
+  });
+
+  const isViewer = roleData?.role === 'VIEWER';
 
   const currentIndex = recordedDates.indexOf(date || '');
   const hasPrev = currentIndex < recordedDates.length - 1;
@@ -70,9 +81,15 @@ export default function DailyDetailFloatingActions({
           </button>
           <button
             onClick={() =>
+              !isViewer &&
               router.push(groupId ? `/add?groupId=${groupId}` : '/add')
             }
-            className="cursor-pointer w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all bg-white text-itta-black shrink-0"
+            disabled={groupId ? isViewer : false}
+            className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all shrink-0 ${
+              groupId && isViewer
+                ? 'opacity-50 cursor-not-allowed bg-gray-400 text-gray-200'
+                : 'cursor-pointer active:scale-90 bg-white text-itta-black'
+            }`}
           >
             <Plus className="w-5 h-5" strokeWidth={3.5} />
           </button>

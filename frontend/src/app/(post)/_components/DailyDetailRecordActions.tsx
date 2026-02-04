@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { isImageBlock } from '@/lib/utils/mediaResolver';
+import { useQuery } from '@tanstack/react-query';
+import { groupMyRoleOptions } from '@/lib/api/group';
 
 interface DailyDetailRecordActionsProps {
   record: RecordPreview;
@@ -29,6 +31,14 @@ export default function DailyDetailRecordActions({
     record.groupId || '',
     record.postId,
   );
+
+  // 그룹 게시글인 경우 권한 확인
+  const { data: roleData } = useQuery({
+    ...groupMyRoleOptions(record.groupId!),
+    enabled: !!record.groupId,
+  });
+
+  const isViewer = roleData?.role === 'VIEWER';
 
   const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
   const image = record.blocks.find(isImageBlock);
@@ -79,11 +89,14 @@ export default function DailyDetailRecordActions({
   return (
     <>
       <button
+        disabled={isViewer}
         onClick={(e) => {
           e.stopPropagation();
-          setActiveMenuId(
-            activeMenuId === record.postId ? null : record.postId,
-          );
+          if (!isViewer) {
+            setActiveMenuId(
+              activeMenuId === record.postId ? null : record.postId,
+            );
+          }
         }}
         className="cursor-pointer p-1 text-gray-400 hover:text-gray-600 transition-colors active:scale-90"
       >

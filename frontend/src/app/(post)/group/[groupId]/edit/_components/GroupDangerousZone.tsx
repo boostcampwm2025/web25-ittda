@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import { useDeleteGroup } from '@/hooks/useGroupActions';
 import { Group } from '@/lib/types/group';
+import { GroupEditResponse } from '@/lib/types/groupResponse';
 import { cn } from '@/lib/utils';
 import { AlertCircle, Trash2 } from 'lucide-react';
 
@@ -17,12 +18,14 @@ interface GroupDangerousZoneProps {
   groupName: Group['groupName'];
   groupId: string;
   className?: string;
+  me: GroupEditResponse['me'];
 }
 
 export default function GroupDangerousZone({
   groupName,
   groupId,
   className,
+  me,
 }: GroupDangerousZoneProps) {
   const { mutate: deleteGroup } = useDeleteGroup(groupId, groupName);
 
@@ -33,7 +36,10 @@ export default function GroupDangerousZone({
   return (
     <section className="pt-6">
       <Drawer>
-        <DrawerTrigger className="cursor-pointer w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed text-xs font-bold transition-all active:scale-95 dark:border-red-500/20 dark:text-red-500/60 dark:hover:bg-red-500/5 border-red-200 text-red-400 hover:bg-red-50">
+        <DrawerTrigger
+          disabled={me.role === 'VIEWER'}
+          className="cursor-pointer w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed text-xs font-bold transition-all active:scale-95 dark:border-red-500/20 dark:text-red-500/60 dark:hover:bg-red-500/5 border-red-200 text-red-400 hover:bg-red-50"
+        >
           <Trash2 className="w-4 h-4" />
           그룹 삭제하기
         </DrawerTrigger>

@@ -55,6 +55,7 @@ export const useAuthStore = create<State & Action>()(
               userId: socialUser.id,
               isLoggedIn: true,
               guestSessionId: null,
+              guestAccessToken: null,
               guestSessionExpiresAt: null,
             });
           });
@@ -100,6 +101,7 @@ export const useAuthStore = create<State & Action>()(
           userType: null,
           userId: null,
           isLoggedIn: false,
+          guestAccessToken: null,
           guestSessionId: null,
           guestSessionExpiresAt: null,
         });
