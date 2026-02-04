@@ -36,7 +36,5 @@ export const handlePublishError = (
 
   if (handler) {
     handler();
-  } else {
-    toast.error(error.message || '기록 저장 중 오류가 발생했습니다.');
   }
 };
