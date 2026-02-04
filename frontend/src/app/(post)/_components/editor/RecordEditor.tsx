@@ -619,7 +619,7 @@ export default function PostEditor({
         <div
           ref={gridRef}
           onDragOver={handleGridDragOver}
-          className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300 px-3"
+          className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300 pr-3"
         >
           {blocks.map((block) => {
             const lockKey = `block:${block.id}`;
@@ -638,18 +638,13 @@ export default function PostEditor({
               <div
                 data-block-id={block.id}
                 key={block.id}
-                className={`cursor-grab touch-none relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
+                className={`cursor-grab touch-none relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95 pointer-events-none' : 'opacity-100'}`}
               >
                 <div
-                  onPointerDown={(e) => handlePointerDown(e, block.id)}
-                  onPointerMove={(e) => handlePointerMove(e)}
-                  onPointerUp={handleDragEnd}
-                  className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
+                  className={`relative w-full flex flex-row gap-2 items-center ${
+                    block.layout.col === 1 ? 'justify-start' : 'justify-end'
+                  }`}
                 >
-                  <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
-                </div>
-
-                <div className="w-full flex flex-row gap-2 items-center">
                   {isLockedByOther && owner && (
                     <div>
                       {owner.profileImageId ? (
@@ -672,6 +667,14 @@ export default function PostEditor({
                       )}
                     </div>
                   )}
+                  <div
+                    onPointerDown={(e) => handlePointerDown(e, block.id)}
+                    onPointerMove={(e) => handlePointerMove(e)}
+                    onPointerUp={handleDragEnd}
+                    className="flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
+                  >
+                    <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
+                  </div>
                   <RecordFieldRenderer
                     block={block}
                     streamingValue={streamingValues[block.id]}
