@@ -69,8 +69,20 @@ export class GroupService {
         await manager.save(ownerMember);
 
         return savedGroup;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
+        if (
+          error instanceof BadRequestException ||
+          error instanceof ForbiddenException ||
+          error instanceof NotFoundException
+        ) {
+          throw error;
+        }
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.error(
+          `Failed to create group (ownerId=${ownerId}): ${message}`,
+          error instanceof Error ? error.stack : undefined,
+        );
         throw new InternalServerErrorException(
           '그룹 생성 중 오류가 발생했습니다.',
         );
