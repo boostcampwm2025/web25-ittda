@@ -8,7 +8,7 @@ export default function ProfileAllTagsHeaderActions() {
   const router = useRouter();
 
   return (
-    <header className="px-5 py-6 flex items-center justify-between transition-colors dark:bg-[#121212] bg-white">
+    <header className="sticky top-0 z-50 max-w-4xl w-full mx-auto px-5 py-6 flex items-center justify-between dark:bg-[#121212] bg-white backdrop-blur-xl transition-all duration-500">
       <Back />
       <h2 className="text-[16px] font-medium dark:text-white text-itta-black">
         태그

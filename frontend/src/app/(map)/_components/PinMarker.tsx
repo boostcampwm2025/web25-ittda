@@ -7,6 +7,7 @@ import type { MapPostItem } from '@/lib/types/record';
 import AssetImage from '@/components/AssetImage';
 import { cn } from '@/lib/utils';
 import { randomBaseImage } from '@/lib/image';
+import { Map as MapIcon } from 'lucide-react';
 
 export type PinMarkerProps = {
   post: MapPostItem;
@@ -34,6 +35,8 @@ export const PinMarker = ({
     [setMarkerRef, post.id],
   );
 
+  const hasThumbnail = post.thumbnailMediaId !== null;
+
   return (
     <AdvancedMarker
       position={{ lat: Number(post.lat), lng: Number(post.lng) }}
@@ -43,20 +46,30 @@ export const PinMarker = ({
     >
       <div
         className={cn(
-          'flex justify-center items-center relative bg-secondary rounded-full rounded-br-none transform rotate-45 overflow-hidden transition-all duration-300',
+          'flex justify-center items-center relative rounded-full rounded-br-none transform rotate-45 overflow-hidden transition-all duration-300',
+          hasThumbnail ? 'bg-secondary' : 'bg-white',
           isSelected
             ? 'w-14 h-14 border-2 border-[#10B981] shadow-lg scale-110'
             : 'w-11 h-11 border-[1.5px] border-secondary',
         )}
       >
-        <AssetImage
-          assetId={post.thumbnailMediaId ?? randomBaseImage(post.id)}
-          alt={post.title}
-          fill
-          sizes={isSelected ? '64px' : '48px'}
-          className="object-cover transform -rotate-45 scale-125"
-          onError={() => setIsError(true)}
-        />
+        {hasThumbnail ? (
+          <AssetImage
+            assetId={post.thumbnailMediaId ?? randomBaseImage(post.id)}
+            alt={post.title}
+            fill
+            sizes={isSelected ? '64px' : '48px'}
+            className="object-cover transform -rotate-45 scale-125"
+            onError={() => setIsError(true)}
+          />
+        ) : (
+          <MapIcon
+            className={cn(
+              "text-gray-600 transform -rotate-45",
+              isSelected ? "w-7 h-7" : "w-6 h-6"
+            )}
+          />
+        )}
       </div>
     </AdvancedMarker>
   );

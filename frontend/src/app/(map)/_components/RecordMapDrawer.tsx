@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Loader2, Map as MapIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,9 @@ interface Props {
   selectedPostId: string | string[] | null; // 단일 ID 또는 클러스터 ID
   onSelectPost: (id: string | string[] | null) => void;
   isLoading: boolean;
+  lastItemRef?: (node: HTMLDivElement | null) => void;
+  isFetchingNextPage?: boolean;
+  topOffset?: number; // PWA 배너 등의 상단 오프셋
 }
 
 export default function RecordMapDrawer({
@@ -20,7 +23,11 @@ export default function RecordMapDrawer({
   selectedPostId,
   onSelectPost,
   isLoading,
+  lastItemRef,
+  isFetchingNextPage,
+  topOffset = 0,
 }: Props) {
+  console.log(topOffset);
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastSnappedIdRef = useRef<string | string[] | null>(null);
@@ -74,7 +81,7 @@ export default function RecordMapDrawer({
     onPointerMove,
     onPointerUp,
     snapTo,
-  } = useBottomSheetResize();
+  } = useBottomSheetResize({ topOffset });
 
   useEffect(() => {
     const prevId = prevSelectedPostIdRef.current;
@@ -105,6 +112,7 @@ export default function RecordMapDrawer({
         !isDragging &&
           'transition-all duration-500 cubic-bezier(0.2,0.8,0.2,1)',
       )}
+      onClick={() => onSelectPost(null)}
       style={{ height, borderRadius: '40px 40px 0 0', touchAction: 'none' }}
     >
       <div
@@ -141,17 +149,29 @@ export default function RecordMapDrawer({
                 <Loader2 className="w-8 h-8 animate-spin text-itta-point" />
               </div>
             ) : displayPosts.length ? (
-              displayPosts.map((post) => {
-                return (
-                  <MapRecordItem
-                    key={post.id}
-                    post={post}
-                    isHighlighted={selectedPostId === post.id}
-                    onSelect={() => onSelectPost(post.id)}
-                    onNavigate={() => router.push(`/record/${post.id}`)}
-                  />
-                );
-              })
+              <>
+                {displayPosts.map((post, idx) => {
+                  const isLastItem = idx === displayPosts.length - 1;
+                  return (
+                    <div key={post.id} ref={isLastItem ? lastItemRef : null}>
+                      <MapRecordItem
+                        post={post}
+                        isHighlighted={selectedPostId === post.id}
+                        onSelect={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          onSelectPost(post.id);
+                        }}
+                        onNavigate={() => router.push(`/record/${post.id}`)}
+                      />
+                    </div>
+                  );
+                })}
+                {isFetchingNextPage && (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-itta-point" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="pt-3 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl dark:bg-white/5 bg-white">
                 <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">

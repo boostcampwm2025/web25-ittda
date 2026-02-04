@@ -6,12 +6,12 @@ import { randomBaseImage } from '@/lib/image';
 import { MapPostItem } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Clock, MapPin } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface MapRecordItemProps {
   post: MapPostItem;
   isHighlighted: boolean;
-  onSelect: () => void;
+  onSelect: (e: React.MouseEvent) => void;
   onNavigate: () => void;
 }
 export function MapRecordItem({

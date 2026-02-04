@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import { RecordBlock, RecordDetailResponse } from '../types/record';
 import { MapListResponse, RecordPreview } from '../types/recordResponse';
@@ -76,7 +76,7 @@ export const mapRecordListOptions = ({
   cursor,
   limit,
 }: MapRecordListParams) =>
-  queryOptions({
+  infiniteQueryOptions({
     queryKey: [
       'map',
       'records',
@@ -94,7 +94,7 @@ export const mapRecordListOptions = ({
       limit,
       emotions,
     ],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       const params: Record<string, string | number> = {
         maxLat,
         maxLng,
@@ -110,7 +110,7 @@ export const mapRecordListOptions = ({
       if (from) params.from = from;
       if (to) params.to = to;
       if (tags) params.tags = tags;
-      if (cursor) params.cursor = cursor;
+      if (pageParam) params.cursor = pageParam;
       if (limit !== undefined) params.limit = limit;
       if (emotions) params.emotions = emotions;
 
@@ -120,6 +120,11 @@ export const mapRecordListOptions = ({
         throw createApiError(response);
       }
       return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.hasNextPage) return undefined;
+      return lastPage.hasNextPage ? lastPage.nextCursor : undefined;
     },
     staleTime: PERSONAL_STALE_TIME,
     retry: false,

@@ -20,7 +20,7 @@ export default function TagList({
   const router = useRouter();
 
   const handleSingleTagSearch = (tagName: string) => {
-    router.push(`/search?tag=${tagName}`);
+    router.push(`/search?tags=${tagName}`);
   };
 
   return (

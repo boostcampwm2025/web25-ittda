@@ -15,7 +15,7 @@ interface ImageBlock extends Block {
 /**
  * 블록이 이미지 블록인지 확인
  */
-function isImageBlock(block: Block): block is ImageBlock {
+export function isImageBlock(block: Block): block is ImageBlock {
   return block.type === 'IMAGE';
 }
 
