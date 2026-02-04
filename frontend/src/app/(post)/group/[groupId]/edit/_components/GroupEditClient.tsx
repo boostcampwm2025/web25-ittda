@@ -53,7 +53,7 @@ export default function GroupEditClient({
 
         <GroupMemberManagement groupId={groupId} me={me} />
 
-        <GroupDangerousZone groupName={group.name} groupId={groupId} />
+        <GroupDangerousZone groupName={group.name} me={me} groupId={groupId} />
       </div>
     </GroupEditProvider>
   );
