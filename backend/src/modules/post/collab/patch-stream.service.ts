@@ -1,4 +1,9 @@
-import { HttpException, Injectable, OnModuleDestroy } from '@nestjs/common';
+import {
+  HttpException,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { isUUID } from 'class-validator';
 import type { Server, Socket } from 'socket.io';
@@ -11,8 +16,10 @@ import { acquireLockWithEmit } from './lock-events';
 
 @Injectable()
 export class PatchStreamService implements OnModuleDestroy {
+  private static readonly STREAM_DROP_BUFFER_LIMIT = 50;
   private static readonly STREAM_FLUSH_INTERVAL_MS = 250;
   private readonly streamBuffer = new Map<string, BufferedStream>();
+  private readonly logger = new Logger(PatchStreamService.name);
   private streamFlushTimer?: NodeJS.Timeout;
 
   constructor(
@@ -195,12 +202,22 @@ export class PatchStreamService implements OnModuleDestroy {
     const entries = Array.from(this.streamBuffer.values());
     this.streamBuffer.clear();
     this.streamFlushTimer = undefined;
+    const dropStats = new Map<string, number>();
 
     entries.forEach((entry) => {
       if (!this.isStreamOwner(entry.draftId, entry.blockId, entry.sessionId)) {
         return;
       }
-      this.emitStream(entry);
+      const dropped = this.emitStream(entry);
+      if (dropped > 0) {
+        dropStats.set(entry.room, (dropStats.get(entry.room) ?? 0) + dropped);
+      }
+    });
+
+    dropStats.forEach((dropped, room) => {
+      this.logger.warn(
+        `BLOCK_VALUE_STREAM dropped=${dropped} room=${room} bufferLimit=${PatchStreamService.STREAM_DROP_BUFFER_LIMIT}`,
+      );
     });
 
     if (this.streamBuffer.size > 0) {
@@ -236,11 +253,35 @@ export class PatchStreamService implements OnModuleDestroy {
   }
 
   private emitStream(entry: BufferedStream) {
-    entry.server.to(entry.room).volatile.emit('BLOCK_VALUE_STREAM', {
+    const roomSockets = entry.server.sockets.adapter.rooms.get(entry.room);
+    if (!roomSockets || roomSockets.size === 0) return 0;
+    const payload = {
       blockId: entry.blockId,
       partialValue: entry.partialValue,
       sessionId: entry.sessionId,
+    };
+    let dropped = 0;
+
+    roomSockets.forEach((socketId) => {
+      const socket = entry.server.sockets.sockets.get(socketId);
+      if (!socket) return;
+      const conn = socket.conn as unknown as {
+        transport?: { writable?: boolean };
+        writeBuffer?: unknown[];
+      };
+      if (!conn?.transport?.writable) {
+        dropped += 1;
+        return;
+      }
+      const bufferLength = conn.writeBuffer?.length ?? 0;
+      if (bufferLength >= PatchStreamService.STREAM_DROP_BUFFER_LIMIT) {
+        dropped += 1;
+        return;
+      }
+      socket.volatile.emit('BLOCK_VALUE_STREAM', payload);
     });
+
+    return dropped;
   }
 
   private ensureTitleLockOwner(draftId: string, sessionId: string) {
