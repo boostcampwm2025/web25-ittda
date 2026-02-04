@@ -181,6 +181,15 @@ export default function GoogleMap({
         onClick={() => onMapClick?.()}
         onDrag={onMapClick}
         onIdle={(e) => onBoundsChange?.(e.map.getBounds() ?? null)}
+        restriction={{
+          latLngBounds: {
+            north: 85,
+            south: -85,
+            east: 180,
+            west: -180,
+          },
+          strictBounds: true,
+        }}
       >
         <ClusteredPostMarkers
           posts={posts}

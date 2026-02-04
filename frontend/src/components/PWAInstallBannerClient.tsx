@@ -75,7 +75,7 @@ export default function PWAInstallBannerClient() {
       />
 
       {/* 배너 */}
-      <div className="relative w-full">
+      <div className="relative w-full" data-pwa-banner>
         <div
           onClick={handleInstallClick}
           className="relative p-4 bg-linear-to-br from-itta-point to-itta-point/80 cursor-pointer overflow-hidden group hover:shadow-lg transition-all"

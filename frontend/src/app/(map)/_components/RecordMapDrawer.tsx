@@ -15,6 +15,7 @@ interface Props {
   isLoading: boolean;
   lastItemRef?: (node: HTMLDivElement | null) => void;
   isFetchingNextPage?: boolean;
+  topOffset?: number; // PWA 배너 등의 상단 오프셋
 }
 
 export default function RecordMapDrawer({
@@ -24,7 +25,9 @@ export default function RecordMapDrawer({
   isLoading,
   lastItemRef,
   isFetchingNextPage,
+  topOffset = 0,
 }: Props) {
+  console.log(topOffset);
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastSnappedIdRef = useRef<string | string[] | null>(null);
@@ -78,7 +81,7 @@ export default function RecordMapDrawer({
     onPointerMove,
     onPointerUp,
     snapTo,
-  } = useBottomSheetResize();
+  } = useBottomSheetResize({ topOffset });
 
   useEffect(() => {
     const prevId = prevSelectedPostIdRef.current;
@@ -150,10 +153,7 @@ export default function RecordMapDrawer({
                 {displayPosts.map((post, idx) => {
                   const isLastItem = idx === displayPosts.length - 1;
                   return (
-                    <div
-                      key={post.id}
-                      ref={isLastItem ? lastItemRef : null}
-                    >
+                    <div key={post.id} ref={isLastItem ? lastItemRef : null}>
                       <MapRecordItem
                         post={post}
                         isHighlighted={selectedPostId === post.id}
