@@ -12,6 +12,7 @@ import { Post } from '../post/entity/post.entity';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { MediaAsset } from '../media/entity/media-asset.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
+import { Group } from '../group/entity/group.entity';
 import { UserMonthCover } from '../user/entity/user-month-cover.entity';
 import { Template } from '../template/entity/template.entity';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -48,45 +49,70 @@ export class GuestMigrationService {
 
     try {
       await this.userRepo.manager.transaction(async (em) => {
+        // 게스트의 프로필 정보 이전
         await this.migrateProfile(em, guestUserId, targetUserId);
 
+        // 게스트가 생성한 포스트 정보 이전
         await em.update(
           Post,
           { ownerUserId: guestUserId },
           { ownerUserId: targetUserId },
         );
+        // 게스트가 생성한 미디어 에셋 정보 이전
         await em.update(
           MediaAsset,
           { ownerUserId: guestUserId },
           { ownerUserId: targetUserId },
         );
+        // 게스트가 생성한 템플릿 정보 이전
         await em.update(
           Template,
           { ownerUserId: guestUserId },
           { ownerUserId: targetUserId },
         );
 
+        // 게스트가 참여한 그룹 멤버 정보 이전
         await this.migrateGroupMembers(em, guestUserId, targetUserId);
+        // 게스트가 기여한 포스트 정보 이전
         await this.migratePostContributors(em, guestUserId, targetUserId);
+        // 게스트가 생성한 월간 커버 정보 이전
         await this.migrateUserMonthCovers(em, guestUserId, targetUserId);
 
+        // 게스트가 생성한 그룹의 소유권 이전
+        await this.migrateGroupOwnership(em, guestUserId, targetUserId);
+
+        // 이전 완료 후 게스트 세션에서 삭제
         await em.delete(GuestSession, { id: guestSessionId });
+        // 이전 완료 후 게스트를 유저 테이블에서 삭제
         await em.delete(User, { id: guestUserId });
       });
     } catch (error) {
       if (error instanceof QueryFailedError) {
-        this.logger.error('DB Query Failed', {
+        this.logger.error('DB Query Failed in GuestMigrationService', {
           message: error.message,
           stack: error.stack,
+          // guestUserId,
+          // targetUserId,
+          // // PostgreSQL specific error details
+          // // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          // detail: (error as any).detail,
+          // // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          // constraint: (error as any).constraint,
+          // // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          // code: (error as any).code,
         });
         throw new InternalServerErrorException(
           '데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         );
       }
+
       this.logger.error('Unexpected error in GuestMigrationService', {
         message: (error as Error).message,
         stack: (error as Error).stack,
+        guestUserId,
+        targetUserId,
       });
+
       throw new InternalServerErrorException(
         '서버에서 알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
       );
@@ -190,5 +216,23 @@ export class GuestMigrationService {
         );
       }
     }
+  }
+
+  /**
+   * 게스트가 생성한 그룹의 소유권을 대상 사용자에게 이전
+   */
+  private async migrateGroupOwnership(
+    em: EntityManager,
+    guestUserId: string,
+    targetUserId: string,
+  ) {
+    // Group 엔티티에서 owner 관계는 JoinColumn으로 owner_id 컬럼을 사용
+    // 직접 update 쿼리 사용 (relation을 통해 조회하는 것보다 안전)
+    await em
+      .createQueryBuilder()
+      .update(Group)
+      .set({ owner: { id: targetUserId } })
+      .where('owner.id = :guestUserId', { guestUserId })
+      .execute();
   }
 }

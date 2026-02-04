@@ -46,7 +46,7 @@ export class MyPageController {
     @Req() req: RequestWithUser,
   ): Promise<UserSummaryResponseDto> {
     const userId = req.user.sub;
-    console.log(req.user);
+
     const user = await this.myPageService.findOne(userId);
     const stats = await this.statsService.getUserStats(userId);
 
