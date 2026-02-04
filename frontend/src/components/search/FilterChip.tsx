@@ -40,7 +40,7 @@ export const FilterChip = ({
         'px-4 flex items-center gap-1 shrink-0 rounded-lg text-xs font-semibold transition-all duration-200 border',
         isActive
           ? 'bg-itta-point border-itta-point text-white shadow-md'
-          : 'border-black/5 bg-white dark:bg-[#1E1E1E] text-itta-gray3 hover:bg-gray-50 dark:hover:bg-black',
+          : 'border-black/5 bg-white dark:bg-[#1E1E1E] dark:text-gray-300 text-gray-600 hover:bg-gray-50 dark:hover:bg-black',
         className,
       )}
     >

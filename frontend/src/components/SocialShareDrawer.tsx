@@ -22,6 +22,7 @@ import {
   TwitterShareButton,
 } from 'react-share';
 import Image from 'next/image';
+import { useMediaResolveSingle } from '@/hooks/useMediaResolve';
 
 declare global {
   interface Window {
@@ -58,11 +59,13 @@ export default function SocialShareDrawer({
   onOpenChange,
   record,
 }: SocialShareDrawerProps) {
+  const { data } = useMediaResolveSingle(record.image ?? undefined);
+
   const handleKakaoShare = () => {
     if (!window.Kakao || !window.Kakao?.Share) return;
 
-    const imageUrl = record.image
-      ? record.image
+    const imageUrl = data?.url
+      ? data.url
       : `${process.env.NEXT_PUBLIC_CLIENT_URL}/thumbnail.png`;
 
     window.Kakao.Share.sendDefault({

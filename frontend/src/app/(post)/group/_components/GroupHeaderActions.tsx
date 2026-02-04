@@ -12,14 +12,14 @@ import {
 import { Popover } from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useGroupVoice } from '@/store/useGroupVoice';
+// import { useGroupVoice } from '@/store/useGroupVoice';
 import {
   PopoverClose,
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogOut, Mic, MoreVertical, Settings, AlertCircle } from 'lucide-react';
+import { LogOut, MoreVertical, Settings, AlertCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
@@ -36,17 +36,20 @@ export default function GroupHeaderActions({
 }: GroupHeaderActionsProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const groupId = pathname.split('/').at(-1);
-  const { isVoiceActive, setIsVoiceActive } = useGroupVoice();
+  const groupId = pathname.split('/')[2];
+  // const { isVoiceActive, setIsVoiceActive } = useGroupVoice();
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
 
   const queryClient = useQueryClient();
-  const { mutate: leaveGroup } = useApiDelete(`/api/${groupId}/members/me`, {
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['share'] });
-      router.push('/shared');
+  const { mutate: leaveGroup } = useApiDelete(
+    `/api/groups/${groupId}/members/me`,
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['share'] });
+        router.push('/shared');
+      },
     },
-  });
+  );
 
   const handleLeaveGroup = () => {
     const { userId } = useAuthStore.getState();

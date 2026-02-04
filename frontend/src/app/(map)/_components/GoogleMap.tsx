@@ -31,21 +31,24 @@ function FlyToOnSelect({
   lat,
   lng,
   offsetX = 0,
+  offsetY = 0,
+  zoom = 16,
 }: {
   lat: number;
   lng: number;
   offsetX?: number;
+  offsetY?: number;
+  zoom?: number;
 }) {
   const map = useMap();
   useEffect(() => {
     if (!map) return;
     try {
       map.panTo({ lat, lng });
-      // 필요하면 줌도 고정
-      // map.setZoom(13);
+      map.setZoom(zoom);
 
-      if (offsetX !== 0) {
-        map.panBy(-offsetX, 0);
+      if (offsetX !== 0 || offsetY !== 0) {
+        map.panBy(-offsetX, offsetY);
       }
     } catch (error) {
       // 지도 이동 실패는 UX에 영향을 주므로 추적
@@ -59,11 +62,12 @@ function FlyToOnSelect({
           lat,
           lng,
           offsetX,
+          offsetY,
         },
       });
       logger.error('지도 이동 실패', error);
     }
-  }, [map, lat, lng, offsetX]);
+  }, [map, lat, lng, offsetX, offsetY, zoom]);
   return null;
 }
 
@@ -166,6 +170,8 @@ export default function GoogleMap({
   return (
     <div className="bg-yellow-50 w-full h-full relative">
       <Map
+        minZoom={3}
+        maxZoom={20}
         colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
         mapId={mapId}
         defaultCenter={{ lat: 37.5665, lng: 126.978 }}
@@ -173,7 +179,17 @@ export default function GoogleMap({
         gestureHandling="greedy"
         disableDefaultUI={true}
         onClick={() => onMapClick?.()}
+        onDrag={onMapClick}
         onIdle={(e) => onBoundsChange?.(e.map.getBounds() ?? null)}
+        restriction={{
+          latLngBounds: {
+            north: 85,
+            south: -85,
+            east: 180,
+            west: -180,
+          },
+          strictBounds: true,
+        }}
       >
         <ClusteredPostMarkers
           posts={posts}
@@ -185,6 +201,7 @@ export default function GoogleMap({
           <FlyToOnSelect
             lat={Number(selectedPost.lat)}
             lng={Number(selectedPost.lng)}
+            offsetY={130}
           />
         )}
         <MapHandler
