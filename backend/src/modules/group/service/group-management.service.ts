@@ -12,6 +12,7 @@ import { Repository } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
+import { GroupActivityType } from '@/enums/group-activity-type.enum';
 import { User } from '../../user/entity/user.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import {
@@ -29,6 +30,7 @@ import {
   GetGroupCoverCandidatesResponseDto,
   CoverCandidateItemDto,
 } from '../dto/get-group-cover-candidates.dto';
+import { GroupActivityService } from './group-activity.service';
 
 const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
 
@@ -54,6 +56,7 @@ export class GroupManagementService {
 
     @InjectRepository(MediaAsset)
     private readonly mediaAssetRepo: Repository<MediaAsset>,
+    private readonly groupActivityService: GroupActivityService,
   ) {}
 
   /** 멤버 초대 (ADMIN만 가능하도록 Controller/Guard에서 제한) */
@@ -116,6 +119,13 @@ export class GroupManagementService {
       group: { id: groupId },
       user: { id: targetUserId },
     });
+
+    await this.groupActivityService.recordActivity({
+      groupId,
+      type: GroupActivityType.MEMBER_REMOVE,
+      actorIds: [requesterId],
+      meta: { targetUserId },
+    });
   }
 
   /** 권한 변경 (본인 권한 변경 불가 로직 추가) */
@@ -138,8 +148,20 @@ export class GroupManagementService {
         },
       });
 
+      const beforeRole = member.role;
       member.role = role;
-      return await this.groupMemberRepo.save(member);
+      const saved = await this.groupMemberRepo.save(member);
+      await this.groupActivityService.recordActivity({
+        groupId,
+        type: GroupActivityType.MEMBER_ROLE_CHANGE,
+        actorIds: [requesterId],
+        meta: {
+          targetUserId: userId,
+          beforeRole,
+          afterRole: role,
+        },
+      });
+      return saved;
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
 
@@ -173,6 +195,12 @@ export class GroupManagementService {
     if (deleteResult.affected === 0) {
       throw new BadRequestException('그룹 멤버가 아닙니다.');
     }
+
+    await this.groupActivityService.recordActivity({
+      groupId,
+      type: GroupActivityType.MEMBER_LEAVE,
+      actorIds: [userId],
+    });
   }
 
   /** 그룹 멤버 조회 */
@@ -263,6 +291,13 @@ export class GroupManagementService {
     await this.groupRepo.update(groupId, {
       coverMediaId: assetId,
       coverSourcePostId: sourcePostId,
+    });
+
+    await this.groupActivityService.recordActivity({
+      groupId,
+      type: GroupActivityType.GROUP_COVER_UPDATE,
+      actorIds: [userId],
+      meta: null,
     });
 
     // 5. 응답 반환
@@ -433,6 +468,7 @@ export class GroupManagementService {
     dto: UpdateGroupMemberMeDto,
   ): Promise<GetGroupMemberMeResponseDto> {
     const { nicknameInGroup, profileMediaId } = dto;
+    const beforeNickname = member.nicknameInGroup ?? null;
 
     // 1. 변경 사항이 하나도 없으면 오류 반환
     if (!nicknameInGroup && !profileMediaId) {
@@ -484,6 +520,21 @@ export class GroupManagementService {
 
     // 5. 저장
     await this.groupMemberRepo.save(member);
+
+    if (
+      nicknameInGroup !== undefined &&
+      member.nicknameInGroup !== beforeNickname
+    ) {
+      await this.groupActivityService.recordActivity({
+        groupId,
+        type: GroupActivityType.MEMBER_NICKNAME_CHANGE,
+        actorIds: [userId],
+        meta: {
+          beforeNickname,
+          afterNickname: member.nicknameInGroup ?? null,
+        },
+      });
+    }
 
     // 6. 업데이트된 정보 재조회 (관련 필드 포함)
     return this.getGroupMemberMe(userId, groupId);
