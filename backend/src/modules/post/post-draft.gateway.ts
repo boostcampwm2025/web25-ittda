@@ -331,6 +331,13 @@ export class PostDraftGateway
     });
   }
 
+  broadcastDraftPublishFailed(draftId: string, message: string) {
+    this.server.to(this.getDraftRoom(draftId)).emit('DRAFT_PUBLISH_FAILED', {
+      draftId,
+      message,
+    });
+  }
+
   private getDraftRoom(draftId: string) {
     return `draft:${draftId}`;
   }

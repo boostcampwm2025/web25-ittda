@@ -196,6 +196,10 @@ export class PostPublishService {
       this.postDraftGateway.broadcastDraftPublished(draftId, postId);
       return postId;
     } catch (error) {
+      this.postDraftGateway.broadcastDraftPublishFailed(
+        draftId,
+        this.resolvePublishFailureMessage(error),
+      );
       if (error instanceof QueryFailedError) {
         const dbError = error as { code?: string };
         if (dbError.code === '23505') {
@@ -364,6 +368,10 @@ export class PostPublishService {
       this.postDraftGateway.broadcastDraftPublished(draftId, postId);
       return postId;
     } catch (error) {
+      this.postDraftGateway.broadcastDraftPublishFailed(
+        draftId,
+        this.resolvePublishFailureMessage(error),
+      );
       if (error instanceof QueryFailedError) {
         const dbError = error as { code?: string };
         if (dbError.code === '23505') {
@@ -374,6 +382,19 @@ export class PostPublishService {
     } finally {
       this.draftStateService.finishPublishing(draftId);
     }
+  }
+
+  private resolvePublishFailureMessage(error: unknown): string {
+    if (
+      error instanceof BadRequestException ||
+      error instanceof ConflictException ||
+      error instanceof ForbiddenException ||
+      error instanceof NotFoundException ||
+      error instanceof UnauthorizedException
+    ) {
+      return error.message;
+    }
+    return '발행에 실패했습니다.';
   }
 
   private ensureBlockIds(blocks: CreatePostDto['blocks']) {
