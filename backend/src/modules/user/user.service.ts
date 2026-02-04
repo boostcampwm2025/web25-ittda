@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from './entity/user.entity';
@@ -19,6 +19,8 @@ import type { OAuthUserType } from '@/modules/auth/auth.type';
 // User Service에서 기능 구현
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -69,6 +71,7 @@ export class UserService {
     userId: string,
     year: number,
   ): Promise<MonthRecordResponseDto[]> {
+    this.cleanupStaleUserMonthCovers(userId);
     // 1. 조회 기간 설정 (YYYY-01-01 ~ YYYY-12-31)
     // 타임존은 일단 KST/UTC 이슈 없이 "해당 연도에 포함된" 모든 글을 가져온 뒤 JS에서 월별로 그룹핑하는 전략
     // (DB Timezone issue를 피하기 위해 넉넉하게 가져와서 application level grouping)
@@ -122,11 +125,6 @@ export class UserService {
     const customCovers = await this.userMonthCoverRepo.find({
       where: { userId, year },
     });
-    const customCoverMap = new Map<string, string>(); // "yyyy-MM" -> url
-    for (const c of customCovers) {
-      const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
-      customCoverMap.set(key, c.coverAssetId ?? '');
-    }
 
     // 4. 각 월별 "대표(최신) 포스트 ID" 추출
     const monthKeys = Array.from(postsByMonth.keys()).sort().reverse(); // 최신 달부터
@@ -157,27 +155,95 @@ export class UserService {
       representativePostMap.set(latestPost.id, latestPost);
     }
 
-    // 5. 대표 포스트들의 메타데이터(이미지, 위치) 조회 (Batch)
-    // 필요한 Block Type: IMAGE(썸네일용), LOCATION(장소명용)
-    const blocks = await this.postBlockRepo.find({
+    const imageBlocks = await this.postBlockRepo.find({
       where: {
-        postId: In(representativePostIds),
-        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+        postId: In(posts.map((p) => p.id)),
+        type: PostBlockType.IMAGE,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
       },
     });
 
-    const blocksByPostId = new Map<string, PostBlock[]>();
-    for (const b of blocks) {
-      const list = blocksByPostId.get(b.postId) ?? [];
+    const imageBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of imageBlocks) {
+      const list = imageBlocksByPostId.get(b.postId) ?? [];
       list.push(b);
-      blocksByPostId.set(b.postId, list);
+      imageBlocksByPostId.set(b.postId, list);
+    }
+
+    const validMediaIdsByMonth = new Map<string, Set<string>>();
+    for (const [monthKey, monthPosts] of postsByMonth.entries()) {
+      const mediaIds = new Set<string>();
+      for (const post of monthPosts) {
+        const blocks = imageBlocksByPostId.get(post.id);
+        if (!blocks) continue;
+        for (const block of blocks) {
+          const val = block.value as { mediaIds?: string[] };
+          if (val.mediaIds && val.mediaIds.length > 0) {
+            val.mediaIds.forEach((id) => mediaIds.add(id));
+          }
+        }
+      }
+      validMediaIdsByMonth.set(monthKey, mediaIds);
+    }
+
+    const customCoverMap = new Map<string, string>(); // "yyyy-MM" -> assetId
+    const invalidCoverIds: string[] = [];
+    for (const c of customCovers) {
+      if (!c.coverAssetId) continue;
+      const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
+      const validSet = validMediaIdsByMonth.get(key);
+      if (!validSet || !validSet.has(c.coverAssetId)) {
+        invalidCoverIds.push(c.id);
+        continue;
+      }
+      customCoverMap.set(key, c.coverAssetId);
+    }
+    if (invalidCoverIds.length > 0) {
+      void this.userMonthCoverRepo
+        .createQueryBuilder()
+        .update()
+        .set({ coverAssetId: null })
+        .where('id IN (:...ids)', { ids: invalidCoverIds })
+        .execute()
+        .catch((error) => {
+          const message =
+            error instanceof Error ? error.message : 'unknown error';
+          this.logger.warn(
+            `Failed to cleanup invalid user month covers (userId=${userId}): ${message}`,
+          );
+        });
+    }
+
+    const locationBlocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: PostBlockType.LOCATION,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
+      },
+    });
+
+    const locationBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of locationBlocks) {
+      const list = locationBlocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      locationBlocksByPostId.set(b.postId, list);
     }
 
     // 6. DTO 조립
     const results: MonthRecordResponseDto[] = [];
     for (const mKey of monthKeys) {
       const { postCount, latestPost } = resultFromMonth.get(mKey)!;
-      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
+      const monthPosts = postsByMonth.get(mKey)!;
 
       // 6-1. 커버 이미지 찾기 (AssetID 사용)
       // 우선순위: 1. UserSelected 2. Latest Post Image
@@ -187,22 +253,18 @@ export class UserService {
       if (customId) {
         coverAssetId = customId;
       } else {
-        const imageBlock = relatedBlocks.find(
-          (b) => b.type === PostBlockType.IMAGE,
+        const latestImage = this.findLatestImageFromPosts(
+          monthPosts,
+          imageBlocksByPostId,
         );
-        if (imageBlock) {
-          const val =
-            imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
-          if (val.mediaIds && val.mediaIds.length > 0) {
-            coverAssetId = val.mediaIds[0];
-          }
+        if (latestImage) {
+          coverAssetId = latestImage.assetId;
         }
       }
 
       // 6-2. 위치 이름 찾기
-      const locationBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.LOCATION,
-      );
+      const locationBlock =
+        locationBlocksByPostId.get(latestPost.id)?.[0] ?? null;
       let placeName: string | null = null;
       if (locationBlock) {
         const val =
@@ -376,6 +438,25 @@ export class UserService {
     }
   }
 
+  private cleanupStaleUserMonthCovers(userId: string) {
+    void this.userMonthCoverRepo
+      .createQueryBuilder()
+      .update()
+      .set({ coverAssetId: null })
+      .where('userId = :userId', { userId })
+      .andWhere(
+        '"cover_media_asset_id" IN (SELECT id FROM media_assets WHERE deleted_at IS NOT NULL)',
+      )
+      .execute()
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(
+          `Failed to cleanup user month covers (userId=${userId}): ${message}`,
+        );
+      });
+  }
+
   /**
    * 일별 기록(아카이브) 조회 - 달력용
    */
@@ -444,45 +525,66 @@ export class UserService {
       representativePostIds.push(latestPost.id);
     }
 
-    // 4. 대표 포스트 메타데이터(이미지, 위치) Batch 조회
-    const blocks = await this.postBlockRepo.find({
+    const imageBlocks = await this.postBlockRepo.find({
       where: {
-        postId: In(representativePostIds),
-        type: In([PostBlockType.IMAGE, PostBlockType.LOCATION]),
+        postId: In(posts.map((p) => p.id)),
+        type: PostBlockType.IMAGE,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
       },
     });
 
-    const blocksByPostId = new Map<string, PostBlock[]>();
-    for (const b of blocks) {
-      const list = blocksByPostId.get(b.postId) ?? [];
+    const imageBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of imageBlocks) {
+      const list = imageBlocksByPostId.get(b.postId) ?? [];
       list.push(b);
-      blocksByPostId.set(b.postId, list);
+      imageBlocksByPostId.set(b.postId, list);
+    }
+
+    const locationBlocks = await this.postBlockRepo.find({
+      where: {
+        postId: In(representativePostIds),
+        type: PostBlockType.LOCATION,
+      },
+      order: {
+        postId: 'ASC',
+        layoutRow: 'ASC',
+        layoutCol: 'ASC',
+        layoutSpan: 'ASC',
+      },
+    });
+
+    const locationBlocksByPostId = new Map<string, PostBlock[]>();
+    for (const b of locationBlocks) {
+      const list = locationBlocksByPostId.get(b.postId) ?? [];
+      list.push(b);
+      locationBlocksByPostId.set(b.postId, list);
     }
 
     // 5. DTO 조립
     const results: DayRecordResponseDto[] = [];
     for (const dKey of dayKeys) {
       const { postCount, latestPost } = resultFromDay.get(dKey)!;
-      const relatedBlocks = blocksByPostId.get(latestPost.id) ?? [];
+      const dayPosts = postsByDay.get(dKey)!;
 
       // 커버 이미지
       let coverAssetId: string | null = null;
-      const imageBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.IMAGE,
+      const latestImage = this.findLatestImageFromPosts(
+        dayPosts,
+        imageBlocksByPostId,
       );
-      if (imageBlock) {
-        const val =
-          imageBlock.value as BlockValueMap[typeof PostBlockType.IMAGE];
-        if (val.mediaIds && val.mediaIds.length > 0) {
-          coverAssetId = val.mediaIds[0];
-        }
+      if (latestImage) {
+        coverAssetId = latestImage.assetId;
       }
 
       // 위치 이름
       let latestPlaceName: string | null = null;
-      const locationBlock = relatedBlocks.find(
-        (b) => b.type === PostBlockType.LOCATION,
-      );
+      const locationBlock =
+        locationBlocksByPostId.get(latestPost.id)?.[0] ?? null;
       if (locationBlock) {
         const val =
           locationBlock.value as BlockValueMap[typeof PostBlockType.LOCATION];
@@ -629,5 +731,22 @@ export class UserService {
 
     // 최신순 정렬
     return Array.from(dateSet).sort().reverse();
+  }
+
+  private findLatestImageFromPosts(
+    posts: Post[],
+    imageBlocksByPostId: Map<string, PostBlock[]>,
+  ): { assetId: string; sourcePostId: string } | null {
+    for (const post of posts) {
+      const blocks = imageBlocksByPostId.get(post.id);
+      if (!blocks) continue;
+      for (const block of blocks) {
+        const val = block.value as { mediaIds?: string[] };
+        if (val.mediaIds && val.mediaIds.length > 0) {
+          return { assetId: val.mediaIds[0], sourcePostId: post.id };
+        }
+      }
+    }
+    return null;
   }
 }

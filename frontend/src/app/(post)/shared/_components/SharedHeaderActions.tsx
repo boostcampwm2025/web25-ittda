@@ -58,6 +58,7 @@ export default function SharedHeaderActions() {
         createdAt: response.data.createdAt,
         lastActivityAt: response.data.createdAt,
         latestPost: null,
+        permission: 'ADMIN',
       };
       // 서버 응답 데이터를 캐시에 즉시 추가
       queryClient.setQueryData<GroupSummary[]>(['shared'], (old) => {

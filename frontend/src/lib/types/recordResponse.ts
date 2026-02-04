@@ -34,6 +34,7 @@ export interface RecordPreview {
   scope: 'ME' | 'GROUP';
   contributors: Contributor[];
   groupId: string | null;
+  groupName?: string | null;
   title: string;
   eventAt: string;
   createdAt: string;
@@ -66,6 +67,7 @@ export interface GroupSummary {
   createdAt: string;
   lastActivityAt: string;
   latestPost: LatestPost | null;
+  permission: 'ADMIN' | 'EDITOR' | 'VIEWER';
 }
 
 export interface Unread {

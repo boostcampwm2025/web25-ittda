@@ -1,6 +1,7 @@
 import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, handleLogout } from './auth';
 import * as Sentry from '@sentry/nextjs';
+import { useAuthStore } from '@/store/useAuthStore';
 
 /**
  * API Base URL 결정
@@ -105,30 +106,66 @@ async function fetchWithRetry<T>(
       const newToken = await refreshAccessToken();
 
       if (!newToken) {
-        // 재발급 실패 - 로그아웃 처리
-        const error = new Error('토큰 재발급 실패 - 세션 만료');
-        Sentry.captureException(error, {
-          level: 'warning',
-          tags: {
-            context: 'api',
-            operation: 'token-refresh-failure',
-          },
-          extra: {
-            endpoint: url,
-          },
-        });
+        // 사용자 타입 확인
+        const { userType } = useAuthStore.getState();
 
-        await handleLogout();
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-          return;
+        // 게스트 사용자 처리
+        if (userType === 'guest') {
+          // 게스트 세션 만료 - 로그아웃 후 안내 페이지로 이동
+          await handleLogout();
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login?reason=guest-expired';
+            return;
+          }
+          return {
+            success: false,
+            data: null,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: '게스트 세션이 만료되었습니다.',
+              details: {},
+            },
+          };
         }
+
+        // 소셜 사용자 처리
+        if (userType === 'social') {
+          // 소셜 사용자는 재발급 실패 시 로그아웃 처리
+          const error = new Error('토큰 재발급 실패 - 세션 만료');
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              context: 'api',
+              operation: 'token-refresh-failure',
+            },
+            extra: {
+              endpoint: url,
+            },
+          });
+
+          await handleLogout();
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+            return;
+          }
+          return {
+            success: false,
+            data: null,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: '인증이 만료되었습니다. 다시 로그인해주세요.',
+              details: {},
+            },
+          };
+        }
+
+        // 로딩 중인 경우 에러만 반환
         return {
           success: false,
           data: null,
           error: {
             code: 'UNAUTHORIZED',
-            message: '인증이 만료되었습니다. 다시 로그인해주세요.',
+            message: '인증이 필요합니다.',
             details: {},
           },
         };

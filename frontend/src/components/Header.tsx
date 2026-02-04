@@ -11,11 +11,13 @@ import AssetImage from './AssetImage';
 
 export default function Header() {
   const router = useRouter();
-  const { userId, setLogin } = useAuthStore();
+  const { userId, userType, setLogin } = useAuthStore();
 
   const { data: userProfile } = useQuery(userProfileOptions());
 
-  if (userProfile && !userId) {
+  // userType이 없을 때만 프로필 조회 결과로 상태 설정
+  // 이미 guest나 social로 설정된 경우 건드리지 않음
+  if (userProfile && !userId && !userType) {
     setLogin({
       id: userProfile.userId,
       email: userProfile.user.email ?? 'example.com',

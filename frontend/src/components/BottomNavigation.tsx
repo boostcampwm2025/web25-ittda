@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { AddRecordDrawer } from '@/app/(post)/group/_components/AddRecordDrawer';
 import { useQuery } from '@tanstack/react-query';
-import { groupListOptions } from '@/lib/api/group';
+import { groupListOptions, groupMyRoleOptions } from '@/lib/api/group';
 
 export default function BottomNavigation() {
   const pathname = usePathname();
@@ -24,13 +24,29 @@ export default function BottomNavigation() {
   const [isGroupSelectOpen, setIsGroupSelectOpen] = useState(false);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false); // 그룹 상세용 기록 방식 선택
 
+  // effectiveGroupId 먼저 계산
+  const groupMatch = pathname.match(/\/group\/([^/]+)/);
+  const pathGroupId = groupMatch ? groupMatch[1] : null;
+  const searchParamsGroupId = searchParams.get('groupId');
+  const scope = searchParams.get('scope');
+  const effectiveGroupId = pathGroupId || (scope === 'group' ? searchParamsGroupId : null);
+
   const { data: groups = [] } = useQuery({
     ...groupListOptions(),
     enabled: isGroupSelectOpen,
   });
 
+  // 현재 그룹의 role 조회
+  const { data: roleData } = useQuery({
+    ...groupMyRoleOptions(effectiveGroupId!),
+    enabled: !!effectiveGroupId,
+  });
+
   const isSharedPage = pathname === '/shared';
   const isGroupDetail = /\/group\/[^/]+\/(post|draft)\//.test(pathname);
+
+  // VIEWER 권한 확인
+  const isViewer = roleData?.role === 'VIEWER';
 
   const minimalPaths = [
     '/add',
@@ -53,16 +69,6 @@ export default function BottomNavigation() {
   const showNav =
     !minimalPaths.includes(pathname) && !isDetail && !isGroupChat && !isLogin;
 
-  const groupMatch = pathname.match(/\/group\/([^/]+)/);
-  const pathGroupId = groupMatch ? groupMatch[1] : null;
-
-  // searchParams에서 groupId 가져오기 (pathname에 없는 경우)
-  const searchParamsGroupId = searchParams.get('groupId');
-  const scope = searchParams.get('scope');
-
-  // pathname에서 groupId를 찾거나, scope가 'group'이면 searchParams의 groupId 사용
-  const effectiveGroupId = pathGroupId || (scope === 'group' ? searchParamsGroupId : null);
-
   if (!showNav) return null;
   if (isGroupDetail) return null;
 
@@ -83,8 +89,13 @@ export default function BottomNavigation() {
             isGroup
           />
           <button
-            onClick={() => setIsAddDrawerOpen(true)}
-            className="cursor-pointer w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white"
+            onClick={() => !isViewer && setIsAddDrawerOpen(true)}
+            disabled={isViewer}
+            className={`w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl transition-all ring-4 ${
+              isViewer
+                ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200 ring-white'
+                : 'cursor-pointer active:scale-95 dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white'
+            }`}
           >
             <Plus className="w-7 h-7" strokeWidth={3} />
           </button>

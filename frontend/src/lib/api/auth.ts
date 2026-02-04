@@ -117,6 +117,14 @@ export async function refreshAccessToken(): Promise<string | null> {
   isRefreshing = true;
 
   try {
+    // 게스트 사용자인지 확인
+    const { userType } = useAuthStore.getState();
+
+    // 게스트 사용자는 refresh token이 없으므로 재발급 시도하지 않음
+    if (userType === 'guest') {
+      return null;
+    }
+
     // 직접 백엔드에 쏘지 않고 NextAuth의 getSession 호출
     // getSession()이 호출되면 서버의 jwt 콜백이 실행되면서
     // refreshServerAccessToken 로직이 돌아감

@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { isImageBlock } from '@/lib/utils/mediaResolver';
+import { useQuery } from '@tanstack/react-query';
+import { groupMyRoleOptions } from '@/lib/api/group';
 
 interface DailyDetailRecordActionsProps {
   record: RecordPreview;
@@ -25,19 +27,21 @@ export default function DailyDetailRecordActions({
   const [shareOpen, setShareOpen] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
 
-  const router = useRouter();
   const { mutateAsync: startGroupEdit } = useEditPostDraft(
     record.groupId || '',
     record.postId,
   );
+
+  // 그룹 게시글인 경우 권한 확인
+  const { data: roleData } = useQuery({
+    ...groupMyRoleOptions(record.groupId!),
+    enabled: !!record.groupId,
+  });
+
+  const isViewer = roleData?.role === 'VIEWER';
 
   const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
   const image = record.blocks.find(isImageBlock);
-
-  const { mutateAsync: startGroupEdit } = useEditPostDraft(
-    record.groupId || '',
-    record.postId,
-  );
 
   // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
@@ -85,11 +89,14 @@ export default function DailyDetailRecordActions({
   return (
     <>
       <button
+        disabled={isViewer}
         onClick={(e) => {
           e.stopPropagation();
-          setActiveMenuId(
-            activeMenuId === record.postId ? null : record.postId,
-          );
+          if (!isViewer) {
+            setActiveMenuId(
+              activeMenuId === record.postId ? null : record.postId,
+            );
+          }
         }}
         className="cursor-pointer p-1 text-gray-400 hover:text-gray-600 transition-colors active:scale-90"
       >
@@ -110,7 +117,7 @@ export default function DailyDetailRecordActions({
               공유하기
             </button>
             <button
-              onClick={handleEdit}
+              onClick={(e) => handleEdit(record, e)}
               className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
             >
               수정하기

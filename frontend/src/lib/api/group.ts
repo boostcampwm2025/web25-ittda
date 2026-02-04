@@ -11,6 +11,7 @@ import {
 import {
   GroupEditResponse,
   GroupMemberProfileResponse,
+  GroupMemberRoleResponse,
   GroupMembersResponse,
 } from '../types/groupResponse';
 import { createApiError } from '../utils/errorHandler';
@@ -138,6 +139,20 @@ export const groupMyProfileOptions = (groupId: string) =>
     queryFn: async () => {
       const res = await get<GroupMemberProfileResponse>(
         `/api/groups/${groupId}/members/me`,
+      );
+      if (!res.success) throw createApiError(res);
+
+      return res.data;
+    },
+    staleTime: PERSONAL_STALE_TIME,
+  });
+
+export const groupMyRoleOptions = (groupId: string) =>
+  queryOptions({
+    queryKey: ['group', groupId, 'me', 'role'],
+    queryFn: async () => {
+      const res = await get<GroupMemberRoleResponse>(
+        `/api/groups/${groupId}/members/me/role`,
       );
       if (!res.success) throw createApiError(res);
 

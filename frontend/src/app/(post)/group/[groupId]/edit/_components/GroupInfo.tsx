@@ -55,7 +55,10 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
     <section className="space-y-4">
       <div className="flex flex-col items-center mb-6">
         <Drawer>
-          <DrawerTrigger className="relative cursor-pointer">
+          <DrawerTrigger
+            disabled={me.role === 'VIEWER'}
+            className="relative cursor-pointer"
+          >
             <div className="w-24 h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
               {groupThumbnail?.assetId ? (
                 <AssetImage
@@ -71,9 +74,11 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
                 </div>
               )}
             </div>
-            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
-              <Camera className="w-4 h-4" />
-            </div>
+            {me.role !== 'VIEWER' && (
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
+                <Camera className="w-4 h-4" />
+              </div>
+            )}
           </DrawerTrigger>
 
           <DrawerContent className="w-full px-8 py-4 pb-10">
@@ -111,6 +116,7 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
         <div className="relative">
           <input
             type="text"
+            disabled={me.role === 'VIEWER'}
             value={groupName}
             placeholder="그룹명을 작성해주세요."
             onChange={(e) => setGroupName(e.target.value)}

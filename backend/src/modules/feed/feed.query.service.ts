@@ -8,6 +8,7 @@ import { GetFeedQueryDto } from './dto/get-feed.query.dto';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
+import { Group } from '../group/entity/group.entity';
 import { buildFeedCards, dayRange } from './feed.helpers';
 
 @Injectable()
@@ -23,6 +24,8 @@ export class FeedQueryService {
     private readonly postContributorRepo: Repository<PostContributor>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepo: Repository<GroupMember>,
+    @InjectRepository(Group)
+    private readonly groupRepo: Repository<Group>,
   ) {}
 
   async getFeedForUser(userId: string, query: GetFeedQueryDto) {
@@ -85,6 +88,7 @@ export class FeedQueryService {
       this.groupMemberRepo,
       this.logger,
       userId,
+      { includeGroupName: true, groupRepo: this.groupRepo },
     );
   }
 }

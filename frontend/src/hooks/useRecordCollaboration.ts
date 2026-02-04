@@ -162,7 +162,6 @@ export function useRecordCollaboration(
     });
     socket.on('DRAFT_PUBLISHED', ({ postId }) => {
       setTimeout(() => {
-        setIsPublishing(false);
         router.replace(`/record/${postId}`);
 
         setTimeout(() => {
@@ -179,12 +178,31 @@ export function useRecordCollaboration(
       }, 1_500);
     });
 
+    socket.on('DRAFT_PUBLISH_FAILED', ({ draftId: id }) => {
+      if (id !== draftId) return;
+
+      setIsPublishing(false);
+
+      toast.warning(
+        '다른 사용자에 의해 기록 발행에 실패했습니다.\n최신 상태로 다시 연결합니다.',
+        {
+          duration: 3000,
+          style: { whiteSpace: 'pre-wrap' },
+        },
+      );
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    });
+
     return () => {
       socket.off('BLOCK_VALUE_STREAM');
       socket.off('STREAM_ABORTED');
       socket.off('PATCH_COMMITTED');
       socket.off('PATCH_REJECTED_STALE');
       socket.off('DRAFT_PUBLISHED');
+      socket.off('DRAFT_PUBLISH_FAILED');
     };
   }, [socket, draftId, mySessionId, setBlocks, setTitle, router]);
 

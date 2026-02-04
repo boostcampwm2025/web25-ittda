@@ -46,6 +46,7 @@ Stream/Patch/Publish
 - `PATCH_COMMITTED { version, patch, authorSessionId }`
 - `PATCH_REJECTED_STALE { currentVersion }`
 - `DRAFT_PUBLISH_STARTED { draftId }`
+- `DRAFT_PUBLISH_FAILED { draftId, message }`
 - `DRAFT_PUBLISHED { postId }`
 
 ## 이벤트 상세 설명
@@ -185,6 +186,12 @@ Stream/Patch/Publish
 - publish 시작 시 룸 전체 브로드캐스트
 - payload: `{ draftId }`
 - 클라이언트는 로딩 UI 표시
+
+### DRAFT_PUBLISH_FAILED
+
+- publish 실패 시 룸 전체 브로드캐스트
+- payload: `{ draftId, message }`
+- 클라이언트는 로딩 UI 해제 및 에러 메시지 표시
 
 ## Payload 요약
 
