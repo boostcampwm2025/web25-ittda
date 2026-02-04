@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, QueryFailedError, Repository } from 'typeorm';
+import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import type { Point } from 'geojson';
 import { isUUID } from 'class-validator';
 
@@ -170,7 +170,7 @@ export class PostPublishService {
             }),
           );
           if (savedBlocks.length > 0) {
-            await blockRepo.save(savedBlocks);
+            await blockRepo.insert(savedBlocks);
           }
 
           const mediaEntries = this.buildBlockMediaEntries(
@@ -296,18 +296,6 @@ export class PostPublishService {
             }
           : undefined;
 
-        const existingBlocks = await blockRepo.find({
-          where: { postId: post.id },
-          select: { id: true },
-        });
-        const existingIds = new Set(existingBlocks.map((block) => block.id));
-        const nextIds = new Set(
-          blocks.map((block) => block.id).filter(Boolean),
-        );
-        const deleteIds = Array.from(existingIds).filter(
-          (id) => !nextIds.has(id),
-        );
-
         const updated = postRepo.create({
           ...post,
           title: snapshot.title,
@@ -319,9 +307,9 @@ export class PostPublishService {
         });
         const saved = await postRepo.save(updated);
 
-        if (deleteIds.length > 0) {
-          await blockRepo.delete({ id: In(deleteIds) });
-        }
+        // 기존 블록 전체 삭제 후 새 블록 일괄 삽입 (위치 교체 시 유니크 제약조건 충돌 방지)
+        await blockRepo.delete({ postId: saved.id });
+
         const updatedBlocks = blocks.map((block) =>
           blockRepo.create({
             id: block.id,
@@ -335,7 +323,7 @@ export class PostPublishService {
           }),
         );
         if (updatedBlocks.length > 0) {
-          await blockRepo.save(updatedBlocks);
+          await blockRepo.insert(updatedBlocks);
         }
 
         await this.syncBlockMediaEntries(mediaRepo, saved.id, saved, blocks);
