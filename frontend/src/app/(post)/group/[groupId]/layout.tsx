@@ -4,6 +4,8 @@ import { get } from '@/lib/api/api';
 import { SingleResolveResponse } from '@/hooks/useMediaResolve';
 import { randomBaseImage } from '@/lib/image';
 
+import type { ApiResponse } from '@/lib/types/response';
+
 interface GroupLayoutProps {
   children: React.ReactNode;
   params: Promise<{ groupId: string }>;
@@ -29,15 +31,18 @@ export async function generateMetadata({
       coverAssetId?.startsWith('https://');
 
     //url이 없고 로컬 경로나 URL이 아닐 때만 assetId로 solve 호출하기
-    const response = await get<SingleResolveResponse>(
-      `/api/media/${coverAssetId}/url`,
-    );
+    let response: ApiResponse<SingleResolveResponse> | undefined;
+    if (coverAssetId && !isLocalPath && !isAlreadyUrl) {
+      response = await get<SingleResolveResponse>(
+        `/api/media/${coverAssetId}/url`,
+      );
+    }
 
     const imageSrc = isLocalPath
       ? coverAssetId
       : isAlreadyUrl
         ? coverAssetId
-        : response.data?.url;
+        : response?.data?.url;
 
     const imageUrl = imageSrc
       ? imageSrc

@@ -14,6 +14,7 @@ import {
   TextValue,
 } from '@/lib/types/record';
 import { get } from '@/lib/api/api';
+import type { ApiResponse } from '@/lib/types/response';
 import { SingleResolveResponse } from '@/hooks/useMediaResolve';
 import { randomBaseImage } from '@/lib/image';
 
@@ -46,16 +47,19 @@ export async function generateMetadata({
       imageAssetId?.startsWith('http://') ||
       imageAssetId?.startsWith('https://');
 
-    //url이 없고 로컬 경로나 URL이 아닐 때만 assetId로 solve 호출하기
-    const response = await get<SingleResolveResponse>(
-      `/api/media/${imageAssetId}/url`,
-    );
+    // url이 없고 로컬 경로나 외부 URL이 아닐 때만 assetId로 resolve 호출하기
+    let response: ApiResponse<SingleResolveResponse> | undefined;
+    if (imageAssetId && !isLocalPath && !isAlreadyUrl) {
+      response = await get<SingleResolveResponse>(
+        `/api/media/${imageAssetId}/url`,
+      );
+    }
 
     const imageSrc = isLocalPath
       ? imageAssetId
       : isAlreadyUrl
         ? imageAssetId
-        : response.data?.url;
+        : response?.data?.url;
 
     const imageUrl = imageSrc
       ? imageSrc
@@ -82,6 +86,7 @@ export async function generateMetadata({
         ],
       },
     };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // 에러 발생 시 기본 메타데이터 반환
     return {
