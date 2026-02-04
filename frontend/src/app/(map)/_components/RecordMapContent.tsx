@@ -58,6 +58,7 @@ export default function RecordMapContent({
     lat: number;
     lng: number;
   } | null>(null);
+  const [bannerHeight, setBannerHeight] = useState(0);
 
   const [searchResults, setSearchResults] = useState<
     google.maps.places.PlaceResult[]
@@ -75,6 +76,27 @@ export default function RecordMapContent({
     const dummy = document.createElement('div');
     placesServiceRef.current = new placesLib.PlacesService(dummy);
   }, [placesLib]);
+
+  // PWA 배너 높이 측정
+  useEffect(() => {
+    const measureBannerHeight = () => {
+      // PWA 배너는 layout.tsx에서 렌더링되므로 전체 페이지에서 찾아야 함
+      const banner = document.querySelector('[data-pwa-banner]');
+      if (banner) {
+        setBannerHeight((banner as HTMLElement).offsetHeight);
+      } else {
+        setBannerHeight(0);
+      }
+    };
+
+    // 초기 측정
+    measureBannerHeight();
+
+    // 배너가 동적으로 나타나거나 사라질 수 있으므로 주기적으로 확인
+    const interval = setInterval(measureBannerHeight, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 사용자 위치 가져오기
   const { latitude, longitude } = useGeolocation({
@@ -306,6 +328,7 @@ export default function RecordMapContent({
           isLoading={isLoading}
           lastItemRef={lastItemRef}
           isFetchingNextPage={isFetchingNextPage}
+          topOffset={bannerHeight}
         />
         <FilterDrawerRenderer
           activeDrawer={activeDrawer}
