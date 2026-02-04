@@ -25,7 +25,6 @@ export default function DailyDetailRecordActions({
   const [shareOpen, setShareOpen] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
 
-  const router = useRouter();
   const { mutateAsync: startGroupEdit } = useEditPostDraft(
     record.groupId || '',
     record.postId,
@@ -33,11 +32,6 @@ export default function DailyDetailRecordActions({
 
   const content = getSingleBlockValue<ContentValue>(record, 'TEXT')?.text || '';
   const image = record.blocks.find(isImageBlock);
-
-  const { mutateAsync: startGroupEdit } = useEditPostDraft(
-    record.groupId || '',
-    record.postId,
-  );
 
   // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
@@ -110,7 +104,7 @@ export default function DailyDetailRecordActions({
               공유하기
             </button>
             <button
-              onClick={handleEdit}
+              onClick={(e) => handleEdit(record, e)}
               className="cursor-pointer w-full text-left px-4 py-2.5 rounded-xl text-[11px] font-bold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
             >
               수정하기
