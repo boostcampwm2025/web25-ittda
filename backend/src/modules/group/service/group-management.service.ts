@@ -468,7 +468,6 @@ export class GroupManagementService {
     dto: UpdateGroupMemberMeDto,
   ): Promise<GetGroupMemberMeResponseDto> {
     const { nicknameInGroup, profileMediaId } = dto;
-    const beforeNickname = member.nicknameInGroup ?? null;
 
     // 1. 변경 사항이 하나도 없으면 오류 반환
     if (!nicknameInGroup && !profileMediaId) {
@@ -490,6 +489,8 @@ export class GroupManagementService {
       }
       throw new ForbiddenException('그룹 멤버가 아닙니다.');
     }
+
+    const beforeNickname = member.nicknameInGroup ?? null;
 
     // 3. 닉네임 수정 시 유효성 검사 및 업데이트
     if (nicknameInGroup !== undefined) {
