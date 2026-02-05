@@ -22,7 +22,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   minimumScale: 1,
-  viewportFit: 'cover',
+  viewportFit: 'auto', // 상태바와 겹치지 않도록 설정
 };
 
 export const metadata: Metadata = {
