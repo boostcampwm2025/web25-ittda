@@ -369,17 +369,18 @@ export default function PostEditor({
     });
   };
 
-  const { throttled: throttledEmitStream, flush: flushEmitStream } = useThrottle(
-    useCallback(
-      (blockId: string, newValue: BlockValue) => {
-        if (draftId) {
-          emitStream(blockId, newValue);
-        }
-      },
-      [draftId, emitStream],
-    ),
-    3000,
-  );
+  const { throttled: throttledEmitStream, flush: flushEmitStream } =
+    useThrottle(
+      useCallback(
+        (blockId: string, newValue: BlockValue) => {
+          if (draftId) {
+            emitStream(blockId, newValue);
+          }
+        },
+        [draftId, emitStream],
+      ),
+      3000,
+    );
 
   const handleFieldUpdate = (
     blockId: string,
@@ -642,13 +643,22 @@ export default function PostEditor({
         <AuthLoadingScreen type="publish" className="fixed inset-0 z-[9999]" />
       )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
-      {group?.group.name && (
-        <div className="mx-6 mt-3 px-3 w-fit items-center rounded-full py-1 text-[13px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-          <span className="truncate inline-block align-bottom">
-            {group?.group.name}
-          </span>
-        </div>
-      )}
+      <div className="mx-6 mt-3 flex flex-row gap-2">
+        {group?.group.name && (
+          <div className=" px-3 w-fit items-center rounded-full py-1 text-[13px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+            <span className="truncate inline-block align-bottom">
+              {group?.group.name}
+            </span>
+          </div>
+        )}
+        {draftId && (
+          <div className="px-3 w-fit items-center rounded-full py-1 text-[13px] font-bold bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">
+            <span className="flex items-center gap-1.5 align-bottom">
+              공동 기록 중...
+            </span>
+          </div>
+        )}
+      </div>
 
       <main
         className={cn(
