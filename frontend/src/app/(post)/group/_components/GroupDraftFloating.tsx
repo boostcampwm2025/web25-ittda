@@ -75,7 +75,7 @@ export default function GroupDraftFloatingButton({
       <div className="pointer-events-auto flex flex-col items-end gap-4">
       <div
         className={cn(
-          'w-[320px] sm:w-100 max-h-100 overflow-hidden rounded-[32px] border shadow-2xl bg-white/95 dark:bg-[#1E1E1E]/95 border-gray-100 dark:border-white/10 flex flex-col transition-all duration-300 ease-out origin-bottom-right',
+          'w-[320px] sm:w-[400px] max-h-[400px] overflow-hidden rounded-[32px] border shadow-2xl bg-white/95 dark:bg-[#1E1E1E]/95 border-gray-100 dark:border-white/10 flex flex-col transition-all duration-300 ease-out origin-bottom-right',
           isOpen
             ? 'opacity-100 scale-100 translate-y-0 visible'
             : 'opacity-0 scale-95 translate-y-4 invisible',
@@ -135,7 +135,7 @@ export default function GroupDraftFloatingButton({
       >
         {isOpen ? <X className="w-7 h-7" /> : <Edit3 className="w-6 h-6" />}
         {!isOpen && drafts.length > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-itta-point px-1.5 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#121212]">
+          <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-itta-point px-1.5 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#121212]">
             {drafts.length}
           </span>
         )}
