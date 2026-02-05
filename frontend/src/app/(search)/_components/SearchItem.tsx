@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ImageIcon, MapPin } from 'lucide-react';
+import { Calendar, ImageIcon, MapPin } from 'lucide-react';
 import { RecordSearchItem } from '@/lib/types/record';
 import { formatDateDot } from '@/lib/date';
 import AssetImage from '@/components/AssetImage';
@@ -17,10 +17,10 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
       className="w-full flex items-center gap-4 p-4 rounded-xl border  text-left shadow-sm active:scale-[0.98] group bg-white border-gray-100/50 dark:bg-[#1E1E1E] dark:border-white/5"
     >
       {/* 썸네일 이미지 */}
-      {record.imageUrl ? (
+      {record.thumbnailMediaId ? (
         <div className="flex justify-center items-center relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-gray-50 dark:bg-white/5">
           <AssetImage
-            assetId={record.imageUrl}
+            assetId={record.thumbnailMediaId}
             alt={record.title}
             width={48}
             height={48}
@@ -28,22 +28,29 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
           />
         </div>
       ) : (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center w-12 h-12 ">
           <ImageIcon className="w-6 h-6 text-gray-400" />
         </div>
       )}
 
       {/* 텍스트 콘텐츠 */}
-      <div className="flex-1">
-        <h4 className="text-sm font-bold truncate mb-1 text-itta-black dark:text-white  transition-colors">
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-bold truncate mb-1.5 text-itta-black dark:text-white  transition-colors">
           {record.title}
         </h4>
-
+        {record.snippet && (
+          <p className="text-xs text-itta-gray mb-1 truncate">
+            {record.snippet}
+          </p>
+        )}
         <div className="flex items-center gap-2 text-xs text-itta-gray3">
-          <span>{formatDateDot(new Date(record.date))}</span>
+          <div className="flex items-center gap-1 truncate">
+            <Calendar size={10} className="shrink-0 text-itta-point" />
+            <span>{formatDateDot(new Date(record.date))}</span>
+          </div>
 
           {record.address && (
-            <div className="flex items-center gap-0.5 truncate">
+            <div className="flex items-center gap-1 truncate">
               <MapPin size={10} className="shrink-0 text-itta-point" />
               <span>{record.address}</span>
             </div>

@@ -5,7 +5,7 @@ import { useApiQuery } from './useApi';
 
 export interface SearchResultItem {
   id: string;
-  thumbnailUrl?: string;
+  thumbnailMediaId?: string;
   title: string;
   eventAt: string;
   location?: {
