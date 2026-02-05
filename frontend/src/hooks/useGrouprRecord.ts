@@ -10,6 +10,7 @@ export const useNewPostDraft = (groupId: string) => {
     `/api/groups/${groupId}/posts/new`,
     {
       enabled: false,
+      retry: false,
     },
   );
 };
