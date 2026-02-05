@@ -334,7 +334,7 @@ describe('PostController (e2e)', () => {
     await groupRepository.delete({ id: group.id });
   });
 
-  it('GET /groups/:groupId/posts/new should reuse active draft', async () => {
+  it('GET /groups/:groupId/posts/new should create up to 5 active drafts', async () => {
     const group = await groupRepository.save(
       groupRepository.create({
         name: 'draft 그룹',
@@ -350,25 +350,32 @@ describe('PostController (e2e)', () => {
       }),
     );
 
-    const firstRes = await request(app.getHttpServer())
+    const draftIds: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const response = await request(app.getHttpServer())
+        .get(`/groups/${group.id}/posts/new`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+      const draftId = (
+        response.body as { redirectUrl: string }
+      ).redirectUrl.split('/post/')[1];
+      expect(draftId).toBeDefined();
+      draftIds.push(draftId);
+    }
+
+    expect(new Set(draftIds).size).toBe(5);
+
+    const sixthRes = await request(app.getHttpServer())
       .get(`/groups/${group.id}/posts/new`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .expect(200);
+      .expect(409);
+    expect(sixthRes.body).toMatchObject({
+      statusCode: 409,
+      message: 'Active create draft limit reached.',
+      error: 'Conflict',
+    });
 
-    const firstDraftId = (
-      firstRes.body as { redirectUrl: string }
-    ).redirectUrl.split('/post/')[1];
-    expect(firstDraftId).toBeDefined();
-
-    const secondRes = await request(app.getHttpServer())
-      .get(`/groups/${group.id}/posts/new`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(200);
-
-    const secondDraftId = (
-      secondRes.body as { redirectUrl: string }
-    ).redirectUrl.split('/post/')[1];
-    expect(secondDraftId).toBe(firstDraftId);
+    const firstDraftId = draftIds[0];
 
     const draftRes = await request(app.getHttpServer())
       .get(`/groups/${group.id}/drafts/${firstDraftId}`)
