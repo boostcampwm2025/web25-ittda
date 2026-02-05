@@ -12,7 +12,7 @@ import {
   Headers,
   HttpCode,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+// import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './jwt/jwt.guard';
@@ -28,6 +28,7 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
 import type { Request, Response } from 'express';
 import type { OAuthUserType } from './auth.type';
 import { KakaoAuthGuard } from './guards/kakao-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { DevTokenRequestDto } from './dto/dev-token.dto';
 
 interface AuthenticatedRequest extends Request {
@@ -54,7 +55,7 @@ export class AuthController {
   }
 
   @Get('google')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleAuthGuard)
   @ApiOperation({
     summary: 'Google 로그인',
     description: 'Google OAuth2 로그인 페이지로 리다이렉트합니다.',
@@ -62,7 +63,7 @@ export class AuthController {
   async googleLogin() {}
 
   @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleAuthGuard)
   @ApiOperation({
     summary: 'Google 로그인 콜백',
     description: 'Google 인증 완료 후 호출되며, FE로 리다이렉트합니다.',

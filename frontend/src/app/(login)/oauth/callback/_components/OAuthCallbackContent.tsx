@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
@@ -31,6 +31,7 @@ export default function OAuthCallbackContent({
   const setLogin = useAuthStore((state) => state.setLogin);
   const setSocialLogin = useAuthStore((state) => state.setSocialLogin);
   const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
+  const hasRun = useRef(false);
 
   useEffect(() => {
     // OAuth 인증 코드가 없으면 로그인 페이지로
@@ -38,6 +39,10 @@ export default function OAuthCallbackContent({
       router.push('/login?error=invalid_callback');
       return;
     }
+
+    // 이미 실행되었다면 중복 실행 방지
+    if (hasRun.current) return;
+    hasRun.current = true;
 
     const handleLogin = async () => {
       // callback이 URL에 없으면 sessionStorage에서 가져오기
@@ -134,30 +139,25 @@ export default function OAuthCallbackContent({
             `has_seen_onboarding_${userId}`,
           );
           if (hasSeenOnboarding === 'true') {
-            router.replace(redirectPath);
+            // window.location.replace를 사용하여 즉시 리디렉션
+            window.location.replace(redirectPath);
           } else {
             // 온보딩을 안 본 경우 온보딩으로 (리디렉션 경로를 callback으로 전달)
-            router.replace(
+            window.location.replace(
               `/onboarding?callback=${encodeURIComponent(redirectPath)}`,
             );
           }
         } else {
           // userId를 가져오지 못한 경우에도 기본적으로 최종 경로로 이동
-          router.replace(redirectPath);
+          window.location.replace(redirectPath);
         }
+        return; // 리디렉션 후 추가 실행 방지
       }
     };
 
     handleLogin();
-  }, [
-    code,
-    router,
-    queryClient,
-    setLogin,
-    setSocialLogin,
-    inviteCode,
-    joinGroup,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
 
   return <LoginContent error={error} />;
 }

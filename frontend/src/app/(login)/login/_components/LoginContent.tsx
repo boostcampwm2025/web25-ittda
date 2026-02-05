@@ -31,10 +31,12 @@ export default function LoginContent({
   error,
   callback,
   reason,
+  forceAccountSelect = false,
 }: {
   error?: string | undefined;
   callback?: string | undefined;
   reason?: string | undefined;
+  forceAccountSelect?: boolean;
 }) {
   const router = useRouter();
   const inviteCode = getCookie('invite-code') || '';
@@ -100,9 +102,7 @@ export default function LoginContent({
           toast.info(
             `게스트 모드는 3일 뒤에 작성하신 데이터가 삭제되니\n소중한 기록을 잃지 않도록 계정을 연동해 주세요.`,
           );
-          setTimeout(() => {
-            router.replace(redirectPath);
-          }, 500);
+          window.location.href = redirectPath;
         } else {
           // 응답은 성공했지만 데이터나 토큰이 없는 경우
           const error = new Error(
@@ -221,7 +221,11 @@ export default function LoginContent({
           {/* 구글 로그인 */}
           <Link
             aria-label="구글로 로그인하기"
-            href={getRedirectUri({ provider: 'google', callback })}
+            href={getRedirectUri({
+              provider: 'google',
+              callback,
+              forceAccountSelect,
+            })}
             onClick={handleSocialLogin}
             className="bg-white border-gray-100 w-14 h-14 rounded-full flex items-center justify-center border shadow-sm transition-all hover:shadow-md active:scale-90"
           >
@@ -248,7 +252,11 @@ export default function LoginContent({
           {/* 카카오 로그인 */}
           <Link
             aria-label="카카오로 로그인하기"
-            href={getRedirectUri({ provider: 'kakao', callback })}
+            href={getRedirectUri({
+              provider: 'kakao',
+              callback,
+              forceAccountSelect,
+            })}
             onClick={handleSocialLogin}
             className="w-14 h-14 rounded-full bg-[#FEE500] flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90"
           >

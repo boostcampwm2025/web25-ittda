@@ -1,6 +1,11 @@
 'use client';
 
-import { formatDateISO, getStartOfWeek, getWeekDays } from '@/lib/date';
+import {
+  formatDateISO,
+  getStartOfWeek,
+  getWeekDays,
+  parseLocalDate,
+} from '@/lib/date';
 import { cn } from '@/lib/utils';
 import { ChevronRight } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -11,22 +16,23 @@ export default function WeekCalendar() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL에서 date 파라미터 읽기, 없으면 오늘 날짜
-  const selectedDateStr = searchParams.get('date') || formatDateISO();
+  // URL에서 date 파라미터 읽기
+  const dateParam = searchParams.get('date');
+  const selectedDateStr = dateParam || formatDateISO();
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
-    getStartOfWeek(new Date(selectedDateStr)),
+    getStartOfWeek(parseLocalDate(selectedDateStr)),
   );
   const [direction, setDirection] = useState(0); // -1: 이전, 1: 다음
   const [displayYearMonth, setDisplayYearMonth] = useState(() => {
-    const d = new Date(selectedDateStr);
+    const d = parseLocalDate(selectedDateStr);
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 
   // 연월 표시용 계산 (중앙 주차 기준)
   const calculateYearMonth = useCallback(
     (dateStr?: string) => {
-      const d = dateStr ? new Date(dateStr) : currentWeekStart;
+      const d = dateStr ? parseLocalDate(dateStr) : currentWeekStart;
       setDisplayYearMonth(
         `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`,
       );
@@ -83,7 +89,7 @@ export default function WeekCalendar() {
   );
 
   const handleTouchDate = (dateStr: string) => {
-    const selectedDate = new Date(dateStr);
+    const selectedDate = parseLocalDate(dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     selectedDate.setHours(0, 0, 0, 0);

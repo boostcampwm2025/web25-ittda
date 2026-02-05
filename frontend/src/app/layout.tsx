@@ -36,6 +36,11 @@ export const metadata: Metadata = {
     icon: '/web-app-icon-192x192.png',
     apple: '/apple-icon.png',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: '잇다-',
+  },
   openGraph: {
     title: '개인의 기록을 넘어, 함께 만드는 추억',
     description: '친구들과 쉽게 공유하고 소통할 수 있는 새로운 방법, 잇다-',

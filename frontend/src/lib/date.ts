@@ -95,6 +95,17 @@ export function formatDateISO(date: Date = new Date()): string {
 }
 
 /**
+ * YYYY-MM-DD 형식의 문자열을 로컬 시간대의 Date 객체로 변환합니다.
+ * new Date("2026-02-06")은 UTC로 해석되므로 이 함수를 사용하세요.
+ * @param dateStr - "2026-02-06" 형식의 날짜 문자열
+ * @returns 로컬 시간대의 자정을 가리키는 Date 객체
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
  * 날짜를 점(.) 구분 형식으로 포맷팅
  * @param date - 포맷팅할 날짜 (기본값: 현재 날짜)
  * @returns "2025.01.14" 형식의 문자열

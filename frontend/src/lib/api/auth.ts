@@ -235,7 +235,7 @@ export async function handleLogout() {
 
     deleteCookie(guestCookieKey);
 
-    await signOut({ callbackUrl: '/login' });
+    await signOut({ callbackUrl: '/login?forceAccountSelect=true' });
   } catch (error) {
     Sentry.captureException(error, {
       tags: {
@@ -245,6 +245,6 @@ export async function handleLogout() {
     });
     logger.error('로그아웃 중 에러 발생', error);
 
-    window.location.href = '/login';
+    window.location.href = '/login?forceAccountSelect=true';
   }
 }

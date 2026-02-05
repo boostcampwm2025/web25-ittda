@@ -134,7 +134,11 @@ export default function BottomNavigation() {
                 router.push('/add');
               }
             }}
-            className="w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white"
+            className={`w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
+              isSharedPage
+                ? 'dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20] ring-white'
+                : 'dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white'
+            }`}
           >
             <Plus className="w-7 h-7" strokeWidth={3} />
           </button>

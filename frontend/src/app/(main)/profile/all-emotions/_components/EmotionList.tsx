@@ -21,7 +21,7 @@ export default function EmotionList({
   const router = useRouter();
   const sortedEmotions = {
     recent: emotions,
-    frequent: emotions.sort((a, b) => b.count - a.count),
+    frequent: emotions.slice().sort((a, b) => b.count - a.count),
   };
 
   const handleSingleTagSearch = (tagName: string) => {
