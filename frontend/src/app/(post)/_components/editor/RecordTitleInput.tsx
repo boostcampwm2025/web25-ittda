@@ -1,10 +1,12 @@
 'use client';
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { PresenceMember } from '@/hooks/useDraftPresence';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 import { cn } from '@/lib/utils';
 import AssetImage from '@/components/AssetImage';
+import { useThrottle } from '@/lib/utils/useThrottle';
+import { useSocketStore } from '@/store/useSocketStore';
 
 interface RecordTitleInputProps {
   title: string;
@@ -30,6 +32,11 @@ export default function RecordTitleInput({
   lockManager,
 }: RecordTitleInputProps) {
   const TITLE_LOCK_KEY = 'block:title';
+  const { socket, sessionId: storeSessionId } = useSocketStore();
+  const sessionId = mySessionId ?? storeSessionId;
+  const inFlightRef = useRef(false);
+  const pendingTitleRef = useRef<string | null>(null);
+  const releaseAfterCommitRef = useRef(false);
 
   // 락 상태 및 소유자
   const ownerSessionId = lockManager.locks[TITLE_LOCK_KEY];
@@ -46,22 +53,95 @@ export default function RecordTitleInput({
     }
   };
 
+  const sendTitlePatch = useCallback(
+    (newTitle: string) => {
+      applyPatch({
+        type: 'BLOCK_SET_TITLE',
+        title: newTitle,
+      });
+      inFlightRef.current = true;
+    },
+    [applyPatch],
+  );
+
+  const queueTitlePatch = useCallback(
+    (newTitle: string) => {
+      if (!draftId || !isMyLock) return;
+      if (inFlightRef.current) {
+        pendingTitleRef.current = newTitle;
+        return;
+      }
+      sendTitlePatch(newTitle);
+    },
+    [draftId, isMyLock, sendTitlePatch],
+  );
+
+  const throttledApplyPatch = useThrottle(
+    useCallback(
+      (newTitle: string) => {
+        queueTitlePatch(newTitle);
+      },
+      [queueTitlePatch], // React Compiler 대응: 모든 의존성 포함
+    ),
+    3000,
+  );
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVal = e.target.value;
     setTitle(newVal);
+
+    if (isMyLock) {
+      throttledApplyPatch(newVal);
+    }
   };
 
   const handleBlur = () => {
     if (draftId && isMyLock) {
       // 서버 커밋
-      applyPatch({
-        type: 'BLOCK_SET_TITLE',
-        title: title,
-      });
-      // 락 해제
+      queueTitlePatch(title);
+      if (inFlightRef.current || pendingTitleRef.current !== null) {
+        releaseAfterCommitRef.current = true;
+        return;
+      }
       lockManager.releaseLock(TITLE_LOCK_KEY);
     }
   };
+
+  useEffect(() => {
+    if (!socket || !sessionId) return;
+
+    const handleCommitted = ({
+      patch,
+      authorSessionId,
+    }: {
+      patch: PatchApplyPayload | PatchApplyPayload[];
+      authorSessionId?: string;
+    }) => {
+      if (authorSessionId !== sessionId) return;
+      const commands = Array.isArray(patch) ? patch : [patch];
+      const hasTitlePatch = commands.some(
+        (cmd) => cmd.type === 'BLOCK_SET_TITLE',
+      );
+      if (!hasTitlePatch) return;
+
+      inFlightRef.current = false;
+      if (pendingTitleRef.current !== null && isMyLock) {
+        const nextTitle = pendingTitleRef.current;
+        pendingTitleRef.current = null;
+        sendTitlePatch(nextTitle);
+        return;
+      }
+      if (releaseAfterCommitRef.current) {
+        lockManager.releaseLock(TITLE_LOCK_KEY);
+        releaseAfterCommitRef.current = false;
+      }
+    };
+
+    socket.on('PATCH_COMMITTED', handleCommitted);
+    return () => {
+      socket.off('PATCH_COMMITTED', handleCommitted);
+    };
+  }, [socket, sessionId, isMyLock, lockManager, sendTitlePatch]);
 
   return (
     <div className="w-full flex flex-row gap-2 items-center group/title">
