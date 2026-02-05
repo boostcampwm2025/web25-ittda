@@ -178,22 +178,16 @@ export function useRecordCollaboration(
       }, 1_500);
     });
 
-    socket.on('DRAFT_PUBLISH_FAILED', ({ draftId: id }) => {
+    socket.on('DRAFT_PUBLISH_ENDED', ({ draftId: id, currentVersion }) => {
       if (id !== draftId) return;
-
       setIsPublishing(false);
-
-      toast.warning(
-        '다른 사용자에 의해 기록 발행에 실패했습니다.\n최신 상태로 다시 연결합니다.',
-        {
-          duration: 3000,
-          style: { whiteSpace: 'pre-wrap' },
-        },
-      );
-
-      setTimeout(() => {
+      if (
+        typeof currentVersion === 'number' &&
+        currentVersion > versionRef.current
+      ) {
+        versionRef.current = currentVersion;
         window.location.reload();
-      }, 2000);
+      }
     });
 
     return () => {
@@ -202,7 +196,7 @@ export function useRecordCollaboration(
       socket.off('PATCH_COMMITTED');
       socket.off('PATCH_REJECTED_STALE');
       socket.off('DRAFT_PUBLISHED');
-      socket.off('DRAFT_PUBLISH_FAILED');
+      socket.off('DRAFT_PUBLISH_ENDED');
     };
   }, [socket, draftId, mySessionId, setBlocks, setTitle, router]);
 
