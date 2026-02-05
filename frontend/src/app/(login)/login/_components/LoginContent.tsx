@@ -22,7 +22,8 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 const REASON_MESSAGES: Record<string, string> = {
-  'guest-expired': '게스트 유효기간이 만료되었습니다.\n계속 이용하시려면 다시 로그인해주세요.',
+  'guest-expired':
+    '게스트 유효기간이 만료되었습니다.\n계속 이용하시려면 다시 로그인해주세요.',
   expired: '세션이 만료되었습니다. 다시 로그인해주세요.',
 };
 
@@ -38,7 +39,7 @@ export default function LoginContent({
   const router = useRouter();
   const inviteCode = getCookie('invite-code') || '';
 
-  const { setGuestInfo } = useAuthStore();
+  const { setGuestInfo, isLoggedIn } = useAuthStore();
   const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
   const { mutate: guestLogin, isPending } = useApiPost<GuestInfo>(
     '/api/auth/guest',
@@ -70,7 +71,9 @@ export default function LoginContent({
               toast.success(`그룹에 참여되었습니다!`);
             } catch (error) {
               // 그룹 가입 실패 시에도 로그인은 계속 진행
-              toast.error('그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.');
+              toast.error(
+                '그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.',
+              );
               deleteCookie('invite-code'); // 실패한 초대 코드 제거
 
               Sentry.captureException(error, {
@@ -135,6 +138,7 @@ export default function LoginContent({
   );
 
   useEffect(() => {
+    if (isLoggedIn) return;
     if (error) {
       const message = ERROR_MESSAGES[error] || '로그인 중 오류가 발생했습니다.';
       toast.error(message);
@@ -150,7 +154,7 @@ export default function LoginContent({
       // URL에서 reason 파라미터 제거
       router.replace('/login');
     }
-  }, [router, error, reason]);
+  }, [router, error, reason, isLoggedIn]);
 
   const handleLoginGuest = async () => {
     guestLogin({});
@@ -169,6 +173,10 @@ export default function LoginContent({
     // callback을 sessionStorage에 저장 (백엔드가 전달하지 않는 경우 대비)
     if (callback) {
       sessionStorage.setItem('auth_callback', callback);
+    }
+    // 로그인 버튼 누를 때 error 를 담고 있다면 무시되도록 하기
+    if (window.location.search.includes('error=')) {
+      toast.dismiss();
     }
   };
 
