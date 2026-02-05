@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { useNewPostDraft } from '@/hooks/useGrouprRecord';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 
 interface AddRecordDrawerProps {
   isOpen: boolean;
@@ -32,7 +34,11 @@ export function AddRecordDrawer({
     if (!groupId) return;
 
     try {
-      const { data: refetchedData } = await getNewPostDraft();
+      const { data: refetchedData, error } = await getNewPostDraft();
+      if (error) {
+        toast.error(getErrorMessage(error));
+        return;
+      }
 
       if (refetchedData?.redirectUrl) {
         router.push(refetchedData.redirectUrl);
@@ -56,8 +62,8 @@ export function AddRecordDrawer({
         console.warn('리다이렉트 URL이 없습니다.');
       }
 
-      onOpenChange(false);
     } catch (error) {
+      toast.error(getErrorMessage(error));
       Sentry.captureException(error, {
         level: 'error',
         tags: {

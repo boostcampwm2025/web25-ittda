@@ -97,6 +97,10 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     });
 
     socket.on('exception', async (data: SocketExceptionResponse) => {
+      if (data.message === 'Draft is full.') {
+        toast.warning('참여 인원이 가득 찼어요.');
+        return;
+      }
       if (data.message === 'Invalid access token.' || data.status === 'error') {
         await handleAuthError();
         return;
