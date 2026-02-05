@@ -35,9 +35,16 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
       </header>
 
       <main className="grow flex flex-col max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-          {record.title}
-        </h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {record.title}
+          </h1>
+          {record.hasActiveEditDraft && (
+            <p className="mt-1 text-xs font-medium text-gray-400 dark:text-gray-500">
+              공동 수정 중...
+            </p>
+          )}
+        </div>
 
         <div className="grow space-y-3">
           {sortedRows.map(([rowNumber, blocks]) => {
