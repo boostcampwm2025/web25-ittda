@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
 // 인증 없이 접근 가능한 경로
-const PUBLIC_PATHS = ['/login', '/oauth/callback', '/invite'];
+const PUBLIC_PATHS = ['/login', '/oauth/callback', '/invite', '/monitoring'];
 
 export default auth((req) => {
   const { nextUrl, auth: session, cookies } = req;
@@ -46,6 +46,6 @@ export default auth((req) => {
 export const config = {
   matcher: [
     // 정적 파일, API, manifest 제외한 모든 경로
-    '/((?!_next/static|_next/image|favicon.ico|mockServiceWorker\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api|manifest\\.webmanifest).*)',
+    '/((?!_next/static|_next/image|monitoring|favicon.ico|mockServiceWorker\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api|manifest\\.webmanifest).*)',
   ],
 };
