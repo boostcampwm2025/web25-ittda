@@ -71,8 +71,7 @@ export default function GroupDraftFloatingButton({
   };
 
   return (
-    <div className="sticky bottom-36 z-50 w-full flex flex-col items-end pr-8 pointer-events-none">
-      <div className="pointer-events-auto flex flex-col items-end gap-4">
+    <div className="absolute bottom-24 right-8 z-50 flex flex-col items-end gap-4">
       <div
         className={cn(
           'w-[320px] sm:w-[400px] max-h-[400px] overflow-hidden rounded-[32px] border shadow-2xl bg-white/95 dark:bg-[#1E1E1E]/95 border-gray-100 dark:border-white/10 flex flex-col transition-all duration-300 ease-out origin-bottom-right',
@@ -140,7 +139,6 @@ export default function GroupDraftFloatingButton({
           </span>
         )}
       </button>
-      </div>
     </div>
   );
 }
