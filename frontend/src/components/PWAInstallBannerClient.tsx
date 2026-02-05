@@ -59,7 +59,11 @@ export default function PWAInstallBannerClient() {
     return null;
   }
 
-  if (pathname.startsWith('/login') || pathname.startsWith('/onboarding')) {
+  if (
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/oauth/callback')
+  ) {
     return null;
   }
 

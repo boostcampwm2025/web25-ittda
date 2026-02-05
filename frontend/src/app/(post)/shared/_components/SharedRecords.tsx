@@ -12,7 +12,6 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Users, X } from 'lucide-react';
-import { formatDateISO } from '@/lib/date';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { groupListOptions } from '@/lib/api/group';
 import {
@@ -167,7 +166,7 @@ export default function SharedRecords({
               cover={g.cover}
               onClick={() => router.push(`/group/${g.groupId}`)}
               onChangeCover={isViewer ? undefined : () => openGallery(g.groupId)}
-              createdAt={formatDateISO(new Date(g.createdAt))}
+              createdAt={g.createdAt.split('T')[0]}
             />
           );
         })}

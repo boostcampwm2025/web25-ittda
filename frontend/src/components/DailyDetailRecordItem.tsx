@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { ApiError } from '@/lib/utils/errorHandler';
 import AssetImage from './AssetImage';
 import { formatTime } from '@/lib/date';
+import { refreshSharedData } from '@/lib/actions/revalidate';
 
 interface DailyDetailRecordItemProps {
   record: RecordPreview;
@@ -37,15 +38,23 @@ export default function DailyDetailRecordItem({
 
   const queryClient = useQueryClient();
   const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.postId}`, {
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('기록이 삭제되었습니다.');
-      queryClient.invalidateQueries({
-        queryKey: groupId ? ['group', groupId, 'records'] : ['my', 'records'],
-      });
-
-      setTimeout(() => {
-        router.back();
-      }, 1000);
+      if (groupId) {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ['group', groupId, 'records'],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ['shared'],
+          }),
+          refreshSharedData(),
+        ]);
+      } else {
+        queryClient.invalidateQueries({
+          queryKey: ['my', 'records'],
+        });
+      }
     },
     onError: (error: ApiError) => {
       if (error.code && error.code === 'NOT_FOUND') {
