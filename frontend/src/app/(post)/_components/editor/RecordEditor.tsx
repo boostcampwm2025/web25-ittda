@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { GripVertical } from 'lucide-react';
 
 // 컴포넌트 및 필드 임포트
@@ -341,11 +341,16 @@ export default function PostEditor({
   };
 
   const throttledEmitStream = useThrottle(
-    (blockId: string, newValue: BlockValue) => {
-      if (draftId) emitStream(blockId, newValue);
-    },
+    useCallback(
+      (blockId: string, newValue: BlockValue) => {
+        if (draftId) {
+          emitStream(blockId, newValue);
+        }
+      },
+      [draftId, emitStream],
+    ),
     3000,
-  ); // 3초 간격
+  );
 
   const handleFieldUpdate = (
     blockId: string,
