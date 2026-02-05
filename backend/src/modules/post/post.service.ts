@@ -311,6 +311,20 @@ export class PostService {
       permission = isOwner ? 'OWNER' : null;
     }
 
+    let hasActiveEditDraft: boolean | undefined;
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const activeEditDraft = await this.postDraftRepository.findOne({
+        where: {
+          groupId: post.groupId,
+          targetPostId: postId,
+          kind: 'EDIT',
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      hasActiveEditDraft = Boolean(activeEditDraft);
+    }
+
     const dto: PostDetailDto = {
       id: post.id,
       scope: post.scope,
@@ -331,6 +345,7 @@ export class PostService {
       })),
       contributors: contributorDtos,
       permission,
+      hasActiveEditDraft,
     };
     return dto;
   }
