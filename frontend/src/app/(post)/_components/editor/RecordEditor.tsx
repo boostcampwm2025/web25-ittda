@@ -53,12 +53,14 @@ import { RecordFieldRenderer } from './RecordFieldRender';
 import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import { useRecordEditorPhotos } from '../../_hooks/useRecordEditorPhotos';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { refreshGroupData } from '@/lib/actions/revalidate';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
 import LocationDrawer from '@/components/map/LocationDrawer';
 import { toast } from 'sonner';
+import { groupDetailOptions } from '@/lib/api/group';
+import { cn } from '@/lib/utils';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -84,6 +86,10 @@ export default function PostEditor({
   const { requestLock, releaseLock } = useLockManager(draftId);
   const { uploadMultipleMedia, isUploading: isMediaUploading } =
     useMediaUpload();
+  const { data: group } = useQuery({
+    ...groupDetailOptions(groupId!),
+    enabled: !!groupId,
+  });
 
   const {
     streamingValues,
@@ -604,7 +610,20 @@ export default function PostEditor({
         <AuthLoadingScreen type="publish" className="fixed inset-0 z-[9999]" />
       )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
-      <main className="px-6 py-6 space-y-8 pb-48 overflow-y-auto">
+      {group?.group.name && (
+        <div className="mx-6 mt-3 px-3 w-fit items-center rounded-full py-1 text-[13px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+          <span className="truncate inline-block align-bottom">
+            {group?.group.name}
+          </span>
+        </div>
+      )}
+
+      <main
+        className={cn(
+          'px-6 space-y-8 pb-48 overflow-y-auto',
+          group?.group.name ? 'py-3' : 'py-6',
+        )}
+      >
         <RecordTitleInput
           title={title}
           setTitle={setTitle}

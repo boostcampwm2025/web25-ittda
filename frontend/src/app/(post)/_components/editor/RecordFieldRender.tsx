@@ -82,6 +82,13 @@ export function RecordFieldRenderer({
     onOpenDrawer(block.type, block.id);
   };
 
+  // 텍스트, 테이블을 위한 락 클릭
+  const handleLockedClick = () => {
+    if (lock.isLockedByOther) {
+      toast.error('현재 다른 사용자가 편집 중입니다.');
+    }
+  };
+
   switch (block.type) {
     case 'date':
       return (
@@ -108,6 +115,7 @@ export function RecordFieldRenderer({
           onFocus={handleFocus}
           onBlur={(finalText) => handleCommit({ text: finalText })}
           isLastContentBlock={isLastContentBlock}
+          onLockedClick={handleLockedClick}
         />
       );
     case 'photos':
@@ -151,6 +159,7 @@ export function RecordFieldRenderer({
           isMyLock={lock.isMyLock}
           onFocus={handleFocus}
           onBlur={handleCommit}
+          onLockedClick={handleLockedClick}
         />
       );
     case 'rating':

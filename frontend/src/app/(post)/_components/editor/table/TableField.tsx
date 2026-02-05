@@ -12,6 +12,7 @@ interface TableFieldProps {
   isMyLock?: boolean;
   onFocus?: () => void;
   onBlur?: (finalValue: TableValue) => void;
+  onLockedClick?: () => void;
 }
 
 const MAX_ROWS = 4;
@@ -24,6 +25,7 @@ export const TableField = ({
   isMyLock,
   onFocus,
   onBlur,
+  onLockedClick,
 }: TableFieldProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -135,10 +137,20 @@ export const TableField = ({
     <div
       ref={containerRef}
       className={cn(
-        'group/table relative w-full transition-opacity',
-        isLocked && 'opacity-60 pointer-events-none',
+        'group/table relative w-full transition-opacity relative',
+        isLocked && 'opacity-60',
       )}
     >
+      {isLocked && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation(); // 부모로 이벤트 전달 방지
+            onLockedClick?.();
+          }}
+          className="absolute inset-0 z-10"
+          // 이 div가 위에 붕 떠서 모든 클릭을 다 뺏어옵니다.
+        />
+      )}
       <div className="flex items-stretch gap-2">
         <div className="flex-1 min-w-0 relative overflow-x-auto hide-scrollbar rounded-xl border border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/[0.02] shadow-sm mb-2">
           <table className="w-full border-collapse">

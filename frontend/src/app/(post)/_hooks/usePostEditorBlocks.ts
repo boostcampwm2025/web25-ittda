@@ -291,7 +291,7 @@ export function usePostEditorBlocks({
 
         // 타인이 락을 쥐고 있다면 동작 차단
         if (isLockedByOther) {
-          toast.error('현재 다른 사용자가 해당 필드를 편집 중입니다.');
+          toast.error('현재 다른 사용자가 편집 중입니다.');
           return;
         }
       }

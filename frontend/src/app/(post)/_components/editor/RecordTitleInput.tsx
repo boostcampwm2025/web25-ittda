@@ -5,6 +5,7 @@ import { PresenceMember } from '@/hooks/useDraftPresence';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 import { cn } from '@/lib/utils';
 import AssetImage from '@/components/AssetImage';
+import { toast } from 'sonner';
 
 interface RecordTitleInputProps {
   title: string;
@@ -65,6 +66,12 @@ export default function RecordTitleInput({
 
   return (
     <div className="w-full flex flex-row gap-2 items-center group/title">
+      {isLockedByOther && (
+        <div
+          onClick={() => toast.error('현재 다른 사용자가 편집 중입니다.')}
+          className="absolute inset-0 z-20"
+        />
+      )}
       {isLockedByOther && lockOwner && (
         <div className="shrink-0">
           {lockOwner.profileImageId ? (
