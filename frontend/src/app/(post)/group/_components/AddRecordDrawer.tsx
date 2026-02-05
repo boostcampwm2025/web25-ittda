@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { useNewPostDraft } from '@/hooks/useGrouprRecord';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/utils/errorHandler';
 
 interface AddRecordDrawerProps {
   isOpen: boolean;
@@ -36,6 +38,7 @@ export function AddRecordDrawer({
     const { data: refetchedData, isError, error } = await getNewPostDraft();
 
     if (isError) {
+      toast.error(getErrorMessage(error));
       Sentry.captureException(error, {
         level: 'error',
         tags: { context: 'group', operation: 'create-group-record' },
@@ -49,9 +52,22 @@ export function AddRecordDrawer({
       router.push(refetchedData.redirectUrl);
       onOpenChange(false);
     } else {
-      Sentry.captureException(new Error('리다이렉트 URL이 없습니다.'), {
-        extra: { refetchedData },
+      // 리다이렉트 URL 누락은 백엔드 응답 문제일 가능성
+      const error = new Error(
+        '공동 기록 생성 응답에 리다이렉트 URL이 없습니다',
+      );
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: {
+          context: 'group',
+          operation: 'create-group-record',
+        },
+        extra: {
+          groupId,
+          responseData: refetchedData,
+        },
       });
+      console.warn('리다이렉트 URL이 없습니다.');
     }
 
     onOpenChange(false);

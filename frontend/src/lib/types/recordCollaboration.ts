@@ -48,3 +48,19 @@ export interface SocketExceptionResponse {
   };
   data?: SocketExceptionData;
 }
+
+export interface GroupDraftListItem {
+  draftId: string;
+  kind: 'CREATE' | 'EDIT';
+  targetPostId: string | null;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  participantCount: number;
+  isPublishing: boolean;
+}
+
+export interface GroupDraftListSnapshot {
+  groupId: string;
+  drafts: GroupDraftListItem[];
+}
