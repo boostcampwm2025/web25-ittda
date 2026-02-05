@@ -76,7 +76,7 @@ export default function RecordTitleInput({
     [draftId, isMyLock, sendTitlePatch],
   );
 
-  const throttledApplyPatch = useThrottle(
+  const { throttled: throttledApplyPatch, flush: flushTitlePatch } = useThrottle(
     useCallback(
       (newTitle: string) => {
         queueTitlePatch(newTitle);
@@ -97,6 +97,8 @@ export default function RecordTitleInput({
 
   const handleBlur = () => {
     if (draftId && isMyLock) {
+      // 대기 중인 쓰로틀링 업데이트를 먼저 실행
+      flushTitlePatch();
       // 서버 커밋
       queueTitlePatch(title);
       if (inFlightRef.current || pendingTitleRef.current !== null) {

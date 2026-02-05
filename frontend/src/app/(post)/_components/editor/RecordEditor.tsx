@@ -340,7 +340,7 @@ export default function PostEditor({
     });
   };
 
-  const throttledEmitStream = useThrottle(
+  const { throttled: throttledEmitStream, flush: flushEmitStream } = useThrottle(
     useCallback(
       (blockId: string, newValue: BlockValue) => {
         if (draftId) {
@@ -382,6 +382,10 @@ export default function PostEditor({
     if (!isMine) {
       requestLock(lockKey);
     }
+
+    // 락을 해제하기 전에 대기 중인 쓰로틀링 업데이트를 모두 실행
+    flushEmitStream();
+
     applyPatch({
       type: 'BLOCK_SET_VALUE',
       blockId: id,

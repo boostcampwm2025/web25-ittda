@@ -27,9 +27,12 @@ export default function RatingDrawer({
   const containerRef = useRef<HTMLDivElement>(null);
   const currentMax = 5;
 
-  const throttledUpdate = useThrottle((val: number) => {
-    onUpdateRating({ rating: val });
-  }, 500);
+  const { throttled: throttledUpdate, flush: flushUpdate } = useThrottle(
+    (val: number) => {
+      onUpdateRating({ rating: val });
+    },
+    500,
+  );
 
   // 소수점 지원을 위해 좌표로 점수 계산
   const calculateScore = (clientX: number) => {
@@ -71,12 +74,22 @@ export default function RatingDrawer({
   }, []);
 
   const handleConfirm = () => {
+    // 대기 중인 쓰로틀링 업데이트를 먼저 실행
+    flushUpdate();
     onUpdateRating({ rating: localValue });
     onClose({ rating: localValue });
   };
 
   return (
-    <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
+    <Drawer
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) {
+          flushUpdate();
+          onClose();
+        }
+      }}
+    >
       <DrawerContent>
         <div className="w-full px-8 pt-4 pb-10">
           <DrawerHeader className="px-0 items-start text-left">

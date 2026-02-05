@@ -15,7 +15,7 @@ export function useThrottle<T extends (...args: any[]) => void>(
     };
   }, []);
 
-  return useCallback(
+  const throttled = useCallback(
     (...args: Parameters<T>) => {
       const now = Date.now();
       lastArgs.current = args; // 가장 최신 데이터 저장
@@ -28,6 +28,8 @@ export function useThrottle<T extends (...args: any[]) => void>(
         // delay만큼 지나지 않았는데 입력이 들어왔다면, delay가 끝나는 시점에 마지막 값으로 실행 예약
         const remaining = delay - (now - lastRun.current);
 
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
         timeoutRef.current = setTimeout(() => {
           if (lastArgs.current) {
             fn(...lastArgs.current);
@@ -39,4 +41,19 @@ export function useThrottle<T extends (...args: any[]) => void>(
     },
     [fn, delay],
   );
+
+  // flush 함수: 대기 중인 업데이트를 즉시 실행
+  const flush = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (lastArgs.current) {
+      fn(...lastArgs.current);
+      lastRun.current = Date.now();
+      lastArgs.current = null;
+    }
+  }, [fn]);
+
+  return { throttled, flush };
 }
