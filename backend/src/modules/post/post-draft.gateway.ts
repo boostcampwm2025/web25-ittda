@@ -407,6 +407,13 @@ export class PostDraftGateway
       .emit('DRAFT_PUBLISH_ENDED', payload);
   }
 
+  broadcastDraftInvalidated(draftId: string, reason: string) {
+    this.server.to(this.getDraftRoom(draftId)).emit('DRAFT_INVALIDATED', {
+      draftId,
+      reason,
+    });
+  }
+
   private getDraftRoom(draftId: string) {
     return `draft:${draftId}`;
   }

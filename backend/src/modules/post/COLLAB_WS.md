@@ -51,6 +51,7 @@ Stream/Patch/Publish
 - `DRAFT_PUBLISH_STARTED { draftId }`
 - `DRAFT_PUBLISH_ENDED { draftId, currentVersion? }`
 - `DRAFT_PUBLISHED { postId }`
+- `DRAFT_INVALIDATED { draftId, reason }`
 
 ## 이벤트 상세 설명
 
@@ -201,6 +202,12 @@ Stream/Patch/Publish
 - publish 완료 시 룸 전체 브로드캐스트
 - payload: `{ postId }`
 - 클라이언트는 편집 화면 종료/상세 페이지 이동
+
+### DRAFT_INVALIDATED
+
+- 게시글 삭제 등으로 드래프트가 더 이상 유효하지 않을 때 브로드캐스트
+- payload: `{ draftId, reason }`
+- 클라이언트는 드래프트 종료 및 목록 이동 처리
 
 ### DRAFT_PUBLISH_STARTED
 

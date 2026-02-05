@@ -15,6 +15,7 @@ import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
 import { PostContributor } from './entity/post-contributor.entity';
 import { PostDraft } from './entity/post-draft.entity';
+import { PostDraftMedia } from './entity/post-draft-media.entity';
 import { PostMedia, PostMediaKind } from './entity/post-media.entity';
 import { User } from '@/modules/user/entity/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
@@ -35,6 +36,7 @@ import { BlockValueMap } from './types/post-block.types';
 import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 import { PresenceService } from './collab/presence.service';
+import { PostDraftGateway } from './post-draft.gateway';
 import { GroupActivityService } from '@/modules/group/service/group-activity.service';
 import { GroupActivityType } from '@/enums/group-activity-type.enum';
 
@@ -51,6 +53,8 @@ export class PostService {
     private readonly postContributorRepository: Repository<PostContributor>,
     @InjectRepository(PostDraft)
     private readonly postDraftRepository: Repository<PostDraft>,
+    @InjectRepository(PostDraftMedia)
+    private readonly postDraftMediaRepository: Repository<PostDraftMedia>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Group)
@@ -58,6 +62,7 @@ export class PostService {
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
     private readonly presenceService: PresenceService,
+    private readonly postDraftGateway: PostDraftGateway,
     private readonly groupActivityService: GroupActivityService,
   ) {}
 
@@ -560,6 +565,27 @@ export class PostService {
       throw new ForbiddenException('Only the owner can delete this post');
     }
     await this.postRepository.softDelete(postId);
+
+    const activeEditDrafts = await this.postDraftRepository.find({
+      where: { targetPostId: postId, isActive: true, kind: 'EDIT' },
+      select: { id: true },
+    });
+    if (activeEditDrafts.length > 0) {
+      const draftIds = activeEditDrafts.map((draft) => draft.id);
+      await this.postDraftRepository.update(
+        { id: In(draftIds) },
+        { isActive: false },
+      );
+      await this.postDraftMediaRepository.delete({ draftId: In(draftIds) });
+      draftIds.forEach((draftId) => {
+        if (this.presenceService.getMembersArray(draftId).length > 0) {
+          this.postDraftGateway.broadcastDraftInvalidated(
+            draftId,
+            'POST_DELETED',
+          );
+        }
+      });
+    }
 
     void this.cleanupCoversForDeletedPost(
       postId,
