@@ -223,7 +223,8 @@ export default function SearchPage() {
                         address: record.location?.address || '',
                         date: record.eventAt,
                         content: record.snippet,
-                        imageUrl: record.thumbnailUrl || '',
+                        thumbnailMediaId: record.thumbnailMediaId || '',
+                        snippet: record.snippet || '',
                       }}
                       onClick={(id) => router.push(`/record/${id}`)}
                     />
