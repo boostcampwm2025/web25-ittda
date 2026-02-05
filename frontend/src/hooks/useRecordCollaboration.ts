@@ -177,31 +177,16 @@ export function useRecordCollaboration(
       }, 500);
     });
 
-    socket.on('DRAFT_PUBLISH_FAILED', ({ draftId: id, message }) => {
+    socket.on('DRAFT_PUBLISH_ENDED', ({ draftId: id, currentVersion }) => {
       if (id !== draftId) return;
-
       setIsPublishing(false);
-
-      // "Draft not found"는 이미 다른 요청이 성공한 경우
-      // DRAFT_PUBLISHED 이벤트로 자동 리다이렉트되므로 조용히 처리
-      if (message === 'Draft not found') {
-        // Toast 표시하지 않음 (중복 요청으로 인한 무한 반복 방지)
-        // DRAFT_PUBLISHED 이벤트가 곧 올 것이므로 아무것도 하지 않음
-        return;
-      }
-
-      // 실제 실패인 경우
-      toast.warning(
-        `기록 발행에 실패했습니다.\n${message}\n최신 상태로 다시 연결합니다.`,
-        {
-          duration: 3000,
-          style: { whiteSpace: 'pre-wrap' },
-        },
-      );
-
-      setTimeout(() => {
+      if (
+        typeof currentVersion === 'number' &&
+        currentVersion > versionRef.current
+      ) {
+        versionRef.current = currentVersion;
         window.location.reload();
-      }, 2000);
+      }
     });
 
     return () => {
@@ -210,7 +195,7 @@ export function useRecordCollaboration(
       socket.off('PATCH_COMMITTED');
       socket.off('PATCH_REJECTED_STALE');
       socket.off('DRAFT_PUBLISHED');
-      socket.off('DRAFT_PUBLISH_FAILED');
+      socket.off('DRAFT_PUBLISH_ENDED');
     };
   }, [socket, draftId, mySessionId, setBlocks, setTitle, router]);
 
