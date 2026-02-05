@@ -30,6 +30,8 @@ import type {
   DraftSocketData,
   JoinDraftPayload,
   LeaveDraftPayload,
+  JoinGroupDraftsPayload,
+  LeaveGroupDraftsPayload,
   LockPayload,
   PresenceMember,
   PresenceHeartbeatPayload,
@@ -50,7 +52,17 @@ export class PostDraftGateway
   private readonly logger = new Logger(PostDraftGateway.name);
   private static readonly PRESENCE_TTL_MS = 60_000;
   private static readonly PRESENCE_SWEEP_MS = 10_000;
+  private static readonly DRAFT_JOIN_LIMIT = PostDraftGateway.readEnvInt(
+    'DRAFT_JOIN_LIMIT',
+    10,
+  );
+  private static readonly GROUP_DRAFT_REFRESH_MS = PostDraftGateway.readEnvInt(
+    'DRAFT_LIST_REFRESH_MS',
+    3000,
+  );
   private presenceSweepTimer?: NodeJS.Timeout;
+  private groupDraftRefreshTimer?: NodeJS.Timeout;
+  private readonly groupDraftSubscribers = new Map<string, Set<string>>();
 
   constructor(
     @InjectRepository(PostDraft)
@@ -75,6 +87,13 @@ export class PostDraftGateway
     this.presenceSweepTimer = setInterval(() => {
       this.sweepStalePresence();
     }, PostDraftGateway.PRESENCE_SWEEP_MS);
+
+    if (this.groupDraftRefreshTimer) {
+      clearInterval(this.groupDraftRefreshTimer);
+    }
+    this.groupDraftRefreshTimer = setInterval(() => {
+      void this.broadcastGroupDraftSnapshots();
+    }, PostDraftGateway.GROUP_DRAFT_REFRESH_MS);
   }
 
   @SubscribeMessage('JOIN_DRAFT')
@@ -92,6 +111,14 @@ export class PostDraftGateway
 
     const sessionId = randomUUID();
     const actorId = this.resolveActorId(socket);
+    const existingMember = this.presenceService.getMemberByActor(
+      draftId,
+      actorId,
+    );
+    const memberCount = this.presenceService.getMembersArray(draftId).length;
+    if (!existingMember && memberCount >= PostDraftGateway.DRAFT_JOIN_LIMIT) {
+      throw new WsException('Draft is full.');
+    }
     const { displayName, role, profileImageId } = await this.resolveMemberInfo(
       actorId,
       draftId,
@@ -140,6 +167,44 @@ export class PostDraftGateway
     });
 
     socket.to(room).emit('PRESENCE_JOINED', { member });
+  }
+
+  @SubscribeMessage('JOIN_GROUP_DRAFTS')
+  async handleJoinGroupDrafts(
+    @MessageBody() payload: JoinGroupDraftsPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const groupId = payload?.groupId;
+    if (!groupId || !isUUID(groupId)) {
+      throw new WsException('groupId must be a UUID.');
+    }
+
+    const actorId = this.resolveActorId(socket);
+    await this.ensureGroupMember(groupId, actorId, false);
+
+    this.leaveGroupDrafts(socket);
+
+    const socketData = this.getSocketData(socket);
+    socketData.groupDraftGroupId = groupId;
+
+    const room = this.getGroupDraftRoom(groupId);
+    void socket.join(room);
+    this.addGroupDraftSubscriber(groupId, socket.id);
+
+    await this.emitGroupDraftSnapshot(groupId, socket);
+  }
+
+  @SubscribeMessage('LEAVE_GROUP_DRAFTS')
+  handleLeaveGroupDrafts(
+    @MessageBody() payload: LeaveGroupDraftsPayload,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    const socketData = this.getSocketData(socket);
+    const groupId = payload?.groupId;
+    if (groupId && socketData.groupDraftGroupId !== groupId) {
+      throw new WsException('groupId mismatch.');
+    }
+    this.leaveGroupDrafts(socket);
   }
 
   @SubscribeMessage('LOCK_ACQUIRE')
@@ -313,6 +378,7 @@ export class PostDraftGateway
 
   handleDisconnect(socket: Socket) {
     this.leaveCurrentDraft(socket);
+    this.leaveGroupDrafts(socket);
   }
 
   handleConnection(socket: Socket) {
@@ -331,15 +397,29 @@ export class PostDraftGateway
     });
   }
 
-  broadcastDraftPublishFailed(draftId: string, message: string) {
-    this.server.to(this.getDraftRoom(draftId)).emit('DRAFT_PUBLISH_FAILED', {
+  broadcastDraftPublishEnded(draftId: string, currentVersion?: number) {
+    const payload: { draftId: string; currentVersion?: number } = { draftId };
+    if (typeof currentVersion === 'number') {
+      payload.currentVersion = currentVersion;
+    }
+    this.server
+      .to(this.getDraftRoom(draftId))
+      .emit('DRAFT_PUBLISH_ENDED', payload);
+  }
+
+  broadcastDraftInvalidated(draftId: string, reason: string) {
+    this.server.to(this.getDraftRoom(draftId)).emit('DRAFT_INVALIDATED', {
       draftId,
-      message,
+      reason,
     });
   }
 
   private getDraftRoom(draftId: string) {
     return `draft:${draftId}`;
+  }
+
+  private getGroupDraftRoom(groupId: string) {
+    return `group-drafts:${groupId}`;
   }
 
   private leaveCurrentDraft(socket: Socket) {
@@ -367,6 +447,81 @@ export class PostDraftGateway
     if (socketData.actorId) {
       this.presenceService.clearSocketIdIfMatch(socketData.actorId, socket.id);
     }
+  }
+
+  private leaveGroupDrafts(socket: Socket) {
+    const socketData = this.getSocketData(socket);
+    const groupId = socketData.groupDraftGroupId;
+    if (!groupId) return;
+
+    void socket.leave(this.getGroupDraftRoom(groupId));
+    const subscribers = this.groupDraftSubscribers.get(groupId);
+    if (subscribers) {
+      subscribers.delete(socket.id);
+      if (subscribers.size === 0) {
+        this.groupDraftSubscribers.delete(groupId);
+      }
+    }
+    socketData.groupDraftGroupId = undefined;
+  }
+
+  private addGroupDraftSubscriber(groupId: string, socketId: string) {
+    const subscribers = this.groupDraftSubscribers.get(groupId);
+    if (subscribers) {
+      subscribers.add(socketId);
+      return;
+    }
+    this.groupDraftSubscribers.set(groupId, new Set([socketId]));
+  }
+
+  private async broadcastGroupDraftSnapshots() {
+    const groupIds = Array.from(this.groupDraftSubscribers.keys());
+    await Promise.all(
+      groupIds.map((groupId) => this.emitGroupDraftSnapshot(groupId)),
+    );
+  }
+
+  private async emitGroupDraftSnapshot(groupId: string, socket?: Socket) {
+    const drafts = await this.buildGroupDraftSnapshot(groupId);
+    const payload = { groupId, drafts };
+    if (socket) {
+      socket.emit('GROUP_DRAFTS_SNAPSHOT', payload);
+      return;
+    }
+    this.server
+      .to(this.getGroupDraftRoom(groupId))
+      .emit('GROUP_DRAFTS_SNAPSHOT', payload);
+  }
+
+  private async buildGroupDraftSnapshot(groupId: string) {
+    const drafts = await this.postDraftRepository.find({
+      where: { groupId, isActive: true },
+      order: { updatedAt: 'DESC' },
+      select: {
+        id: true,
+        kind: true,
+        targetPostId: true,
+        snapshot: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return drafts.map((draft) => ({
+      draftId: draft.id,
+      kind: draft.kind,
+      targetPostId: draft.targetPostId,
+      title: this.resolveDraftTitle(draft.snapshot),
+      createdAt: draft.createdAt.toISOString(),
+      updatedAt: draft.updatedAt.toISOString(),
+      participantCount: this.presenceService.getMembersArray(draft.id).length,
+      isPublishing: this.draftStateService.isPublishing(draft.id),
+    }));
+  }
+
+  private resolveDraftTitle(snapshot: Record<string, unknown>) {
+    const title = (snapshot as { title?: unknown }).title;
+    return typeof title === 'string' ? title : '';
   }
 
   private sweepStalePresence() {
@@ -416,6 +571,24 @@ export class PostDraftGateway
       throw new WsException('actorId is invalid.');
     }
     return actorId;
+  }
+
+  private async ensureGroupMember(
+    groupId: string,
+    actorId: string,
+    requireEditor: boolean,
+  ) {
+    const member = await this.groupMemberRepository.findOne({
+      where: { groupId, userId: actorId },
+      select: { role: true },
+    });
+    if (!member) {
+      throw new WsException('Group membership is required.');
+    }
+    if (requireEditor && member.role === GroupRoleEnum.VIEWER) {
+      throw new WsException('Insufficient permission.');
+    }
+    return member;
   }
 
   private async resolveMemberInfo(actorId: string, draftId: string) {
@@ -514,6 +687,14 @@ export class PostDraftGateway
     const previousSocket = this.server.sockets.sockets.get(previousSocketId);
     // TODO: Include device info (user agent / deviceId) in SESSION_REPLACED payload.
     previousSocket?.emit('SESSION_REPLACED', {});
+  }
+
+  private static readEnvInt(key: string, fallback: number) {
+    const raw = process.env[key];
+    if (!raw) return fallback;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    return Math.floor(parsed);
   }
 
   private ensureNotPublishing(draftId: string) {

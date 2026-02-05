@@ -47,29 +47,36 @@ export default function RecordList({ initialPreviews }: RecordListProps) {
             className="rounded-2xl p-6 shadow-sm border active:scale-[0.98] transition-all cursor-pointer overflow-hidden dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 min-w-0">
-                <h4 className="text-[16px] font-bold truncate dark:text-white text-itta-black">
-                  {record.title}
-                </h4>
-                {record.scope === 'GROUP' ? (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
-                      <Users className="w-3 h-3" />
-                      <span>그룹</span>
-                    </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <h4 className="text-[16px] font-bold truncate dark:text-white text-itta-black">
+                    {record.title}
+                  </h4>
+                  {record.scope === 'GROUP' ? (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
+                        <Users className="w-3 h-3" />
+                        <span>그룹</span>
+                      </div>
 
-                    {/* 그룹명 전용 뱃지 (동그란 점 포함) */}
-                    <div className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-                      <span className="truncate max-w-[70px] inline-block align-bottom">
-                        {record.groupName}
-                      </span>
+                      {/* 그룹명 전용 뱃지 (동그란 점 포함) */}
+                      <div className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+                        <span className="truncate max-w-[70px] inline-block align-bottom">
+                          {record.groupName}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 shrink-0">
-                    <User className="w-3 h-3" />
-                    <span>개인</span>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 shrink-0">
+                      <User className="w-3 h-3" />
+                      <span>개인</span>
+                    </div>
+                  )}
+                </div>
+                {record.hasActiveEditDraft && (
+                  <p className="mt-1 text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                    공동 수정 중...
+                  </p>
                 )}
               </div>
             </div>

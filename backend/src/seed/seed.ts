@@ -225,13 +225,15 @@ async function ensureGroupMember(group: Group, user: User) {
 async function upsertSeedDraft(owner: User, group: Group) {
   const draftRepository = dataSource.getRepository(PostDraft);
   const existing = await draftRepository.findOne({
-    where: { groupId: group.id, isActive: true },
+    where: { groupId: group.id, isActive: true, kind: 'CREATE' },
   });
   if (existing) return existing;
 
   const draft = draftRepository.create({
     groupId: group.id,
     ownerActorId: owner.id,
+    kind: 'CREATE',
+    createSlot: 1,
     snapshot: {
       scope: PostScope.GROUP,
       groupId: group.id,

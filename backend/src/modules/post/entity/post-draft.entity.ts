@@ -41,6 +41,9 @@ export class PostDraft {
   @Column({ name: 'target_post_id', type: 'uuid', nullable: true })
   targetPostId: string | null;
 
+  @Column({ name: 'create_slot', type: 'int', nullable: true })
+  createSlot: number | null;
+
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   snapshot: Record<string, unknown>;
 

@@ -27,6 +27,7 @@ export interface RecordDetail {
   updatedAt: string;
   blocks: RecordBlock[];
   contributors: Contributor[];
+  hasActiveEditDraft?: boolean;
 }
 
 export interface RecordPreview {
@@ -44,6 +45,7 @@ export interface RecordPreview {
   emotion: string[];
   rating: RatingValue['rating'] | null;
   blocks: Block[];
+  hasActiveEditDraft?: boolean;
 }
 
 export interface newGroupResponse {

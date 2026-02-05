@@ -51,4 +51,8 @@ export class PostDetailDto {
     example: 'EDITOR',
   })
   permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null;
+  @ApiPropertyOptional({
+    description: '해당 게시글의 공동 수정 드래프트가 열려있는지 여부',
+  })
+  hasActiveEditDraft?: boolean;
 }

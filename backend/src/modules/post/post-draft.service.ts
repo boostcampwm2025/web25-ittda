@@ -30,6 +30,8 @@ import { GroupActivityType } from '@/enums/group-activity-type.enum';
 
 @Injectable()
 export class PostDraftService {
+  private static readonly CREATE_DRAFT_LIMIT = 5;
+
   constructor(
     @InjectRepository(PostDraft)
     private readonly postDraftRepository: Repository<PostDraft>,
@@ -48,50 +50,71 @@ export class PostDraftService {
     groupId: string,
     actorId: string,
   ): Promise<PostDraft> {
-    const group = await this.groupRepository.findOne({
-      where: { id: groupId },
-      select: { id: true },
-    });
-    if (!group) throw new NotFoundException('Group not found');
     await this.ensureGroupEditor(groupId, actorId);
 
-    const existing = await this.postDraftRepository.findOne({
-      where: { groupId, isActive: true, kind: 'CREATE' },
-    });
-    if (existing) return existing;
+    return this.postDraftRepository.manager.transaction(async (manager) => {
+      const groupRepo = manager.getRepository(Group);
+      const draftRepo = manager.getRepository(PostDraft);
 
-    const draft = this.postDraftRepository.create({
-      groupId,
-      ownerActorId: actorId,
-      kind: 'CREATE',
-      snapshot: this.buildDefaultDraftSnapshot(groupId),
-    });
-
-    try {
-      const saved = await this.postDraftRepository.save(draft);
-      await this.groupActivityService.recordActivity({
-        groupId,
-        type: GroupActivityType.POST_COLLAB_START,
-        actorIds: [actorId],
-        refId: saved.id,
+      const group = await groupRepo.findOne({
+        where: { id: groupId },
+        select: { id: true },
+        lock: { mode: 'pessimistic_write' },
       });
-      return saved;
-    } catch (error) {
-      const dbError = error as { code?: string };
-      if (error instanceof QueryFailedError && dbError.code === '23505') {
-        const concurrent = await this.postDraftRepository.findOne({
-          where: { groupId, isActive: true, kind: 'CREATE' },
-        });
-        if (concurrent) return concurrent;
-        throw new ConflictException(
-          'Active draft already exists for this group.',
-        );
+      if (!group) throw new NotFoundException('Group not found');
+
+      const activeDrafts = await draftRepo
+        .createQueryBuilder('draft')
+        .setLock('pessimistic_write')
+        .where('draft.groupId = :groupId', { groupId })
+        .andWhere('draft.isActive = true')
+        .andWhere("draft.kind = 'CREATE'")
+        .getMany();
+
+      const usedSlots = new Set<number>();
+      activeDrafts.forEach((draft) => {
+        if (typeof draft.createSlot === 'number') {
+          usedSlots.add(draft.createSlot);
+        }
+      });
+
+      let availableSlot: number | null = null;
+      for (
+        let slot = 1;
+        slot <= PostDraftService.CREATE_DRAFT_LIMIT;
+        slot += 1
+      ) {
+        if (!usedSlots.has(slot)) {
+          availableSlot = slot;
+          break;
+        }
       }
-      if (error instanceof QueryFailedError) {
-        throw new InternalServerErrorException('Failed to create draft.');
+
+      if (!availableSlot) {
+        throw new ConflictException('Active create draft limit reached.');
       }
-      throw error;
-    }
+
+      const draft = draftRepo.create({
+        groupId,
+        ownerActorId: actorId,
+        kind: 'CREATE',
+        createSlot: availableSlot,
+        snapshot: this.buildDefaultDraftSnapshot(groupId),
+      });
+
+      try {
+        return await draftRepo.save(draft);
+      } catch (error) {
+        const dbError = error as { code?: string };
+        if (error instanceof QueryFailedError && dbError.code === '23505') {
+          throw new ConflictException('Active create draft limit reached.');
+        }
+        if (error instanceof QueryFailedError) {
+          throw new InternalServerErrorException('Failed to create draft.');
+        }
+        throw error;
+      }
+    });
   }
 
   async getGroupDraft(

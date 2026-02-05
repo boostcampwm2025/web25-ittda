@@ -21,12 +21,15 @@
 
 - `JOIN_DRAFT { draftId }`
 - `LEAVE_DRAFT { draftId? }`
+- `JOIN_GROUP_DRAFTS { groupId }`
+- `LEAVE_GROUP_DRAFTS { groupId? }`
 - `PRESENCE_SNAPSHOT { sessionId, members, locks, version }`
 - `PRESENCE_JOINED { member }`
 - `PRESENCE_LEFT { sessionId }`
 - `PRESENCE_HEARTBEAT { draftId? }`
 - `PRESENCE_REPLACED { previousSessionId, sessionId, displayName }`
 - `SESSION_REPLACED {}` (기존 세션에만 전송)
+- `GROUP_DRAFTS_SNAPSHOT { groupId, drafts }`
 
 Lock
 
@@ -46,8 +49,9 @@ Stream/Patch/Publish
 - `PATCH_COMMITTED { version, patch, authorSessionId }`
 - `PATCH_REJECTED_STALE { currentVersion }`
 - `DRAFT_PUBLISH_STARTED { draftId }`
-- `DRAFT_PUBLISH_FAILED { draftId, message }`
+- `DRAFT_PUBLISH_ENDED { draftId, currentVersion? }`
 - `DRAFT_PUBLISHED { postId }`
+- `DRAFT_INVALIDATED { draftId, reason }`
 
 ## 이벤트 상세 설명
 
@@ -56,6 +60,24 @@ Stream/Patch/Publish
 - 클라이언트 → 서버 입장 요청 이벤트
 - 서버는 세션 정보 생성 후 `PRESENCE_SNAPSHOT`으로 응답
 - 정상 흐름에서는 이 이벤트 이후에만 LOCK 이벤트를 보내는 것을 권장
+
+### JOIN_GROUP_DRAFTS
+
+- 클라이언트 → 서버 그룹 드래프트 목록 구독 요청
+- 서버는 `GROUP_DRAFTS_SNAPSHOT`을 즉시 응답하고 이후 주기적으로 갱신
+- 그룹 멤버만 구독 가능 (VIEWER 포함)
+
+### LEAVE_GROUP_DRAFTS
+
+- 클라이언트 → 서버 그룹 드래프트 목록 구독 해제
+- 그룹함을 떠날 때 호출
+
+### GROUP_DRAFTS_SNAPSHOT
+
+- 서버 → 클라이언트, 그룹 드래프트 목록 스냅샷
+- payload 예시: `{ groupId, drafts: [{ draftId, kind, title, createdAt, updatedAt, participantCount, isPublishing, targetPostId }] }`
+- 갱신 주기 기본값: 3초(`DRAFT_LIST_REFRESH_MS`)
+- `kind`는 `CREATE`/`EDIT`, `targetPostId`는 EDIT에만 존재
 
 ### PRESENCE_SNAPSHOT
 
@@ -181,17 +203,23 @@ Stream/Patch/Publish
 - payload: `{ postId }`
 - 클라이언트는 편집 화면 종료/상세 페이지 이동
 
+### DRAFT_INVALIDATED
+
+- 게시글 삭제 등으로 드래프트가 더 이상 유효하지 않을 때 브로드캐스트
+- payload: `{ draftId, reason }`
+- 클라이언트는 드래프트 종료 및 목록 이동 처리
+
 ### DRAFT_PUBLISH_STARTED
 
 - publish 시작 시 룸 전체 브로드캐스트
-- payload: `{ draftId }`
+- payload: `{ draftId, currentVersion? }`
 - 클라이언트는 로딩 UI 표시
 
-### DRAFT_PUBLISH_FAILED
+### DRAFT_PUBLISH_ENDED
 
-- publish 실패 시 룸 전체 브로드캐스트
-- payload: `{ draftId, message }`
-- 클라이언트는 로딩 UI 해제 및 에러 메시지 표시
+- publish 실패/중단 시 룸 전체 브로드캐스트
+- payload: `{ draftId }`
+- 클라이언트는 로딩 UI 해제
 
 ## Payload 요약
 
