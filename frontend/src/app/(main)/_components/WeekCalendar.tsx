@@ -9,7 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ChevronRight } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function WeekCalendar() {
@@ -19,14 +19,6 @@ export default function WeekCalendar() {
   // URL에서 date 파라미터 읽기
   const dateParam = searchParams.get('date');
   const selectedDateStr = dateParam || formatDateISO();
-
-  // 초기 렌더링 시 오늘 날짜 자동 선택
-  useEffect(() => {
-    if (!dateParam) {
-      const today = formatDateISO();
-      router.replace(`/?date=${today}`);
-    }
-  }, [dateParam, router]);
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
     getStartOfWeek(parseLocalDate(selectedDateStr)),
