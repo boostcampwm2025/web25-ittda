@@ -161,30 +161,38 @@ export function useRecordCollaboration(
       if (id === draftId) setIsPublishing(true);
     });
     socket.on('DRAFT_PUBLISHED', ({ postId }) => {
-      setTimeout(() => {
-        router.replace(`/record/${postId}`);
+      // 서버 컴포넌트 리다이렉트와의 충돌을 방지하기 위해 즉시 이동
+      router.replace(`/record/${postId}`);
 
-        setTimeout(() => {
-          toast.success(
-            '공동 기록이 저장되었습니다.\n저장된 내용을 확인해보세요.',
-            {
-              duration: 3000,
-              style: {
-                whiteSpace: 'pre-wrap',
-              },
+      setTimeout(() => {
+        toast.success(
+          '공동 기록이 저장되었습니다.\n저장된 내용을 확인해보세요.',
+          {
+            duration: 3000,
+            style: {
+              whiteSpace: 'pre-wrap',
             },
-          );
-        }, 1_000);
-      }, 1_500);
+          },
+        );
+      }, 500);
     });
 
-    socket.on('DRAFT_PUBLISH_FAILED', ({ draftId: id }) => {
+    socket.on('DRAFT_PUBLISH_FAILED', ({ draftId: id, message }) => {
       if (id !== draftId) return;
 
       setIsPublishing(false);
 
+      // "Draft not found"는 이미 다른 요청이 성공한 경우
+      // DRAFT_PUBLISHED 이벤트로 자동 리다이렉트되므로 조용히 처리
+      if (message === 'Draft not found') {
+        // Toast 표시하지 않음 (중복 요청으로 인한 무한 반복 방지)
+        // DRAFT_PUBLISHED 이벤트가 곧 올 것이므로 아무것도 하지 않음
+        return;
+      }
+
+      // 실제 실패인 경우
       toast.warning(
-        '다른 사용자에 의해 기록 발행에 실패했습니다.\n최신 상태로 다시 연결합니다.',
+        `기록 발행에 실패했습니다.\n${message}\n최신 상태로 다시 연결합니다.`,
         {
           duration: 3000,
           style: { whiteSpace: 'pre-wrap' },
@@ -219,7 +227,7 @@ export function useRecordCollaboration(
   );
 
   const applyPatch = useCallback(
-    (patch: PatchApplyPayload) => {
+    (patch: PatchApplyPayload | PatchApplyPayload[]) => {
       socket?.emit('PATCH_APPLY', {
         draftId,
         baseVersion: versionRef.current,

@@ -23,7 +23,7 @@ export function LocationField({
   const address = location?.address;
   const placeName = location?.placeName;
   return (
-    <div className="flex items-center gap-2 w-full py-1 group">
+    <div className="flex items-center justify-end gap-2 py-1 group">
       {!address ? (
         <FieldDefaultButton onClick={onClick}>
           <FieldDefaultButtonIcon icon={MapPin} />
@@ -32,9 +32,9 @@ export function LocationField({
       ) : (
         <div
           onClick={onClick}
-          className="flex items-center gap-2 cursor-pointer flex-1 min-w-0 px-1"
+          className="flex items-center gap-2 cursor-pointer min-w-0 px-1"
         >
-          <MapPin className="w-3.5 h-3.5 text-itta-point flex-shrink-0" />
+          <MapPin className="w-3.5 h-3.5 text-itta-point shrink-0" />
           <span className="font-bold text-xs text-itta-black dark:text-white truncate">
             {placeName || address}
           </span>

@@ -144,7 +144,7 @@ export function useDraftPresence(draftId?: string, groupId?: string) {
       toast.info('다른 기기/탭에서 접속하여 연결이 종료되었습니다.');
       stopHeartbeat();
       socket.disconnect();
-      router.push('/');
+      router.back();
     });
 
     // 이벤트 연결 끝내고 드래프트 진입 및 하트비트 시작

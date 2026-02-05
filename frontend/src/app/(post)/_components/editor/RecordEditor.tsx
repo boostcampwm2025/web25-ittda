@@ -145,6 +145,8 @@ export default function PostEditor({
     handleDone,
     draftId,
     uploadMultipleMedia,
+    applyPatch,
+    releaseLock,
   });
 
   const {
@@ -175,6 +177,22 @@ export default function PostEditor({
       setBlocks(blocks);
     },
   });
+
+  // draftId가 있지만 initialPost가 없는 경우 처리
+  // (발행 직후 또는 잘못된 draft ID)
+  useEffect(() => {
+    if (!draftId || initialPost || !groupId) return;
+
+    // DRAFT_PUBLISHED 이벤트를 일정 시간 기다림
+    const timer = setTimeout(() => {
+      // 이벤트가 오지 않으면 실제로 draft가 없는 것
+      // 그룹 페이지로 리다이렉트
+      toast.error('기록을 찾을 수 없습니다.');
+      window.location.href = `/group/${groupId}`;
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [draftId, initialPost, groupId]);
 
   const { members } = useDraftPresence(draftId, groupId);
 
@@ -269,6 +287,11 @@ export default function PostEditor({
   }, [pendingMetadata?.images.length, draftId]);
 
   const handleSave = async () => {
+    // 이미 발행 중이면 중복 요청 무시
+    if (isPublishing) {
+      return;
+    }
+
     const { isValid, message, filteredBlocks } = validateAndCleanRecord(
       title,
       blocks,
@@ -462,26 +485,26 @@ export default function PostEditor({
     if (!activeDrawer) return null;
     const { type, id } = activeDrawer;
 
-    if (type === 'layout') {
-      return (
-        <LayoutTemplateDrawer
-          isOpen={true}
-          onClose={() => setActiveDrawer(null)}
-          customTemplates={[]} //TODO: 커스텀 필드 관련 데이터
-          onSelect={handleApplyTemplate}
-        />
-      );
-    }
+    // if (type === 'layout') {
+    //   return (
+    //     <LayoutTemplateDrawer
+    //       isOpen={true}
+    //       onClose={() => setActiveDrawer(null)}
+    //       customTemplates={[]} //TODO: 커스텀 필드 관련 데이터
+    //       onSelect={handleApplyTemplate}
+    //     />
+    //   );
+    // }
 
-    if (type === 'saveLayout') {
-      return (
-        <SaveTemplateDrawer
-          isOpen={true}
-          onClose={() => setActiveDrawer(null)}
-          onSave={() => {}} // TODO: 사용자 맞춤 템플릿 저장 로직
-        />
-      );
-    }
+    // if (type === 'saveLayout') {
+    //   return (
+    //     <SaveTemplateDrawer
+    //       isOpen={true}
+    //       onClose={() => setActiveDrawer(null)}
+    //       onSave={() => {}} // TODO: 사용자 맞춤 템플릿 저장 로직
+    //     />
+    //   );
+    // }
 
     const block = id ? blocks.find((b) => b.id === id) : null;
     const initialValue = block
@@ -636,7 +659,9 @@ export default function PostEditor({
         <div
           ref={gridRef}
           onDragOver={handleGridDragOver}
-          className="grid grid-cols-2 gap-x-3 gap-y-5 items-center transition-all duration-300 px-3"
+          className={`grid grid-cols-2 gap-x-3 gap-y-5 items-center pr-3 ${
+            isDraggingId ? '' : 'transition-all duration-300'
+          }`}
         >
           {blocks.map((block) => {
             const lockKey = `block:${block.id}`;
@@ -655,18 +680,13 @@ export default function PostEditor({
               <div
                 data-block-id={block.id}
                 key={block.id}
-                className={`cursor-grab touch-none relative transition-all duration-300 group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'}`}
+                className={`cursor-grab touch-none relative group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95 pointer-events-none' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
               >
                 <div
-                  onPointerDown={(e) => handlePointerDown(e, block.id)}
-                  onPointerMove={(e) => handlePointerMove(e)}
-                  onPointerUp={handleDragEnd}
-                  className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
+                  className={`relative w-full flex flex-row gap-2 items-center ${
+                    block.layout.col === 1 ? 'justify-start' : 'justify-end'
+                  }`}
                 >
-                  <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
-                </div>
-
-                <div className="w-full flex flex-row gap-2 items-center">
                   {isLockedByOther && owner && (
                     <div className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse">
                       {owner.profileImageId ? (
@@ -689,6 +709,14 @@ export default function PostEditor({
                       )}
                     </div>
                   )}
+                  <div
+                    onPointerDown={(e) => handlePointerDown(e, block.id)}
+                    onPointerMove={(e) => handlePointerMove(e)}
+                    onPointerUp={handleDragEnd}
+                    className="flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
+                  >
+                    <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
+                  </div>
                   <RecordFieldRenderer
                     block={block}
                     streamingValue={streamingValues[block.id]}
