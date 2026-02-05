@@ -228,6 +228,7 @@ export interface RecordDetailResponse {
   updatedAt: string;
   blocks: Block[];
   contributors: Contributor[];
+  hasActiveEditDraft?: boolean;
 }
 
 // 지도 리스트 아이템
