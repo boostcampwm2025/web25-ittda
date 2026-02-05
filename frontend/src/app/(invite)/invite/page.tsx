@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
 import { handleInviteError } from '../_utils/handleInviteError';
+import { handleLogout } from '@/lib/api/auth';
 
 export default function InvitePage() {
   const router = useRouter();
@@ -75,6 +76,13 @@ export default function InvitePage() {
     setCookie('invite-code', inviteCode, {
       days: 1,
     });
+
+    // forceLogin이 true이고 현재 로그인되어 있다면 로그아웃 먼저 수행
+    if (forceLogin && isLoggedIn) {
+      toast.info('로그인 후 자동으로 그룹에 가입됩니다.');
+      await handleLogout();
+      return; // handleLogout이 /login으로 리디렉션하므로 return
+    }
 
     toast.info('로그인 후 자동으로 그룹에 가입됩니다.');
     router.push('/login');
