@@ -21,12 +21,15 @@
 
 - `JOIN_DRAFT { draftId }`
 - `LEAVE_DRAFT { draftId? }`
+- `JOIN_GROUP_DRAFTS { groupId }`
+- `LEAVE_GROUP_DRAFTS { groupId? }`
 - `PRESENCE_SNAPSHOT { sessionId, members, locks, version }`
 - `PRESENCE_JOINED { member }`
 - `PRESENCE_LEFT { sessionId }`
 - `PRESENCE_HEARTBEAT { draftId? }`
 - `PRESENCE_REPLACED { previousSessionId, sessionId, displayName }`
 - `SESSION_REPLACED {}` (기존 세션에만 전송)
+- `GROUP_DRAFTS_SNAPSHOT { groupId, drafts }`
 
 Lock
 
@@ -56,6 +59,24 @@ Stream/Patch/Publish
 - 클라이언트 → 서버 입장 요청 이벤트
 - 서버는 세션 정보 생성 후 `PRESENCE_SNAPSHOT`으로 응답
 - 정상 흐름에서는 이 이벤트 이후에만 LOCK 이벤트를 보내는 것을 권장
+
+### JOIN_GROUP_DRAFTS
+
+- 클라이언트 → 서버 그룹 드래프트 목록 구독 요청
+- 서버는 `GROUP_DRAFTS_SNAPSHOT`을 즉시 응답하고 이후 주기적으로 갱신
+- 그룹 멤버만 구독 가능 (VIEWER 포함)
+
+### LEAVE_GROUP_DRAFTS
+
+- 클라이언트 → 서버 그룹 드래프트 목록 구독 해제
+- 그룹함을 떠날 때 호출
+
+### GROUP_DRAFTS_SNAPSHOT
+
+- 서버 → 클라이언트, 그룹 드래프트 목록 스냅샷
+- payload 예시: `{ groupId, drafts: [{ draftId, kind, title, createdAt, updatedAt, participantCount, isPublishing, targetPostId }] }`
+- 갱신 주기 기본값: 3초(`DRAFT_LIST_REFRESH_MS`)
+- `kind`는 `CREATE`/`EDIT`, `targetPostId`는 EDIT에만 존재
 
 ### PRESENCE_SNAPSHOT
 

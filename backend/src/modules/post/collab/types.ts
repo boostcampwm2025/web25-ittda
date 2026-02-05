@@ -25,6 +25,14 @@ export type LeaveDraftPayload = {
   draftId?: string;
 };
 
+export type JoinGroupDraftsPayload = {
+  groupId: string;
+};
+
+export type LeaveGroupDraftsPayload = {
+  groupId?: string;
+};
+
 export type PresenceHeartbeatPayload = {
   draftId?: string;
 };
@@ -78,4 +86,5 @@ export type DraftSocketData = {
   displayName?: string;
   role?: string;
   draftId?: string;
+  groupDraftGroupId?: string;
 };
