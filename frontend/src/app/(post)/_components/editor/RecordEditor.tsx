@@ -180,18 +180,30 @@ export default function PostEditor({
 
   // draftId가 있지만 initialPost가 없는 경우 처리
   // (발행 직후 또는 잘못된 draft ID)
+  const draftTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    if (!draftId || initialPost || !groupId) return;
+    // initialPost가 로드되면 타이머 클리어
+    if (initialPost && draftTimeoutRef.current) {
+      clearTimeout(draftTimeoutRef.current);
+      draftTimeoutRef.current = null;
+      return;
+    }
 
-    // DRAFT_PUBLISHED 이벤트를 일정 시간 기다림
-    const timer = setTimeout(() => {
-      // 이벤트가 오지 않으면 실제로 draft가 없는 것
-      // 그룹 페이지로 리다이렉트
-      toast.error('기록을 찾을 수 없습니다.');
-      window.location.href = `/group/${groupId}`;
-    }, 3000);
+    // draftId가 있지만 initialPost가 없으면 타이머 시작
+    if (draftId && !initialPost && groupId) {
+      draftTimeoutRef.current = setTimeout(() => {
+        toast.error('기록을 찾을 수 없습니다.');
+        window.location.href = `/group/${groupId}`;
+      }, 3000);
+    }
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (draftTimeoutRef.current) {
+        clearTimeout(draftTimeoutRef.current);
+        draftTimeoutRef.current = null;
+      }
+    };
   }, [draftId, initialPost, groupId]);
 
   const { members } = useDraftPresence(draftId, groupId);
