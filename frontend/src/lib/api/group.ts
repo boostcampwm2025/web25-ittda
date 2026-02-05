@@ -9,6 +9,7 @@ import {
   MonthlyRecordList,
 } from '../types/recordResponse';
 import {
+  GroupActivityResponse,
   GroupEditResponse,
   GroupMemberProfileResponse,
   GroupMemberRoleResponse,
@@ -308,6 +309,29 @@ export const groupMonthlyRecordCoverOptions = (
       return lastPage.pageInfo.hasNext
         ? lastPage.pageInfo.nextCursor
         : undefined;
+    },
+    retry: false,
+  });
+
+export const groupActivitiesOptions = (groupId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['group', groupId, 'activity'],
+    queryFn: async ({ pageParam }) => {
+      const url = pageParam
+        ? `/api/groups/${groupId}/activities?cursor=${pageParam}`
+        : `/api/groups/${groupId}/activities`;
+
+      const response = await get<GroupActivityResponse>(url);
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage) return undefined;
+      return lastPage.nextCursor ?? undefined;
     },
     retry: false,
   });

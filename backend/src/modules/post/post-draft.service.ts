@@ -25,6 +25,8 @@ import { GroupRoleEnum } from '@/enums/group-role.enum';
 import type { BlockMoveListCommand, PatchCommand } from './collab/types';
 import { PostBlockDto } from './dto/post-block.dto';
 import { PostBlockType } from '@/enums/post-block-type.enum';
+import { GroupActivityService } from '@/modules/group/service/group-activity.service';
+import { GroupActivityType } from '@/enums/group-activity-type.enum';
 
 @Injectable()
 export class PostDraftService {
@@ -39,6 +41,7 @@ export class PostDraftService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
+    private readonly groupActivityService: GroupActivityService,
   ) {}
 
   async getOrCreateGroupCreateDraft(
@@ -65,7 +68,14 @@ export class PostDraftService {
     });
 
     try {
-      return await this.postDraftRepository.save(draft);
+      const saved = await this.postDraftRepository.save(draft);
+      await this.groupActivityService.recordActivity({
+        groupId,
+        type: GroupActivityType.POST_COLLAB_START,
+        actorIds: [actorId],
+        refId: saved.id,
+      });
+      return saved;
     } catch (error) {
       const dbError = error as { code?: string };
       if (error instanceof QueryFailedError && dbError.code === '23505') {
@@ -138,7 +148,21 @@ export class PostDraftService {
     });
 
     try {
-      return await this.postDraftRepository.save(draft);
+      const saved = await this.postDraftRepository.save(draft);
+      const eventDate = post.eventAt
+        ? DateTime.fromJSDate(post.eventAt).setZone('Asia/Seoul')
+        : null;
+      await this.groupActivityService.recordActivity({
+        groupId,
+        type: GroupActivityType.POST_EDIT_START,
+        actorIds: [actorId],
+        refId: postId,
+        meta: {
+          title: post.title,
+          eventDate: eventDate ? eventDate.toFormat('yyyy-MM-dd') : null,
+        },
+      });
+      return saved;
     } catch (error) {
       const dbError = error as { code?: string };
       if (error instanceof QueryFailedError && dbError.code === '23505') {

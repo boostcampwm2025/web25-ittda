@@ -172,7 +172,7 @@ export default function RecordMapDrawer({
                 )}
               </>
             ) : (
-              <div className="pt-3 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl dark:bg-white/5 bg-white">
+              <div className="p-6 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl dark:bg-white/5 bg-white">
                 <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
                   <MapIcon className="w-6 h-6 text-[#10B981]" />
                 </div>

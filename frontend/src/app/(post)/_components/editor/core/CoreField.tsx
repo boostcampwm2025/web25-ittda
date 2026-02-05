@@ -71,6 +71,7 @@ interface ContentProps {
   isMyLock?: boolean;
   onFocus?: () => void;
   onBlur?: (finalText: string) => void;
+  onLockedClick?: () => void;
 }
 
 export const ContentField = ({
@@ -82,6 +83,7 @@ export const ContentField = ({
   isMyLock,
   onFocus,
   onBlur,
+  onLockedClick,
 }: ContentProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isInternalFocus = useRef(false);
@@ -147,10 +149,19 @@ export const ContentField = ({
   return (
     <div
       className={cn(
-        'flex items-center gap-2 w-full group/content transition-opacity',
-        isLocked && 'opacity-60 pointer-events-none',
+        'flex relative items-center gap-2 w-full group/content transition-opacity',
+        isLocked && 'opacity-60',
       )}
     >
+      {isLocked && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onLockedClick?.();
+          }}
+          className="absolute inset-0 z-10"
+        />
+      )}
       <div className="relative flex-1 pl-3">
         <div className="absolute left-0 top-1 bottom-1 w-[2.5px] rounded-full bg-gray-200 dark:bg-white/10 group-focus-within/content:bg-itta-point dark:group-focus-within/content:bg-itta-point transition-colors duration-300" />
 

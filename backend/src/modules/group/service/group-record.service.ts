@@ -25,6 +25,8 @@ import {
   GroupCoverCandidateSectionDto,
   GroupCoverCandidateItemDto,
 } from '../dto/group-cover-candidates.response.dto';
+import { GroupActivityService } from './group-activity.service';
+import { GroupActivityType } from '@/enums/group-activity-type.enum';
 
 @Injectable()
 export class GroupRecordService {
@@ -45,12 +47,14 @@ export class GroupRecordService {
 
     @InjectRepository(PostMedia)
     private readonly postMediaRepo: Repository<PostMedia>,
+    private readonly groupActivityService: GroupActivityService,
   ) {}
 
   /**
    * 그룹 월별 커버 이미지 변경
    */
   async updateMonthCover(
+    userId: string,
     groupId: string,
     year: number,
     month: number,
@@ -118,6 +122,13 @@ export class GroupRecordService {
       });
       await this.groupMonthCoverRepo.save(newCover);
     }
+
+    await this.groupActivityService.recordActivity({
+      groupId,
+      type: GroupActivityType.GROUP_MONTH_COVER_UPDATE,
+      actorIds: [userId],
+      meta: { year, month },
+    });
 
     return { coverAssetId, sourcePostId };
   }

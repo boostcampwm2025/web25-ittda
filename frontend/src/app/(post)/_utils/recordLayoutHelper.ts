@@ -173,9 +173,22 @@ export const validateAndCleanRecord = (
   }
 
   // 빈 블록 필터링
-  const filteredBlocks = blocks.filter(
-    (block) => !isRecordBlockEmpty(block.value, true),
-  );
+  const filteredBlocks: RecordBlock[] = [];
+
+  for (const block of blocks) {
+    const isEmpty = isRecordBlockEmpty(block.value, true);
+
+    if (isEmpty) {
+      return {
+        isValid: false,
+        message:
+          '값이 비어있는 필드가 있습니다. 해당 필드를 제거하거나 값을 입력해주세요.',
+        filteredBlocks: [],
+      };
+    }
+
+    filteredBlocks.push(block);
+  }
 
   // 최소 1개 이상 텍스트 블록이 있는지
   const hasContent = filteredBlocks.some((b) => b.type === 'content');

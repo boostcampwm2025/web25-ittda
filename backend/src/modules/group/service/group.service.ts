@@ -12,6 +12,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
+import { GroupActivityType } from '@/enums/group-activity-type.enum';
 import { User } from '../../user/entity/user.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import {
@@ -20,6 +21,7 @@ import {
 } from '@/modules/post/entity/post-media.entity';
 import { PostScope } from '@/enums/post-scope.enum';
 import { GetGroupsResponseDto, GroupItemDto } from '../dto/get-groups.dto';
+import { GroupActivityService } from './group-activity.service';
 
 const GROUP_NICKNAME_REGEX = /^[a-zA-Z0-9가-힣 ]+$/;
 
@@ -44,11 +46,12 @@ export class GroupService {
     private readonly postMediaRepo: Repository<PostMedia>,
 
     private readonly dataSource: DataSource,
+    private readonly groupActivityService: GroupActivityService,
   ) {}
 
   /** 그룹 생성 + ADMIN 등록 (트랜잭션 적용) */
   async createGroup(ownerId: string, name: string): Promise<Group> {
-    return await this.dataSource.transaction(async (manager) => {
+    const savedGroup = await this.dataSource.transaction(async (manager) => {
       try {
         const group = manager.create(Group, {
           name,
@@ -76,6 +79,13 @@ export class GroupService {
         );
       }
     });
+    await this.groupActivityService.recordActivity({
+      groupId: savedGroup.id,
+      type: GroupActivityType.GROUP_CREATE,
+      actorIds: [ownerId],
+      meta: { name },
+    });
+    return savedGroup;
   }
 
   /** 그룹 멤버 조회 (Guard 핵심) */
@@ -125,6 +135,12 @@ export class GroupService {
     }
 
     await this.groupRepo.update(groupId, { name });
+    await this.groupActivityService.recordActivity({
+      groupId,
+      type: GroupActivityType.GROUP_NAME_UPDATE,
+      actorIds: [userId],
+      meta: { beforeName: group.name, afterName: name },
+    });
   }
 
   /** 그룹 목록 조회 (최신 활동 순) - N+1 최적화 */

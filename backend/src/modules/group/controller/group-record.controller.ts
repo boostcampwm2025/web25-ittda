@@ -32,6 +32,8 @@ import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto'
 import { GetGroupCoverCandidatesQueryDto } from '../dto/get-group-cover-candidates.query.dto';
 import { GroupCoverCandidatesResponseDto } from '../dto/group-cover-candidates.response.dto';
 import { parseYearMonth } from '@/common/utils/parseDateValidator';
+import { User } from '@/common/decorators/user.decorator';
+import type { MyJwtPayload } from '@/modules/auth/auth.type';
 
 @ApiTags('group-records')
 @ApiBearerAuth('bearerAuth')
@@ -58,6 +60,7 @@ export class GroupRecordController {
   @ApiParam({ name: 'yyyy_mm', description: '연-월 (예: 2026-01)' })
   @ApiWrappedOkResponse({ type: Object })
   async updateMonthCover(
+    @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
     @Param('yyyy_mm') yyyy_mm: string,
     @Body() body: UpdateGroupMonthCoverDto,
@@ -65,6 +68,7 @@ export class GroupRecordController {
     const { year, month } = parseYearMonth(yyyy_mm);
 
     const result = await this.groupRecordService.updateMonthCover(
+      user.sub,
       groupId,
       year,
       month,

@@ -12,7 +12,7 @@ import {
 import { Popover } from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
 import { useEditPostDraft } from '@/hooks/useGrouprRecord';
-import { RecordDetailResponse } from '@/lib/types/record';
+import { ImageValue, RecordDetailResponse } from '@/lib/types/record';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
@@ -55,8 +55,8 @@ export default function RecordDetailHeaderActions({
   const textBlock = record.blocks.find((block) => block.type === 'TEXT');
   const content =
     textBlock && 'text' in textBlock.value ? textBlock.value.text : '';
-  const image = record.blocks.find((block) => block.type === 'IMAGE');
-
+  const image = record.blocks.find((block) => block.type === 'IMAGE')
+    ?.value as ImageValue;
   // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -204,7 +204,7 @@ export default function RecordDetailHeaderActions({
           id: record.id,
           title: record.title,
           content,
-          image: image?.id ?? null,
+          image: image?.mediaIds?.[0] ?? null,
         }}
       />
     </>

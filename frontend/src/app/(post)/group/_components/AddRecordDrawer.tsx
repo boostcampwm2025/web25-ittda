@@ -26,50 +26,35 @@ export function AddRecordDrawer({
   groupId,
 }: AddRecordDrawerProps) {
   const router = useRouter();
-  const { refetch: getNewPostDraft } = useNewPostDraft(groupId || '');
+  const { refetch: getNewPostDraft, isFetching } = useNewPostDraft(
+    groupId || '',
+  );
 
   const handleGroupRecord = async () => {
-    if (!groupId) return;
+    if (!groupId || isFetching) return;
 
-    try {
-      const { data: refetchedData } = await getNewPostDraft();
+    const { data: refetchedData, isError, error } = await getNewPostDraft();
 
-      if (refetchedData?.redirectUrl) {
-        router.push(refetchedData.redirectUrl);
-        onOpenChange(false);
-      } else {
-        // 리다이렉트 URL 누락은 백엔드 응답 문제일 가능성
-        const error = new Error(
-          '공동 기록 생성 응답에 리다이렉트 URL이 없습니다',
-        );
-        Sentry.captureException(error, {
-          level: 'warning',
-          tags: {
-            context: 'group',
-            operation: 'create-group-record',
-          },
-          extra: {
-            groupId,
-            responseData: refetchedData,
-          },
-        });
-        console.warn('리다이렉트 URL이 없습니다.');
-      }
-
-      onOpenChange(false);
-    } catch (error) {
+    if (isError) {
       Sentry.captureException(error, {
         level: 'error',
-        tags: {
-          context: 'group',
-          operation: 'create-group-record',
-        },
-        extra: {
-          groupId,
-        },
+        tags: { context: 'group', operation: 'create-group-record' },
+        extra: { groupId },
       });
-      logger.error('AddRecordDrawer - Failed to initiate group record', error);
+      logger.error('그룹 드래프트 생성 실패', error);
+      return;
     }
+
+    if (refetchedData?.redirectUrl) {
+      router.push(refetchedData.redirectUrl);
+      onOpenChange(false);
+    } else {
+      Sentry.captureException(new Error('리다이렉트 URL이 없습니다.'), {
+        extra: { refetchedData },
+      });
+    }
+
+    onOpenChange(false);
   };
 
   const handleIndividualRecord = () => {

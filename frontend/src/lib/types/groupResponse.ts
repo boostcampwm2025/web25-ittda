@@ -1,4 +1,4 @@
-import { GroupRoleType } from './group';
+import { GroupActivityItem, GroupRoleType } from './group';
 
 export interface GroupProfileCover {
   assetId: string;
@@ -109,4 +109,9 @@ export interface GroupMembersResponse {
 
 export interface GroupMemberRoleResponse {
   role: GroupRoleType;
+}
+
+export interface GroupActivityResponse {
+  items: GroupActivityItem[];
+  nextCursor?: string;
 }
