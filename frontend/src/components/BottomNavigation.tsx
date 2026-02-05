@@ -29,7 +29,8 @@ export default function BottomNavigation() {
   const pathGroupId = groupMatch ? groupMatch[1] : null;
   const searchParamsGroupId = searchParams.get('groupId');
   const scope = searchParams.get('scope');
-  const effectiveGroupId = pathGroupId || (scope === 'group' ? searchParamsGroupId : null);
+  const effectiveGroupId =
+    pathGroupId || (scope === 'group' ? searchParamsGroupId : null);
 
   const { data: groups = [] } = useQuery({
     ...groupListOptions(),
@@ -91,10 +92,10 @@ export default function BottomNavigation() {
           <button
             onClick={() => !isViewer && setIsAddDrawerOpen(true)}
             disabled={isViewer}
-            className={`w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl transition-all ring-4 ${
+            className={`w-14 h-14 -mt-10 rounded-2xl ring-white flex items-center justify-center shadow-2xl transition-all ring-4 ${
               isViewer
-                ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200 ring-white'
-                : 'cursor-pointer active:scale-95 dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white'
+                ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200'
+                : 'cursor-pointer active:scale-95 dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20]'
             }`}
           >
             <Plus className="w-7 h-7" strokeWidth={3} />
@@ -102,7 +103,9 @@ export default function BottomNavigation() {
           <NavItem
             icon={<MessageSquare />}
             active={pathname === `/group/${effectiveGroupId}/notifications`}
-            onClick={() => router.push(`/group/${effectiveGroupId}/notifications`)}
+            onClick={() =>
+              router.push(`/group/${effectiveGroupId}/notifications`)
+            }
             isGroup
           />
           <NavItem
