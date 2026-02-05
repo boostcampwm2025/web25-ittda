@@ -5,6 +5,7 @@ import { DateTime } from 'luxon';
 
 import { PostBlock } from '../post/entity/post-block.entity';
 import { PostContributor } from '../post/entity/post-contributor.entity';
+import { PostDraft } from '../post/entity/post-draft.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Group } from '../group/entity/group.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
@@ -29,6 +30,7 @@ type FeedWarning = {
 type BuildFeedCardsOptions = {
   includeGroupName?: boolean;
   groupRepo?: Repository<Group>;
+  draftRepo?: Repository<PostDraft>;
 };
 
 export function dayRange(day: string, tz: string): DayRange {
@@ -54,7 +56,7 @@ export async function buildFeedCards(
   userId?: string,
   options: BuildFeedCardsOptions = {},
 ): Promise<{ cards: FeedCardResponseDto[]; warnings: FeedWarning[] }> {
-  const { includeGroupName = false, groupRepo } = options;
+  const { includeGroupName = false, groupRepo, draftRepo } = options;
   const requesterId = userId ?? '';
   const postIds = posts.map((p) => p.id);
   const postById = new Map(posts.map((p) => [p.id, p]));
@@ -69,6 +71,24 @@ export async function buildFeedCards(
     });
     groups.forEach((group) => {
       groupNameByGroupId.set(group.id, group.name);
+    });
+  }
+
+  const activeEditDraftPostIds = new Set<string>();
+  const groupPostIds = posts.filter((p) => Boolean(p.groupId)).map((p) => p.id);
+  if (draftRepo && groupPostIds.length > 0) {
+    const activeDrafts = await draftRepo.find({
+      where: {
+        kind: 'EDIT',
+        isActive: true,
+        targetPostId: In(groupPostIds),
+      },
+      select: { targetPostId: true },
+    });
+    activeDrafts.forEach((draft) => {
+      if (draft.targetPostId) {
+        activeEditDraftPostIds.add(draft.targetPostId);
+      }
     });
   }
 
@@ -276,6 +296,9 @@ export async function buildFeedCards(
         rating: p.rating ?? null,
         contributors: contributorsByPostId.get(p.id) ?? [],
         permission,
+        hasActiveEditDraft: p.groupId
+          ? activeEditDraftPostIds.has(p.id)
+          : undefined,
       }),
     );
   }
