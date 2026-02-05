@@ -103,10 +103,17 @@ export default function DailyDetailRecordItem({
           className="rounded-lg p-5 border shadow-sm cursor-pointer active:scale-[0.99] transition-all overflow-hidden dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100/60"
         >
           {/* 제목 & 멤버 아바타 */}
-          <div className="w-full flex justify-between items-center gap-2 mb-4">
-            <h4 className="text-[15px] font-bold truncate dark:text-gray-200 text-itta-black">
-              {record.title}
-            </h4>
+          <div className="w-full flex justify-between items-start gap-2 mb-4">
+            <div className="min-w-0">
+              <h4 className="text-[15px] font-bold truncate dark:text-gray-200 text-itta-black">
+                {record.title}
+              </h4>
+              {record.hasActiveEditDraft && (
+                <p className="mt-1 text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                  공동 수정 중...
+                </p>
+              )}
+            </div>
 
             <div className="flex -space-x-2 shrink-0">
               {groupId &&
