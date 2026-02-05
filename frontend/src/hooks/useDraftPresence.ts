@@ -36,6 +36,7 @@ export function useDraftPresence(draftId?: string, groupId?: string) {
   const { socket, isConnected, setSessionId } = useSocketStore();
   const [members, setMembers] = useState<PresenceMember[]>([]);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const didLeaveRef = useRef(false);
   const router = useRouter();
   const MAX_RETRY_COUNT = 3;
   const RETRY_KEY = `socket_retry_${draftId || 'default'}`;
@@ -57,6 +58,17 @@ export function useDraftPresence(draftId?: string, groupId?: string) {
       }
     }, 50_000); // 50초 간격
   }, [socket, draftId, stopHeartbeat]);
+
+  const leaveDraft = useCallback(() => {
+    if (!socket || !draftId || didLeaveRef.current) return;
+    didLeaveRef.current = true;
+    stopHeartbeat();
+    socket.emit('LEAVE_DRAFT', { draftId });
+  }, [socket, draftId, stopHeartbeat]);
+
+  useEffect(() => {
+    didLeaveRef.current = false;
+  }, [draftId]);
 
   useEffect(() => {
     if (!socket || !draftId) return;
@@ -146,18 +158,37 @@ export function useDraftPresence(draftId?: string, groupId?: string) {
       socket.disconnect();
       router.back();
     });
+    const handleDraftInvalidated = ({
+      draftId: invalidatedId,
+      reason,
+    }: {
+      draftId?: string;
+      reason?: string;
+    }) => {
+      if (invalidatedId && invalidatedId !== draftId) return;
+      if (reason === 'POST_DELETED') {
+        toast.error('게시글이 삭제되어 드래프트가 종료되었습니다.');
+      } else {
+        toast.error('드래프트가 종료되었습니다.');
+      }
+      leaveDraft();
+      setTimeout(() => {
+        router.replace(groupId ? `/group/${groupId}` : '/');
+      }, 500);
+    };
+    socket.on('DRAFT_INVALIDATED', handleDraftInvalidated);
 
     // 이벤트 연결 끝내고 드래프트 진입 및 하트비트 시작
     socket.emit('JOIN_DRAFT', { draftId });
     startHeartbeat();
     return () => {
-      stopHeartbeat();
       socket.off('PRESENCE_SNAPSHOT');
       socket.off('PRESENCE_JOINED');
       socket.off('PRESENCE_LEFT');
       socket.off('PRESENCE_REPLACED');
       socket.off('SESSION_REPLACED');
-      socket.emit('LEAVE_DRAFT', { draftId });
+      socket.off('DRAFT_INVALIDATED', handleDraftInvalidated);
+      leaveDraft();
     };
   }, [
     socket,
@@ -169,6 +200,7 @@ export function useDraftPresence(draftId?: string, groupId?: string) {
     stopHeartbeat,
     RETRY_KEY,
     groupId,
+    leaveDraft,
   ]);
 
   return { members };
