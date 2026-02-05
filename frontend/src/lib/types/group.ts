@@ -1,3 +1,5 @@
+import { GroupActivityType } from '../constants/constants';
+
 export interface GroupInfo {
   name: string;
   inviteCode: string;
@@ -43,3 +45,19 @@ export const ROLE_MAP = {
   editor: 'EDITOR',
   viewer: 'VIEWER',
 } as const;
+
+export interface GroupActivityActor {
+  userId?: string | null;
+  nickname?: string | null;
+  groupNickname?: string | null;
+  profileImageId?: string | null;
+}
+
+export interface GroupActivityItem {
+  id: string;
+  type: GroupActivityType;
+  refId?: string | null;
+  meta?: Record<string, unknown> | null;
+  createdAt: string;
+  actors: GroupActivityActor[];
+}

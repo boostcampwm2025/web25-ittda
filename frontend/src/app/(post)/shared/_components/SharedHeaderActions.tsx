@@ -76,21 +76,34 @@ export default function SharedHeaderActions() {
   });
 
   const handleCreateGroup = () => {
-    const groupNameRegex = /^[a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s]{2,50}$/;
-
-    if (!newGroupName.trim()) {
-      toast.error('그룹 이름을 입력해주세요.');
-      return;
-    }
-
-    if (!groupNameRegex.test(newGroupName)) {
-      toast.error('이름은 2~50자의 한글, 영문, 숫자, 공백만 가능합니다.');
-      return;
+    if (groupNicknameError) {
+      toast.error('올바른 그룹 이름으로 입력해주세요.');
     }
 
     setIsCreating(true);
     mutate({ name: newGroupName });
   };
+
+  const getGroupNameError = () => {
+    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]{2,50}$/;
+
+    if (!newGroupName.trim()) {
+      return '그룹 이름을 입력해주세요.';
+    }
+
+    const incompleteHangulRegex = /[ㄱ-ㅎㅏ-ㅣ]/;
+    if (incompleteHangulRegex.test(newGroupName)) {
+      return '완성된 한글을 입력해주세요';
+    }
+
+    if (!groupNameRegex.test(newGroupName)) {
+      return '이름은 2~50자의 한글, 영문, 숫자, 공백만 가능합니다.';
+    }
+
+    return null;
+  };
+
+  const groupNicknameError = getGroupNameError();
 
   return (
     <>
@@ -193,6 +206,15 @@ export default function SharedHeaderActions() {
                 onChange={(e) => setNewGroupName(e.target.value)}
                 className="w-full border-b-2 bg-transparent py-3 text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
               />
+              {groupNicknameError ? (
+                <p className="text-[10px] text-red-500 font-medium">
+                  {groupNicknameError}
+                </p>
+              ) : (
+                <p className="text-[10px] text-gray-400 px-1">
+                  * 그룹 이름은 한글/영문/숫자/공백만 사용이 가능합니다.
+                </p>
+              )}
             </div>
           </div>
 
@@ -205,10 +227,12 @@ export default function SharedHeaderActions() {
             </DrawerClose>
             <button
               onClick={handleCreateGroup}
-              disabled={!newGroupName.trim() || isCreating}
+              disabled={
+                !newGroupName.trim() || !!groupNicknameError || isCreating
+              }
               className={cn(
                 'flex-2 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2',
-                newGroupName.trim() && !isCreating
+                newGroupName.trim() && !isCreating && !groupNicknameError
                   ? 'bg-[#10B981] text-white active:scale-95 cursor-pointer'
                   : 'bg-gray-100 text-gray-300 cursor-not-allowed',
               )}

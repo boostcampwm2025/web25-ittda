@@ -668,14 +668,14 @@ export default function PostEditor({
 
                 <div className="w-full flex flex-row gap-2 items-center">
                   {isLockedByOther && owner && (
-                    <div>
+                    <div className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse">
                       {owner.profileImageId ? (
                         <AssetImage
                           assetId={owner.profileImageId}
                           alt={`${owner.displayName} 편집 중`}
                           width={24}
                           height={24}
-                          className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
+                          className="w-full h-full rounded-full"
                           title={owner.displayName}
                         />
                       ) : (
@@ -684,7 +684,7 @@ export default function PostEditor({
                           height={24}
                           src={'/profile_base.png'}
                           alt={`${owner.displayName} 편집 중`}
-                          className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse"
+                          className="w-full h-full rounded-full"
                         />
                       )}
                     </div>

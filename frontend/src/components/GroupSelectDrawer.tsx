@@ -84,44 +84,37 @@ export default function GroupSelectDrawer({
                       : 'active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100'
                   }`}
                 >
-                <div className="w-12 h-12 rounded-lg overflow-hidden border-2 shadow-sm dark:border-[#121212] border-white">
-                  {group.cover?.assetId ? (
-                    <AssetImage
-                      assetId={group.cover.assetId}
-                      alt={group.name}
-                      width={48}
-                      height={48}
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <AssetImage
-                      alt={group.name}
-                      width={48}
-                      height={48}
-                      assetId={randomBaseImage(group.groupId)}
-                      className="object-cover w-full h-full"
-                    />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="font-semibold dark:text-white text-itta-black truncate">
-                    {group.name}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {group.memberCount}명의 멤버
-                  </p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </button>
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border-2 shadow-sm dark:border-[#121212] border-white">
+                    {group.cover?.assetId ? (
+                      <AssetImage
+                        assetId={group.cover.assetId}
+                        alt={group.name}
+                        width={48}
+                        height={48}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <AssetImage
+                        alt={group.name}
+                        width={48}
+                        height={48}
+                        assetId={randomBaseImage(group.groupId)}
+                        className="object-cover w-full h-full"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="font-semibold dark:text-white text-itta-black truncate">
+                      {group.name}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {group.memberCount}명의 멤버
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </button>
               );
             })
-          )}
-
-          {groups.length === 0 && (
-            <div className="py-8 text-center text-gray-500">
-              <p>참여 중인 그룹이 없습니다.</p>
-              <p className="text-sm mt-1">그룹을 만들거나 초대를 받아보세요.</p>
-            </div>
           )}
         </div>
       </DrawerContent>

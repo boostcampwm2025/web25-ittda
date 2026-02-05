@@ -176,6 +176,18 @@ main {
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* 운영체제별 일관된 폰트 설정 */
+  html,
+  body {
+    font-family: var(--font-geist-sans), 'Noto Sans KR', -apple-system,
+      BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
