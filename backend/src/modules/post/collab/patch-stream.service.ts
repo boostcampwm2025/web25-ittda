@@ -7,8 +7,9 @@ import { DraftStateService } from './draft-state.service';
 import { LockService } from './lock.service';
 import { DraftQueueService } from './draft-queue.service';
 import { PostDraftService } from '../post-draft.service';
-import type { PatchApplyPayload, StreamPayload } from './types';
 import { acquireLockWithEmit } from './lock-events';
+
+import type { PatchApplyPayload, StreamPayload } from './types';
 
 @Injectable()
 export class PatchStreamService {
@@ -19,7 +20,7 @@ export class PatchStreamService {
     private readonly draftQueueService: DraftQueueService,
   ) {}
 
-  handleBlockValueStream(
+  async handleBlockValueStream(
     server: Server,
     socket: Socket,
     room: string,
@@ -27,12 +28,12 @@ export class PatchStreamService {
     sessionId: string,
     payload: StreamPayload,
   ) {
-    this.ensureNotPublishing(draftId);
+    await this.ensureNotPublishing(draftId);
     const blockId = payload?.blockId;
     if (!blockId || !isUUID(blockId)) {
       throw new WsException('blockId must be a UUID.');
     }
-    this.ensureLockOwner(draftId, sessionId, blockId);
+    await this.ensureLockOwner(draftId, sessionId, blockId);
 
     server.to(room).emit('BLOCK_VALUE_STREAM', {
       blockId,
@@ -50,7 +51,7 @@ export class PatchStreamService {
     sessionId: string,
     payload: PatchApplyPayload,
   ) {
-    this.ensureNotPublishing(draftId);
+    await this.ensureNotPublishing(draftId);
     if (!payload) {
       throw new WsException('payload is required.');
     }
@@ -84,7 +85,7 @@ export class PatchStreamService {
         continue;
       }
       if (command.type === 'BLOCK_SET_TITLE') {
-        this.ensureTitleLockOwner(draftId, sessionId);
+        await this.ensureTitleLockOwner(draftId, sessionId);
         continue;
       }
       const blockId = 'blockId' in command ? command.blockId : null;
@@ -92,7 +93,7 @@ export class PatchStreamService {
       if (!isUUID(blockId)) {
         throw new WsException('blockId must be a UUID.');
       }
-      this.ensureLockOwner(draftId, sessionId, blockId);
+      await this.ensureLockOwner(draftId, sessionId, blockId);
     }
     // 잘못된 payload나 권한 없는 요청은 아예 큐에 들어가지 않음.
     await this.draftQueueService.run(draftId, async () => {
@@ -140,10 +141,10 @@ export class PatchStreamService {
       });
 
       if (insertedBlockIds.length > 0) {
-        insertedBlockIds.forEach((blockId) => {
-          if (!isUUID(blockId)) return;
+        for (const blockId of insertedBlockIds) {
+          if (!isUUID(blockId)) continue;
           const lockKey = `block:${blockId}`;
-          const lockResult = acquireLockWithEmit(
+          const lockResult = await acquireLockWithEmit(
             this.lockService,
             server,
             room,
@@ -154,23 +155,27 @@ export class PatchStreamService {
             sessionId,
           );
           if (!lockResult.ok) return;
-        });
+        }
       }
     });
   }
 
-  private ensureNotPublishing(draftId: string) {
-    if (this.draftStateService.isPublishing(draftId)) {
+  private async ensureNotPublishing(draftId: string) {
+    if (await this.draftStateService.isPublishing(draftId)) {
       throw new WsException('Draft is publishing.');
     }
   }
 
-  private ensureLockOwner(draftId: string, sessionId: string, blockId: string) {
-    const blockOwner = this.lockService.getActiveLockOwnerSessionId(
+  private async ensureLockOwner(
+    draftId: string,
+    sessionId: string,
+    blockId: string,
+  ) {
+    const blockOwner = await this.lockService.getActiveLockOwnerSessionId(
       draftId,
       `block:${blockId}`,
     );
-    const tableOwner = this.lockService.getActiveLockOwnerSessionId(
+    const tableOwner = await this.lockService.getActiveLockOwnerSessionId(
       draftId,
       `table:${blockId}`,
     );
@@ -180,8 +185,8 @@ export class PatchStreamService {
     throw new WsException('Lock owner only.');
   }
 
-  private ensureTitleLockOwner(draftId: string, sessionId: string) {
-    const owner = this.lockService.getActiveLockOwnerSessionId(
+  private async ensureTitleLockOwner(draftId: string, sessionId: string) {
+    const owner = await this.lockService.getActiveLockOwnerSessionId(
       draftId,
       'block:title',
     );

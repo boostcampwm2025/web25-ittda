@@ -10,6 +10,8 @@ import { GuestMigrationService } from '../guest/guest-migration.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from './refresh_token/refresh_token.entity';
+import { RedisService } from '@liaoliaots/nestjs-redis';
+import type { Redis } from 'ioredis';
 
 import type { OAuthUserType } from './auth.type';
 
@@ -18,11 +20,16 @@ interface CodePayload {
   userId: string;
   accessToken: string;
   refreshToken: string;
-  expiresAt: Date;
+  expiresAt: Date; // JSON.stringified -> string in Redis
 }
 
 @Injectable()
 export class AuthService {
+  private static readonly CODE_TTL_SEC = 300; // 5 minutes
+  private static readonly CODE_PREFIX = 'auth_code:';
+
+  private readonly redis: Redis;
+
   constructor(
     private readonly userService: UserService,
 
@@ -32,10 +39,14 @@ export class AuthService {
     private readonly refreshTokenRepo: Repository<RefreshToken>,
 
     private readonly guestMigrationService: GuestMigrationService,
-  ) {}
 
-  // userId -> CodePayload 저장
-  private codeMap = new Map<string, CodePayload>();
+    private readonly redisService: RedisService,
+  ) {
+    this.redis = this.redisService.getOrThrow();
+  }
+
+  // Legacy in-memory codeMap refactoring note:
+  // - codeMap -> Redis SETEX "auth_code:{code}"
 
   private generateTokens(userId: string) {
     const accessToken = this.jwtService.sign(
@@ -72,12 +83,16 @@ export class AuthService {
   /**
    * 임시 code 생성 (토큰 정보를 담아서)
    */
-  createTemporaryCode(payload: CodePayload): string {
+  async createTemporaryCode(payload: CodePayload): Promise<string> {
     const code = randomUUID();
-    this.codeMap.set(code, payload);
 
-    // 5분 후 자동 삭제
-    setTimeout(() => this.codeMap.delete(code), 1000 * 60 * 5);
+    const key = `${AuthService.CODE_PREFIX}${code}`;
+    await this.redis.set(
+      key,
+      JSON.stringify(payload),
+      'EX',
+      AuthService.CODE_TTL_SEC,
+    );
 
     return code;
   }
@@ -85,21 +100,26 @@ export class AuthService {
   /**
    * code를 검증하고 저장된 토큰 반환
    */
-  exchangeCodeForTokens(code: string) {
-    const payload = this.codeMap.get(code);
+  async exchangeCodeForTokens(code: string) {
+    const key = `${AuthService.CODE_PREFIX}${code}`;
+    const val = await this.redis.get(key);
 
-    if (!payload) {
+    if (!val) {
       throw new UnauthorizedException('Invalid or expired code');
     }
 
     // 일회성 보장
-    this.codeMap.delete(code);
+    await this.redis.del(key);
+
+    const payload = JSON.parse(val) as CodePayload;
+    // JSON restoration of Date string
+    const expiresAt = new Date(payload.expiresAt);
 
     return {
       userId: payload.userId,
       accessToken: payload.accessToken,
       refreshToken: payload.refreshToken,
-      expiresAt: payload.expiresAt,
+      expiresAt: expiresAt,
     };
   }
 

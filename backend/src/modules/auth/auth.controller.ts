@@ -76,7 +76,7 @@ export class AuthController {
       await this.authService.oauthLogin(req.user);
 
     // 2. 토큰 정보를 담은 임시 code 생성
-    const code = this.authService.createTemporaryCode({
+    const code = await this.authService.createTemporaryCode({
       userId: user.id, // DB user.id (UUID) 사용
       accessToken,
       refreshToken,
@@ -110,7 +110,7 @@ export class AuthController {
     const { user, accessToken, refreshToken, expiresAt } =
       await this.authService.oauthLogin(req.user);
 
-    const code = this.authService.createTemporaryCode({
+    const code = await this.authService.createTemporaryCode({
       userId: user.id,
       accessToken,
       refreshToken,
@@ -145,7 +145,7 @@ export class AuthController {
   ) {
     // code 검증 후 저장된 토큰 반환
     const { userId, accessToken, refreshToken } =
-      this.authService.exchangeCodeForTokens(code);
+      await this.authService.exchangeCodeForTokens(code);
 
     if (guestSessionId) {
       // 게스트 세션 병합

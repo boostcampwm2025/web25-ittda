@@ -31,7 +31,7 @@ export const emitLockGranted = (
   });
 };
 
-export const acquireLockWithEmit = (
+export const acquireLockWithEmit = async (
   lockService: LockService,
   server: Server,
   room: string,
@@ -41,7 +41,7 @@ export const acquireLockWithEmit = (
   actorId: string,
   sessionId: string,
 ) => {
-  const result = lockService.acquireLock(
+  const result = await lockService.acquireLock(
     draftId,
     lockKey,
     actorId,

@@ -110,9 +110,6 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.16.3
-      redis:
-        specifier: ^5.10.0
-        version: 5.10.0
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -10620,22 +10617,27 @@ snapshots:
   '@redis/bloom@5.10.0(@redis/client@5.10.0)':
     dependencies:
       '@redis/client': 5.10.0
+    optional: true
 
   '@redis/client@5.10.0':
     dependencies:
       cluster-key-slot: 1.1.2
+    optional: true
 
   '@redis/json@5.10.0(@redis/client@5.10.0)':
     dependencies:
       '@redis/client': 5.10.0
+    optional: true
 
   '@redis/search@5.10.0(@redis/client@5.10.0)':
     dependencies:
       '@redis/client': 5.10.0
+    optional: true
 
   '@redis/time-series@5.10.0(@redis/client@5.10.0)':
     dependencies:
       '@redis/client': 5.10.0
+    optional: true
 
   '@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.7)(react@19.2.1)(redux@5.0.1))(react@19.2.1)':
     dependencies:
@@ -15838,6 +15840,7 @@ snapshots:
       '@redis/json': 5.10.0(@redis/client@5.10.0)
       '@redis/search': 5.10.0(@redis/client@5.10.0)
       '@redis/time-series': 5.10.0(@redis/client@5.10.0)
+    optional: true
 
   redux-thunk@3.1.0(redux@5.0.1):
     dependencies:

@@ -53,7 +53,8 @@ export class PostPublishService {
     payload: PublishDraftDto,
   ) {
     const { draftId, draftVersion } = payload;
-    if (!this.draftStateService.startPublishing(draftId)) {
+    const publishResult = await this.draftStateService.startPublishing(draftId);
+    if (!publishResult) {
       throw new ConflictException('Draft is already publishing.');
     }
     this.postDraftGateway.broadcastDraftPublishStarted(draftId);
@@ -208,7 +209,7 @@ export class PostPublishService {
       }
       throw error;
     } finally {
-      this.draftStateService.finishPublishing(draftId);
+      await this.draftStateService.finishPublishing(draftId);
     }
   }
 
@@ -219,7 +220,8 @@ export class PostPublishService {
     payload: PublishDraftDto,
   ) {
     const { draftId, draftVersion } = payload;
-    if (!this.draftStateService.startPublishing(draftId)) {
+    const publishResult = await this.draftStateService.startPublishing(draftId);
+    if (!publishResult) {
       throw new ConflictException('Draft is already publishing.');
     }
 
@@ -364,7 +366,7 @@ export class PostPublishService {
       }
       throw error;
     } finally {
-      this.draftStateService.finishPublishing(draftId);
+      await this.draftStateService.finishPublishing(draftId);
     }
   }
 

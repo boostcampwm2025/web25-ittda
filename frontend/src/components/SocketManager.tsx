@@ -2,13 +2,11 @@
 
 import { useEffect } from 'react';
 import { useSocketStore } from '@/store/useSocketStore';
-export default function SocketManager() {
-  const { connectSocket } = useSocketStore();
 
-  // 소켓 연결
+export default function SocketManager() {
   useEffect(() => {
-    connectSocket();
-  }, [connectSocket]);
+    useSocketStore.getState().connectSocket();
+  }, []); // "한 번만 mount되면 된다"
 
   return null;
 }

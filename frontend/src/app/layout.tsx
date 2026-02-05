@@ -12,6 +12,7 @@ import PWAInstallBanner from '@/components/PWAInstallBanner';
 import KakaoScript from '@/lib/services/kakaoScript';
 import AuthContext from './AuthContext';
 import { Suspense } from 'react';
+import SocketManager from '@/components/SocketManager';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -100,6 +101,7 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
         <KakaoScript />
+
         <AuthContext>
           <Providers>
             <MswLoader />

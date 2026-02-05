@@ -271,6 +271,12 @@ export const groupDailyRecordListOptions = (groupId: string, month: string) =>
   queryOptions({
     queryKey: ['group', groupId, 'records', 'daily', month],
     queryFn: async () => {
+      // month validation (YYYY-MM)
+      if (!/^\d{4}-\d{2}$/.test(month)) {
+        console.warn(`Invalid month format: ${month}`);
+        return [];
+      }
+
       const response = await get<DailyRecordList[]>(
         `/api/groups/${groupId}/archives/days?month=${month}`,
       );

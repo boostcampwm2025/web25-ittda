@@ -35,6 +35,7 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
     }),
     RedisModule.forRoot({
       config: {
+        // single redis client
         host: process.env.REDIS_HOST || 'localhost',
         port: Number(process.env.REDIS_PORT) || 6379,
         // password: 'redis_password', // 필요한 경우

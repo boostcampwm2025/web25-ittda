@@ -14,8 +14,11 @@ export type LockEntry = {
   ownerActorId: string;
   ownerSessionId: string;
   expiresAt: number;
-  timeoutId: NodeJS.Timeout;
+  timeoutId: NodeJS.Timeout | undefined;
 };
+
+// Redis에 저장되는 직렬화용 타입
+export type LockEntryPayload = Omit<LockEntry, 'timeoutId'>;
 
 export type JoinDraftPayload = {
   draftId: string;

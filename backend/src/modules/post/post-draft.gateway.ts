@@ -55,13 +55,19 @@ export class PostDraftGateway
   constructor(
     @InjectRepository(PostDraft)
     private readonly postDraftRepository: Repository<PostDraft>,
+
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
+
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
     private readonly presenceService: PresenceService,
+
     private readonly lockService: LockService,
+
     private readonly draftStateService: DraftStateService,
+
     private readonly patchStreamService: PatchStreamService,
   ) {}
 
@@ -73,7 +79,7 @@ export class PostDraftGateway
       clearInterval(this.presenceSweepTimer);
     }
     this.presenceSweepTimer = setInterval(() => {
-      this.sweepStalePresence();
+      void this.sweepStalePresence();
     }, PostDraftGateway.PRESENCE_SWEEP_MS);
   }
 
@@ -102,7 +108,7 @@ export class PostDraftGateway
       lastSeenAt: new Date().toISOString(),
     };
 
-    this.leaveCurrentDraft(socket);
+    await this.leaveCurrentDraft(socket);
 
     const socketData = this.getSocketData(socket);
     socketData.sessionId = sessionId;
@@ -118,7 +124,7 @@ export class PostDraftGateway
     const previous = this.presenceService.getMemberByActor(draftId, actorId);
     if (previous) {
       this.presenceService.markReplaced(draftId, previous.sessionId);
-      this.releaseLocksForSessionId(draftId, previous.sessionId, true);
+      await this.releaseLocksForSessionId(draftId, previous.sessionId, true);
       this.notifySessionReplaced(actorId, socket.id);
       this.disconnectPreviousSession(actorId, socket.id);
       this.server.to(room).emit('PRESENCE_REPLACED', {
@@ -133,7 +139,7 @@ export class PostDraftGateway
     socket.emit('PRESENCE_SNAPSHOT', {
       sessionId,
       members: this.presenceService.getMembersArray(draftId),
-      locks: this.lockService.getLocks(draftId),
+      locks: await this.lockService.getLocks(draftId),
       version,
     });
 
@@ -141,19 +147,19 @@ export class PostDraftGateway
   }
 
   @SubscribeMessage('LOCK_ACQUIRE')
-  handleLockAcquire(
+  async handleLockAcquire(
     @MessageBody() payload: LockPayload,
     @ConnectedSocket() socket: Socket,
   ) {
     const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
-    this.ensureNotPublishing(draftId);
+    await this.ensureNotPublishing(draftId);
     const room = this.getDraftRoom(draftId);
     const lockKey = this.normalizeLockKey(payload?.lockKey);
     if (!lockKey) {
       throw new WsException('lockKey is invalid.');
     }
 
-    const result = acquireLockWithEmit(
+    const result = await acquireLockWithEmit(
       this.lockService,
       this.server,
       room,
@@ -173,7 +179,7 @@ export class PostDraftGateway
   }
 
   @SubscribeMessage('LOCK_RELEASE')
-  handleLockRelease(
+  async handleLockRelease(
     @MessageBody() payload: LockPayload,
     @ConnectedSocket() socket: Socket,
   ) {
@@ -183,7 +189,7 @@ export class PostDraftGateway
       throw new WsException('lockKey is invalid.');
     }
 
-    const result = this.lockService.releaseLock(
+    const result = await this.lockService.releaseLock(
       draftId,
       lockKey,
       actorId,
@@ -203,19 +209,19 @@ export class PostDraftGateway
   }
 
   @SubscribeMessage('LOCK_HEARTBEAT')
-  handleLockHeartbeat(
+  async handleLockHeartbeat(
     @MessageBody() payload: LockPayload,
     @ConnectedSocket() socket: Socket,
   ) {
     const { draftId, actorId, sessionId } = this.getRequiredSession(socket);
-    this.ensureNotPublishing(draftId);
+    await this.ensureNotPublishing(draftId);
     const room = this.getDraftRoom(draftId);
     const lockKey = this.normalizeLockKey(payload?.lockKey);
     if (!lockKey) {
       throw new WsException('lockKey is invalid.');
     }
 
-    const result = this.lockService.heartbeat(
+    const result = await this.lockService.heartbeat(
       draftId,
       lockKey,
       actorId,
@@ -233,13 +239,13 @@ export class PostDraftGateway
   }
 
   @SubscribeMessage('BLOCK_VALUE_STREAM')
-  handleBlockValueStream(
+  async handleBlockValueStream(
     @MessageBody() payload: StreamPayload,
     @ConnectedSocket() socket: Socket,
   ) {
     const { draftId, sessionId } = this.getRequiredSession(socket);
     const room = this.getDraftRoom(draftId);
-    this.patchStreamService.handleBlockValueStream(
+    await this.patchStreamService.handleBlockValueStream(
       this.server,
       socket,
       room,
@@ -268,7 +274,7 @@ export class PostDraftGateway
   }
 
   @SubscribeMessage('LEAVE_DRAFT')
-  handleLeaveDraft(
+  async handleLeaveDraft(
     @MessageBody() payload: LeaveDraftPayload,
     @ConnectedSocket() socket: Socket,
   ) {
@@ -282,7 +288,7 @@ export class PostDraftGateway
     if (payload.draftId !== socketData.draftId) {
       throw new WsException('draftId mismatch.');
     }
-    this.leaveCurrentDraft(socket);
+    await this.leaveCurrentDraft(socket);
   }
 
   @SubscribeMessage('PRESENCE_HEARTBEAT')
@@ -309,8 +315,8 @@ export class PostDraftGateway
     );
   }
 
-  handleDisconnect(socket: Socket) {
-    this.leaveCurrentDraft(socket);
+  async handleDisconnect(socket: Socket) {
+    await this.leaveCurrentDraft(socket);
   }
 
   handleConnection(socket: Socket) {
@@ -340,13 +346,13 @@ export class PostDraftGateway
     return `draft:${draftId}`;
   }
 
-  private leaveCurrentDraft(socket: Socket) {
+  private async leaveCurrentDraft(socket: Socket) {
     const socketData = this.getSocketData(socket);
     const draftId = socketData.draftId;
     const sessionId = socketData.sessionId;
     if (!draftId || !sessionId) return;
 
-    this.releaseLocksForSessionId(draftId, sessionId, true);
+    await this.releaseLocksForSessionId(draftId, sessionId, true);
 
     const isReplaced = this.presenceService.isReplaced(draftId, sessionId);
     const removed = isReplaced
@@ -367,33 +373,34 @@ export class PostDraftGateway
     }
   }
 
-  private sweepStalePresence() {
+  private async sweepStalePresence() {
     const draftIds = this.presenceService.getDraftIds();
-    draftIds.forEach((draftId) => {
+    for (const draftId of draftIds) {
       const staleSessions = this.presenceService.getStaleSessionIds(
         draftId,
         PostDraftGateway.PRESENCE_TTL_MS,
       );
-      staleSessions.forEach((sessionId) => {
-        this.evictStaleSession(draftId, sessionId);
-      });
-    });
-  }
 
-  private evictStaleSession(draftId: string, sessionId: string) {
+      for (const sessionId of staleSessions) {
+        await this.evictStaleSession(draftId, sessionId);
+      }
+    }
+  } // TODO: await Promise.all()로 병렬 처리해도 되는지 확인 바람
+
+  private async evictStaleSession(draftId: string, sessionId: string) {
     const actorId = this.presenceService.getActorIdBySession(sessionId);
     if (!actorId) return;
     const socketId = this.presenceService.getSocketId(actorId);
     if (socketId) {
       const socket = this.server.sockets.sockets.get(socketId);
       if (socket) {
-        this.leaveCurrentDraft(socket);
+        await this.leaveCurrentDraft(socket);
         return;
       }
       this.presenceService.clearSocketIdIfMatch(actorId, socketId);
     }
 
-    this.releaseLocksForSessionId(draftId, sessionId, true);
+    await this.releaseLocksForSessionId(draftId, sessionId, true);
     const removed = this.presenceService.removeMemberBySession(
       draftId,
       sessionId,
@@ -480,24 +487,28 @@ export class PostDraftGateway
     return { draftId, sessionId, actorId };
   }
 
-  private releaseLocksForSessionId(
+  private async releaseLocksForSessionId(
     draftId: string,
     sessionId: string,
     emitStreamAbort: boolean,
   ) {
-    this.lockService.releaseLocksForSessionId(draftId, sessionId, (lockKey) => {
-      if (emitStreamAbort && lockKey.startsWith('block:')) {
-        const blockId = lockKey.slice('block:'.length);
-        this.server.to(this.getDraftRoom(draftId)).emit('STREAM_ABORTED', {
-          blockId,
-          sessionId,
+    await this.lockService.releaseLocksForSessionId(
+      draftId,
+      sessionId,
+      (lockKey) => {
+        if (emitStreamAbort && lockKey.startsWith('block:')) {
+          const blockId = lockKey.slice('block:'.length);
+          this.server.to(this.getDraftRoom(draftId)).emit('STREAM_ABORTED', {
+            blockId,
+            sessionId,
+          });
+        }
+        this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
+          lockKey,
+          ownerSessionId: null,
         });
-      }
-      this.server.to(this.getDraftRoom(draftId)).emit('LOCK_CHANGED', {
-        lockKey,
-        ownerSessionId: null,
-      });
-    });
+      },
+    );
   }
 
   private disconnectPreviousSession(actorId: string, currentSocketId: string) {
@@ -515,8 +526,8 @@ export class PostDraftGateway
     previousSocket?.emit('SESSION_REPLACED', {});
   }
 
-  private ensureNotPublishing(draftId: string) {
-    if (this.draftStateService.isPublishing(draftId)) {
+  private async ensureNotPublishing(draftId: string) {
+    if (await this.draftStateService.isPublishing(draftId)) {
       throw new WsException('Draft is publishing.');
     }
   }

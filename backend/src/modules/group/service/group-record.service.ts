@@ -166,9 +166,24 @@ export class GroupRecordService {
     const postsByMonth = new Map<string, Post[]>();
     for (const p of posts) {
       if (!p.eventAt) continue;
-      const key = DateTime.fromJSDate(p.eventAt)
-        .setZone('Asia/Seoul')
-        .toFormat('yyyy-MM');
+
+      let key = 'Unknown';
+      // TypeORM raw result or specific driver might return string or Date
+      if (typeof p.eventAt === 'string') {
+        key = DateTime.fromISO(p.eventAt)
+          .setZone('Asia/Seoul')
+          .toFormat('yyyy-MM');
+      } else if (p.eventAt instanceof Date) {
+        key = DateTime.fromJSDate(p.eventAt)
+          .setZone('Asia/Seoul')
+          .toFormat('yyyy-MM');
+      }
+
+      if (key === 'Invalid DateTime') {
+        // Fallback or skip
+        continue;
+      }
+
       const list = postsByMonth.get(key) ?? [];
       list.push(p);
       postsByMonth.set(key, list);

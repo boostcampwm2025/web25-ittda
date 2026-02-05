@@ -8,8 +8,10 @@ import {
 } from '@/store/useAuthStore';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '../utils/logger';
+import { destroySocketInstance } from '@/lib/socket/socketSingleton';
 
 import type { Session } from 'next-auth';
+
 const INSTANCE_ID =
   typeof window !== 'undefined'
     ? Math.random().toString(36).substring(2, 15)
@@ -93,6 +95,7 @@ export async function getAccessToken() {
 
     // 캐시도 없고 진행 중인 요청도 없다면 새로 요청
     try {
+      // NextAuth는 로그인 identity 확인 용도로만 사용
       sessionPromise = getSession();
       const session = await sessionPromise;
 
@@ -135,36 +138,36 @@ export async function refreshAccessToken(): Promise<string | null> {
   isRefreshing = true;
 
   try {
-    // 게스트 사용자인지 확인
     const { userType } = useAuthStore.getState();
 
-    // 게스트 사용자는 refresh token이 없으므로 재발급 시도하지 않음
-    if (userType === 'guest') {
-      return null;
-    }
+    if (userType === 'guest') return null;
 
-    // 직접 백엔드에 쏘지 않고 NextAuth의 getSession 호출
-    // getSession()이 호출되면 서버의 jwt 콜백이 실행되면서
-    // refreshServerAccessToken 로직이 돌아감
-    const session = await getSession({ broadcast: true });
+    // getSession 제거 후 직접 호출로 변경
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/refresh`,
+      {
+        method: 'POST',
+        credentials: 'include',
+      },
+    );
 
-    if (!session || session.error === 'RefreshAccessTokenError') {
+    if (!res.ok) {
       handleLogout();
       return null;
     }
 
-    const newToken = session.accessToken;
+    const newToken = res.headers.get('Authorization')?.replace('Bearer ', '');
 
-    if (!newToken) {
-      return null;
-    }
-    cachedSession = session;
+    if (!newToken) return null;
+
     onTokenRefreshed(newToken);
+
     return newToken;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e) {
+    return null;
   } finally {
-    setTimeout(() => {
-      isRefreshing = false;
-    }, 1000);
+    isRefreshing = false;
   }
 }
 
@@ -186,6 +189,7 @@ export async function refreshServerAccessToken(token: any) {
         `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/refresh`,
         {
           method: 'POST',
+          //credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             Cookie: `refreshToken=${token.refreshToken}`,
@@ -249,6 +253,7 @@ export async function handleLogout() {
 
     deleteCookie(guestCookieKey);
     deleteCookie(guestTokenKey);
+    destroySocketInstance();
 
     await signOut({ callbackUrl: '/login' });
   } catch (error) {

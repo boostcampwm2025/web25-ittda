@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   RecordBlock,
   BlockValue,
@@ -38,15 +39,13 @@ interface FieldRendererProps {
     id?: string,
   ) => void;
   isLastContentBlock: boolean;
-  lock: {
-    lockKey: string;
-    isMyLock: boolean;
-    isLockedByOther: boolean;
-  };
+  lockKey: string;
+  isMyLock: boolean;
+  isLockedByOther: boolean;
   draftId?: string;
 }
 
-export function RecordFieldRenderer({
+export const RecordFieldRenderer = React.memo(function RecordFieldRenderer({
   block,
   streamingValue,
   requestLock,
@@ -55,7 +54,9 @@ export function RecordFieldRenderer({
   onRemove,
   onOpenDrawer,
   isLastContentBlock,
-  lock,
+  lockKey,
+  isMyLock,
+  isLockedByOther,
 }: FieldRendererProps) {
   const params = useParams();
   const draftId = params.draftId as string | undefined;
@@ -63,22 +64,22 @@ export function RecordFieldRenderer({
   const displayValue = streamingValue ?? block.value;
 
   const handleFocus = () => {
-    if (!lock.isLockedByOther) {
-      requestLock(lock.lockKey);
+    if (!isLockedByOther) {
+      requestLock(lockKey);
     }
   };
 
   const handleCommit = (finalValue?: BlockValue) => {
-    if (lock.isMyLock) {
+    if (isMyLock) {
       onCommit(block.id, finalValue ?? displayValue);
     }
   };
   const handleLockAndAction = () => {
-    if (lock.isLockedByOther) {
+    if (isLockedByOther) {
       toast.error('현재 다른 사용자가 편집 중입니다.');
       return;
     }
-    if (draftId) requestLock(lock.lockKey);
+    if (draftId) requestLock(lockKey);
     onOpenDrawer(block.type, block.id);
   };
 
@@ -103,8 +104,8 @@ export function RecordFieldRenderer({
           value={displayValue as TextValue}
           onChange={(v) => onUpdate(block.id, { text: v })}
           onRemove={() => onRemove(block.id)}
-          isLocked={lock?.isLockedByOther}
-          isMyLock={lock.isMyLock}
+          isLocked={isLockedByOther}
+          isMyLock={isMyLock}
           onFocus={handleFocus}
           onBlur={(finalText) => handleCommit({ text: finalText })}
           isLastContentBlock={isLastContentBlock}
@@ -147,8 +148,8 @@ export function RecordFieldRenderer({
         <TableField
           data={displayValue as TableValue}
           onUpdate={(d) => (d ? onUpdate(block.id, d) : onRemove(block.id))}
-          isLocked={lock.isLockedByOther}
-          isMyLock={lock.isMyLock}
+          isLocked={isLockedByOther}
+          isMyLock={isMyLock}
           onFocus={handleFocus}
           onBlur={handleCommit}
         />
@@ -180,4 +181,4 @@ export function RecordFieldRenderer({
     default:
       return null;
   }
-}
+});

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useLayoutEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { FieldType, LocationValue } from '@/lib/types/record';
@@ -79,14 +79,23 @@ export function usePostEditorBlocks({
     };
   } | null>(null);
 
+  // 최신 상태를 참조하기 위한 Ref (useCallback 안정성용)
+  const blocksRef = useRef(blocks);
+  const locksRef = useRef(locks);
+
+  useLayoutEffect(() => {
+    blocksRef.current = blocks;
+    locksRef.current = locks;
+  });
+
   // TODO: 추후 고려해볼 사항
   // 타입이 필드면 락 걸고 삭제하고 락 풀고
   // 타입이 드로어라면, 바로 삭제만하고(삭제전에 락 검증해야할까?)
   const removeBlock = useCallback(
     (id: string) => {
       // 블록 타입 확인하여 메타데이터 적용 상태 업데이트
-
-      const block = blocks.find((b) => b.id === id);
+      const currentBlocks = blocksRef.current;
+      const block = currentBlocks.find((b) => b.id === id);
 
       if (!block) return;
 
@@ -119,7 +128,8 @@ export function usePostEditorBlocks({
 
       if (draftId) {
         const lockKey = `block:${id}`;
-        const isLockedByMe = locks?.[lockKey] === mySessionId;
+        const currentLocks = locksRef.current;
+        const isLockedByMe = currentLocks?.[lockKey] === mySessionId;
 
         // 본인이 락을 이미 가지고 있다면 requestLock 스킵
         if (!isLockedByMe) {
@@ -136,14 +146,12 @@ export function usePostEditorBlocks({
       setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
     },
     [
-      blocks,
       pendingMetadata,
       draftId,
       requestLock,
       applyPatch,
       releaseLock,
       setBlocks,
-      locks,
       mySessionId,
     ],
   );
@@ -170,7 +178,8 @@ export function usePostEditorBlocks({
           layout: { row: 0, col: 0, span: 2 },
         } as RecordBlock;
 
-        const nextBlocks = normalizeLayout([...blocks, newBlock]);
+        const currentBlocks = blocksRef.current;
+        const nextBlocks = normalizeLayout([...currentBlocks, newBlock]);
         const normalized = nextBlocks.find((b) => b.id === newId)!;
 
         if (draftId) {
@@ -192,17 +201,19 @@ export function usePostEditorBlocks({
       // 기존 블록 업데이트
       if (id) {
         const lockKey = `block:${id}`;
+        const currentLocks = locksRef.current;
         // 내가 락을 가지고 있지 않다면 요청
         if (
           draftId &&
           activeDrawer?.id === id &&
-          locks?.[lockKey] !== mySessionId
+          currentLocks?.[lockKey] !== mySessionId
         ) {
           requestLock(lockKey);
         }
 
         // 블록 타입 확인하여 메타데이터 적용 상태 업데이트
-        const block = blocks.find((b) => b.id === id);
+        const currentBlocks = blocksRef.current;
+        const block = currentBlocks.find((b) => b.id === id);
         if (block && pendingMetadata?.appliedMetadata) {
           const fieldType = block.type;
           if (
@@ -241,10 +252,8 @@ export function usePostEditorBlocks({
     },
     [
       removeBlock,
-      blocks,
       draftId,
       mySessionId,
-      locks,
       applyPatch,
       requestLock,
       setBlocks,
@@ -279,13 +288,15 @@ export function usePostEditorBlocks({
     (type: FieldType, initialValue?: BlockValue) => {
       //debugger;
       const meta = FIELD_META[type];
-      const existingBlocks = blocks.filter((b) => b.type === type);
+      const currentBlocks = blocksRef.current;
+      const existingBlocks = currentBlocks.filter((b) => b.type === type);
       const limit = MULTI_INSTANCE_LIMITS[type];
 
       if (meta.isSingle && existingBlocks.length > 0) {
         const existing = existingBlocks[0];
         const lockKey = `block:${existing.id}`;
-        const ownerSessionId = locks?.[lockKey];
+        const currentLocks = locksRef.current;
+        const ownerSessionId = currentLocks?.[lockKey];
         const isLockedByOther =
           !!ownerSessionId && ownerSessionId !== mySessionId;
 
@@ -334,20 +345,6 @@ export function usePostEditorBlocks({
         return;
       }
 
-      // if (type === 'location') {
-      //   let targetId: string | undefined = existingBlocks[0]?.id;
-
-      //   if (!targetId) {
-      //     targetId = updateFieldValue(
-      //       getDefaultValue('location'),
-      //       undefined,
-      //       'location',
-      //     );
-      //   }
-
-      //   return;
-      // }
-
       // 받아온 데이터 있는데 블록 없는 경우
       if (initialValue) {
         const newId = updateFieldValue(initialValue, undefined, type);
@@ -362,15 +359,7 @@ export function usePostEditorBlocks({
         setActiveDrawer({ type, id: targetId });
       }
     },
-    [
-      blocks,
-      draftId,
-      releaseLock,
-      requestLock,
-      updateFieldValue,
-      locks,
-      mySessionId,
-    ],
+    [draftId, releaseLock, requestLock, updateFieldValue, mySessionId],
   );
 
   // 메타데이터 실제 적용
@@ -379,11 +368,12 @@ export function usePostEditorBlocks({
       if (!meta?.selectedMetadata) return;
 
       const { metadata, fields } = meta.selectedMetadata;
+      const currentBlocks = blocksRef.current;
 
       // 각 필드를 개별적으로 적용
       // 날짜 적용
       if (fields.applyDate && metadata.date) {
-        const dateBlock = blocks.find((b) => b.type === 'date');
+        const dateBlock = currentBlocks.find((b) => b.type === 'date');
         if (dateBlock) {
           updateFieldValue({ date: metadata.date }, dateBlock.id);
         } else {
@@ -393,7 +383,7 @@ export function usePostEditorBlocks({
 
       // 시간 적용
       if (fields.applyTime && metadata.time) {
-        const timeBlock = blocks.find((b) => b.type === 'time');
+        const timeBlock = currentBlocks.find((b) => b.type === 'time');
         if (timeBlock) {
           updateFieldValue({ time: metadata.time }, timeBlock.id);
         } else {
@@ -403,7 +393,7 @@ export function usePostEditorBlocks({
 
       // 위치 적용
       if (fields.applyLocation && metadata.location) {
-        const locationBlock = blocks.find((b) => b.type === 'location');
+        const locationBlock = currentBlocks.find((b) => b.type === 'location');
         const locationValue: LocationValue = {
           lat: metadata.location.latitude,
           lng: metadata.location.longitude,
@@ -419,7 +409,7 @@ export function usePostEditorBlocks({
 
       // 메타데이터 적용 완료 - setPendingMetadata는 호출하는 쪽에서 관리
     },
-    [blocks, updateFieldValue],
+    [updateFieldValue],
   );
 
   const handleApplyTemplate = (template: TemplateRecord) => {

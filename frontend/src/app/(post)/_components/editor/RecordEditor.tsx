@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { GripVertical } from 'lucide-react';
 
 // 컴포넌트 및 필드 임포트
@@ -347,110 +347,146 @@ export default function PostEditor({
     3000,
   ); // 3초 간격
 
-  const handleFieldUpdate = (
-    blockId: string,
-    newValue: BlockValue,
-    shouldStream: boolean = true,
-  ) => {
-    // 내 화면 업데이트
-    updateFieldValue(newValue, blockId);
+  const handleFieldUpdate = useCallback(
+    (blockId: string, newValue: BlockValue, shouldStream: boolean = true) => {
+      // 내 화면 업데이트
+      updateFieldValue(newValue, blockId);
 
-    // 다른 사람 스트리밍
-    if (shouldStream) {
-      throttledEmitStream(blockId, newValue);
-    }
-  };
+      // 다른 사람 스트리밍
+      if (shouldStream) {
+        throttledEmitStream(blockId, newValue);
+      }
+    },
+    [updateFieldValue, throttledEmitStream],
+  );
 
   // 공통 커밋 함수
-  const handleFieldCommit = (id: string, value: BlockValue) => {
-    if (!draftId) return;
-    if (isRecordBlockEmpty(value)) {
-      return;
-    }
-    const lockKey = `block:${id}`;
-    const ownerSessionId = locks[lockKey];
+  const handleFieldCommit = useCallback(
+    (id: string, value: BlockValue) => {
+      if (!draftId) return;
+      if (isRecordBlockEmpty(value)) {
+        return;
+      }
+      const lockKey = `block:${id}`;
+      const ownerSessionId = locks[lockKey];
 
-    // 내가 락을 갖고있는지 확인
-    const isMine = ownerSessionId === mySessionId;
+      // 내가 락을 갖고있는지 확인
+      const isMine = ownerSessionId === mySessionId;
 
-    // 없으면 락 먼저 받기
-    if (!isMine) {
-      requestLock(lockKey);
-    }
-    applyPatch({
-      type: 'BLOCK_SET_VALUE',
-      blockId: id,
-      value: value,
-    });
-    releaseLock(lockKey);
-  };
+      // 락이 없는 상태에서 커밋 시도 시, 패치만 보내고 락 해제는 하지 않음 (서버에서 거절될 가능성 있음)
+      applyPatch({
+        type: 'BLOCK_SET_VALUE',
+        blockId: id,
+        value: value,
+      });
 
-  const handleDrawerDone = (newValue: BlockValue) => {
-    if (!activeDrawer) return;
-    if (activeDrawer.id && draftId) {
-      emitStream(activeDrawer.id, newValue);
-    }
+      if (isMine) {
+        // 락을 들고 있었을 때만 명시적 해제
+        releaseLock(lockKey);
+      }
+    },
+    [draftId, locks, mySessionId, applyPatch, releaseLock],
+  );
 
-    //ID 없을 때 생성 및 락 획득
-    handleDone(newValue);
-  };
+  const handleDrawerDone = useCallback(
+    (newValue: BlockValue) => {
+      if (!activeDrawer) return;
+      if (activeDrawer.id && draftId) {
+        emitStream(activeDrawer.id, newValue);
+      }
+
+      //ID 없을 때 생성 및 락 획득
+      handleDone(newValue);
+    },
+    [activeDrawer, draftId, emitStream, handleDone],
+  );
 
   // 명시적으로 드로어를 닫을 때
-  const handleCloseDrawer = (id?: string, finalValue?: BlockValue) => {
-    if (!id) {
-      setActiveDrawer(null);
-      return;
-    }
+  const handleCloseDrawer = useCallback(
+    (id?: string, finalValue?: BlockValue) => {
+      if (!id) {
+        setActiveDrawer(null);
+        return;
+      }
 
-    const currentBlock = blocks.find((b) => b.id === id);
-    if (!currentBlock) {
-      setActiveDrawer(null);
-      return;
-    }
-    const valueToCommit = finalValue || currentBlock.value;
-    const isEmpty = isRecordBlockEmpty(valueToCommit);
-    if (isEmpty) {
-      // 값이 비어있다면 블록 삭제
-      removeBlock(id);
-    } else if (draftId) {
-      if (currentBlock) {
+      const currentBlock = blocks.find((b) => b.id === id);
+      if (!currentBlock) {
+        setActiveDrawer(null);
+        return;
+      }
+      const valueToCommit = finalValue || currentBlock.value;
+      const isEmpty = isRecordBlockEmpty(valueToCommit);
+
+      if (isEmpty) {
+        // 값이 비어있다면 블록 삭제
+        removeBlock(id);
+      } else if (draftId) {
+        const lockKey = `block:${id}`;
+        const isMine = locks[lockKey] === mySessionId;
+
         // 값이 있으면 최종 커밋
         applyPatch({
           type: 'BLOCK_SET_VALUE',
           blockId: id,
-          value: finalValue || currentBlock.value,
+          value: valueToCommit,
         });
+
+        if (isMine) {
+          releaseLock(lockKey);
+        }
       }
 
-      // 어떤 경우든 락 해제
-      releaseLock(`block:${id}`);
-    }
-
-    setActiveDrawer(null);
-  };
+      setActiveDrawer(null);
+    },
+    [
+      blocks,
+      draftId,
+      removeBlock,
+      applyPatch,
+      releaseLock,
+      setActiveDrawer,
+      locks,
+      mySessionId,
+    ],
+  );
 
   // 선택과 동시에 커밋되도록 하는 드로어
-  const handleImmediateCommit = (newValue: BlockValue) => {
-    if (!activeDrawer) return;
-    const id = updateFieldValue(
-      newValue,
-      activeDrawer.id,
-      activeDrawer.type as FieldType,
-    );
+  const handleImmediateCommit = useCallback(
+    (newValue: BlockValue) => {
+      if (!activeDrawer) return;
+      const id = updateFieldValue(
+        newValue,
+        activeDrawer.id,
+        activeDrawer.type as FieldType,
+      );
 
-    if (!id) return;
-    if (draftId) {
-      applyPatch({
-        type: 'BLOCK_SET_VALUE',
-        blockId: id,
-        value: newValue,
-      });
+      if (!id) return;
+      if (draftId) {
+        applyPatch({
+          type: 'BLOCK_SET_VALUE',
+          blockId: id,
+          value: newValue,
+        });
 
-      releaseLock(`block:${id}`);
-    }
+        const lockKey = `block:${id}`;
+        if (locks[lockKey] === mySessionId) {
+          releaseLock(lockKey);
+        }
+      }
 
-    setActiveDrawer(null);
-  };
+      setActiveDrawer(null);
+    },
+    [
+      activeDrawer,
+      updateFieldValue,
+      draftId,
+      applyPatch,
+      releaseLock,
+      setActiveDrawer,
+      locks,
+      mySessionId,
+    ],
+  );
 
   const renderActiveDrawer = () => {
     if (!activeDrawer) return null;
@@ -679,11 +715,9 @@ export default function PostEditor({
                     onRemove={removeBlock}
                     onOpenDrawer={(type, id) => setActiveDrawer({ type, id })}
                     isLastContentBlock={isLastContentBlock}
-                    lock={{
-                      lockKey,
-                      isMyLock,
-                      isLockedByOther,
-                    }}
+                    lockKey={lockKey}
+                    isMyLock={isMyLock}
+                    isLockedByOther={isLockedByOther}
                   />
                 </div>
               </div>

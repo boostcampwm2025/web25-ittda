@@ -70,6 +70,18 @@ async function fetchWithRetry<T>(
   retryDelay: number,
   skipAuth: boolean,
 ) {
+  // NextAuth 요청은 그냥 결과를 반환하고 끝냄
+  // NextAuth → fetch interceptor → refresh → NextAuth → 반복 때문에 무한루프됨
+  const isNextAuthRequest =
+    url.includes('/api/auth/session') ||
+    url.includes('/api/auth/csrf') ||
+    url.includes('/api/auth/providers') ||
+    url.includes('/api/auth/callback');
+
+  if (isNextAuthRequest) {
+    return fetch(url, fetchOptions).then((res) => res.json());
+  }
+
   try {
     //console.log(`[Server Fetch] URL: ${url}, Options: `, fetchOptions);
 
@@ -85,11 +97,6 @@ async function fetchWithRetry<T>(
         data: {},
         error: null,
       };
-    }
-
-    // CSRF 요청 자체가 에러를 뱉을 때를 대비해 응답을 파싱하기 전에도 체크
-    if (url.includes('/api/auth/csrf') || url.includes('/api/auth/session')) {
-      return await response.json(); // NextAuth 요청은 그냥 결과를 반환하고 끝냄
     }
 
     const data = await response.json();

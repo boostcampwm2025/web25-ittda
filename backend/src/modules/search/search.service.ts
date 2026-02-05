@@ -17,12 +17,13 @@ import { DateTime } from 'luxon';
 
 @Injectable()
 export class SearchService {
+  // 일단 redis 보류
   // userId -> string[] (LIFO, max 10)
-  // TODO: Migrate to Redis for production (persistent storage across server restarts)
+  // TODO: Migrate to Redis? for production (persistent storage across server restarts)
   private recentSearches = new Map<string, string[]>();
 
   // userId -> (tag -> count)
-  // TODO: Migrate to Redis (ZSET or HASH with INCRBY)
+  // TODO: Migrate to Redis? (ZSET or HASH with INCRBY)
   private tagFrequencies = new Map<string, Map<string, number>>();
 
   constructor(
