@@ -156,6 +156,7 @@ export const ContentField = ({
 
         <textarea
           ref={textareaRef}
+          spellCheck="false"
           placeholder="어떤 기억이 있으신가요?"
           value={value.text}
           disabled={isLocked}
