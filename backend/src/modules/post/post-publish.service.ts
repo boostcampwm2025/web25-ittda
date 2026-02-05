@@ -196,9 +196,10 @@ export class PostPublishService {
       this.postDraftGateway.broadcastDraftPublished(draftId, postId);
       return postId;
     } catch (error) {
-      this.postDraftGateway.broadcastDraftPublishFailed(
+      const currentVersion = await this.getDraftCurrentVersion(draftId);
+      this.postDraftGateway.broadcastDraftPublishEnded(
         draftId,
-        this.resolvePublishFailureMessage(error),
+        currentVersion ?? undefined,
       );
       if (error instanceof QueryFailedError) {
         const dbError = error as { code?: string };
@@ -364,9 +365,10 @@ export class PostPublishService {
       this.postDraftGateway.broadcastDraftPublished(draftId, postId);
       return postId;
     } catch (error) {
-      this.postDraftGateway.broadcastDraftPublishFailed(
+      const currentVersion = await this.getDraftCurrentVersion(draftId);
+      this.postDraftGateway.broadcastDraftPublishEnded(
         draftId,
-        this.resolvePublishFailureMessage(error),
+        currentVersion ?? undefined,
       );
       if (error instanceof QueryFailedError) {
         const dbError = error as { code?: string };
@@ -378,19 +380,6 @@ export class PostPublishService {
     } finally {
       this.draftStateService.finishPublishing(draftId);
     }
-  }
-
-  private resolvePublishFailureMessage(error: unknown): string {
-    if (
-      error instanceof BadRequestException ||
-      error instanceof ConflictException ||
-      error instanceof ForbiddenException ||
-      error instanceof NotFoundException ||
-      error instanceof UnauthorizedException
-    ) {
-      return error.message;
-    }
-    return '발행에 실패했습니다.';
   }
 
   private updateGroupLastActivity(groupId: string, postId: string) {
@@ -411,6 +400,24 @@ export class PostPublishService {
           `Failed to update group lastActivityAt (groupId=${groupId}, postId=${postId}): ${message}`,
         );
       });
+  }
+
+  private async getDraftCurrentVersion(draftId: string) {
+    try {
+      const draft = await this.postRepository.manager
+        .getRepository(PostDraft)
+        .findOne({
+          where: { id: draftId },
+          select: { version: true },
+        });
+      return draft?.version ?? null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.warn(
+        `Failed to load draft version (draftId=${draftId}): ${message}`,
+      );
+      return null;
+    }
   }
 
   private ensureBlockIds(blocks: CreatePostDto['blocks']) {

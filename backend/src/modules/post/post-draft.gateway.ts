@@ -331,11 +331,14 @@ export class PostDraftGateway
     });
   }
 
-  broadcastDraftPublishFailed(draftId: string, message: string) {
-    this.server.to(this.getDraftRoom(draftId)).emit('DRAFT_PUBLISH_FAILED', {
-      draftId,
-      message,
-    });
+  broadcastDraftPublishEnded(draftId: string, currentVersion?: number) {
+    const payload: { draftId: string; currentVersion?: number } = { draftId };
+    if (typeof currentVersion === 'number') {
+      payload.currentVersion = currentVersion;
+    }
+    this.server
+      .to(this.getDraftRoom(draftId))
+      .emit('DRAFT_PUBLISH_ENDED', payload);
   }
 
   private getDraftRoom(draftId: string) {
