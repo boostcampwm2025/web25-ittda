@@ -3,41 +3,50 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  Point,
   Index,
   ManyToOne,
   UpdateDateColumn,
   DeleteDateColumn,
+  JoinColumn,
+  OneToMany,
 } from 'typeorm';
 
-import { User } from '@/modules/user/user.entity';
-import { Folder } from '@/modules/folder/folder.entity';
-import { TemplateType } from '@/enums/template-type.enum';
+import { User } from '@/modules/user/entity/user.entity';
 import { Group } from '@/modules/group/entity/group.entity';
+import { PostScope } from '@/enums/post-scope.enum';
+import { PostMood } from '@/enums/post-mood.enum';
+import { PostMedia } from './post-media.entity';
+
+import type { Point } from 'geojson';
 
 @Entity('posts')
-@Index(['location'], { spatial: true })
+@Index('IDX_posts_location_gist', ['location'], { spatial: true })
+@Index('IDX_posts_group_event_id', ['groupId', 'eventAt', 'id']) // 그룹별 커버 조인/정렬 최적화용
 export class Post {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'enum', enum: PostScope })
+  scope: PostScope;
+
+  @Index()
+  @Column({ name: 'owner_user_id' })
+  ownerUserId: string;
+
   @ManyToOne(() => User)
-  author: User;
+  @JoinColumn({ name: 'owner_user_id' })
+  ownerUser: User;
+
+  @Index()
+  @Column({ name: 'group_id', type: 'uuid', nullable: true })
+  groupId?: string | null;
 
   @ManyToOne(() => Group, { nullable: true })
-  group?: Group;
+  @JoinColumn({ name: 'group_id' })
+  group?: Group | null;
 
-  @ManyToOne(() => Folder)
-  folder: Folder;
-
-  @Column({ type: 'enum', enum: TemplateType })
-  templateType: TemplateType;
-
-  @Column()
+  @Column({ type: 'varchar', length: 200 })
   title: string;
-
-  @Column({ type: 'text' })
-  content: string;
 
   @Column({
     type: 'geometry',
@@ -47,15 +56,28 @@ export class Post {
   })
   location?: Point;
 
-  @Column({ type: 'timestamp', nullable: true })
-  visitedAt?: Date;
+  @Column({ type: 'text', array: true, nullable: true })
+  tags?: string[] | null;
 
-  @CreateDateColumn()
+  @OneToMany(() => PostMedia, (postMedia) => postMedia.post, { cascade: true })
+  postMedia?: PostMedia[];
+
+  @Column({ type: 'varchar', length: 5, array: true, nullable: true })
+  emotion?: PostMood[] | null;
+
+  @Column({ type: 'real', nullable: true })
+  rating?: number | null;
+
+  @Index()
+  @Column({ name: 'event_at', type: 'timestamptz', nullable: true })
+  eventAt?: Date;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn()
-  deletedAt?: Date;
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
+  deletedAt?: Date | null;
 }

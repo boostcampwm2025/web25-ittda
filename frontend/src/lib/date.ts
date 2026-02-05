@@ -79,7 +79,30 @@ export function formatRelativeTime(date: Date): string {
  * formatDateISO() // "2025-01-14"
  */
 export function formatDateISO(date: Date = new Date()): string {
-  return date.toISOString().split('T')[0];
+  // TODO: 한국 시간으로 고정 상태. 해외 지원 시 수정
+  const formatter = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((p) => p.type === 'year')?.value;
+  const month = parts.find((p) => p.type === 'month')?.value;
+  const day = parts.find((p) => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * YYYY-MM-DD 형식의 문자열을 로컬 시간대의 Date 객체로 변환합니다.
+ * new Date("2026-02-06")은 UTC로 해석되므로 이 함수를 사용하세요.
+ * @param dateStr - "2026-02-06" 형식의 날짜 문자열
+ * @returns 로컬 시간대의 자정을 가리키는 Date 객체
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
 /**
@@ -98,12 +121,12 @@ export function formatDateDot(date: Date = new Date()): string {
 }
 
 /**
- * 로그용 날짜 정보를 객체로 반환
- * @param date - 포맷팅할 날짜
- * @returns { date: "2025.12.11", time: "18:46", weekday: "수요일" }
+ * 날짜 객체를 데이터 처리에 용이한 각 부분별 문자열 객체로 변환합니다.
+ * @param date - 변환할 날짜 객체 (기본값: 현재 시간)
+ * @returns { date: "2026-01-14", time: "23:30", weekday: "수요일" }
  */
-export function formatLogDate(date: Date = new Date()) {
-  const dateStr = formatDateDot(date);
+export function getDateMetadata(date: Date = new Date()) {
+  const dateStr = formatDateISO(date);
 
   // 24시간 형식 시간
   const hours = String(date.getHours()).padStart(2, '0');
@@ -120,4 +143,78 @@ export function formatLogDate(date: Date = new Date()) {
     time: timeStr,
     weekday: weekdayStr,
   };
+}
+
+/**
+ * 이번주 시작 날짜를 Date 타입으로 반환
+ * @param date - 주간 시작 날짜를 알고자 하는 그 주의 날짜
+ * @returns Sun Dec 28 2025 00:00:00 GMT+0900 (한국 표준시)
+ */
+export const getStartOfWeek = (date: Date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0); // 시간 정보를 0으로 초기화하여 비교 정확도 향상
+  const day = d.getDay();
+  const diff = d.getDate() - day;
+  const startOfWeek = new Date(d.setDate(diff));
+  startOfWeek.setHours(0, 0, 0, 0);
+  return startOfWeek;
+};
+
+export const getWeekDays = (baseDate: Date = new Date()) => {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const startOfWeek = getStartOfWeek(baseDate);
+    const day = new Date(startOfWeek);
+    day.setDate(startOfWeek.getDate() + i);
+    days.push({
+      date: day,
+      dateStr: formatDateISO(day),
+      dayName: ['일', '월', '화', '수', '목', '금', '토'][i],
+      isToday: formatDateISO(day) === formatDateISO(),
+    });
+  }
+
+  return days;
+};
+
+/**
+ * "2025.12.21" 형식의 문자열을 받아 요일(월, 화...) 반환
+ */
+export function getWeekdayFromDotString(dateStr: string): string {
+  const [y, m, d] = dateStr.split('.').map(Number);
+  const date = new Date(y, m - 1, d);
+  return new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date); // '월', '화' 등
+}
+
+/**
+ * 날짜 문자열을 YYYY.MM.DD 형식으로 변환(SSR-safe)
+ * @param dateString - "2025-12-20T20:00:00Z" | "2025-12-21"
+ * @returns "2025.12.20"
+ *
+ * @example
+ * formatDotDateString('2025-12-20T20:00:00Z') // "2025.12.20"
+ * formatDotDateString('2025-12-21')           // "2025.12.21"
+ */
+export function formatDotDateString(dateString: string): string {
+  const datePart = dateString.split('T')[0];
+  return datePart.replaceAll('-', '.');
+}
+
+/**
+ * yyyy-mm 형식을 받아 해당 월의 시작일과 종료일을 반환
+ * @param {string} yearMonth - '2024-02' 형식의 문자열
+ * @returns {{startDate: string, endDate: string}}
+ */
+export function getMonthRange(yearMonth: string) {
+  const [year, month] = yearMonth.split('-').map(Number);
+
+  const startDate = `${yearMonth}-01`;
+
+  // month는 1부터 시작하므로, Date 객체에서는 다음 달의 0일을 지정하면 이번 달 마지막 날
+  // 예: new Date(2024, 2, 0) -> 2024년 3월의 0일 -> 2024년 2월 29일
+  const lastDay = new Date(year, month, 0).getDate();
+
+  const endDate = `${yearMonth}-${String(lastDay).padStart(2, '0')}`;
+
+  return { startDate, endDate };
 }

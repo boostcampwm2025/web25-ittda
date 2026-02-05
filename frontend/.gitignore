@@ -40,3 +40,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+*storybook.log
+storybook-static
+
+# storybook
+*/stories
+
+# AI
+.agents/*
+.claude/*
+# Sentry Config File
+.env.sentry-build-plugin

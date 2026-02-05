@@ -1,0 +1,123 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
+import { X, Users, ChevronRight, ImageIcon } from 'lucide-react';
+import { GroupSummary } from '@/lib/types/recordResponse';
+import AssetImage from './AssetImage';
+import { randomBaseImage } from '@/lib/image';
+
+interface GroupSelectDrawerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  groups: GroupSummary[];
+}
+
+export default function GroupSelectDrawer({
+  open,
+  onOpenChange,
+  groups,
+}: GroupSelectDrawerProps) {
+  const router = useRouter();
+
+  const handleSelectGroup = (groupId: string) => {
+    onOpenChange(false);
+    router.push(`/add?groupId=${groupId}`);
+  };
+
+  return (
+    <Drawer
+      open={open}
+      onOpenChange={onOpenChange}
+      shouldScaleBackground={false}
+    >
+      <DrawerContent className="w-full px-6 py-4 pb-10">
+        <DrawerHeader className="px-0">
+          <div className="pt-4 flex justify-between items-center mb-2">
+            <DrawerTitle className="flex flex-col justify-center items-start">
+              <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                SELECT GROUP
+              </span>
+              <span className="text-xl font-bold dark:text-white text-itta-black">
+                어느 그룹에 기록할까요?
+              </span>
+            </DrawerTitle>
+            <DrawerClose className="p-2 text-gray-400 cursor-pointer">
+              <X className="w-6 h-6" />
+            </DrawerClose>
+          </div>
+        </DrawerHeader>
+
+        <div className="flex flex-col gap-2 mt-2 overflow-y-auto scrollbar-hide">
+          {groups.length === 0 ? (
+            <div className="py-16 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl border border-dashed dark:bg-white/5 dark:border-white/10 bg-white border-gray-200">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+                <Users className="w-6 h-68 text-[#10B981]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold dark:text-gray-200 text-gray-700">
+                  공유된 그룹이 없어요
+                </h3>
+                <p className="text-xs text-gray-400">
+                  친구들과 함께 기록을 공유할
+                  <br /> 새로운 그룹을 만들어보세요!
+                </p>
+              </div>
+            </div>
+          ) : (
+            groups.map((group) => {
+              const isViewer = group.permission === 'VIEWER';
+              return (
+                <button
+                  key={group.groupId}
+                  onClick={() => !isViewer && handleSelectGroup(group.groupId)}
+                  disabled={isViewer}
+                  className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${
+                    isViewer
+                      ? 'opacity-50 cursor-not-allowed dark:bg-white/5 bg-gray-50'
+                      : 'active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border-2 shadow-sm dark:border-[#121212] border-white">
+                    {group.cover?.assetId ? (
+                      <AssetImage
+                        assetId={group.cover.assetId}
+                        alt={group.name}
+                        width={48}
+                        height={48}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <AssetImage
+                        alt={group.name}
+                        width={48}
+                        height={48}
+                        assetId={randomBaseImage(group.groupId)}
+                        className="object-cover w-full h-full"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="font-semibold dark:text-white text-itta-black truncate">
+                      {group.name}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {group.memberCount}명의 멤버
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </button>
+              );
+            })
+          )}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}

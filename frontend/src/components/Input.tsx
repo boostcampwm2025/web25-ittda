@@ -43,7 +43,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
         ref={ref}
         type="text"
         className={cn(
-          'flex-1 outline-none text-sm placeholder:text-itta-gray3 bg-transparent',
+          'flex-1 outline-none text-base placeholder:text-itta-gray3 bg-transparent',
           className,
         )}
         {...props}

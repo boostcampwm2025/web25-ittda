@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GeolocationState {
   latitude: number | null;
@@ -81,7 +83,19 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
             loading: false,
           }));
         } catch (error) {
-          console.error('역지오코딩 실패:', error);
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              context: 'geolocation',
+              operation: 'reverse-geocode',
+            },
+            extra: {
+              latitude,
+              longitude,
+            },
+          });
+          logger.error('역지오코딩 실패', error);
+
           // 역지오코딩 실패해도 좌표는 표시
           setState((prev) => ({
             ...prev,
@@ -134,7 +148,7 @@ export function useGeolocation(options: UseGeolocationOptions = {}) {
  * Google Maps JavaScript API의 Geocoder를 사용하여 좌표를 주소로 변환
  * (리퍼러 제한이 있는 API 키로도 작동)
  */
-async function reverseGeocodeAddress(
+export async function reverseGeocodeAddress(
   latitude: number,
   longitude: number,
 ): Promise<string> {
@@ -153,8 +167,6 @@ async function reverseGeocodeAddress(
     geocoder.geocode(
       { location: latlng, language: 'ko' },
       (results, status) => {
-        console.log('Geocoding result:', { status, results });
-
         if (status === 'OK' && results && results.length > 0) {
           const addressComponents = results[0].address_components;
 
@@ -178,8 +190,22 @@ async function reverseGeocodeAddress(
           );
           resolve(parts.join(' ') || results[0].formatted_address);
         } else {
-          console.error('Geocoding failed:', status);
-          reject(new Error(`Geocoding failed with status: ${status}`));
+          const error = new Error(`Geocoding failed with status: ${status}`);
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              context: 'geolocation',
+              operation: 'geocode-api',
+              status,
+            },
+            extra: {
+              latitude,
+              longitude,
+            },
+          });
+          logger.error('지오코딩 실패', status);
+
+          reject(error);
         }
       },
     );

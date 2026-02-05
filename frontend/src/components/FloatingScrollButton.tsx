@@ -14,7 +14,6 @@ export default function FloatingScrollButton({
   direction,
   onClick,
 }: FloatingScrollButtonProps) {
-  console.log('show', show);
   if (!show) return null;
 
   return (

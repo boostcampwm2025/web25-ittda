@@ -1,0 +1,51 @@
+import { personalEditOptions } from '@/lib/api/records';
+import PostEditor from '../_components/editor/RecordEditor';
+import { QueryClient } from '@tanstack/react-query';
+import { RecordBlock } from '@/lib/types/record';
+import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
+
+interface AddPostPageProps {
+  searchParams: Promise<{ mode: string; postId: string; groupId: string }>;
+}
+
+export default async function AddPostPage({ searchParams }: AddPostPageProps) {
+  const { mode: queryMode, postId, groupId } = await searchParams;
+  const queryClient = new QueryClient();
+  let initialPost = undefined;
+
+  const mode = (queryMode as 'add' | 'edit') || 'add';
+
+  try {
+    if (mode === 'edit' && postId) {
+      const data = await queryClient.fetchQuery(personalEditOptions(postId));
+
+      const mappedBlocks = (data.blocks || []).map((block: RecordBlock) => ({
+        ...block,
+        type: ServerToFieldTypeMap[block.type] || block.type.toLowerCase(),
+      })) as RecordBlock[];
+
+      initialPost = {
+        title: data.title || '',
+        blocks: mappedBlocks,
+      };
+    }
+  } catch (error) {
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        context: 'post-editor',
+        operation: 'load-blocks',
+      },
+      extra: {
+        postId: postId,
+        groupId: groupId,
+        mode: mode,
+      },
+    });
+    logger.error('post editor 데이터 로드 실패', error);
+  }
+
+  return <PostEditor groupId={groupId} mode={mode} initialPost={initialPost} />;
+}

@@ -1,187 +1,228 @@
 'use client';
 
-import Input from '@/components/Input';
-import TagButton from '@/components/TagButton';
-import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
+import { useMemo, useEffect } from 'react';
 import {
-  Calendar,
-  Clapperboard,
-  Film,
-  LineSquiggle,
-  Music2,
-  Search,
-} from 'lucide-react';
-import type { PostListItem } from '@/lib/types/post';
-import { useEffect } from 'react';
+  AdvancedMarker,
+  Map,
+  Pin,
+  useMap,
+  useMapsLibrary,
+  ColorScheme,
+} from '@vis.gl/react-google-maps';
+import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
+import { useTheme } from 'next-themes';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/utils/logger';
 
 interface GoogleMapProps {
-  posts: PostListItem[];
-  leftPanelWidth: number;
-  selectedPostId: string | null;
-  onSelectPost: (id: string | null) => void;
-  isMobile: boolean;
+  posts: MapPostItem[];
+  selectedPostId: string | string[] | null;
+  onSelectPost: (id: string | string[] | null) => void;
+  onBoundsChange?: (bounds: google.maps.LatLngBounds | null) => void;
+  onMapClick?: () => void;
+  mapRef: React.MutableRefObject<google.maps.Map | null>;
+  placesServiceRef: React.MutableRefObject<google.maps.places.PlacesService | null>;
+  searchedLocation: { lat: number; lng: number } | null;
 }
 
 function FlyToOnSelect({
   lat,
   lng,
   offsetX = 0,
+  offsetY = 0,
+  zoom = 16,
 }: {
   lat: number;
   lng: number;
   offsetX?: number;
+  offsetY?: number;
+  zoom?: number;
 }) {
   const map = useMap();
   useEffect(() => {
     if (!map) return;
-    map.panTo({ lat, lng });
-    // 필요하면 줌도 고정
-    // map.setZoom(13);
+    try {
+      map.panTo({ lat, lng });
+      map.setZoom(zoom);
 
-    if (offsetX !== 0) {
-      map.panBy(-offsetX, 0);
+      if (offsetX !== 0 || offsetY !== 0) {
+        map.panBy(-offsetX, offsetY);
+      }
+    } catch (error) {
+      // 지도 이동 실패는 UX에 영향을 주므로 추적
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: {
+          context: 'map',
+          operation: 'pan-to-location',
+        },
+        extra: {
+          lat,
+          lng,
+          offsetX,
+          offsetY,
+        },
+      });
+      logger.error('지도 이동 실패', error);
     }
-  }, [map, lat, lng, offsetX]);
+  }, [map, lat, lng, offsetX, offsetY, zoom]);
   return null;
 }
 
 export default function GoogleMap({
   posts,
-  leftPanelWidth,
   selectedPostId,
   onSelectPost,
-  isMobile,
+  onBoundsChange,
+  onMapClick,
+  mapRef,
+  placesServiceRef,
+  searchedLocation,
 }: GoogleMapProps) {
-  const filterWidth = leftPanelWidth > 500 ? 500 + 17 : leftPanelWidth + 17;
+  const { theme } = useTheme();
+  const placesLib = useMapsLibrary('places');
 
-  const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null;
+  const { latitude: geoLat, longitude: geoLng } = useGeolocation({
+    reverseGeocode: true,
+  });
+
+  const selectedPost = useMemo(() => {
+    if (typeof selectedPostId === 'string') {
+      return posts.find((p) => p.id === selectedPostId) ?? null;
+    }
+    return null;
+  }, [posts, selectedPostId]);
+
+  useEffect(() => {
+    if (!placesLib || !mapRef.current || placesServiceRef.current) return;
+
+    try {
+      placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
+    } catch (error) {
+      // Places API 초기화 실패는 검색 기능에 영향
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          context: 'map',
+          operation: 'initialize-places-service',
+        },
+      });
+      logger.error('Places Service 초기화 실패', error);
+    }
+  }, [placesLib, mapRef, placesServiceRef]);
+
+  // 초기 유저의 위치로 지도 이동
+  useEffect(() => {
+    if (geoLat && geoLng && mapRef.current) {
+      try {
+        mapRef.current.panTo({ lat: geoLat, lng: geoLng });
+      } catch (error) {
+        // 사용자 위치로 이동 실패
+        Sentry.captureException(error, {
+          level: 'warning',
+          tags: {
+            context: 'map',
+            operation: 'pan-to-user-location',
+          },
+          extra: {
+            lat: geoLat,
+            lng: geoLng,
+          },
+        });
+        logger.error('사용자 위치로 지도 이동 실패', error);
+      }
+    }
+  }, [geoLat, geoLng, mapRef]);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID;
 
-  if (!apiKey) return <div>API KEY가 없습니다 (.env.local 확인)</div>;
+  // 전역 에러에서 잡아 에러 페이지 뜨도록
+  if (!apiKey) {
+    const error = new Error('Google Maps API 키가 설정되지 않았습니다');
+    Sentry.captureException(error, {
+      level: 'fatal', // 앱 사용 불가능한 심각한 에러
+      tags: {
+        context: 'map',
+        operation: 'initialize',
+        configError: 'missing-api-key',
+      },
+    });
+    throw error;
+  }
+  if (!mapId) {
+    const error = new Error('Google Maps ID가 설정되지 않았습니다');
+    Sentry.captureException(error, {
+      level: 'fatal',
+      tags: {
+        context: 'map',
+        operation: 'initialize',
+        configError: 'missing-map-id',
+      },
+    });
+    logger.error('NEXT_PUBLIC_GOOGLE_MAPS_ID is not defined');
+
+    throw error;
+  }
 
   return (
     <div className="bg-yellow-50 w-full h-full relative">
-      <APIProvider apiKey={apiKey!}>
-        <Map
-          mapId="MAP_ID"
-          defaultCenter={{ lat: 37.5665, lng: 126.978 }}
-          defaultZoom={12}
-          gestureHandling="greedy"
-          disableDefaultUI={false}
-        >
-          <ClusteredPostMarkers posts={posts} onSelectPost={onSelectPost} />
-
-          {/* 패널 선택 → 지도 이동 */}
-          {selectedPost && (
-            <FlyToOnSelect
-              lat={Number(selectedPost.lat)}
-              lng={Number(selectedPost.lng)}
-              offsetX={leftPanelWidth / 2} // 패널 폭의 절반만큼 오른쪽으로 보이게
-            />
-          )}
-        </Map>
-      </APIProvider>
-
-      <section
-        className="absolute top-3.5 right-4.25"
-        style={{ left: isMobile ? '5px' : `${filterWidth}px` }}
+      <Map
+        minZoom={3}
+        maxZoom={20}
+        colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
+        mapId={mapId}
+        defaultCenter={{ lat: 37.5665, lng: 126.978 }}
+        defaultZoom={16}
+        gestureHandling="greedy"
+        disableDefaultUI={true}
+        onClick={() => onMapClick?.()}
+        onDrag={onMapClick}
+        onIdle={(e) => onBoundsChange?.(e.map.getBounds() ?? null)}
+        restriction={{
+          latLngBounds: {
+            north: 85,
+            south: -85,
+            east: 180,
+            west: -180,
+          },
+          strictBounds: true,
+        }}
       >
-        <Input className="w-full">
-          <Input.Left>
-            <Search className="w-5 h-5 text-itta-gray2" />
-          </Input.Left>
-          <Input.Field placeholder="로그 검색하기" />
-          <Input.Right>
-            <button
-              type="button"
-              onClick={() => {}}
-              className="shrink-0 p-1 hover:bg-itta-gray2/10 rounded transition-colors cursor-pointer"
-            >
-              <Calendar className="w-5 h-5 text-itta-gray3" />
-            </button>
-          </Input.Right>
-        </Input>
-        <div className="flex gap-2.5 mt-2">
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Clapperboard
-              size={16}
-              color="var(--itta-point)"
-              className="flex justify-center items-center gap-1"
-            />
-            연극
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Film size={16} color="var(--itta-point)" />
-            영화
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Music2 size={16} color="var(--itta-point)" />
-            뮤지컬
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <Calendar size={16} color="var(--itta-point)" />
-            일기/여행
-          </TagButton>
-          <TagButton
-            onClick={() => {}}
-            className="flex justify-center items-center gap-1"
-          >
-            <LineSquiggle size={16} color="var(--itta-point)" />
-            기타
-          </TagButton>
-        </div>
-      </section>
+        <ClusteredPostMarkers
+          posts={posts}
+          onSelectPost={onSelectPost}
+          selectedPostId={selectedPostId}
+        />
+
+        {selectedPost && (
+          <FlyToOnSelect
+            lat={Number(selectedPost.lat)}
+            lng={Number(selectedPost.lng)}
+            offsetY={130}
+          />
+        )}
+        <MapHandler
+          setMap={(map) => {
+            mapRef.current = map;
+          }}
+        />
+        {searchedLocation && (
+          <AdvancedMarker position={searchedLocation} zIndex={1000}>
+            <Pin background={'#FB4E4E'} glyphColor={'#FFFFFF'} />
+          </AdvancedMarker>
+        )}
+      </Map>
     </div>
   );
 }
 
-/*
-추가로 고려해볼 것: AdvancedMarker (선택)
-
-기존의 google.maps.Marker는 Raster 기반으로 렌더링되어 성능 및 커스터마이징에 한계가 있었습니다. 
-2024년 2월부로 권장되는 Advanced Marker는 다음과 같은 이점이 있습니다.
-
-성능 향상: 벡터 기반 렌더링 및 하드웨어 가속을 활용하여 
-대량의 마커 표시 시 성능이 우수합니다.
-
-유연한 커스터마이징: HTML 요소를 직접 마커로 사용할 수 있어 디자인 자유도가 
-매우 높습니다.
-
-장기적 안정성: 기존 Marker는 향후 유지보수가 중단될 예정(Deprecated)
-
-지도 ID 만들기: https://developers.google.com/maps/documentation/javascript/map-ids/get-map-id?hl=ko#javascript
-(mapId: 'DEMO_MAP_ID'를 테스트 용도로 사용 가능)
-
-예시)
-import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
-<Map
-    defaultCenter={{ lat: 37.5665, lng: 126.978 }}
-    defaultZoom={12}
-    gestureHandling="greedy"
-    disableDefaultUI={false}
-    // 2. mapId 필수 추가 (GCP 콘솔에서 생성 가능, 테스트용은 'DEMO_MAP_ID')
-    mapId={'YOUR_MAP_ID_HERE'} 
-  >
-    {posts.map((post) => (
-      // 3. AdvancedMarker로 교체
-      <AdvancedMarker
-        key={post.id}
-        position={{ lat: Number(post.lat), lng: Number(post.lng) }}
-        onClick={() => onSelectPost(post.id)}
-      />
-    ))}
-*/
+function MapHandler({ setMap }: { setMap: (map: google.maps.Map) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map) setMap(map);
+  }, [map, setMap]);
+  return null;
+}

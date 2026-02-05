@@ -10,6 +10,7 @@
   --itta-gray2: rgba(0, 0, 0, 0.2);
   --itta-gray: rgba(122, 122, 122, 0.2);
   --radius: 0.625rem;
+  --polar-grid-stroke: #f1f5f9;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -44,6 +45,8 @@
 }
 
 @theme inline {
+  --breakpoint-xs: 570px;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -100,8 +103,21 @@
 /* } */
 
 html {
-  height: 100svh; /* "Small Viewport Height(작은 뷰포트 높이)의 100% */
+  height: 100svh;
   display: flex;
+  width: 100%;
+}
+
+html {
+  scrollbar-gutter: stable; /* 스크롤바가 사라져도 너비 유지 */
+}
+
+/* 라이브러리가 강제로 넣는 패딩 차단 */
+html[style*='overflow: hidden'],
+body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: auto !important;
+  margin-left: auto !important;
 }
 
 body {
@@ -115,7 +131,9 @@ body {
 }
 
 main {
-  max-width: 1024px;
+  width: 100%;
+
+  margin: 0 auto;
 }
 
 .dark {
@@ -150,6 +168,7 @@ main {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+  --polar-grid-stroke: #333333;
 }
 
 @layer base {
@@ -157,8 +176,36 @@ main {
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* 운영체제별 일관된 폰트 설정 */
+  html,
+  body {
+    font-family: var(--font-geist-sans), 'Noto Sans KR', -apple-system,
+      BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground;
+  }
+  button {
+    cursor: pointer;
+  }
+  /* 비활성화된 버튼은 커서도 비활성화 */
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* 테이블 셀 input: 12px처럼 보이지만 확대되지 않음 */
+  .table-cell-input {
+    font-size: 16px !important;
+    transform: scale(0.75); /* 16px * 0.75 = 12px */
+    transform-origin: left center;
+    width: 133.3333% !important; /* 1 / 0.75 = 133.3333% - scale 후에도 전체 공간 차지 */
+    height: 133.3333% !important; /* 1 / 0.75 = 133.3333% - scale 후에도 전체 공간 차지 */
   }
 }
 
@@ -177,4 +224,25 @@ main {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+@keyframes move-line {
+  0% {
+    transform: translateX(-2rem);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(10rem);
+    opacity: 0;
+  }
+}
+
+.animate-move-line {
+  animation: move-line 1.5s ease-in-out infinite;
 }
