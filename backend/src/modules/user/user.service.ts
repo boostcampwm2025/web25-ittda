@@ -34,6 +34,13 @@ export class UserService {
     private readonly userMonthCoverRepo: Repository<UserMonthCover>,
   ) {}
 
+  /**
+   * OAuth 식별자(provider + providerId)로 사용자를 조회하고 없으면 생성한다.
+   * 소프트 삭제된 사용자는 복구한 뒤 최신 프로필 정보로 갱신한다.
+   *
+   * @param params OAuth 사용자 정보
+   * @returns 기존 또는 신규 생성된 사용자 엔티티
+   */
   async findOrCreateOAuthUser(params: OAuthUserType): Promise<User> {
     const { provider, providerId } = params;
 
@@ -59,6 +66,9 @@ export class UserService {
 
   /**
    * ID로 유저 단건 조회 (기본)
+   *
+   * @param id 조회할 사용자 ID
+   * @returns 사용자 엔티티 또는 null
    */
   async findById(id: string): Promise<User | null> {
     return this.userRepo.findOne({ where: { id } });
@@ -66,6 +76,10 @@ export class UserService {
 
   /**
    * 월별 기록(아카이브) 조회
+   *
+   * @param userId 아카이브 조회 대상 사용자 ID
+   * @param year 조회 연도 (예: 2026)
+   * @returns 월별 집계 결과 목록
    */
   async getMonthlyArchive(
     userId: string,
@@ -286,6 +300,11 @@ export class UserService {
 
   /**
    * 사용자 월별 커버 후보 이미지 조회 (날짜별 그룹화)
+   *
+   * @param userId 조회 대상 사용자 ID
+   * @param year 조회 연도
+   * @param month 조회 월 (1-12)
+   * @returns 날짜 섹션 단위로 그룹화된 월 커버 후보 목록
    */
   async getMonthCoverCandidates(userId: string, year: number, month: number) {
     const from = DateTime.fromObject({ year, month, day: 1 }).startOf('month');
@@ -358,6 +377,15 @@ export class UserService {
     };
   }
 
+  /**
+   * 특정 월에 커버로 설정 가능한 미디어 에셋 ID 목록을 조회한다.
+   * 사용자 본인 작성 글과 기여자(AUTHOR/EDITOR) 글을 모두 포함한다.
+   *
+   * @param userId 조회 대상 사용자 ID
+   * @param year 조회 연도
+   * @param month 조회 월 (1-12)
+   * @returns 중복 제거된 커버 후보 에셋 ID 배열
+   */
   private async getMonthCoverAssetIds(
     userId: string,
     year: number,
@@ -404,6 +432,12 @@ export class UserService {
 
   /**
    * 월별 커버 이미지 변경
+   *
+   * @param userId 커버를 변경할 사용자 ID
+   * @param year 대상 연도
+   * @param month 대상 월 (1-12)
+   * @param coverAssetId 설정할 커버 에셋 ID
+   * @throws {ForbiddenException} 해당 월에서 선택 가능한 에셋이 아닌 경우
    */
   async updateMonthCover(
     userId: string,
@@ -438,6 +472,12 @@ export class UserService {
     }
   }
 
+  /**
+   * 사용자의 월별 커버 매핑 중 삭제된 미디어를 참조하는 레코드를 비운다.
+   * 비동기 후처리 성격이라 호출부를 블로킹하지 않는다.
+   *
+   * @param userId 정리 대상 사용자 ID
+   */
   private cleanupStaleUserMonthCovers(userId: string) {
     void this.userMonthCoverRepo
       .createQueryBuilder()
@@ -459,6 +499,11 @@ export class UserService {
 
   /**
    * 일별 기록(아카이브) 조회 - 달력용
+   *
+   * @param userId 아카이브 조회 대상 사용자 ID
+   * @param year 조회 연도
+   * @param month 조회 월 (1-12)
+   * @returns 일자별 집계 결과 목록
    */
   async getDailyArchive(
     userId: string,
@@ -606,6 +651,10 @@ export class UserService {
 
   /**
    * 해당 연도의 모든 이미지(월 커버 후보) 조회
+   *
+   * @param userId 조회 대상 사용자 ID
+   * @param year 조회 연도
+   * @returns 해당 연도 내 접근 가능한 이미지 에셋 ID 목록
    */
   async getYearlyImages(userId: string, year: number): Promise<string[]> {
     const start = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
@@ -679,6 +728,11 @@ export class UserService {
 
   /**
    * 해당 월 중 기록(게시글)이 있는 날짜 조회 (YYYY-MM-DD)
+   *
+   * @param userId 조회 대상 사용자 ID
+   * @param year 조회 연도
+   * @param month 조회 월 (1-12)
+   * @returns 게시글이 존재하는 날짜 문자열 목록(내림차순)
    */
   async getRecordedDays(
     userId: string,
@@ -733,6 +787,13 @@ export class UserService {
     return Array.from(dateSet).sort().reverse();
   }
 
+  /**
+   * 여러 게시글에서 시간순으로 가장 먼저 발견되는 이미지 블록의 첫 번째 에셋을 찾는다.
+   *
+   * @param posts 탐색할 게시글 목록(최신순 가정)
+   * @param imageBlocksByPostId 게시글 ID별 이미지 블록 맵
+   * @returns 찾은 에셋 정보 또는 null
+   */
   private findLatestImageFromPosts(
     posts: Post[],
     imageBlocksByPostId: Map<string, PostBlock[]>,
