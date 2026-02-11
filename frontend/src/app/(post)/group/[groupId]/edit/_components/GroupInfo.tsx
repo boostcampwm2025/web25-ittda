@@ -81,14 +81,14 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
             )}
           </DrawerTrigger>
 
-          <DrawerContent className="w-full px-8 py-4 pb-10">
+          <DrawerContent className="w-full px-6 sm:px-8 pt-4 pb-8 sm:pb-10">
             <DrawerHeader>
-              <div className="pt-4 flex justify-between items-center mb-6">
-                <DrawerTitle className="flex flex-col">
-                  <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+              <div className="pt-4 flex justify-between items-center mb-6 sm:mb-8">
+                <DrawerTitle className="flex flex-col justify-center items-start pl-0">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
                     CHOOSE COVER
                   </span>
-                  <span className="text-lg font-bold dark:text-white text-itta-black">
+                  <span className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                     커버 사진 선택
                   </span>
                 </DrawerTitle>
