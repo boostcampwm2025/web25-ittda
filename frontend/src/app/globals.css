@@ -222,7 +222,7 @@ main {
 @media (max-width: 768px) {
   .overflow-y-auto,
   .overflow-auto {
-    padding-bottom: 6rem !important;
+    padding-bottom: 5rem !important;
   }
 }
 
