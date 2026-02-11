@@ -17,10 +17,10 @@ interface HomePageProps {
 
 export async function generateMetadata() {
   return {
-    title: '잇다-개인의 기록을 넘어, 함께 만드는 추억',
+    title: '잇다-',
     description: '친구들과 쉽게 공유하고 소통할 수 있는 새로운 방법, 잇다-',
     openGraph: {
-      title: '개인의 기록을 넘어, 함께 만드는 추억',
+      title: '잇다-',
       description: '친구들과 쉽게 공유하고 소통할 수 있는 새로운 방법, 잇다-',
       type: 'website',
       images: [
