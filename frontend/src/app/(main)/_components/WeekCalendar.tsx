@@ -115,18 +115,18 @@ export default function WeekCalendar() {
   return (
     <div className="overflow-hidden">
       <div
-        className="px-6 py-2 flex items-center gap-1 group cursor-pointer self-start"
+        className="px-4 py-2 sm:px-6 flex items-center gap-1 group cursor-pointer self-start"
         onClick={() =>
           router.push(`/my/month/${displayYearMonth.replace('.', '-')}`)
         }
       >
-        <span className="text-base font-semibold dark:text-white text-itta-black">
+        <span className="text-sm sm:text-base font-semibold dark:text-white text-itta-black">
           {displayYearMonth}
         </span>
-        <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform dark:text-white text-itta-black" />
+        <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform dark:text-white text-itta-black" />
       </div>
       <div className="relative h-24">
-        <div className="px-4 py-4 flex justify-between">
+        <div className="px-3 py-3 sm:px-4 sm:py-4 flex justify-between">
           {weekDays.map((item) => {
             const dayColor =
               item.dayName === '일'
@@ -138,10 +138,10 @@ export default function WeekCalendar() {
             return (
               <div
                 key={`header-${item.dateStr}`}
-                className="flex flex-col items-center gap-2 min-w-11"
+                className="flex flex-col items-center gap-1.5 sm:gap-2 min-w-10 sm:min-w-11"
               >
                 <span
-                  className="text-[11px] font-medium"
+                  className="text-[10px] sm:text-[11px] font-medium"
                   style={{ color: dayColor }}
                 >
                   {item.dayName}
@@ -170,7 +170,7 @@ export default function WeekCalendar() {
                   paginate(1); // 왼쪽으로 밀면 다음주
                 else if (swipe > 50) paginate(-1); // 오른쪽으로 밀면 이전주
               }}
-              className="absolute inset-0 px-4 flex justify-between touch-none select-none bg-transparent cursor-grab"
+              className="absolute inset-0 px-3 sm:px-4 flex justify-between touch-none select-none bg-transparent cursor-grab"
             >
               {weekDays.map((item) => {
                 const isSelected = selectedDateStr === item.dateStr;
@@ -184,7 +184,7 @@ export default function WeekCalendar() {
                     onClick={() => handleTouchDate(item.dateStr)}
                     disabled={isFuture}
                     className={cn(
-                      'flex items-center justify-center min-w-11 transition-transform',
+                      'flex items-center justify-center min-w-10 sm:min-w-11 transition-transform',
                       isFuture
                         ? 'cursor-not-allowed opacity-40'
                         : 'active:scale-95 cursor-pointer',
@@ -192,7 +192,7 @@ export default function WeekCalendar() {
                   >
                     <div
                       className={cn(
-                        'w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium transition-all dark:text-gray-200',
+                        'w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-xs sm:text-sm font-medium transition-all dark:text-gray-200',
                         isSelected
                           ? 'dark:bg-white dark:text-[#121212] bg-itta-black text-white shadow-md'
                           : item.isToday
