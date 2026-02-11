@@ -91,10 +91,10 @@ export default function DateSelectorDrawer({
           </button>
         </DrawerTrigger>
         <DrawerContent className={className}>
-          <div className="w-full px-8 pt-4 pb-8 overflow-y-auto scrollbar-hide">
+          <div className="w-full px-6 sm:px-8 pt-4 pb-6 sm:pb-8 overflow-y-auto scrollbar-hide">
             <DrawerHeader className="mb-0 pb-0 mx-0 px-0">
               <div className="flex justify-between items-center mb-6 w-full">
-                <DrawerTitle className="text-lg font-bold dark:text-white text-itta-black">
+                <DrawerTitle className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                   {isPickingMonth ? '연도와 월 선택' : '날짜로 찾기'}
                 </DrawerTitle>
                 <DrawerClose className="p-2 text-gray-400">
@@ -104,7 +104,7 @@ export default function DateSelectorDrawer({
             </DrawerHeader>
 
             <div className="space-y-6">
-              <div className="flex items-center justify-between px-2">
+              <div className="flex items-center justify-between">
                 <button
                   onClick={() => setIsPickingMonth(!isPickingMonth)}
                   className="flex flex-col items-start active:scale-95 group cursor-pointer"
