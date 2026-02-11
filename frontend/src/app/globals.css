@@ -11,6 +11,10 @@
   --itta-gray: rgba(122, 122, 122, 0.2);
   --radius: 0.625rem;
   --polar-grid-stroke: #f1f5f9;
+
+  /* Navigation heights */
+  --bottom-nav-height: 7rem; /* 모바일 */
+  --bottom-nav-height-sm: 8rem; /* 데스크톱 */
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -180,8 +184,14 @@ main {
   /* 운영체제별 일관된 폰트 설정 */
   html,
   body {
-    font-family: var(--font-geist-sans), 'Noto Sans KR', -apple-system,
-      BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic',
+    font-family:
+      var(--font-geist-sans),
+      'Noto Sans KR',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      'Apple SD Gothic Neo',
+      'Malgun Gothic',
       sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -212,7 +222,7 @@ main {
 @media (max-width: 768px) {
   .overflow-y-auto,
   .overflow-auto {
-    padding-bottom: 4rem !important;
+    padding-bottom: 6rem !important;
   }
 }
 
@@ -223,6 +233,38 @@ main {
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Bottom navigation spacing utilities */
+  .pb-bottom-nav {
+    padding-bottom: var(--bottom-nav-height);
+  }
+
+  @media (min-width: 640px) {
+    .pb-bottom-nav {
+      padding-bottom: var(--bottom-nav-height-sm);
+    }
+  }
+
+  .mb-bottom-nav {
+    margin-bottom: var(--bottom-nav-height);
+  }
+
+  @media (min-width: 640px) {
+    .mb-bottom-nav {
+      margin-bottom: var(--bottom-nav-height-sm);
+    }
+  }
+
+  /* Content height excluding bottom nav */
+  .h-content-with-nav {
+    height: calc(100vh - var(--bottom-nav-height));
+  }
+
+  @media (min-width: 640px) {
+    .h-content-with-nav {
+      height: calc(100vh - var(--bottom-nav-height-sm));
+    }
   }
 }
 

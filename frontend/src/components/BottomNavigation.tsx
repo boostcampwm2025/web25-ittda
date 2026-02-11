@@ -74,7 +74,7 @@ export default function BottomNavigation() {
   if (isGroupDetail) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-8 py-4 pb-6 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
+    <nav className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-4 py-3 pb-4 sm:px-8 sm:py-4 sm:pb-6 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
       {effectiveGroupId ? (
         <>
           <NavItem
@@ -92,13 +92,13 @@ export default function BottomNavigation() {
           <button
             onClick={() => !isViewer && setIsAddDrawerOpen(true)}
             disabled={isViewer}
-            className={`w-14 h-14 -mt-10 rounded-2xl ring-white flex items-center justify-center shadow-2xl transition-all ring-4 ${
+            className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl ring-white flex items-center justify-center shadow-2xl transition-all ring-4 ${
               isViewer
                 ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200'
                 : 'cursor-pointer active:scale-95 dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20]'
             }`}
           >
-            <Plus className="w-7 h-7" strokeWidth={3} />
+            <Plus className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} />
           </button>
           <NavItem
             icon={<MessageSquare />}
@@ -134,13 +134,13 @@ export default function BottomNavigation() {
                 router.push('/add');
               }
             }}
-            className={`w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
+            className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
               isSharedPage
                 ? 'dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20] ring-white'
                 : 'dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white'
             }`}
           >
-            <Plus className="w-7 h-7" strokeWidth={3} />
+            <Plus className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} />
           </button>
           <NavItem
             icon={<Users />}
