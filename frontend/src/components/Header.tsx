@@ -64,7 +64,7 @@ export default function Header() {
         <button
           onClick={() => router.push('/profile')}
           className={cn(
-            'cursor-pointer w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border transition-all active:scale-90',
+            'cursor-pointer w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border transition-all active:scale-90',
             'border-gray-100 shadow-sm',
             'dark:border-white/10 dark:shadow-none',
           )}

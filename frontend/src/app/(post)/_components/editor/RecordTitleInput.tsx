@@ -186,7 +186,7 @@ export default function RecordTitleInput({
         onBlur={handleBlur}
         disabled={isLockedByOther}
         className={cn(
-          'w-full border-none focus:ring-0 outline-none text-xl font-semibold tracking-tight bg-transparent p-0 transition-colors',
+          'w-full border-none focus:ring-0 outline-none text-lg sm:text-xl font-semibold tracking-tight bg-transparent p-0 transition-colors',
           'placeholder-gray-200 dark:placeholder-gray-500',
           isLockedByOther
             ? 'text-gray-400 cursor-not-allowed'

@@ -59,7 +59,7 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
             disabled={me.role === 'VIEWER'}
             className="relative cursor-pointer"
           >
-            <div className="w-24 h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
+            <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
               {groupThumbnail?.assetId ? (
                 <AssetImage
                   width={96}
@@ -148,16 +148,16 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
         </label>
         <button
           onClick={() => router.push(`/group/${groupId}/edit/profile`)}
-          className="cursor-pointer mt-4 w-full flex items-center justify-between p-5 rounded-3xl border transition-all active:scale-[0.98] dark:bg-[#10B981]/5 dark:border-[#10B981]/10 dark:hover:bg-[#10B981]/10 bg-[#10B981]/5 border-[#10B981]/10 hover:bg-[#10B981]/10"
+          className="cursor-pointer mt-4 w-full flex items-center justify-between px-3 py-4 sm:p-4 rounded-3xl border transition-all active:scale-[0.98] dark:bg-[#10B981]/5 dark:border-[#10B981]/10 dark:hover:bg-[#10B981]/10 bg-[#10B981]/5 border-[#10B981]/10 hover:bg-[#10B981]/10"
         >
-          <div className="flex items-center rounded-2xl gap-4 overflow-hidden">
+          <div className="flex items-center rounded-full gap-4 overflow-hidden">
             {me.profileImage?.assetId ? (
               <AssetImage
                 width={48}
                 height={48}
                 assetId={me.profileImage.assetId}
                 alt="유저 프로필"
-                className="object-cover rounded-2xl border bg-white shadow-sm shrink-0"
+                className="object-cover rounded-full border bg-white shadow-sm shrink-0"
               />
             ) : (
               <Image
@@ -165,14 +165,14 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
                 height={48}
                 src={'/profile_base.png'}
                 alt="프로필"
-                className="rounded-2xl border bg-white shadow-sm shrink-0 object-cover"
+                className="rounded-full border bg-white shadow-sm shrink-0 object-cover"
               />
             )}
             <div className="text-left">
               <p className="text-sm font-bold dark:text-white text-itta-black">
                 {me.nicknameInGroup}
               </p>
-              <p className="text-[11px] text-[#10B981] font-medium">
+              <p className="text-[11px] pr-1 text-[#10B981] font-medium">
                 이 그룹 전용 프로필 설정하기
               </p>
             </div>

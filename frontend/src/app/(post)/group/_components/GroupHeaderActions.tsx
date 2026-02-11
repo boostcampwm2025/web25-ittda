@@ -12,7 +12,6 @@ import {
 import { Popover } from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
 import { useAuthStore } from '@/store/useAuthStore';
-// import { useGroupVoice } from '@/store/useGroupVoice';
 import {
   PopoverClose,
   PopoverContent,
@@ -38,7 +37,6 @@ export default function GroupHeaderActions({
   const router = useRouter();
   const pathname = usePathname();
   const groupId = pathname.split('/')[2];
-  // const { isVoiceActive, setIsVoiceActive } = useGroupVoice();
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
 
   const queryClient = useQueryClient();
@@ -68,20 +66,9 @@ export default function GroupHeaderActions({
   };
 
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-between mb-4 sm:mb-6">
       <Back />
-      <div className="flex items-center gap-2">
-        {/* 보이스 컨트롤은 이제 App.tsx에서 전역으로 관리되므로, 여기서는 개별적으로 대화를 시작하는 버튼만 남겨둠 */}
-        {/* TODO: 보이스 연결에 필요한 데이터 전역 상태에 추가 */}
-        {/* {!isVoiceActive && (
-          <button
-            onClick={() => setIsVoiceActive(true)}
-            className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all active:scale-95 shadow-sm dark:bg-[#10B981]/15 dark:text-[#10B981] bg-[#10B981]/10 text-[#10B981]"
-          >
-            <Mic className="w-3.5 h-3.5" />
-            보이스 연결
-          </button>
-        )} */}
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {!isViewer && <GroupInviteDrawer groupId={groupId || 'gruop'} />}
 
         <DateSelectorDrawer
@@ -93,7 +80,7 @@ export default function GroupHeaderActions({
         />
 
         <Popover>
-          <PopoverTrigger className="cursor-pointer p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400">
+          <PopoverTrigger className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400">
             <MoreVertical className="w-5 h-5" />
           </PopoverTrigger>
 
@@ -122,30 +109,32 @@ export default function GroupHeaderActions({
         </Popover>
 
         <Drawer open={showLeaveGroup} onOpenChange={setShowLeaveGroup}>
-          <DrawerContent className={cn('px-8 pt-4 pb-12', className)}>
+          <DrawerContent
+            className={cn('px-4 sm:px-8 pt-4 pb-10 sm:pb-12', className)}
+          >
             <DrawerHeader>
-              <div className="flex flex-col items-center text-center space-y-4 mb-10">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
-                  <AlertCircle className="w-8 h-8" />
+              <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
+                  <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8" />
                 </div>
                 <div className="space-y-1">
-                  <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
+                  <DrawerTitle className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                     {`정말 '${groupInfo.groupName}' 그룹에서 나가시겠습니까?`}
                   </DrawerTitle>
-                  <p className="text-sm text-gray-400 font-medium">
+                  <p className="text-xs sm:text-sm text-gray-400 font-medium">
                     그룹의 기록을 확인할 수 없게 됩니다.
                   </p>
                 </div>
               </div>
             </DrawerHeader>
 
-            <div className="flex gap-4">
-              <DrawerClose className="flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
+            <div className="flex gap-3 sm:gap-4">
+              <DrawerClose className="flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
                 취소
               </DrawerClose>
               <DrawerClose
                 onClick={handleLeaveGroup}
-                className="cursor-pointer flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
+                className="cursor-pointer flex-2 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
               >
                 그룹 나가기
               </DrawerClose>
