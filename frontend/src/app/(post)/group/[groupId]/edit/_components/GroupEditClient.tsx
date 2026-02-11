@@ -40,11 +40,11 @@ export default function GroupEditClient({
       }}
       initialMembers={members}
     >
-      <header className="sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/95 bg-white/95">
+      <header className="sticky top-0 z-50 backdrop-blur-md px-4 py-3 sm:p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/95 bg-white/95">
         <GroupEditHeaderActions groupId={groupId} me={me} />
       </header>
 
-      <div className="-mb-20 p-6 flex-1 pb-0 space-y-10 overflow-y-auto hide-scrollbar">
+      <div className="p-6 pb-10 flex-1 space-y-10 overflow-y-auto hide-scrollbar">
         <GroupInfo
           groupThumnail={group.cover?.assetId || ''}
           groupId={groupId}

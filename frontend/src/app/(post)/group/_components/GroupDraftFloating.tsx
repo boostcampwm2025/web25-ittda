@@ -5,6 +5,7 @@ import { Edit3, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { PopoverClose } from '@radix-ui/react-popover';
 
 import GroupDraftList from './GroupDraftList';
 import { cn } from '@/lib/utils';
@@ -16,13 +17,17 @@ import {
   GroupDraftListSnapshot,
 } from '@/lib/types/recordCollaboration';
 import { getErrorMessage } from '@/lib/utils/errorHandler';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 export default function GroupDraftFloatingButton({
   groupId,
 }: {
   groupId: string;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const { socket } = useSocketStore();
   const [drafts, setDrafts] = useState<GroupDraftListItem[]>([]);
@@ -71,75 +76,71 @@ export default function GroupDraftFloatingButton({
   };
 
   return (
-    <div className="sticky bottom-36 z-50 w-full flex flex-col items-end pr-8 pointer-events-none">
-      <div className="pointer-events-auto flex flex-col items-end gap-4">
-      <div
-        className={cn(
-          'w-[320px] sm:w-[400px] max-h-[400px] overflow-hidden rounded-[32px] border shadow-2xl bg-white/95 dark:bg-[#1E1E1E]/95 border-gray-100 dark:border-white/10 flex flex-col transition-all duration-300 ease-out origin-bottom-right',
-          isOpen
-            ? 'opacity-100 scale-100 translate-y-0 visible'
-            : 'opacity-0 scale-95 translate-y-4 invisible',
-        )}
-      >
-        {/* 상단 헤더 */}
-        <div className="sticky top-0 z-20 p-5 border-b dark:border-white/5 border-gray-50 flex items-center justify-between bg-white/80 dark:bg-[#1E1E1E]/80 backdrop-blur-md">
-          <div className="flex flex-col">
-            <h3 className="text-base font-bold dark:text-white text-itta-black">
-              공동 작성 중
-            </h3>
-            <p className="text-[11px] text-gray-400 font-medium">
-              실시간으로 편집 중인 기록들
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCreateDraft}
-              disabled={!canCreateDraft}
-              className={cn(
-                'p-2 rounded-full transition-all active:scale-95 text-xs',
-                canCreateDraft
-                  ? 'bg-itta-black text-white hover:bg-itta-black/80'
-                  : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+    <div className="sticky bottom-20 sm:bottom-30 z-50 w-full flex justify-end pr-1 sm:pr-5 pointer-events-none">
+      <div className="pointer-events-auto">
+        <Popover>
+          {/* 플로팅 버튼 */}
+          <PopoverTrigger asChild>
+            <button className="relative h-12 w-12 sm:h-13 sm:w-13 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 bg-itta-black text-white">
+              <Edit3 className="w-5 h-5" />
+              {drafts.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-itta-point px-1.5 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#121212]">
+                  {drafts.length}
+                </span>
               )}
-            >
-              새 드래프트
             </button>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full text-gray-500"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+          </PopoverTrigger>
 
-        {/* 스크롤 영역 */}
-        <div className="flex-1 overflow-y-auto px-4 pt-2 pb-4! bg-transparent [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <GroupDraftList
-            groupId={groupId}
-            drafts={drafts}
-            isViewer={isViewer}
-          />
-        </div>
-      </div>
+          {/* 팝오버 패널 */}
+          <PopoverContent
+            align="end"
+            side="top"
+            sideOffset={12}
+            className="w-70 sm:w-80 lg:w-100 max-h-90 sm:max-h-100 p-0 rounded-[24px] sm:rounded-[32px] overflow-hidden border-gray-100 dark:border-white/10 bg-white/95 dark:bg-[#1E1E1E]/95 shadow-2xl flex flex-col"
+          >
+            <div className="w-full flex justify-end items-center pr-3 pt-3">
+              <PopoverClose className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full text-gray-500 transition-colors">
+                <X className="w-4 h-4" />
+              </PopoverClose>
+            </div>
+            {/* 상단 헤더 */}
+            <div className="w-full p-4 sm:p-5 border-b dark:border-white/5 border-gray-50 flex items-center justify-between bg-white/80 dark:bg-[#1E1E1E]/80 backdrop-blur-md">
+              <div className="flex justify-between items-center w-full">
+                <div className="flex flex-col">
+                  <h3 className="text-sm sm:text-base font-bold dark:text-white text-itta-black">
+                    공동 작성 중
+                  </h3>
+                  <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium">
+                    실시간으로 편집 중인 기록들
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCreateDraft}
+                    disabled={!canCreateDraft}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full transition-all active:scale-95 text-xs font-semibold',
+                      canCreateDraft
+                        ? 'bg-itta-black text-white hover:bg-itta-black/80'
+                        : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+                    )}
+                  >
+                    새 드래프트
+                  </button>
+                </div>
+              </div>
+            </div>
 
-      {/* 플로팅 버튼 */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          'relative group h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95',
-          isOpen
-            ? 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white'
-            : 'bg-itta-black text-white',
-        )}
-      >
-        {isOpen ? <X className="w-7 h-7" /> : <Edit3 className="w-6 h-6" />}
-        {!isOpen && drafts.length > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-itta-point px-1.5 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#121212]">
-            {drafts.length}
-          </span>
-        )}
-      </button>
+            {/* 스크롤 영역 */}
+            <div className="flex-1 overflow-y-auto px-4 pt-2 pb-4 bg-transparent [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <GroupDraftList
+                groupId={groupId}
+                drafts={drafts}
+                isViewer={isViewer}
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );

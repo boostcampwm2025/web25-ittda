@@ -81,13 +81,13 @@ export default function GroupEditHeaderActions({
   return (
     <>
       <Back />
-      <h2 className="text-sm font-bold dark:text-white text-itta-black">
+      <h2 className="text-[13px] sm:text-sm font-bold dark:text-white text-itta-black">
         그룹 정보 수정
       </h2>
       <button
         onClick={handleSave}
         disabled={isPending || me.role === 'VIEWER'}
-        className="cursor-pointer font-bold text-sm text-[#10B981] active:scale-95 transition-all"
+        className="cursor-pointer font-bold text-[13px] sm:text-sm text-[#10B981] active:scale-95 transition-all"
       >
         {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '저장'}
       </button>
