@@ -219,12 +219,12 @@ main {
   }
 }
 
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .overflow-y-auto,
   .overflow-auto {
     padding-bottom: 5rem !important;
   }
-}
+} */
 
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {

@@ -73,7 +73,7 @@ export default function ProfileInfo({
             onClick={handleImageClick}
             className="relative group cursor-pointer"
           >
-            <div className="flex justify-center items-center w-32 h-32 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
+            <div className="flex justify-center items-center w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
               {imagePreviewUrl ? (
                 <Image
                   width={128}
