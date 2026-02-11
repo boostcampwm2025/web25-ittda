@@ -15,12 +15,12 @@ export default async function ProfileAllTagsPage() {
     <div className="w-full pb-20 flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
       <ProfileAllTagsHeaderActions />
 
-      <div className="p-5">
-        <div className="rounded-xl p-6 transition-colors dark:bg-white/5 bg-gray-50">
-          <p className="text-[14px] leading-relaxed mb-1 dark:text-gray-400 text-gray-500">
+      <div className="p-4 sm:p-5">
+        <div className="rounded-xl p-4 sm:p-6 transition-colors dark:bg-white/5 bg-gray-50">
+          <p className="text-[13px] sm:text-sm leading-relaxed mb-1 dark:text-gray-400 text-gray-500">
             <span className="font-bold">{profile.user.nickname}</span> 님은
           </p>
-          <p className="text-[14px] leading-relaxed dark:text-gray-400 text-gray-500">
+          <p className="text-[13px] sm:text-sm leading-relaxed dark:text-gray-400 text-gray-500">
             <span className="font-black text-itta-black dark:text-white">
               {tagData.frequentTags.length}
             </span>
