@@ -55,14 +55,15 @@ export default function Toolbar({ onAddBlock, onOpenDrawer }: ToolbarProps) {
         </button>
       </div> */}
 
-      <div className="w-full bg-white dark:bg-[#2A2A2A] border-t border-gray-100 dark:border-white/5 p-4 flex justify-around items-center">
+      <div className="w-full bg-white dark:bg-[#2A2A2A] border-t border-gray-100 dark:border-white/5 px-2 py-3 sm:p-4 flex justify-around items-center">
         {TOOL_ITEMS.map(({ id, Icon }) => (
           <button
             key={id}
             onClick={() => onAddBlock(id as FieldType)}
-            className="p-2 text-itta-gray3 hover:text-[#10B981] dark:text-gray-500 dark:hover:text-[#10B981] transition-colors active:scale-110"
+            className="p-1.5 sm:p-2 text-itta-gray3 hover:text-[#10B981] dark:text-gray-500 dark:hover:text-[#10B981] transition-colors active:scale-110"
           >
-            <Icon size={24} strokeWidth={1.5} />
+            <Icon size={20} strokeWidth={1.5} className="sm:hidden" />
+            <Icon size={24} strokeWidth={1.5} className="hidden sm:block" />
           </button>
         ))}
       </div>
