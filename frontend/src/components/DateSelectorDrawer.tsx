@@ -267,7 +267,7 @@ export default function DateSelectorDrawer({
 
             <div className="mt-8 flex flex-col gap-3">
               <DrawerClose
-                className="cursor-pointer flex w-full flex-1 py-4 rounded-2xl text-sm font-bold shadow-xl transition-all active:scale-95 items-center justify-center gap-2 dark:bg-white dark:text-[#121212] bg-itta-black text-white"
+                className="cursor-pointer flex w-full flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-xl transition-all active:scale-95 items-center justify-center gap-2 dark:bg-white dark:text-[#121212] bg-itta-black text-white"
                 onClick={() => {
                   const monthId = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
                   router.push(`${monthRoute}/${monthId}`);
@@ -277,7 +277,7 @@ export default function DateSelectorDrawer({
               </DrawerClose>
 
               <DrawerClose
-                className="cursor-pointer w-full py-4 rounded-2xl text-sm font-bold border transition-all active:scale-[0.98] flex items-center justify-center gap-2 dark:bg-white/5 dark:border-white/10 dark:text-gray-300 bg-white border-gray-100 text-gray-500"
+                className="cursor-pointer w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border transition-all active:scale-[0.98] flex items-center justify-center gap-2 dark:bg-white/5 dark:border-white/10 dark:text-gray-300 bg-white border-gray-100 text-gray-500"
                 onClick={() => {
                   router.push(`${yearRoute}/${currentDate.getFullYear()}`);
                 }}

@@ -149,15 +149,16 @@ export function DateRecordCard({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             {icon}
-            <PostCard.Title className="text-[15px]">{title}</PostCard.Title>
+            <PostCard.Title className="text-[13px] sm:text-[15px]">
+              {title}
+            </PostCard.Title>
           </div>
-          <div className="flex items-center gap-1.5 text-white/80 text-[9px]">
-            <Clock className="w-2.5 h-2.5 text-[#10B981]" strokeWidth={2.5} />
-            <span className="truncate">일별 기록 보기</span>
-            <span className="text-[7px]">•</span>
-            <PostCard.Meta>
-              <span className="text-[#10B981] font-bold">기록 {count}개</span>
-            </PostCard.Meta>
+          <div className="flex items-center justify-between gap-1.5 text-white/80 text-[9px]">
+            <span className="truncate flex justify-center items-center gap-1.5">
+              <Clock className="w-2.5 h-2.5 text-[#10B981]" strokeWidth={2.5} />
+              일별 기록 보기
+            </span>
+            <PostCard.Badge>{count}</PostCard.Badge>
           </div>
         </div>
       </PostCard.Overlay>

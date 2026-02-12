@@ -30,13 +30,13 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
 
   return (
     <div className="flex flex-col flex-1 -mt-6 transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
-      <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
+      <header className="-mx-4 sm:-mx-6 sticky top-0 z-50 backdrop-blur-md px-2 sm:px-4 py-2 sm:p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
         <RecordDetailHeaderActions record={record} />
       </header>
 
-      <main className="grow flex flex-col max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <main className="grow flex flex-col max-w-4xl mx-auto w-full">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
             {record.title}
           </h1>
           {record.hasActiveEditDraft && (
@@ -95,7 +95,7 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
           })}
         </div>
 
-        <div className="pt-8 mt-16 border-t border-gray-200 dark:border-gray-700 pb-6">
+        <div className="pt-6 sm:pt-8 mt-12 sm:mt-16 border-t border-gray-200 dark:border-gray-700 pb-6">
           <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
             작성자
           </h2>
@@ -103,7 +103,7 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
             {record.contributors.map((contributor) => (
               <div
                 key={contributor.userId}
-                className="flex items-center gap-2 text-[13px]"
+                className="flex items-center gap-2 text-xs sm:text-[13px]"
               >
                 <div className="w-7.5 h-7.5 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white">
                   <AssetImage
