@@ -33,14 +33,14 @@ export default async function MyMonthlyDetailPage({
 
   const { startDate, endDate } = getMonthRange(month);
   return (
-    <div className="-mt-6 h-full transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
-      <div className="-mx-6 py-6 px-6 sticky top-0 z-50 transition-colors duration-300 dark:bg-[#121212] bg-white">
+    <div className="-mt-4 sm:-mt-6 h-full transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
+      <div className="-mx-4 sm:-mx-6 py-3 px-4 sm:py-6 sm:px-6 sticky top-0 z-50 transition-colors duration-300 dark:bg-[#121212] bg-white">
         <header className="flex items-center justify-between">
           <MonthlyDetailHeaderActions month={month} title="Memory archive" />
         </header>
       </div>
 
-      <div className="py-6 pb-40">
+      <div className="py-4 sm:py-6 pb-28 sm:pb-40">
         <HydrationBoundary state={dehydrate(queryClient)}>
           {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
             <MonthlyDetailRecords
