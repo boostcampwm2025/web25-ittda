@@ -33,6 +33,16 @@ type BuildFeedCardsOptions = {
   draftRepo?: Repository<PostDraft>;
 };
 
+/**
+ * 주어진 날짜 문자열과 타임존을 기준으로 하루 범위를 계산한다.
+ * 반환되는 `from`, `to`는 DB 쿼리에 바로 사용할 수 있도록 `Date`(UTC 변환 가능) 형태다.
+ *
+ * @remarks 호출부에서는 일반적으로 `eventAt >= from AND eventAt < to` 형태로 사용하는 것을 권장한다.
+ * @param day 조회 기준 날짜(ISO 형식, 예: `2026-02-12`)
+ * @param tz IANA 타임존(예: `Asia/Seoul`)
+ * @returns from(해당 날짜 시작 시각)과 to(다음 날짜 시작 시각)
+ * @throws {BadRequestException} 날짜 또는 타임존 형식이 유효하지 않은 경우
+ */
 export function dayRange(day: string, tz: string): DayRange {
   const dateOnly = DateTime.fromISO(day, { zone: 'UTC' });
   if (!dateOnly.isValid) throw new BadRequestException('Invalid date');
@@ -47,6 +57,19 @@ export function dayRange(day: string, tz: string): DayRange {
   return { from: from.toJSDate(), to: to.toJSDate() };
 }
 
+/**
+ * 게시글 목록을 피드 카드 응답 구조로 조립한다.
+ * 블록/기여자/그룹 메타데이터를 배치 조회한 뒤 post 단위로 합성한다.
+ *
+ * @param posts 피드로 변환할 게시글 목록
+ * @param postBlockRepo 게시글 블록 조회용 리포지토리
+ * @param postContributorRepo 기여자 조회용 리포지토리
+ * @param groupMemberRepo 그룹 멤버 메타 조회용 리포지토리
+ * @param logger 경고 로그 기록용 로거
+ * @param userId 피드를 조회하는 사용자 ID
+ * @param options 그룹 이름/활성 편집 draft 포함 여부 옵션
+ * @returns 카드 목록과 변환 중 수집된 경고 목록
+ */
 export async function buildFeedCards(
   posts: Post[],
   postBlockRepo: Repository<PostBlock>,
