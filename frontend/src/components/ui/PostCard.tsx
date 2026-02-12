@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageIcon } from 'lucide-react';
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import AssetImage from '../AssetImage';
 
@@ -48,7 +48,7 @@ export interface CardBadgeProps {
  */
 export function PostCard({
   onClick,
-  height = 'h-50',
+  height = 'h-42 sm:h-50',
   imageUrl,
   imageAlt = '',
   className = '',
@@ -108,7 +108,7 @@ PostCard.Overlay = function CardOverlay({
   return (
     <div
       className={cn(
-        'relative z-10 p-4 w-full space-y-1',
+        'relative z-10 p-3 sm:p-4 w-full min-w-0 overflow-hidden space-y-1',
         positionClasses[position],
         className,
       )}
@@ -162,7 +162,7 @@ PostCard.Badge = function CardBadge({
   return (
     <div
       className={cn(
-        'px-2 py-0.5 rounded-lg text-[8px] font-bold shrink-0',
+        'px-1.5 py-0.5 rounded-lg text-[8px] font-bold shrink-0',
         variantClasses[variant],
         className,
       )}
@@ -237,7 +237,7 @@ PostCard.Meta = function CardMeta({
   return (
     <div
       className={cn(
-        'flex items-center gap-1 text-white/50 text-[9px]',
+        'flex items-center gap-1 text-white/50 text-[9px] overflow-hidden min-w-0',
         className,
       )}
     >

@@ -49,7 +49,11 @@ interface SocialNameProps {
 }
 
 function SocialName({ name }: SocialNameProps) {
-  return <div className="text-xs pt-2 dark:text-white text-black">{name}</div>;
+  return (
+    <div className="text-[10px] sm:text-xs pt-2 dark:text-white text-black">
+      {name}
+    </div>
+  );
 }
 
 export default function SocialShareDrawer({
@@ -98,10 +102,10 @@ export default function SocialShareDrawer({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="w-full px-8 py-4">
-          <DrawerHeader className="mb-0 pb-0 mx-0 px-0">
-            <div className="flex justify-between items-center mb-10 w-full">
-              <DrawerTitle className="text-lg font-bold dark:text-white text-itta-black">
+        <DrawerContent className="w-full px-4 sm:px-8 py-4">
+          <DrawerHeader className="mb-0 pb-0 mx-0 px-0 pl-2">
+            <div className="flex justify-between items-center mb-6 sm:mb-10 w-full">
+              <DrawerTitle className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                 sns로 공유하기
               </DrawerTitle>
               <DrawerClose className="p-2 text-gray-400">
@@ -111,14 +115,14 @@ export default function SocialShareDrawer({
           </DrawerHeader>
 
           <div className="overflow-x-auto scrollbar-hide pb-4 scroll-smooth touch-pan-x overscroll-x-contain">
-            <ul className="flex justify-start gap-6 min-w-max">
+            <ul className="flex justify-start gap-4 sm:gap-6 min-w-max">
               <li className="flex flex-col items-center shrink-0">
                 <button
                   onClick={handleKakaoShare}
                   className="flex flex-col items-center"
                   aria-label="카카오톡으로 공유하기"
                 >
-                  <div className="w-15 h-15 relative">
+                  <div className="w-10 h-10 sm:w-15 sm:h-15 relative">
                     <Image
                       src="/kakao_logo.png"
                       alt="카카오톡 로고"
@@ -138,7 +142,8 @@ export default function SocialShareDrawer({
                   content={record.content}
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <FacebookIcon size={60} round />
+                  <FacebookIcon size={40} round className="sm:hidden" />
+                  <FacebookIcon size={60} round className="hidden sm:block" />
                   <SocialName name="Facebook" />
                 </FacebookShareButton>
               </li>
@@ -151,7 +156,16 @@ export default function SocialShareDrawer({
                   aria-label="페이스북 메신저로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <FacebookMessengerIcon size={60} round />
+                  <FacebookMessengerIcon
+                    size={40}
+                    round
+                    className="sm:hidden"
+                  />
+                  <FacebookMessengerIcon
+                    size={60}
+                    round
+                    className="hidden sm:block"
+                  />
                   <SocialName name="Messanger" />
                 </FacebookMessengerShareButton>
               </li>
@@ -163,7 +177,8 @@ export default function SocialShareDrawer({
                   aria-label="트위터로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <XIcon size={60} round />
+                  <XIcon size={40} round className="sm:hidden" />
+                  <XIcon size={60} round className="hidden sm:block" />
                   <SocialName name="X" />
                 </TwitterShareButton>
               </li>
@@ -177,7 +192,8 @@ export default function SocialShareDrawer({
                   aria-label="이메일로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <EmailIcon size={60} round />
+                  <EmailIcon size={40} round className="sm:hidden" />
+                  <EmailIcon size={60} round className="hidden sm:block" />
                   <SocialName name="Email" />
                 </EmailShareButton>
               </li>
@@ -189,7 +205,8 @@ export default function SocialShareDrawer({
                   aria-label="라인으로 공유하기"
                   className="dark:text-white text-itta-black flex flex-col items-center"
                 >
-                  <LineIcon size={60} round />
+                  <LineIcon size={40} round className="sm:hidden" />
+                  <LineIcon size={60} round className="hidden sm:block" />
                   <SocialName name="Line" />
                 </LineShareButton>
               </li>
