@@ -221,7 +221,7 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
   return (
     <div
       onClick={hasClickAction ? handleClick : undefined}
-      className={`flex gap-3 px-4 py-4 ${
+      className={`flex gap-3 py-4 ${
         hasClickAction
           ? 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-white/5 active:bg-gray-100/50 dark:active:bg-white/10 transition-colors'
           : ''
@@ -256,7 +256,9 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
 
       {/* 메시지 */}
       <div className="flex-1 min-w-0 pt-0.5">
-        <p className="text-[15px] leading-relaxed">{getActivityMessage()}</p>
+        <p className="text-[13px] sm:text-[15px] leading-relaxed">
+          {getActivityMessage()}
+        </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
           {formatDistanceToNow(new Date(activity.createdAt), {
             addSuffix: true,

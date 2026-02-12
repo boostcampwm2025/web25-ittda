@@ -167,7 +167,7 @@ export default function GroupInviteDrawer({ groupId }: GroupInviteDrawerProps) {
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mb-4 sm:mb-6">
                 <ShieldAlert className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-itta-black dark:text-white mb-2">
+              <h3 className="text-base sm:text-xl font-bold text-itta-black dark:text-white mb-2">
                 초대 권한이 없습니다
               </h3>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed">

@@ -27,7 +27,7 @@ export default async function GroupHeader({
 
       <div className="flex items-end justify-between px-1">
         <div className="space-y-1 min-w-0 flex-1">
-          <h2 className="text-xl font-bold tracking-tight dark:text-white text-itta-black truncate">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight dark:text-white text-itta-black truncate">
             {groupInfo.groupName}
           </h2>
           <div className="flex items-center gap-1 text-[11px] font-semibold text-[#10B981]">
