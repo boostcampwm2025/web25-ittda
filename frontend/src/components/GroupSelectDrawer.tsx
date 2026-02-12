@@ -37,14 +37,14 @@ export default function GroupSelectDrawer({
       onOpenChange={onOpenChange}
       shouldScaleBackground={false}
     >
-      <DrawerContent className="w-full px-6 py-4 pb-10">
+      <DrawerContent className="w-full px-6 sm:px-8 pt-4 pb-8 sm:pb-10">
         <DrawerHeader className="px-0">
           <div className="pt-4 flex justify-between items-center mb-2">
             <DrawerTitle className="flex flex-col justify-center items-start">
-              <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+              <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
                 SELECT GROUP
               </span>
-              <span className="text-xl font-bold dark:text-white text-itta-black">
+              <span className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                 어느 그룹에 기록할까요?
               </span>
             </DrawerTitle>
@@ -78,7 +78,7 @@ export default function GroupSelectDrawer({
                   key={group.groupId}
                   onClick={() => !isViewer && handleSelectGroup(group.groupId)}
                   disabled={isViewer}
-                  className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${
+                  className={`flex items-center gap-4 py-3 px-2 rounded-xl sm:rounded-2xl transition-all ${
                     isViewer
                       ? 'opacity-50 cursor-not-allowed dark:bg-white/5 bg-gray-50'
                       : 'active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100'
@@ -103,11 +103,11 @@ export default function GroupSelectDrawer({
                       />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="font-semibold dark:text-white text-itta-black truncate">
+                  <div className="flex-1 min-w-0 text-left overflow-hidden">
+                    <p className="text-sm sm:text-base font-semibold dark:text-white text-itta-black truncate">
                       {group.name}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                       {group.memberCount}명의 멤버
                     </p>
                   </div>
