@@ -32,6 +32,31 @@ type BuildFeedCardsOptions = {
   groupRepo?: Repository<Group>;
   draftRepo?: Repository<PostDraft>;
 };
+type BuildFeedCardsResult = {
+  cards: FeedCardResponseDto[];
+  warnings: FeedWarning[];
+};
+type LocationBlockRow = {
+  postId: string;
+  value: BlockValueMap[typeof PostBlockType.LOCATION];
+};
+type PreviewBlockRow = {
+  postId: string;
+  type: PostBlockType;
+  value: BlockValueMap[PostBlockType];
+  layoutRow: number;
+  layoutCol: number;
+  layoutSpan: number;
+};
+type GroupMemberProfile = {
+  nicknameInGroup?: string | null;
+  profileMediaId?: string | null;
+};
+type FeedBlockMaps = {
+  locationByPostId: Map<string, LocationBlockRow['value']>;
+  timeByPostId: Map<string, string>;
+  blockByPostId: Map<string, FeedBlockDto[]>;
+};
 
 /**
  * 주어진 날짜 문자열과 타임존을 기준으로 하루 범위를 계산한다.
@@ -66,7 +91,7 @@ export function dayRange(day: string, tz: string): DayRange {
  * @param postContributorRepo 기여자 조회용 리포지토리
  * @param groupMemberRepo 그룹 멤버 메타 조회용 리포지토리
  * @param logger 경고 로그 기록용 로거
- * @param userId 피드를 조회하는 사용자 ID
+ * @param userId 피드를 조회하는 사용자 ID(미전달 시 권한 계산은 최소값으로 처리)
  * @param options 그룹 이름/활성 편집 draft 포함 여부 옵션
  * @returns 카드 목록과 변환 중 수집된 경고 목록
  */
@@ -78,249 +103,342 @@ export async function buildFeedCards(
   logger: Logger,
   userId?: string,
   options: BuildFeedCardsOptions = {},
-): Promise<{ cards: FeedCardResponseDto[]; warnings: FeedWarning[] }> {
+): Promise<BuildFeedCardsResult> {
   const { includeGroupName = false, groupRepo, draftRepo } = options;
   const requesterId = userId ?? '';
   const postIds = posts.map((p) => p.id);
-  const postById = new Map(posts.map((p) => [p.id, p]));
-  const groupIds = Array.from(
+  const groupIds = extractGroupIds(posts);
+
+  const [
+    groupNameByGroupId,
+    activeEditDraftPostIds,
+    blockMaps,
+    contributorsByPostId,
+    groupRoleByGroupId,
+  ] = await Promise.all([
+    loadGroupNameByGroupId(groupIds, includeGroupName, groupRepo),
+    loadActiveEditDraftPostIds(posts, draftRepo),
+    loadFeedBlockMaps(postIds, postBlockRepo),
+    loadContributorsByPostId(
+      posts,
+      postIds,
+      postContributorRepo,
+      groupMemberRepo,
+    ),
+    loadGroupRoleByGroupId(groupIds, requesterId, groupMemberRepo),
+  ]);
+  const { locationByPostId, timeByPostId, blockByPostId } = blockMaps;
+
+  return mapPostsToFeedCards(posts, {
+    requesterId,
+    logger,
+    locationByPostId,
+    timeByPostId,
+    blockByPostId,
+    contributorsByPostId,
+    groupRoleByGroupId,
+    groupNameByGroupId,
+    activeEditDraftPostIds,
+  });
+}
+
+function extractGroupIds(posts: Post[]): string[] {
+  return Array.from(
     new Set(posts.map((p) => p.groupId).filter(Boolean) as string[]),
   );
+}
+
+async function loadGroupNameByGroupId(
+  groupIds: string[],
+  includeGroupName: boolean,
+  groupRepo?: Repository<Group>,
+): Promise<Map<string, string>> {
   const groupNameByGroupId = new Map<string, string>();
-  if (includeGroupName && groupRepo && groupIds.length > 0) {
-    const groups = await groupRepo.find({
-      where: { id: In(groupIds) },
-      select: ['id', 'name'],
-    });
-    groups.forEach((group) => {
-      groupNameByGroupId.set(group.id, group.name);
-    });
+  if (!includeGroupName || !groupRepo || groupIds.length === 0) {
+    return groupNameByGroupId;
   }
 
+  const groups = await groupRepo.find({
+    where: { id: In(groupIds) },
+    select: ['id', 'name'],
+  });
+  groups.forEach((group) => {
+    groupNameByGroupId.set(group.id, group.name);
+  });
+
+  return groupNameByGroupId;
+}
+
+async function loadActiveEditDraftPostIds(
+  posts: Post[],
+  draftRepo?: Repository<PostDraft>,
+): Promise<Set<string>> {
   const activeEditDraftPostIds = new Set<string>();
   const groupPostIds = posts.filter((p) => Boolean(p.groupId)).map((p) => p.id);
-  if (draftRepo && groupPostIds.length > 0) {
-    const activeDrafts = await draftRepo.find({
-      where: {
-        kind: 'EDIT',
-        isActive: true,
-        targetPostId: In(groupPostIds),
-      },
-      select: { targetPostId: true },
-    });
-    activeDrafts.forEach((draft) => {
-      if (draft.targetPostId) {
-        activeEditDraftPostIds.add(draft.targetPostId);
-      }
-    });
+  if (!draftRepo || groupPostIds.length === 0) {
+    return activeEditDraftPostIds;
   }
 
-  // 1) LOCATION 블록 한번에 조회 (postIds IN ...)
-  // - type='LOCATION'만
-  // - postId별로 1개만 있어야 함
-  type LocationBlockRow = {
-    postId: string;
-    value: BlockValueMap[typeof PostBlockType.LOCATION];
-  };
+  const activeDrafts = await draftRepo.find({
+    where: {
+      kind: 'EDIT',
+      isActive: true,
+      targetPostId: In(groupPostIds),
+    },
+    select: { targetPostId: true },
+  });
+  activeDrafts.forEach((draft) => {
+    if (draft.targetPostId) {
+      activeEditDraftPostIds.add(draft.targetPostId);
+    }
+  });
 
-  const locationBlocks: LocationBlockRow[] = postIds.length
-    ? ((await postBlockRepo.find({
-        where: { postId: In(postIds), type: PostBlockType.LOCATION },
-        select: { postId: true, value: true },
-      })) as LocationBlockRow[])
-    : [];
+  return activeEditDraftPostIds;
+}
 
+async function loadFeedBlockMaps(
+  postIds: string[],
+  postBlockRepo: Repository<PostBlock>,
+): Promise<FeedBlockMaps> {
   const locationByPostId = new Map<string, LocationBlockRow['value']>();
-  for (const b of locationBlocks) {
-    locationByPostId.set(b.postId, b.value);
-  }
-
-  // TIME 메타 (미리보기 블록에 포함하지 않음)
-  type TimeBlockRow = {
-    postId: string;
-    value: BlockValueMap[typeof PostBlockType.TIME];
-  };
-
-  const timeBlocks: TimeBlockRow[] = postIds.length
-    ? ((await postBlockRepo.find({
-        where: { postId: In(postIds), type: PostBlockType.TIME },
-        select: { postId: true, value: true },
-      })) as TimeBlockRow[])
-    : [];
-
   const timeByPostId = new Map<string, string>();
-  for (const b of timeBlocks) {
-    const value = b.value as { time?: string };
-    if (value?.time) {
-      timeByPostId.set(b.postId, value.time);
-    }
-  }
-
-  // 2) 미리보기 블록 (row 7까지)
-  type BlockRow = {
-    postId: string;
-    type: PostBlockType;
-    value: BlockValueMap[PostBlockType];
-    layoutRow: number;
-    layoutCol: number;
-    layoutSpan: number;
-  };
-
-  const blocks: BlockRow[] = postIds.length
-    ? ((await postBlockRepo.find({
-        where: { postId: In(postIds), layoutRow: LessThanOrEqual(7) },
-        select: {
-          postId: true,
-          type: true,
-          value: true,
-          layoutRow: true,
-          layoutCol: true,
-          layoutSpan: true,
-        },
-        order: { layoutRow: 'ASC', layoutCol: 'ASC' },
-      })) as BlockRow[])
-    : [];
-
   const blockByPostId = new Map<string, FeedBlockDto[]>();
-  for (const block of blocks) {
-    const list = blockByPostId.get(block.postId) ?? [];
-    list.push({
-      type: block.type,
-      value: block.value,
-      layout: {
-        row: block.layoutRow,
-        col: block.layoutCol,
-        span: block.layoutSpan,
-      },
-    });
-    blockByPostId.set(block.postId, list);
+  if (postIds.length === 0) {
+    return { locationByPostId, timeByPostId, blockByPostId };
   }
 
-  // 3) 응답 매핑
-  const contributorsByPostId = new Map<string, FeedContributorDto[]>();
-  if (postIds.length > 0) {
-    const contributorRows = await postContributorRepo.find({
-      where: { postId: In(postIds) },
-      relations: ['user'],
-    });
-    const activeContributors = contributorRows.filter(
-      (c): c is PostContributor & { user: { id: string } } => Boolean(c.user),
-    );
+  const blocks = (await postBlockRepo.find({
+    where: [
+      {
+        postId: In(postIds),
+        type: In([PostBlockType.LOCATION, PostBlockType.TIME]),
+      },
+      { postId: In(postIds), layoutRow: LessThanOrEqual(7) },
+    ],
+    select: {
+      postId: true,
+      type: true,
+      value: true,
+      layoutRow: true,
+      layoutCol: true,
+      layoutSpan: true,
+    },
+    order: { layoutRow: 'ASC', layoutCol: 'ASC' },
+  })) as PreviewBlockRow[];
 
-    const groupPairs: Array<{ groupId: string; userId: string }> = [];
-    activeContributors.forEach((c) => {
-      const post = postById.get(c.postId);
-      if (post?.groupId) {
-        groupPairs.push({ groupId: post.groupId, userId: c.userId });
+  for (const block of blocks) {
+    if (block.type === PostBlockType.LOCATION) {
+      locationByPostId.set(
+        block.postId,
+        block.value as LocationBlockRow['value'],
+      );
+    }
+    if (block.type === PostBlockType.TIME) {
+      const value = block.value as { time?: string };
+      if (value?.time) {
+        timeByPostId.set(block.postId, value.time);
       }
-    });
-
-    const groupMemberMap = new Map<
-      string,
-      { nicknameInGroup?: string | null; profileMediaId?: string | null }
-    >();
-    if (groupPairs.length > 0) {
-      const members = await groupMemberRepo.find({
-        where: groupPairs,
-        select: ['groupId', 'userId', 'nicknameInGroup', 'profileMediaId'],
+    }
+    if (block.layoutRow <= 7) {
+      const list = blockByPostId.get(block.postId) ?? [];
+      list.push({
+        type: block.type,
+        value: block.value,
+        layout: {
+          row: block.layoutRow,
+          col: block.layoutCol,
+          span: block.layoutSpan,
+        },
       });
-      members.forEach((member) => {
-        const key = `${member.groupId}:${member.userId}`;
-        groupMemberMap.set(key, {
-          nicknameInGroup: member.nicknameInGroup ?? null,
-          profileMediaId: member.profileMediaId ?? null,
-        });
+      blockByPostId.set(block.postId, list);
+    }
+  }
+
+  return { locationByPostId, timeByPostId, blockByPostId };
+}
+
+function makeGroupMemberKey(groupId: string, userId: string): string {
+  return `${groupId}:${userId}`;
+}
+
+async function loadContributorsByPostId(
+  posts: Post[],
+  postIds: string[],
+  postContributorRepo: Repository<PostContributor>,
+  groupMemberRepo: Repository<GroupMember>,
+): Promise<Map<string, FeedContributorDto[]>> {
+  const contributorsByPostId = new Map<string, FeedContributorDto[]>();
+  if (postIds.length === 0) {
+    return contributorsByPostId;
+  }
+
+  const postById = new Map(posts.map((p) => [p.id, p]));
+  const contributorRows = await postContributorRepo.find({
+    where: { postId: In(postIds) },
+    relations: ['user'],
+  });
+  const activeContributors = contributorRows.filter(
+    (contributor): contributor is PostContributor & { user: { id: string } } =>
+      Boolean(contributor.user),
+  );
+
+  const groupPairsByKey = new Map<
+    string,
+    { groupId: string; userId: string }
+  >();
+  for (const contributor of activeContributors) {
+    const post = postById.get(contributor.postId);
+    if (post?.groupId) {
+      const key = makeGroupMemberKey(post.groupId, contributor.userId);
+      groupPairsByKey.set(key, {
+        groupId: post.groupId,
+        userId: contributor.userId,
       });
     }
-
-    activeContributors.forEach((c) => {
-      const post = postById.get(c.postId);
-      const groupKey = post?.groupId ? `${post.groupId}:${c.userId}` : null;
-      const groupMember = groupKey ? groupMemberMap.get(groupKey) : undefined;
-
-      const dto: FeedContributorDto = {
-        userId: c.userId,
-        role: c.role,
-        nickname: c.user?.nickname ?? null,
-        groupNickname: groupMember?.nicknameInGroup ?? null,
-        profileImageId: c.user?.profileImageId ?? null,
-        groupProfileImageId: groupMember?.profileMediaId ?? null,
-      };
-
-      const list = contributorsByPostId.get(c.postId) ?? [];
-      list.push(dto);
-      contributorsByPostId.set(c.postId, list);
-    });
   }
 
+  const groupMemberMap = new Map<string, GroupMemberProfile>();
+  const groupPairs = Array.from(groupPairsByKey.values());
+  if (groupPairs.length > 0) {
+    const members = await groupMemberRepo.find({
+      where: groupPairs,
+      select: ['groupId', 'userId', 'nicknameInGroup', 'profileMediaId'],
+    });
+    for (const member of members) {
+      const key = makeGroupMemberKey(member.groupId, member.userId);
+      groupMemberMap.set(key, {
+        nicknameInGroup: member.nicknameInGroup ?? null,
+        profileMediaId: member.profileMediaId ?? null,
+      });
+    }
+  }
+
+  for (const contributor of activeContributors) {
+    const post = postById.get(contributor.postId);
+    const groupKey = post?.groupId
+      ? makeGroupMemberKey(post.groupId, contributor.userId)
+      : null;
+    const groupMember = groupKey ? groupMemberMap.get(groupKey) : undefined;
+
+    const dto: FeedContributorDto = {
+      userId: contributor.userId,
+      role: contributor.role,
+      nickname: contributor.user?.nickname ?? null,
+      groupNickname: groupMember?.nicknameInGroup ?? null,
+      profileImageId: contributor.user?.profileImageId ?? null,
+      groupProfileImageId: groupMember?.profileMediaId ?? null,
+    };
+
+    const list = contributorsByPostId.get(contributor.postId) ?? [];
+    list.push(dto);
+    contributorsByPostId.set(contributor.postId, list);
+  }
+
+  return contributorsByPostId;
+}
+
+async function loadGroupRoleByGroupId(
+  groupIds: string[],
+  requesterId: string,
+  groupMemberRepo: Repository<GroupMember>,
+): Promise<Map<string, GroupRoleEnum>> {
   const groupRoleByGroupId = new Map<string, GroupRoleEnum>();
-  if (groupIds.length > 0) {
-    const memberRows = await groupMemberRepo.find({
-      where: groupIds.map((groupId) => ({ groupId, userId: requesterId })),
-      select: ['groupId', 'role'],
-    });
-    memberRows.forEach((member) => {
-      groupRoleByGroupId.set(member.groupId, member.role);
-    });
+  if (groupIds.length === 0) {
+    return groupRoleByGroupId;
   }
 
+  const memberRows = await groupMemberRepo.find({
+    where: groupIds.map((groupId) => ({ groupId, userId: requesterId })),
+    select: ['groupId', 'role'],
+  });
+  memberRows.forEach((member) => {
+    groupRoleByGroupId.set(member.groupId, member.role);
+  });
+
+  return groupRoleByGroupId;
+}
+
+function resolveFeedPermission(
+  post: Post,
+  requesterId: string,
+  groupRoleByGroupId: Map<string, GroupRoleEnum>,
+): 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null {
+  if (post.groupId) {
+    return groupRoleByGroupId.get(post.groupId) ?? null;
+  }
+  return post.ownerUserId === requesterId ? 'OWNER' : null;
+}
+
+function mapPostsToFeedCards(
+  posts: Post[],
+  context: {
+    requesterId: string;
+    logger: Logger;
+    locationByPostId: Map<string, LocationBlockRow['value']>;
+    timeByPostId: Map<string, string>;
+    blockByPostId: Map<string, FeedBlockDto[]>;
+    contributorsByPostId: Map<string, FeedContributorDto[]>;
+    groupRoleByGroupId: Map<string, GroupRoleEnum>;
+    groupNameByGroupId: Map<string, string>;
+    activeEditDraftPostIds: Set<string>;
+  },
+): BuildFeedCardsResult {
   const cards: FeedCardResponseDto[] = [];
   const warnings: FeedWarning[] = [];
-  const addWarning = (warning: FeedWarning) => warnings.push(warning);
 
-  for (const p of posts) {
-    const loc = locationByPostId.get(p.id) ?? null;
-    const time = timeByPostId.get(p.id) ?? null;
-    const scope = p.groupId ? 'GROUP' : 'ME';
-    if (!p.eventAt) {
-      logger.warn(`eventAt is missing for postId=${p.id} title=${p.title}`);
-      addWarning({
+  for (const post of posts) {
+    if (!post.eventAt) {
+      context.logger.warn(
+        `eventAt is missing for postId=${post.id} title=${post.title}`,
+      );
+      warnings.push({
         code: 'EVENT_AT_MISSING',
         message: 'eventAt is missing',
         context: {
-          postId: p.id,
-          title: p.title,
+          postId: post.id,
+          title: post.title,
         },
       });
       continue;
     }
-    const isOwner = p.ownerUserId === requesterId;
-    let permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null = null;
-    if (p.groupId) {
-      const role = groupRoleByGroupId.get(p.groupId);
-      permission = role ?? null;
-    } else {
-      permission = isOwner ? 'OWNER' : null;
-    }
+
+    const location = context.locationByPostId.get(post.id) ?? null;
+    const scope = post.groupId ? 'GROUP' : 'ME';
+    const permission = resolveFeedPermission(
+      post,
+      context.requesterId,
+      context.groupRoleByGroupId,
+    );
+
     cards.push(
       new FeedCardResponseDto({
-        postId: p.id,
+        postId: post.id,
         scope,
-        groupId: p.groupId ?? null,
-        groupName: p.groupId
-          ? (groupNameByGroupId.get(p.groupId) ?? null)
+        groupId: post.groupId ?? null,
+        groupName: post.groupId
+          ? (context.groupNameByGroupId.get(post.groupId) ?? null)
           : null,
-        eventAt: new Date(p.eventAt),
-        createdAt: new Date(p.createdAt),
-        updatedAt: new Date(p.updatedAt),
-        title: p.title,
-        location: loc
+        eventAt: new Date(post.eventAt),
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt),
+        title: post.title,
+        location: location
           ? {
-              lng: loc.lng,
-              lat: loc.lat,
-              address: loc.address,
-              placeName: loc.placeName,
+              lng: location.lng,
+              lat: location.lat,
+              address: location.address,
+              placeName: location.placeName,
             }
           : null,
-        time,
-        blocks: blockByPostId.get(p.id) ?? [],
-        tags: p.tags ?? null,
-        emotion: p.emotion ?? null,
-        rating: p.rating ?? null,
-        contributors: contributorsByPostId.get(p.id) ?? [],
+        time: context.timeByPostId.get(post.id) ?? null,
+        blocks: context.blockByPostId.get(post.id) ?? [],
+        tags: post.tags ?? null,
+        emotion: post.emotion ?? null,
+        rating: post.rating ?? null,
+        contributors: context.contributorsByPostId.get(post.id) ?? [],
         permission,
-        hasActiveEditDraft: p.groupId
-          ? activeEditDraftPostIds.has(p.id)
+        hasActiveEditDraft: post.groupId
+          ? context.activeEditDraftPostIds.has(post.id)
           : undefined,
       }),
     );
