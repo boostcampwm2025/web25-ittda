@@ -55,7 +55,7 @@ export default function GroupDangerousZone({
                 <AlertCircle className="w-8 h-8" />
               </div>
               <div className="space-y-1">
-                <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
+                <DrawerTitle className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                   {`정말 '${groupName}' 그룹을 삭제하시겠습니까?`}
                 </DrawerTitle>
                 <p className="text-sm text-gray-400 font-medium">
@@ -66,12 +66,12 @@ export default function GroupDangerousZone({
           </DrawerHeader>
 
           <div className="flex gap-4">
-            <DrawerClose className="flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
+            <DrawerClose className="flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
               취소
             </DrawerClose>
             <DrawerClose
               onClick={handleDeleteGroup}
-              className="cursor-pointer flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
+              className="cursor-pointer flex-2 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
             >
               삭제하기
             </DrawerClose>
