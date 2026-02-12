@@ -12,6 +12,9 @@ import { Group } from '../group/entity/group.entity';
 import { PostDraft } from '../post/entity/post-draft.entity';
 import { buildFeedCards, dayRange } from './feed.helpers';
 
+/**
+ * 사용자 피드 조회를 위한 읽기 전용 쿼리를 담당한다.
+ */
 @Injectable()
 export class FeedQueryService {
   private readonly logger = new Logger(FeedQueryService.name);
@@ -31,6 +34,16 @@ export class FeedQueryService {
     private readonly postDraftRepo: Repository<PostDraft>,
   ) {}
 
+  /**
+   * 특정 사용자 기준으로 피드 카드를 조회한다.
+   * contributor(AUTHOR/EDITOR) 조건과 날짜 범위를 반영해 게시글을 가져온 뒤,
+   * 피드 카드 DTO 및 경고 정보로 조합한다.
+   *
+   * @param userId 피드를 조회하는 사용자 ID
+   * @param query 조회 조건(날짜, 타임존)
+   * @returns 피드 카드 목록과 경고 목록
+   * @throws {BadRequestException} date 또는 tz 값이 유효하지 않은 경우
+   */
   async getFeedForUser(userId: string, query: GetFeedQueryDto) {
     // 날짜 필터링을 위해 date 파싱
     const { from, to } = dayRange(query.date, query.tz ?? 'Asia/Seoul');
