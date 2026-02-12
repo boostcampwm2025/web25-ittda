@@ -60,10 +60,10 @@ export default function MonthlyDetailHeaderActions({
     <>
       <Back />
       <div className="flex flex-col items-center">
-        <span className="text-[10px] font-bold uppercase tracking-widest leading-none mb-1 text-[#10B981]">
+        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest leading-none mb-1 text-[#10B981]">
           {title}
         </span>
-        <span className="text-sm font-bold dark:text-white text-itta-black">
+        <span className="text-xs sm:text-sm font-bold dark:text-white text-itta-black">
           {month?.replace('-', '년 ')}월
         </span>
       </div>
@@ -71,19 +71,19 @@ export default function MonthlyDetailHeaderActions({
         <DrawerTrigger asChild>
           <button
             className={cn(
-              'cursor-pointer p-1.5 rounded-lg transition-colors text-gray-300 hover:bg-gray-100 dark:hover:bg-itta-black/80',
+              'cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors text-gray-400 dark:bg-white/5 bg-gray-50 hover:bg-gray-100 dark:hover:bg-white/10',
             )}
           >
-            <ListFilter className="w-5 h-5" />
+            <ListFilter className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </DrawerTrigger>
-        <DrawerContent className={cn('w-full px-8 pt-4 pb-10', className)}>
-          <DrawerHeader>
-            <div className="flex justify-between items-center mb-6">
-              <DrawerTitle>
-                <span className="text-lg font-bold dark:text-white text-itta-black">
-                  기록 정렬
-                </span>
+        <DrawerContent
+          className={cn('w-full px-4 sm:px-8 pt-4 pb-8 sm:pb-10', className)}
+        >
+          <DrawerHeader className="pl-2">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <DrawerTitle className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
+                기록 정렬
               </DrawerTitle>
               <DrawerClose className="cursor-pointer p-2 text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -99,7 +99,7 @@ export default function MonthlyDetailHeaderActions({
                   setSortBy(option.id as SortOption);
                 }}
                 className={cn(
-                  'cursor-pointer w-full flex items-center justify-between p-4 rounded-2xl transition-all',
+                  'cursor-pointer w-full flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all',
                   sortBy === option.id
                     ? 'dark:bg-[#10B981]/10 dark:text-[#10B981] bg-[#10B981]/5 text-[#10B981]'
                     : 'dark:hover:bg-white/5 dark:text-gray-400 hover:bg-gray-50 text-gray-500',
@@ -107,7 +107,9 @@ export default function MonthlyDetailHeaderActions({
               >
                 <div className="flex items-center gap-3">
                   {option.icon}
-                  <span className="text-sm font-bold">{option.label}</span>
+                  <span className="text-xs sm:text-sm font-bold">
+                    {option.label}
+                  </span>
                 </div>
                 {sortBy === option.id && (
                   <Check className="w-4 h-4" strokeWidth={3} />

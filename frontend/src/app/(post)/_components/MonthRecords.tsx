@@ -177,7 +177,7 @@ export default function MonthRecords({
                   커버 사진 선택
                 </span>
               </DrawerTitle>
-              <DrawerClose className="p-2 text-gray-400 cursor-pointer">
+              <DrawerClose className="sm:p-2 text-gray-400 cursor-pointer">
                 <X className="w-6 h-6" />
               </DrawerClose>
             </div>
