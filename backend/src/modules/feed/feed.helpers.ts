@@ -57,6 +57,15 @@ type FeedBlockMaps = {
   timeByPostId: Map<string, string>;
   blockByPostId: Map<string, FeedBlockDto[]>;
 };
+type ActiveContributor = PostContributor & { user: { id: string } };
+type ContributorsContext = {
+  postById: Map<string, Post>;
+  activeContributors: ActiveContributor[];
+};
+type GroupMemberContext = {
+  groupMemberMap: Map<string, GroupMemberProfile>;
+  groupRoleByGroupId: Map<string, GroupRoleEnum>;
+};
 
 /**
  * 주어진 날짜 문자열과 타임존을 기준으로 하루 범위를 계산한다.
@@ -113,21 +122,26 @@ export async function buildFeedCards(
     groupNameByGroupId,
     activeEditDraftPostIds,
     blockMaps,
-    contributorsByPostId,
-    groupRoleByGroupId,
+    contributorsContext,
   ] = await Promise.all([
     loadGroupNameByGroupId(groupIds, includeGroupName, groupRepo),
     loadActiveEditDraftPostIds(posts, draftRepo),
     loadFeedBlockMaps(postIds, postBlockRepo),
-    loadContributorsByPostId(
-      posts,
-      postIds,
-      postContributorRepo,
-      groupMemberRepo,
-    ),
-    loadGroupRoleByGroupId(groupIds, requesterId, groupMemberRepo),
+    loadContributorsContext(posts, postIds, postContributorRepo),
   ]);
   const { locationByPostId, timeByPostId, blockByPostId } = blockMaps;
+  const { groupMemberMap, groupRoleByGroupId } = await loadGroupMemberContext(
+    contributorsContext.activeContributors,
+    contributorsContext.postById,
+    groupIds,
+    requesterId,
+    groupMemberRepo,
+  );
+  const contributorsByPostId = mapContributorsByPostId(
+    contributorsContext.activeContributors,
+    contributorsContext.postById,
+    groupMemberMap,
+  );
 
   return mapPostsToFeedCards(posts, {
     requesterId,
@@ -261,15 +275,17 @@ function makeGroupMemberKey(groupId: string, userId: string): string {
   return `${groupId}:${userId}`;
 }
 
-async function loadContributorsByPostId(
+async function loadContributorsContext(
   posts: Post[],
   postIds: string[],
   postContributorRepo: Repository<PostContributor>,
-  groupMemberRepo: Repository<GroupMember>,
-): Promise<Map<string, FeedContributorDto[]>> {
-  const contributorsByPostId = new Map<string, FeedContributorDto[]>();
+): Promise<ContributorsContext> {
+  const empty: ContributorsContext = {
+    postById: new Map<string, Post>(),
+    activeContributors: [],
+  };
   if (postIds.length === 0) {
-    return contributorsByPostId;
+    return empty;
   }
 
   const postById = new Map(posts.map((p) => [p.id, p]));
@@ -278,40 +294,73 @@ async function loadContributorsByPostId(
     relations: ['user'],
   });
   const activeContributors = contributorRows.filter(
-    (contributor): contributor is PostContributor & { user: { id: string } } =>
+    (contributor): contributor is ActiveContributor =>
       Boolean(contributor.user),
   );
 
-  const groupPairsByKey = new Map<
-    string,
-    { groupId: string; userId: string }
-  >();
+  return {
+    postById,
+    activeContributors,
+  };
+}
+
+async function loadGroupMemberContext(
+  activeContributors: ActiveContributor[],
+  postById: Map<string, Post>,
+  groupIds: string[],
+  requesterId: string,
+  groupMemberRepo: Repository<GroupMember>,
+): Promise<GroupMemberContext> {
+  const groupMemberMap = new Map<string, GroupMemberProfile>();
+  const groupRoleByGroupId = new Map<string, GroupRoleEnum>();
+  const groupPairKeys = new Set<string>();
+
   for (const contributor of activeContributors) {
     const post = postById.get(contributor.postId);
     if (post?.groupId) {
       const key = makeGroupMemberKey(post.groupId, contributor.userId);
-      groupPairsByKey.set(key, {
-        groupId: post.groupId,
-        userId: contributor.userId,
-      });
+      groupPairKeys.add(key);
+    }
+  }
+  if (requesterId) {
+    for (const groupId of groupIds) {
+      groupPairKeys.add(makeGroupMemberKey(groupId, requesterId));
     }
   }
 
-  const groupMemberMap = new Map<string, GroupMemberProfile>();
-  const groupPairs = Array.from(groupPairsByKey.values());
-  if (groupPairs.length > 0) {
-    const members = await groupMemberRepo.find({
-      where: groupPairs,
-      select: ['groupId', 'userId', 'nicknameInGroup', 'profileMediaId'],
+  const groupPairs = Array.from(groupPairKeys, (key) => {
+    const [groupId, userId] = key.split(':');
+    return { groupId, userId };
+  });
+  if (groupPairs.length === 0) {
+    return { groupMemberMap, groupRoleByGroupId };
+  }
+
+  const members = await groupMemberRepo.find({
+    where: groupPairs,
+    select: ['groupId', 'userId', 'role', 'nicknameInGroup', 'profileMediaId'],
+  });
+
+  for (const member of members) {
+    const key = makeGroupMemberKey(member.groupId, member.userId);
+    groupMemberMap.set(key, {
+      nicknameInGroup: member.nicknameInGroup ?? null,
+      profileMediaId: member.profileMediaId ?? null,
     });
-    for (const member of members) {
-      const key = makeGroupMemberKey(member.groupId, member.userId);
-      groupMemberMap.set(key, {
-        nicknameInGroup: member.nicknameInGroup ?? null,
-        profileMediaId: member.profileMediaId ?? null,
-      });
+    if (requesterId && member.userId === requesterId) {
+      groupRoleByGroupId.set(member.groupId, member.role);
     }
   }
+
+  return { groupMemberMap, groupRoleByGroupId };
+}
+
+function mapContributorsByPostId(
+  activeContributors: ActiveContributor[],
+  postById: Map<string, Post>,
+  groupMemberMap: Map<string, GroupMemberProfile>,
+): Map<string, FeedContributorDto[]> {
+  const contributorsByPostId = new Map<string, FeedContributorDto[]>();
 
   for (const contributor of activeContributors) {
     const post = postById.get(contributor.postId);
@@ -335,27 +384,6 @@ async function loadContributorsByPostId(
   }
 
   return contributorsByPostId;
-}
-
-async function loadGroupRoleByGroupId(
-  groupIds: string[],
-  requesterId: string,
-  groupMemberRepo: Repository<GroupMember>,
-): Promise<Map<string, GroupRoleEnum>> {
-  const groupRoleByGroupId = new Map<string, GroupRoleEnum>();
-  if (groupIds.length === 0) {
-    return groupRoleByGroupId;
-  }
-
-  const memberRows = await groupMemberRepo.find({
-    where: groupIds.map((groupId) => ({ groupId, userId: requesterId })),
-    select: ['groupId', 'role'],
-  });
-  memberRows.forEach((member) => {
-    groupRoleByGroupId.set(member.groupId, member.role);
-  });
-
-  return groupRoleByGroupId;
 }
 
 function resolveFeedPermission(
