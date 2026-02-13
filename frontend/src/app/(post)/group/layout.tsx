@@ -9,7 +9,7 @@ export default function GroupMonthLayout({
   modal: React.ReactNode;
 }>) {
   return (
-    <div className="pt-0 w-full space-y-8 transition-colors duration-300 min-h-full dark:bg-[#121212] bg-[#FDFDFD]">
+    <div className="pt-0 w-full h-full space-y-8 transition-colors duration-300 min-h-full dark:bg-[#121212] bg-[#FDFDFD]">
       <SocketManager />
       {children}
       {modal}

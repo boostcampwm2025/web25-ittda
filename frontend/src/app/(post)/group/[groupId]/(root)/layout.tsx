@@ -11,7 +11,7 @@ export default async function GroupRootLayout({
   const { groupId } = await params;
 
   return (
-    <main className="relative w-full flex flex-col gap-4 sm:gap-6 p-4 sm:p-6">
+    <main className="w-full h-full flex flex-col gap-4 sm:gap-6 p-4 sm:p-6">
       <GroupHeader groupId={groupId} />
       <>
         <div className="flex items-center justify-start px-1">
