@@ -32,29 +32,30 @@ export function ActivityMessage({ activity }: { activity: GroupActivityItem }) {
     case 'POST_CREATE':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이 새 기록{' '}
-          <TitleText text={title} />
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 새 기록 <TitleText text={title} />
           을(를) 작성했습니다.
         </>
       );
     case 'POST_COLLAB_START':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이 공동 작성을 시작했습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 공동 작성을 시작했습니다.
         </>
       );
     case 'POST_COLLAB_COMPLETE':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이 <TitleText text={title} /> 기록
-          작성을 완료했습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 <TitleText text={title} /> 기록 작성을 완료했습니다.
         </>
       );
     case 'POST_EDIT_START':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이 <TitleText text={title} /> 기록을
-          수정 중입니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 <TitleText text={title} /> 기록을 수정 중입니다.
         </>
       );
     case 'POST_EDIT_COMPLETE':
@@ -62,7 +63,8 @@ export function ActivityMessage({ activity }: { activity: GroupActivityItem }) {
       if (beforeTitle && afterTitle && beforeTitle !== afterTitle) {
         return (
           <>
-            <Highlight>{actor.name}</Highlight>{actor.suffix}이{' '}
+            <Highlight>{actor.name}</Highlight>
+            {actor.suffix}이{' '}
             <span className="line-through text-gray-400 text-sm">
               {beforeTitle}
             </span>{' '}
@@ -72,39 +74,44 @@ export function ActivityMessage({ activity }: { activity: GroupActivityItem }) {
       }
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이{' '}
-          <TitleText text={afterTitle || title} /> 기록을 수정했습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 <TitleText text={afterTitle || title} /> 기록을
+          수정했습니다.
         </>
       );
     case 'POST_DELETE':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이 <TitleText text={title} /> 기록을
-          삭제했습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 <TitleText text={title} /> 기록을 삭제했습니다.
         </>
       );
     case 'MEMBER_JOIN':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이 그룹에 참여했습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 그룹에 참여했습니다.
         </>
       );
     case 'MEMBER_LEAVE':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이 그룹에서 나갔습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 그룹에서 나갔습니다.
         </>
       );
     case 'MEMBER_REMOVE':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}이 그룹에서 내보내졌습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 그룹에서 내보내졌습니다.
         </>
       );
     case 'MEMBER_ROLE_CHANGE':
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}의 역할이 변경되었습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}의 역할이 변경되었습니다.
         </>
       );
     case 'GROUP_NAME_UPDATE':
@@ -117,7 +124,8 @@ export function ActivityMessage({ activity }: { activity: GroupActivityItem }) {
     default:
       return (
         <>
-          <Highlight>{actor.name}</Highlight>{actor.suffix}의 새로운 활동이 있습니다.
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}의 새로운 활동이 있습니다.
         </>
       );
   }
