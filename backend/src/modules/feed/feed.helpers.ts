@@ -156,12 +156,26 @@ export async function buildFeedCards(
   });
 }
 
+/**
+ * 피드 게시글 목록에서 그룹 ID를 중복 없이 추출한다.
+ *
+ * @param posts 피드 게시글 목록
+ * @returns 중복 제거된 그룹 ID 목록
+ */
 function extractGroupIds(posts: Post[]): string[] {
   return Array.from(
     new Set(posts.map((p) => p.groupId).filter(Boolean) as string[]),
   );
 }
 
+/**
+ * 그룹 이름 표시 옵션이 켜진 경우 그룹 ID -> 이름 맵을 조회한다.
+ *
+ * @param groupIds 조회할 그룹 ID 목록
+ * @param includeGroupName 그룹 이름 포함 여부
+ * @param groupRepo 그룹 리포지토리
+ * @returns 그룹 ID를 키로 하는 그룹 이름 맵
+ */
 async function loadGroupNameByGroupId(
   groupIds: string[],
   includeGroupName: boolean,
@@ -183,6 +197,13 @@ async function loadGroupNameByGroupId(
   return groupNameByGroupId;
 }
 
+/**
+ * 그룹 게시글 중 활성화된 EDIT draft 대상 post ID를 조회한다.
+ *
+ * @param posts 피드 게시글 목록
+ * @param draftRepo draft 리포지토리
+ * @returns 활성 EDIT draft가 존재하는 post ID 집합
+ */
 async function loadActiveEditDraftPostIds(
   posts: Post[],
   draftRepo?: Repository<PostDraft>,
@@ -210,6 +231,13 @@ async function loadActiveEditDraftPostIds(
   return activeEditDraftPostIds;
 }
 
+/**
+ * post block을 한 번에 조회한 뒤 LOCATION/TIME/preview 맵으로 분기한다.
+ *
+ * @param postIds 조회할 게시글 ID 목록
+ * @param postBlockRepo post block 리포지토리
+ * @returns 위치/시간/미리보기 블록 맵 묶음
+ */
 async function loadFeedBlockMaps(
   postIds: string[],
   postBlockRepo: Repository<PostBlock>,
@@ -271,10 +299,25 @@ async function loadFeedBlockMaps(
   return { locationByPostId, timeByPostId, blockByPostId };
 }
 
+/**
+ * group member 맵에서 사용할 복합 키를 생성한다.
+ *
+ * @param groupId 그룹 ID
+ * @param userId 사용자 ID
+ * @returns `groupId:userId` 형태 문자열 키
+ */
 function makeGroupMemberKey(groupId: string, userId: string): string {
   return `${groupId}:${userId}`;
 }
 
+/**
+ * contributor 목록과 post ID 매핑 컨텍스트를 로드한다.
+ *
+ * @param posts 피드 게시글 목록
+ * @param postIds 조회 대상 게시글 ID 목록
+ * @param postContributorRepo contributor 리포지토리
+ * @returns postById 맵과 활성 contributor 목록
+ */
 async function loadContributorsContext(
   posts: Post[],
   postIds: string[],
@@ -304,6 +347,16 @@ async function loadContributorsContext(
   };
 }
 
+/**
+ * group member를 한 번 조회해 contributor 프로필 맵과 requester 권한 맵을 함께 구성한다.
+ *
+ * @param activeContributors 활성 contributor 목록
+ * @param postById post ID -> post 맵
+ * @param groupIds 피드에 포함된 그룹 ID 목록
+ * @param requesterId 요청자 사용자 ID
+ * @param groupMemberRepo group member 리포지토리
+ * @returns contributor용 그룹 프로필 맵과 requester 권한 맵
+ */
 async function loadGroupMemberContext(
   activeContributors: ActiveContributor[],
   postById: Map<string, Post>,
@@ -355,6 +408,14 @@ async function loadGroupMemberContext(
   return { groupMemberMap, groupRoleByGroupId };
 }
 
+/**
+ * contributor 정보를 피드 응답 형태로 post 단위 그룹핑한다.
+ *
+ * @param activeContributors 활성 contributor 목록
+ * @param postById post ID -> post 맵
+ * @param groupMemberMap group member 프로필 맵
+ * @returns post ID 기준 contributor DTO 맵
+ */
 function mapContributorsByPostId(
   activeContributors: ActiveContributor[],
   postById: Map<string, Post>,
@@ -386,6 +447,14 @@ function mapContributorsByPostId(
   return contributorsByPostId;
 }
 
+/**
+ * 게시글 스코프와 requester 관계를 기준으로 피드 권한 값을 계산한다.
+ *
+ * @param post 대상 게시글
+ * @param requesterId 요청자 사용자 ID
+ * @param groupRoleByGroupId requester의 그룹별 역할 맵
+ * @returns 피드 카드 권한 값
+ */
 function resolveFeedPermission(
   post: Post,
   requesterId: string,
@@ -397,6 +466,13 @@ function resolveFeedPermission(
   return post.ownerUserId === requesterId ? 'OWNER' : null;
 }
 
+/**
+ * 게시글/메타 맵을 바탕으로 최종 FeedCardResponseDto 목록과 경고 목록을 만든다.
+ *
+ * @param posts 피드 게시글 목록
+ * @param context 카드 조립에 필요한 조회 결과 컨텍스트
+ * @returns 카드 목록과 경고 목록
+ */
 function mapPostsToFeedCards(
   posts: Post[],
   context: {
