@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: '기억과 맥락을 이어주는 기록 서비스',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#ffffff',
+    background_color: '#10b981',
+    theme_color: '#10b981',
     screenshots: [
       // {
       //   src: '/screenshots/mobile.png',
