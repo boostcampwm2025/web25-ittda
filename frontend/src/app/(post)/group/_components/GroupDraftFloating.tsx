@@ -76,7 +76,7 @@ export default function GroupDraftFloatingButton({
   };
 
   return (
-    <div className="sticky bottom-20 sm:bottom-30 z-50 w-full flex justify-end pr-1 sm:pr-5 pointer-events-none">
+    <div className="fixed bottom-16 sm:bottom-24 left-0 right-0 max-w-4xl mx-auto px-4 py-3 pb-4 z-50 w-full flex justify-end pr-4 sm:pr-6 pointer-events-none">
       <div className="pointer-events-auto">
         <Popover>
           {/* 플로팅 버튼 */}
