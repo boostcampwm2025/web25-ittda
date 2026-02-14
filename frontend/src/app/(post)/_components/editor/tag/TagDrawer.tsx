@@ -123,9 +123,14 @@ export default function TagDrawer({
       <DrawerContent>
         <div className="w-full p-8 pb-12">
           <DrawerHeader className="px-0 items-start text-left">
-            <DrawerTitle className="text-xl font-bold text-itta-black dark:text-white">
-              태그 추가하기
-            </DrawerTitle>
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                SELECT TAGS
+              </span>
+              <DrawerTitle className="text-lg font-bold">
+                태그 추가하기
+              </DrawerTitle>
+            </div>
           </DrawerHeader>
 
           {/* 현재 선택된 태그 리스트 */}
