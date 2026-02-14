@@ -93,9 +93,14 @@ export default function RatingDrawer({
       <DrawerContent>
         <div className="w-full px-8 pt-4 pb-10">
           <DrawerHeader className="px-0 items-start text-left">
-            <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-              평가 남기기
-            </DrawerTitle>
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                SELECT RATING
+              </span>
+              <DrawerTitle className="text-lg font-bold">
+                평가 남기기
+              </DrawerTitle>
+            </div>
           </DrawerHeader>
 
           <div className="flex flex-col items-center gap-8 my-4">

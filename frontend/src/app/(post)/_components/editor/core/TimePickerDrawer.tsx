@@ -274,7 +274,7 @@ export default function TimePickerDrawer({
             </DrawerClose>
             <button
               onClick={handleApply}
-              className="flex-[2] py-4 rounded-2xl font-bold bg-itta-point text-white shadow-lg shadow-itta-point/20 active:scale-95 transition-transform"
+              className="flex-[2] py-4 rounded-2xl font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-lg shadow-itta-point/20 active:scale-95 transition-transform"
             >
               적용하기
             </button>

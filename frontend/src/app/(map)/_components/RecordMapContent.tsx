@@ -281,7 +281,7 @@ export default function RecordMapContent({
               >
                 <ChevronLeft className="w-6 h-6 dark:text-gray-300 text-gray-400" />
               </button>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <MapSearchBar
                   onSelect={handleSelectPlace}
                   placeholder="장소를 검색하세요"

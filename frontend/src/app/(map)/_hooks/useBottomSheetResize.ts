@@ -4,14 +4,16 @@ interface UseBottomSheetResizeProps {
   topOffset?: number; // PWA 배너 등의 상단 오프셋
 }
 
-export function useBottomSheetResize({ topOffset = 0 }: UseBottomSheetResizeProps = {}) {
+export function useBottomSheetResize({
+  topOffset = 0,
+}: UseBottomSheetResizeProps = {}) {
   // 각 window.innerHeight 을 기반으로 최소/최대 조정하기 위함
   const snapPoints = useMemo(() => {
     if (typeof window === 'undefined') {
       return { collapsed: 170, half: 500, full: 900 };
     }
     // collapsed 높이를 네비게이션바(약 64-80px) + 충분한 여유 + topOffset을 고려하여 설정
-    const baseCollapsed = Math.max(150, window.innerHeight * 0.175);
+    const baseCollapsed = Math.max(150, window.innerHeight * 0.1);
     return {
       collapsed: baseCollapsed + topOffset,
       half: window.innerHeight * 0.5,

@@ -50,7 +50,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
   const [manualType, setManualType] = useState('영화');
   const [manualTitle, setManualTitle] = useState('');
   const [manualYear, setManualYear] = useState('2026');
-
+  const isActive = !isManualInput || manualTitle.trim().length > 0;
   const searchMedia = async (q: string, type: string) => {
     let data: MediaValue[] = [];
     if (type === '영화') {
@@ -212,14 +212,13 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
               onClick={() =>
                 isManualInput ? handleManualSubmit() : setIsManualInput(true)
               }
-              disabled={isManualInput && !manualTitle.trim()}
-              className={`w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-xl transition-all active:scale-95 ${
-                isManualInput
-                  ? manualTitle.trim()
-                    ? 'bg-itta-black text-white'
-                    : 'bg-gray-200 text-gray-400'
-                  : 'bg-itta-black text-white dark:bg-white dark:text-[#121212]'
-              }`}
+              disabled={!isActive}
+              className={cn(
+                'w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-xl transition-all',
+                isActive
+                  ? 'bg-itta-black text-white dark:bg-white dark:text-[#121212] active:scale-95'
+                  : 'bg-gray-200 text-gray-400 dark:bg-white/5 dark:text-gray-600 cursor-not-allowed shadow-none',
+              )}
             >
               {isManualInput ? (
                 <>정보 입력 완료</>

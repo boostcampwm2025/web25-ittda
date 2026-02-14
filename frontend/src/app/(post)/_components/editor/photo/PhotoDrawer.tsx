@@ -57,9 +57,14 @@ export default function PhotoDrawer({
       <DrawerContent className="h-[80vh] flex flex-col outline-none">
         <div className="w-full px-6 pt-4 pb-10 flex flex-col h-full overflow-hidden">
           <DrawerHeader className="px-0 items-start text-left flex flex-row justify-between">
-            <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-              사진 관리 ({allPhotos.length})
-            </DrawerTitle>
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                SELECT PHOTOS
+              </span>
+              <DrawerTitle className="text-lg font-bold">
+                사진 관리 ({allPhotos.length})
+              </DrawerTitle>
+            </div>
             {!draftId && onEditMetadata && allPhotos.length > 0 && (
               <button
                 onClick={onEditMetadata}
