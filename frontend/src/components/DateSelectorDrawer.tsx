@@ -192,7 +192,7 @@ export default function DateSelectorDrawer({
                         setIsPickingMonth(false);
                       }}
                       className={cn(
-                        'cursor-pointer py-4 rounded-2xl text-sm font-bold transition-all',
+                        'cursor-pointer py-3 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all',
                         currentDate.getMonth() === i
                           ? 'bg-[#10B981] text-white shadow-lg'
                           : 'dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-500',
@@ -222,7 +222,7 @@ export default function DateSelectorDrawer({
                     ),
                   )}
                   {Array.from({ length: firstDayIndex }).map((_, i) => (
-                    <div key={`empty-${i}`} />
+                    <div key={`empty-${i}`} className="aspect-square" />
                   ))}
                   {calendarDays.map((date) => {
                     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -261,6 +261,11 @@ export default function DateSelectorDrawer({
                       </button>
                     );
                   })}
+                  {Array.from({
+                    length: 42 - firstDayIndex - calendarDays.length,
+                  }).map((_, i) => (
+                    <div key={`empty-end-${i}`} className="aspect-square" />
+                  ))}
                 </div>
               )}
             </div>
