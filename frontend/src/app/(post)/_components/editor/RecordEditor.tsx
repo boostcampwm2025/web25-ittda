@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, User } from 'lucide-react';
 
 // 컴포넌트 및 필드 임포트
 import RecordEditorHeader from './RecordEditorHeader';
@@ -36,8 +36,8 @@ import {
   isRecordBlockEmpty,
   validateAndCleanRecord,
 } from '../../_utils/recordLayoutHelper';
-import SaveTemplateDrawer from './core/SaveTemplateDrawer';
-import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
+// import SaveTemplateDrawer from './core/SaveTemplateDrawer';
+// import LayoutTemplateDrawer from './core/LayoutTemplateDrawer';
 import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
 import { usePostEditorBlocks } from '../../_hooks/usePostEditorBlocks';
 import { useCreateRecord } from '@/hooks/useCreateRecord';
@@ -104,6 +104,7 @@ export default function PostEditor({
     setTitle,
     initialPost?.version, // 초기 버전 주입
   );
+  console.log('postID있나', postId);
   const { execute } = useCreateRecord(groupId, postId, {
     onError: () => {
       setIsPublishing(false);
@@ -118,7 +119,7 @@ export default function PostEditor({
     handleDone,
     addOrShowBlock,
     removeBlock,
-    handleApplyTemplate,
+    //handleApplyTemplate,
   } = usePostEditorBlocks({
     blocks,
     setBlocks,
@@ -656,11 +657,16 @@ export default function PostEditor({
       )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <div className="mx-6 mt-3 flex flex-row gap-2">
-        {group?.group.name && (
+        {group?.group.name ? (
           <div className=" px-3 w-fit items-center rounded-full py-1 text-[13px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
             <span className="truncate inline-block align-bottom">
               {group?.group.name}
             </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 px-3 py-1 rounded-full text-[13px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+            <User className="w-3.5 h-3.5" />
+            <span>개인</span>
           </div>
         )}
         {draftId && (
