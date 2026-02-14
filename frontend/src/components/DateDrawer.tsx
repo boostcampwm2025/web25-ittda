@@ -179,7 +179,7 @@ export default function DateDrawer({
                 </div>
               ))}
               {Array.from({ length: firstDayIndex }).map((_, i) => (
-                <div key={`empty-${i}`} className="h-12" />
+                <div key={`empty-start-${i}`} className="aspect-square" />
               ))}
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const d = i + 1;
@@ -234,6 +234,11 @@ export default function DateDrawer({
                   </div>
                 );
               })}
+              {Array.from({
+                length: 42 - firstDayIndex - daysInMonth,
+              }).map((_, i) => (
+                <div key={`empty-end-${i}`} className="aspect-square" />
+              ))}
             </div>
 
             {/* 버튼 섹션 */}
