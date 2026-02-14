@@ -89,9 +89,20 @@ export default function DateDrawer({
   };
 
   const handleSelectMonth = () => {
-    const firstDate = formatDateISO(new Date(year, month, 1));
-    const lastDate = formatDateISO(new Date(year, month + 1, 0));
-    setTempRange({ start: firstDate, end: lastDate });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const firstDateOfMonth = new Date(year, month, 1);
+    if (firstDateOfMonth > today) return;
+
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    // 오늘 이 달의 마지막 날 중 더 빠른 날짜를 종료일로
+    const endDate = lastDayOfMonth > today ? today : lastDayOfMonth;
+
+    setTempRange({
+      start: formatDateISO(firstDateOfMonth),
+      end: formatDateISO(endDate),
+    });
   };
 
   return (
