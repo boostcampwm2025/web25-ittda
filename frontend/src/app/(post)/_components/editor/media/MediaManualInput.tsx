@@ -67,7 +67,7 @@ export const MediaManualInput = ({
           placeholder="직접 입력해 주세요"
           value={manualTitle}
           onChange={(e) => setManualTitle(e.target.value)}
-          className="w-full bg-transparent border-b border-gray-100 dark:border-white/10 py-3 text-xl font-bold text-[#333] dark:text-white outline-none focus:border-itta-point transition-colors placeholder:text-gray-200"
+          className="w-full bg-transparent border-b border-gray-100 dark:border-white/10 py-3 text-xl font-bold text-[#333] dark:text-white outline-none focus:border-itta-point transition-colors"
         />
       </section>
 

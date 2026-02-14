@@ -165,7 +165,7 @@ export default function TagSearchDrawer({
             </button>
             <button
               onClick={onClose}
-              className="flex-1 py-4 bg-itta-black dark:bg-white/5 border border-gray-50 dark:border-white/5 rounded-2xl text-white font-bold text-sm shadow-sm active:scale-95 transition-all"
+              className="flex-1 py-4 bg-itta-black text-white dark:bg-white dark:text-black border border-gray-50 dark:border-white/5 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-all"
             >
               완료
             </button>
