@@ -134,23 +134,23 @@ export default function TagSearchDrawer({
                     </button>
                   );
                 })}
-                {suggestedTags?.length === 0 && (
-                  <div className="flex px-3 py-10 items-center justify-center h-full">
-                    <div className="w-full py-8 flex flex-col items-center justify-center gap-2">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
-                        <Tag className="w-5 h-5 text-[#10B981]" />
-                      </div>
-                      <div className="space-y-1 text-center">
-                        <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
-                          아직 사용한 태그가 없어요
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          태그를 추가하여 기록을 분류해보세요
-                        </p>
-                      </div>
-                    </div>
+              </div>
+            )}
+            {suggestedTags?.length === 0 && (
+              <div className="flex items-center justify-center h-full">
+                <div className="w-full py-2 flex flex-col items-center justify-center gap-2">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+                    <Tag className="w-5 h-5 text-[#10B981]" />
                   </div>
-                )}
+                  <div className="space-y-1 text-center">
+                    <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+                      아직 사용한 태그가 없어요
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      태그를 추가하여 기록을 분류해보세요
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </section>
