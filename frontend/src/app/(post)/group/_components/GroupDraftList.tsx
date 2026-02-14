@@ -21,6 +21,17 @@ export default function GroupDraftList({
 
   if (!groupId) return null;
 
+  const getDraftUrl = (draft: GroupDraftListItem) => {
+    const baseUrl = `/group/${groupId}/post/${draft.draftId}`;
+
+    // 수정 모드일 경우 쿼리 파라미터 추가
+    if (draft.kind === 'EDIT' && draft.targetPostId) {
+      return `${baseUrl}?mode=edit&postId=${draft.targetPostId}`;
+    }
+
+    return baseUrl;
+  };
+
   return (
     <section className="space-y-3">
       {drafts.length === 0 ? (
@@ -39,10 +50,7 @@ export default function GroupDraftList({
               <button
                 key={draft.draftId}
                 type="button"
-                onClick={() =>
-                  !isViewer &&
-                  router.push(`/group/${groupId}/post/${draft.draftId}`)
-                }
+                onClick={() => !isViewer && router.push(getDraftUrl(draft))}
                 disabled={isViewer}
                 className={cn(
                   'w-full text-left rounded-2xl border p-4 shadow-sm transition-all',
