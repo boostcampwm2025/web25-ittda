@@ -8,6 +8,7 @@ import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
 import { ActivityMessage } from './ActivityMessage';
 import { getActivityTypeTheme } from '../_utils/activityHelper';
+import { formatDateDot, formatDateTime } from '@/lib/date';
 
 interface ActivityItemProps {
   activity: GroupActivityItem;
@@ -22,6 +23,7 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
     iconColor,
   } = getActivityTypeTheme(activity.type);
   const firstActor = activity.actors[0];
+  const activityDate = new Date(activity.createdAt);
 
   const handleClick = () => {
     // refId가 있으면 해당 기록으로 이동
@@ -84,12 +86,20 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
         <div className="text-[15px] leading-relaxed">
           <ActivityMessage activity={activity} />
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+
+        {/* 절대 시간 */}
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">
+          {`${formatDateDot(activityDate)} ${formatDateTime(activityDate).time}`}
+        </span>
+        <span className="text-[10px] text-gray-300 dark:text-gray-600 mx-1">
+          •
+        </span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 mt-2">
           {formatDistanceToNow(new Date(activity.createdAt), {
             addSuffix: true,
             locale: ko,
           })}
-        </p>
+        </span>
       </div>
     </div>
   );
