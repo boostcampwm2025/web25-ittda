@@ -104,7 +104,6 @@ export default function PostEditor({
     setTitle,
     initialPost?.version, // 초기 버전 주입
   );
-  console.log('postID있나', postId);
   const { execute } = useCreateRecord(groupId, postId, {
     onError: () => {
       setIsPublishing(false);
