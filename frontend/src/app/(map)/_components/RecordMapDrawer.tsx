@@ -107,7 +107,7 @@ export default function RecordMapDrawer({
   return (
     <div
       className={cn(
-        'fixed left-0 right-0 bottom-0 z-50 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-hidden shadow-[0_-15px_60px_rgba(0,0,0,0.2)]',
+        'fixed left-0 right-0 bottom-0 z-50 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-hidden shadow-[0_-15px_60px_rgba(0,0,0,0.2)] max-w-4xl mx-auto',
         !isDragging &&
           'transition-all duration-500 cubic-bezier(0.2,0.8,0.2,1)',
       )}
