@@ -47,5 +47,12 @@ export default async function AddPostPage({ searchParams }: AddPostPageProps) {
     logger.error('post editor 데이터 로드 실패', error);
   }
 
-  return <PostEditor groupId={groupId} mode={mode} initialPost={initialPost} />;
+  return (
+    <PostEditor
+      groupId={groupId}
+      postId={postId}
+      mode={mode}
+      initialPost={initialPost}
+    />
+  );
 }
