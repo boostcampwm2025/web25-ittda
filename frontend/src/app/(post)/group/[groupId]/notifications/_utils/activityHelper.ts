@@ -104,5 +104,7 @@ export const getActorText = (actors: GroupActivityItem['actors']) => {
   const names = actors
     .map((a) => a.groupNickname || a.nickname || '익명')
     .slice(0, 3);
-  return names.length > 1 ? `${names[0]} 외 ${names.length - 1}명` : names[0];
+  return names.length > 1
+    ? `${names[0]}님 외 ${names.length - 1}명`
+    : `${names[0]}님`;
 };
