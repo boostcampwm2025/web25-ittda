@@ -153,7 +153,7 @@ export default function GalleryDrawer({
         </div>
       )}
       <ResetDefaultCoverButton />
-      <DrawerClose className="cursor-pointer w-full py-4 rounded-2xl font-bold text-sm dark:bg-white dark:text-black bg-itta-black text-white shrink-0">
+      <DrawerClose className="cursor-pointer w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm dark:bg-white dark:text-black bg-itta-black text-white shrink-0">
         닫기
       </DrawerClose>
     </div>
