@@ -108,3 +108,21 @@ export const getActorText = (actors: GroupActivityItem['actors']) => {
     ? `${names[0]}님 외 ${names.length - 1}명`
     : `${names[0]}님`;
 };
+
+export const getActorParts = (actors: GroupActivityItem['actors']) => {
+  const names = actors
+    .map((a) => a.groupNickname || a.nickname || '익명')
+    .slice(0, 3);
+
+  if (names.length > 1) {
+    return {
+      name: names[0],
+      suffix: `님 외 ${names.length - 1}명`,
+    };
+  }
+
+  return {
+    name: names[0],
+    suffix: '님',
+  };
+};
