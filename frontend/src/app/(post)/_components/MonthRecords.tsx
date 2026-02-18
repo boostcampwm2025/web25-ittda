@@ -148,7 +148,7 @@ export default function MonthRecords({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 pb-16 sm:pb-32">
         {months.map((m) => (
           <RecordCard
             key={m.id}

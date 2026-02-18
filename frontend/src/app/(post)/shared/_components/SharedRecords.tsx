@@ -151,7 +151,7 @@ export default function SharedRecords({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 pb-16 sm:pb-32">
         {sortedGroups.map((g) => {
           const isViewer = g.permission === 'VIEWER';
           return (
