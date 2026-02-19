@@ -2,35 +2,29 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDateISO } from '@/lib/date';
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { recordPreviewListOptions } from '@/lib/api/records';
 import BlockContent from '@/components/BlockContent';
 import { Block } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { BookOpen, Plus, Users, User } from 'lucide-react';
-import { RecordPreview } from '@/lib/types/recordResponse';
 
 type ImageLayout = 'carousel' | 'tile' | 'responsive';
 
 interface RecordListProps {
-  initialPreviews: RecordPreview[];
   imageLayout?: ImageLayout;
 }
 
-export default function RecordList({
-  initialPreviews,
-  imageLayout = 'tile',
-}: RecordListProps) {
+export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // URL에서 date 파라미터 읽기, 없으면 오늘 날짜
   const selectedDateStr = searchParams.get('date') || formatDateISO();
 
-  const { data: records = [] } = useQuery({
-    ...recordPreviewListOptions(selectedDateStr),
-    initialData: initialPreviews,
-  });
+  const { data: records } = useSuspenseQuery(
+    recordPreviewListOptions(selectedDateStr),
+  );
 
   return (
     <div className="space-y-3 sm:space-y-4 w-full">
@@ -67,7 +61,7 @@ export default function RecordList({
 
                       {/* 그룹명 전용 뱃지 (동그란 점 포함) */}
                       <div className="px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-                        <span className="truncate max-w-[60px] sm:max-w-[70px] inline-block align-bottom">
+                        <span className="truncate max-w-15 sm:max-w-17.5 inline-block align-bottom">
                           {record.groupName}
                         </span>
                       </div>

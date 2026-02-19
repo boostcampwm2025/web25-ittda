@@ -1,14 +1,16 @@
 import DailyDetailRecords from '../../../../../components/DailyDetailRecords';
+import DailyDetailRecordsSkeleton from '@/components/DailyDetailRecordsSkeleton';
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 import Back from '@/components/Back';
-import { getCachedRecordPreviewList } from '@/lib/api/records';
+import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
+import ErrorFallback from '@/components/ErrorFallback';
 import { createMockRecordPreviews } from '@/lib/mocks/mock';
-import { RecordPreview } from '@/lib/types/recordResponse';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
+import { recordPreviewListOptions } from '@/lib/api/records';
 
 interface MyMonthlyDetailPageProps {
   params: Promise<{ date: string }>;
@@ -20,15 +22,13 @@ export default async function MyDateDetailPage({
   const { date } = await params;
   const queryClient = new QueryClient();
 
-  let records: RecordPreview[];
-
-  if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    records = await getCachedRecordPreviewList(date, 'personal');
-
-    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
-    queryClient.setQueryData(['records', 'preview', date, 'personal'], records);
+  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
+    queryClient.setQueryData(
+      ['records', 'preview', date, 'personal'],
+      createMockRecordPreviews(date),
+    );
   } else {
-    records = createMockRecordPreviews(date);
+    await queryClient.prefetchQuery(recordPreviewListOptions(date, 'personal'));
   }
 
   return (
@@ -48,15 +48,12 @@ export default async function MyDateDetailPage({
 
       <div className="py-4 sm:py-6">
         <HydrationBoundary state={dehydrate(queryClient)}>
-          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
-            <DailyDetailRecords
-              memories={records}
-              date={date}
-              scope="personal"
-            />
-          ) : (
+          <ErrorHandlingWrapper
+            fallbackComponent={ErrorFallback}
+            suspenseFallback={<DailyDetailRecordsSkeleton />}
+          >
             <DailyDetailRecords date={date} scope="personal" />
-          )}
+          </ErrorHandlingWrapper>
         </HydrationBoundary>
         <DailyDetailFloatingActions date={date} />
       </div>

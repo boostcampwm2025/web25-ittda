@@ -12,28 +12,26 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { BookOpen, Plus, X } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MontlyCoverUpdateResponse,
   MonthlyRecordList,
 } from '@/lib/types/recordResponse';
 import { useApiPatch } from '@/hooks/useApi';
 import { myMonthlyRecordListOptions } from '@/lib/api/my';
-import { convertMontRecords } from '../_utils/convertMonthRecords';
+
 import {
   groupMonthlyRecordListOptions,
   groupMyRoleOptions,
 } from '@/lib/api/group';
 
 interface MonthRecordsProps {
-  monthRecords?: MonthlyRecordList[];
   cardRoute: string;
   groupId?: string;
 }
 
 export default function MonthRecords({
   groupId,
-  monthRecords,
   cardRoute,
 }: MonthRecordsProps) {
   const queryClient = useQueryClient();
@@ -48,11 +46,7 @@ export default function MonthRecords({
     ? groupMonthlyRecordListOptions(groupId, year)
     : myMonthlyRecordListOptions(year);
 
-  const { data: months = [] } = useQuery({
-    ...options,
-    ...(monthRecords && { initialData: monthRecords }),
-    select: (data: MonthlyRecordList[]) => convertMontRecords(data),
-  });
+  const { data: months } = useSuspenseQuery(options);
 
   // 그룹 게시글인 경우 권한 확인
   const { data: roleData } = useQuery({

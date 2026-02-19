@@ -1,12 +1,14 @@
-import { getCachedGroupMyProfile } from '@/lib/api/group';
 import GroupProfileEditClient from './_components/GroupProfileEditClient';
+import GroupProfileEditSkeleton from './_components/GroupProfileEditSkeleton';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { GroupMemberProfileResponse } from '@/lib/types/groupResponse';
-import { createMockGroupMyProfile } from '@/lib/mocks/mock';
+import { groupDetailOptions } from '@/lib/api/group';
+import { createMockGroupSettings } from '@/lib/mocks/mock';
+import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
+import ErrorFallback from '@/components/ErrorFallback';
 
 export default async function GroupProfileEditPage({
   params,
@@ -15,23 +17,24 @@ export default async function GroupProfileEditPage({
 }) {
   const { groupId } = await params;
   const queryClient = new QueryClient();
-  let profileData: GroupMemberProfileResponse;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    profileData = await getCachedGroupMyProfile(groupId);
+    await queryClient.prefetchQuery(groupDetailOptions(groupId));
   } else {
-    profileData = createMockGroupMyProfile(groupId);
+    queryClient.setQueryData(
+      groupDetailOptions(groupId).queryKey,
+      createMockGroupSettings(groupId),
+    );
   }
-
-  const groupProfile = {
-    id: profileData.userId,
-    nickname: profileData.nicknameInGroup,
-    profileImageId: profileData.cover?.assetId ?? null, // TODO: 이미지 추후 별도 로직 추가
-  };
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <GroupProfileEditClient groupId={groupId} groupProfile={groupProfile} />
+      <ErrorHandlingWrapper
+        fallbackComponent={ErrorFallback}
+        suspenseFallback={<GroupProfileEditSkeleton />}
+      >
+        <GroupProfileEditClient groupId={groupId} />
+      </ErrorHandlingWrapper>
     </HydrationBoundary>
   );
 }

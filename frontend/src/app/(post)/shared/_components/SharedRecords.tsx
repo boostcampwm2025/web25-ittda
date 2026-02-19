@@ -12,7 +12,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Users, X } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { groupListOptions } from '@/lib/api/group';
 import {
   GroupCoverUpdateResponse,
@@ -23,7 +23,6 @@ import { useApiPatch } from '@/hooks/useApi';
 
 interface SharedRecordProps {
   searchParams: string;
-  initialGroups?: GroupSummary[];
 }
 
 const sortGroups = (
@@ -45,15 +44,11 @@ const sortGroups = (
 
 export default function SharedRecords({
   searchParams,
-  initialGroups = [],
 }: SharedRecordProps) {
   const queryClient = useQueryClient();
   const sortBy = (searchParams as GroupSortOption) || 'latest';
 
-  const { data: groups = initialGroups } = useQuery({
-    ...groupListOptions(),
-    initialData: initialGroups,
-  });
+  const { data: groups } = useSuspenseQuery(groupListOptions());
 
   const sortedGroups = useMemo(() => {
     if (sortBy === 'latest') return groups;

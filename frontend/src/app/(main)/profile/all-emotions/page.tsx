@@ -1,35 +1,37 @@
 import {
-  getCachedUserProfile,
-  getCachedUserEmotionSummary,
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+import {
+  userProfileOptions,
+  userProfileEmotionSummaryOptions,
 } from '@/lib/api/profile';
-import EmotionList from './_components/EmotionList';
 import ProfileAllEmotionsHeaderActions from './_components/ProfileAllEmotionsHeaderActions';
+import AllEmotionsContent from './_components/AllEmotionsContent';
+import AllEmotionsSkeleton from './_components/AllEmotionsSkeleton';
+import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
+import ErrorFallback from '@/components/ErrorFallback';
 
 export default async function ProfileAllEmotionsPage() {
-  const [emotionData, profile] = await Promise.all([
-    getCachedUserEmotionSummary(),
-    getCachedUserProfile(),
+  const queryClient = new QueryClient();
+
+  await Promise.all([
+    queryClient.prefetchQuery(userProfileOptions()),
+    queryClient.prefetchQuery(userProfileEmotionSummaryOptions()),
   ]);
 
   return (
     <div className="w-full pb-20 flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
       <ProfileAllEmotionsHeaderActions />
-
-      <div className="p-4 sm:p-5">
-        <div className="rounded-xl p-4 sm:p-6 transition-colors dark:bg-white/5 bg-gray-50">
-          <p className="text-[13px] sm:text-sm leading-relaxed mb-1 dark:text-gray-400 text-gray-500">
-            <span className="font-bold">{profile.user.nickname}</span> 님은
-          </p>
-          <p className="text-[13px] sm:text-sm leading-relaxed dark:text-gray-400 text-gray-500">
-            <span className="font-black text-itta-black dark:text-white">
-              {emotionData.emotion.length}
-            </span>
-            &nbsp;개의 감정을 사용하고 있어요.
-          </p>
-        </div>
-
-        <EmotionList emotions={emotionData.emotion} />
-      </div>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <ErrorHandlingWrapper
+          fallbackComponent={ErrorFallback}
+          suspenseFallback={<AllEmotionsSkeleton />}
+        >
+          <AllEmotionsContent />
+        </ErrorHandlingWrapper>
+      </HydrationBoundary>
     </div>
   );
 }

@@ -1,35 +1,37 @@
-import ProfileAllTagsHeaderActions from './_components/ProfileAllTagsHeaderActions';
-import TagList from './_components/TagList';
 import {
-  getCachedUserProfile,
-  getCachedUserTagSummary,
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+import {
+  userProfileOptions,
+  userProfileTagSummaryOptions,
 } from '@/lib/api/profile';
+import ProfileAllTagsHeaderActions from './_components/ProfileAllTagsHeaderActions';
+import AllTagsContent from './_components/AllTagsContent';
+import AllTagsSkeleton from './_components/AllTagsSkeleton';
+import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
+import ErrorFallback from '@/components/ErrorFallback';
 
 export default async function ProfileAllTagsPage() {
-  const [tagData, profile] = await Promise.all([
-    getCachedUserTagSummary(),
-    getCachedUserProfile(),
+  const queryClient = new QueryClient();
+
+  await Promise.all([
+    queryClient.prefetchQuery(userProfileOptions()),
+    queryClient.prefetchQuery(userProfileTagSummaryOptions()),
   ]);
 
   return (
     <div className="w-full pb-20 flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
       <ProfileAllTagsHeaderActions />
-
-      <div className="p-4 sm:p-5">
-        <div className="rounded-xl p-4 sm:p-6 transition-colors dark:bg-white/5 bg-gray-50">
-          <p className="text-[13px] sm:text-sm leading-relaxed mb-1 dark:text-gray-400 text-gray-500">
-            <span className="font-bold">{profile.user.nickname}</span> 님은
-          </p>
-          <p className="text-[13px] sm:text-sm leading-relaxed dark:text-gray-400 text-gray-500">
-            <span className="font-black text-itta-black dark:text-white">
-              {tagData.frequentTags.length}
-            </span>
-            &nbsp;개의 태그를 사용하고 있어요.
-          </p>
-        </div>
-
-        <TagList tags={tagData} />
-      </div>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <ErrorHandlingWrapper
+          fallbackComponent={ErrorFallback}
+          suspenseFallback={<AllTagsSkeleton />}
+        >
+          <AllTagsContent />
+        </ErrorHandlingWrapper>
+      </HydrationBoundary>
     </div>
   );
 }

@@ -1,14 +1,16 @@
 import MonthlyDetailHeaderActions from '@/app/(post)/_components/MonthlyDetailHeaderActions';
 import MonthlyDetailRecords from '@/app/(post)/_components/MonthlyDetailRecords';
-import { getCachedGroupDailyRecordList } from '@/lib/api/group';
+import MonthlyDetailRecordsSkeleton from '@/app/(post)/_components/MonthlyDetailRecordsSkeleton';
+import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
+import ErrorFallback from '@/components/ErrorFallback';
 import { getMonthRange } from '@/lib/date';
 import { createMockGroupDailyRecords } from '@/lib/mocks/mock';
-import { DailyRecordList } from '@/lib/types/recordResponse';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
+import { groupDailyRecordListOptions } from '@/lib/api/group';
 
 interface GroupMonthlyDetailPageProps {
   params: Promise<{ month: string; groupId: string }>;
@@ -18,20 +20,15 @@ export default async function GroupMonthlyDetailPage({
   params,
 }: GroupMonthlyDetailPageProps) {
   const { groupId, month } = await params;
-
-  let dailyRecords: DailyRecordList[];
   const queryClient = new QueryClient();
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
-    dailyRecords = createMockGroupDailyRecords();
-  } else {
-    dailyRecords = await getCachedGroupDailyRecordList(groupId, month);
-
-    // QueryClient에 원본 데이터를 저장 (select 함수가 클라이언트에서 변환)
     queryClient.setQueryData(
       ['group', groupId, 'records', 'daily', month],
-      dailyRecords,
+      createMockGroupDailyRecords(),
     );
+  } else {
+    await queryClient.prefetchQuery(groupDailyRecordListOptions(groupId, month));
   }
 
   const { startDate, endDate } = getMonthRange(month);
@@ -45,23 +42,17 @@ export default async function GroupMonthlyDetailPage({
 
       <div className="p-4 sm:p-6 pb-28 sm:pb-40">
         <HydrationBoundary state={dehydrate(queryClient)}>
-          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
+          <ErrorHandlingWrapper
+            fallbackComponent={ErrorFallback}
+            suspenseFallback={<MonthlyDetailRecordsSkeleton />}
+          >
             <MonthlyDetailRecords
               groupId={groupId}
               month={month}
-              serverSideData={dailyRecords}
               routePath={`/group/${groupId}/detail`}
               viewMapRoutePath={`/group/${groupId}/map?start=${startDate}&end=${endDate}`}
             />
-          ) : (
-            <MonthlyDetailRecords
-              groupId={groupId}
-              month={month}
-              serverSideData={dailyRecords}
-              routePath={`/group/${groupId}/detail`}
-              viewMapRoutePath={`/group/${groupId}/map?start=${startDate}&end=${endDate}`}
-            />
-          )}
+          </ErrorHandlingWrapper>
         </HydrationBoundary>
       </div>
     </div>

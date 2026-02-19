@@ -52,7 +52,8 @@ export default function GalleryDrawer({
     return personalQuery;
   }, [type, month, groupMonthlyQuery, groupQuery, personalQuery]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = currentQuery;
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    currentQuery;
 
   const items = (data?.pages ?? []).flatMap((page) =>
     (page?.sections ?? []).flatMap((section) => section.items ?? []),
@@ -82,7 +83,16 @@ export default function GalleryDrawer({
 
   return (
     <div className="flex flex-col w-full gap-2.5">
-      {items.length === 0 ? (
+      {isPending ? (
+        <div className="p-1 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 sm:gap-2 max-h-[40vh] sm:max-h-[45vh] overflow-hidden mb-6 sm:mb-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
         <div className="py-14 sm:py-20 flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4 rounded-2xl sm:rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/5">
           <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white dark:bg-neutral-800 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm">
             <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300 dark:text-neutral-600" />

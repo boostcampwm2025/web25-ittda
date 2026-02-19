@@ -1,34 +1,33 @@
 import MonthRecords from '@/app/(post)/_components/MonthRecords';
-import { getCachedMyMonthlyRecordList } from '@/lib/api/my';
+import MonthRecordsSkeleton from '@/app/(post)/_components/MonthRecordsSkeleton';
+import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
+import ErrorFallback from '@/components/ErrorFallback';
 import { createMockMonthlyRecord } from '@/lib/mocks/mock';
-import { MonthlyRecordList } from '@/lib/types/recordResponse';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
+import { myMonthlyRecordListOptions } from '@/lib/api/my';
 
 export default async function MyRecordsPage() {
-  let monthlyRecords: MonthlyRecordList[];
   const queryClient = new QueryClient();
+  const year = String(new Date().getFullYear());
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
-    monthlyRecords = createMockMonthlyRecord();
+    queryClient.setQueryData(['my', 'records', 'month', year], createMockMonthlyRecord());
   } else {
-    const year = String(new Date().getFullYear());
-    monthlyRecords = await getCachedMyMonthlyRecordList(year);
-
-    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
-    queryClient.setQueryData(['my', 'records', 'month', year], monthlyRecords);
+    await queryClient.prefetchQuery(myMonthlyRecordListOptions(year));
   }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
-        <MonthRecords monthRecords={monthlyRecords} cardRoute={'/my/month'} />
-      ) : (
-        <MonthRecords monthRecords={monthlyRecords} cardRoute={'/my/month'} />
-      )}
+      <ErrorHandlingWrapper
+        fallbackComponent={ErrorFallback}
+        suspenseFallback={<MonthRecordsSkeleton />}
+      >
+        <MonthRecords cardRoute={'/my/month'} />
+      </ErrorHandlingWrapper>
     </HydrationBoundary>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { userProfileOptions } from '@/lib/api/profile';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -9,34 +9,7 @@ import AssetImage from '@/components/AssetImage';
 export default function Profile() {
   const router = useRouter();
 
-  const {
-    data: userProfile,
-    isLoading,
-    isError,
-  } = useQuery(userProfileOptions());
-
-  if (isLoading) {
-    return (
-      <div className="rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs border flex items-center gap-3 sm:gap-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100 animate-pulse">
-        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-gray-200 dark:bg-gray-700" />
-        <div className="flex-1">
-          <div className="h-5 sm:h-5 w-20 sm:w-24 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-          <div className="h-4 w-24 sm:w-32 bg-gray-200 dark:bg-gray-700 rounded mb-2.5 sm:mb-3" />
-          <div className="h-5.5 sm:h-7 w-16 sm:w-20 bg-gray-200 dark:bg-gray-700 rounded" />
-        </div>
-      </div>
-    );
-  }
-
-  if (isError || !userProfile) {
-    return (
-      <div className="rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs border flex items-center justify-center transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-          프로필을 불러올 수 없습니다.
-        </p>
-      </div>
-    );
-  }
+  const { data: userProfile } = useSuspenseQuery(userProfileOptions());
 
   return (
     <div className="rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs border flex items-center gap-3 sm:gap-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">

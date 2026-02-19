@@ -1,14 +1,16 @@
 import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 import DailyDetailRecords from '@/components/DailyDetailRecords';
+import DailyDetailRecordsSkeleton from '@/components/DailyDetailRecordsSkeleton';
 import Back from '@/components/Back';
+import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
+import ErrorFallback from '@/components/ErrorFallback';
 import { createMockRecordPreviews } from '@/lib/mocks/mock';
-import { RecordPreview } from '@/lib/types/recordResponse';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { getCachedRecordPreviewList } from '@/lib/api/records';
+import { recordPreviewListOptions } from '@/lib/api/records';
 
 interface GroupDailyDetailPageProps {
   params: Promise<{ date: string; groupId: string }>;
@@ -20,19 +22,13 @@ export default async function GroupDailyDetailPage({
   const { date, groupId } = await params;
   const queryClient = new QueryClient();
 
-  let records: RecordPreview[];
-
-  if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    records = await getCachedRecordPreviewList(date, 'groups', groupId);
-
-    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
-    // recordPreviewListOptions의 queryKey와 일치시켜야 함
+  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
     queryClient.setQueryData(
       ['group', groupId, 'records', 'daily', date],
-      records,
+      createMockRecordPreviews(date),
     );
   } else {
-    records = createMockRecordPreviews(date);
+    await queryClient.prefetchQuery(recordPreviewListOptions(date, 'groups', groupId));
   }
 
   return (
@@ -52,16 +48,12 @@ export default async function GroupDailyDetailPage({
 
       <div className="p-4 sm:p-6">
         <HydrationBoundary state={dehydrate(queryClient)}>
-          {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
-            <DailyDetailRecords
-              memories={records}
-              date={date}
-              scope="groups"
-              groupId={groupId}
-            />
-          ) : (
+          <ErrorHandlingWrapper
+            fallbackComponent={ErrorFallback}
+            suspenseFallback={<DailyDetailRecordsSkeleton />}
+          >
             <DailyDetailRecords date={date} scope="groups" groupId={groupId} />
-          )}
+          </ErrorHandlingWrapper>
         </HydrationBoundary>
         <DailyDetailFloatingActions date={date} groupId={groupId} />
       </div>

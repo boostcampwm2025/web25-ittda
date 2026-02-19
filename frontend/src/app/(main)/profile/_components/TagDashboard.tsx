@@ -13,12 +13,21 @@ import { cn } from '@/lib/utils';
 import { Search, X, Tag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { userProfileTagSummaryOptions } from '@/lib/api/profile';
 
-interface TagDashboardProps {
-  tags: ProfileTag;
-}
+export default function TagDashboard() {
+  const { data: tagStats } = useSuspenseQuery(userProfileTagSummaryOptions(10));
 
-export default function TagDashboard({ tags }: TagDashboardProps) {
+  const allTags = [...tagStats.recentTags, ...tagStats.frequentTags];
+  const uniqueAll = Array.from(
+    new Map(allTags.map((item) => [item.tag, item])).values(),
+  );
+  const tags: ProfileTag = {
+    recent: tagStats.recentTags,
+    frequent: tagStats.frequentTags,
+    all: uniqueAll,
+  };
   const [tagTab, setTagTab] = useState<'recent' | 'frequent'>('recent');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const router = useRouter();
@@ -36,7 +45,7 @@ export default function TagDashboard({ tags }: TagDashboardProps) {
   const handleCombinationSearch = () => {
     // 검색 페이지로 이동하며 선택된 태그들을 쿼리로 전달
     // TODO: 검색 페이지에서 쿼리로 전달받은 태그를 입력창에 입력해주기(query)
-    const query = selectedTags.map((t) => `#${t}`).join(' ');
+    const _query = selectedTags.map((t) => `#${t}`).join(' ');
     const tagQuery = selectedTags.join(',');
     router.push(`/search?tags=${encodeURIComponent(tagQuery)}`);
   };

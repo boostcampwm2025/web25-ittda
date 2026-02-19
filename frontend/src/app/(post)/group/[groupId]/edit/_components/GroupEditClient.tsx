@@ -6,29 +6,14 @@ import GroupMemberManagement from './GroupMemberManagement';
 import GroupDangerousZone from './GroupDangerousZone';
 import GroupEditHeaderActions from './GroupEditHeaderActions';
 import { groupDetailOptions } from '@/lib/api/group';
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { GroupEditResponse } from '@/lib/types/groupResponse';
+import { useSuspenseQuery } from '@tanstack/react-query';
 
 interface GroupEditClientProps {
   groupId: string;
-  profile: GroupEditResponse;
 }
 
-export default function GroupEditClient({
-  groupId,
-  profile,
-}: GroupEditClientProps) {
-  const router = useRouter();
-  const { data } = useQuery({
-    ...groupDetailOptions(groupId),
-    initialData: profile,
-  });
-
-  if (!data) {
-    router.push(`/group/${groupId}`);
-    return;
-  }
+export default function GroupEditClient({ groupId }: GroupEditClientProps) {
+  const { data } = useSuspenseQuery(groupDetailOptions(groupId));
 
   const { group, me, members } = data;
   return (
