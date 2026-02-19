@@ -21,6 +21,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { useDebouncedValue } from '@/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import Back from '@/components/Back';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -272,15 +273,10 @@ export default function RecordMapContent({
         </div>
 
         {/* 검색 및 필터*/}
-        <div className="absolute top-4 left-0 w-full z-10 px-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2 items-center">
-              <button
-                className="bg-white dark:bg-[#1E1E1E] rounded-full p-2 shrink-0"
-                onClick={() => router.back()}
-              >
-                <ChevronLeft className="w-6 h-6 dark:text-gray-300 text-gray-400" />
-              </button>
+        <div className="absolute top-3 sm:top-4 left-0 w-full z-10 px-3 sm:px-4">
+          <div className="flex flex-col gap-2 sm:gap-3">
+            <div className="flex gap-1.5 sm:gap-2 items-center">
+              <Back />
               <div className="flex-1 min-w-0">
                 <MapSearchBar
                   onSelect={handleSelectPlace}
@@ -293,7 +289,7 @@ export default function RecordMapContent({
                 />
               </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
               <FilterChip
                 type="tag"
                 label={makeTagLabel(selectedTags)}

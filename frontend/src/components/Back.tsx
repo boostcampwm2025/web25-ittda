@@ -7,13 +7,15 @@ import { useRouter } from 'next/navigation';
 interface BackProps {
   size?: number;
   className?: number;
+  onClick?: VoidFunction;
 }
 
-export default function Back({ size, className }: BackProps) {
+export default function Back({ size, className, onClick }: BackProps) {
   const router = useRouter();
 
   const handleBack = () => {
     router.back();
+    onClick?.();
   };
 
   return (

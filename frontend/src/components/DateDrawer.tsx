@@ -112,24 +112,25 @@ export default function DateDrawer({
 
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="dark:bg-[#1E1E1E] !pb-0">
-        <div className="mx-auto w-full px-6 pt-8 !pb-6 md:!pb-10 flex flex-col overflow-y-auto scrollbar-hide">
+      <DrawerContent className="dark:bg-[#1E1E1E] pb-0!">
+        <div className="mx-auto w-full px-6 sm:px-8 pt-6 sm:pb-12! pb-6! flex flex-col overflow-y-auto scrollbar-hide">
           {/* 헤더 섹션 */}
-          <div className="flex justify-between items-end mb-6">
+          <div className="flex justify-between items-end mb-4 sm:mb-6">
             <div className="flex flex-col items-start text-left">
-              <span className="text-[10px] font-bold text-itta-point uppercase tracking-widest leading-none mb-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-itta-point uppercase tracking-[0.2em] sm:tracking-widest leading-none mb-1">
                 {config.subTitle}
               </span>
-              <DrawerTitle className="text-lg font-bold dark:text-white">
+              <DrawerTitle className="text-base sm:text-lg font-bold dark:text-white">
                 {config.title}
               </DrawerTitle>
             </div>
             {mode === 'range' ? (
               <button
                 onClick={() => setTempRange({ start: null, end: null })}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-itta-point transition-colors mb-1"
+                className="flex items-center gap-0.5 sm:gap-1 text-[11px] sm:text-xs text-gray-400 hover:text-itta-point transition-colors mb-1"
               >
-                <RotateCcw size={14} /> 초기화
+                <RotateCcw size={12} className="sm:hidden" />
+                <RotateCcw size={14} className="hidden sm:block" /> 초기화
               </button>
             ) : (
               <button
@@ -138,30 +139,32 @@ export default function DateDrawer({
                   onSelectDate?.(formatDateISO(new Date()));
                   onClose();
                 }}
-                className="text-xs font-bold text-itta-point active:scale-95 transition-transform mb-1"
+                className="text-[11px] sm:text-xs font-bold text-itta-point active:scale-95 transition-transform mb-1"
               >
                 오늘로
               </button>
             )}
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-sm font-bold dark:text-white">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between px-1 sm:px-2">
+              <span className="text-xs sm:text-sm font-bold dark:text-white">
                 {year}년 {month + 1}월
               </span>
               <div className="flex gap-1">
                 <button
                   onClick={() => setCalendarDate(new Date(year, month - 1, 1))}
-                  className="p-2 rounded-xl bg-gray-50 dark:bg-white/5 active:scale-95 transition-transform"
+                  className="p-1.5 sm:p-2 rounded-xl bg-gray-50 dark:bg-white/5 active:scale-95 transition-transform"
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={16} className="sm:hidden" />
+                  <ChevronLeft size={18} className="hidden sm:block" />
                 </button>
                 <button
                   onClick={() => setCalendarDate(new Date(year, month + 1, 1))}
-                  className="p-2 rounded-xl bg-gray-50 dark:bg-white/5 active:scale-95 transition-transform"
+                  className="p-1.5 sm:p-2 rounded-xl bg-gray-50 dark:bg-white/5 active:scale-95 transition-transform"
                 >
-                  <ChevronRight size={18} />
+                  <ChevronRight size={16} className="sm:hidden" />
+                  <ChevronRight size={18} className="hidden sm:block" />
                 </button>
               </div>
             </div>
@@ -172,7 +175,7 @@ export default function DateDrawer({
                 <div
                   key={day}
                   className={cn(
-                    'text-center py-2 text-[10px] font-bold',
+                    'text-center py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold',
                     idx === 0
                       ? 'text-rose-500'
                       : idx === 6
@@ -231,7 +234,7 @@ export default function DateDrawer({
                       onClick={() => handleDateClick(dateStr)}
                       disabled={isFuture}
                       className={cn(
-                        'relative z-10 w-9 h-9 flex items-center justify-center text-xs font-bold transition-all rounded-full',
+                        'relative z-10 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[11px] sm:text-xs font-bold transition-all rounded-full',
                         isSelectedSingle || isStart || isEnd
                           ? 'bg-[#10B981] text-white shadow-md'
                           : isInRange
@@ -245,26 +248,21 @@ export default function DateDrawer({
                   </div>
                 );
               })}
-              {Array.from({
-                length: 42 - firstDayIndex - daysInMonth,
-              }).map((_, i) => (
-                <div key={`empty-end-${i}`} className="aspect-square" />
-              ))}
             </div>
 
             {/* 버튼 섹션 */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2 sm:gap-3">
               {mode === 'range' && (
                 <button
                   onClick={handleSelectMonth}
-                  className="flex items-center justify-center gap-2 w-full py-3 md:py-4 rounded-2xl font-bold text-sm bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 active:scale-95 transition-all"
+                  className="flex items-center justify-center gap-1.5 sm:gap-2 w-full py-3 md:py-4 rounded-2xl font-bold text-xs sm:text-sm bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 active:scale-95 transition-all"
                 >
-                  <Check className="w-5 h-5" />이 달 전체 선택
+                  <Check className="w-4 sm:w-5 h-4 sm:h-5" />이 달 전체 선택
                 </button>
               )}
               <button
                 onClick={handleComplete}
-                className="w-full py-3 md:py-4 rounded-2xl font-bold text-sm bg-itta-black text-white dark:bg-white dark:text-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg disabled:opacity-50"
+                className="w-full py-3 md:py-4 rounded-2xl font-bold text-xs sm:text-sm bg-itta-black text-white dark:bg-white dark:text-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg disabled:opacity-50"
               >
                 {config.buttonText}
               </button>

@@ -502,7 +502,7 @@ function LocationPickerContent({
       )}
     >
       {/* 검색 바 */}
-      <div className="absolute top-4 w-full px-4 z-50 max-w-md left-1/2 -translate-x-1/2">
+      <div className="absolute top-2 w-full px-4 z-50 max-w-md left-1/2 -translate-x-1/2">
         <MapSearchBar
           onSelect={handleSelectPlace}
           placeholder={mode === 'search' ? '검색할 지역 입력' : '장소 검색'}
@@ -565,12 +565,12 @@ function LocationPickerContent({
             className="object-cover"
           />
 
-          <div className="mt-4 pointer-events-auto">
+          <div className="mt-2 pointer-events-auto">
             <Button
               size="sm"
               onClick={() => handleConfirm()}
               disabled={isProcessing || isAddressLoading}
-              className="shadow-lg font-bold px-6 h-10 rounded-full"
+              className="shadow-lg text-xs sm:text-sm font-bold px-4 sm:px-6 h-8 sm:h-10 rounded-full"
             >
               {isProcessing
                 ? '처리 중...'

@@ -217,6 +217,14 @@ main {
     width: 133.3333% !important; /* 1 / 0.75 = 133.3333% - scale 후에도 전체 공간 차지 */
     height: 133.3333% !important; /* 1 / 0.75 = 133.3333% - scale 후에도 전체 공간 차지 */
   }
+
+  .mobile-input {
+    font-size: 16px !important;
+    transform: scale(0.875); /* 16px * 0.875 = 14px */
+    transform-origin: left center;
+    width: 114.2857% !important; /* 1 / 0.875 = 114.2857% - scale 후에도 전체 공간 차지 */
+    height: 114.2857% !important; /* 1 / 0.875 = 114.2857% - scale 후에도 전체 공간 차지 */
+  }
 }
 
 /* @media (max-width: 768px) {

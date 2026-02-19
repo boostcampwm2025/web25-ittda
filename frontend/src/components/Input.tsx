@@ -19,7 +19,7 @@ function InputRoot({ className, children }: InputRootProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 px-4 py-3 shadow-sm border border-itta-gray1 rounded-[10px] bg-white',
+        'flex items-center gap-3 px-4 py-2 shadow-sm border border-itta-gray1 rounded-[10px] bg-white',
         className,
       )}
     >
@@ -43,7 +43,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
         ref={ref}
         type="text"
         className={cn(
-          'flex-1 outline-none text-base placeholder:text-itta-gray3 bg-transparent',
+          'flex-1 outline-none text-sm placeholder:text-itta-gray3 bg-transparent',
           className,
         )}
         {...props}

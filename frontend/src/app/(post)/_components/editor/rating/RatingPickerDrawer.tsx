@@ -91,19 +91,19 @@ export default function RatingDrawer({
       }}
     >
       <DrawerContent>
-        <div className="w-full px-8 pt-4 pb-10">
+        <div className="w-full px-6 sm:px-8 pt-3 sm:pt-4 pb-10 sm:pb-12">
           <DrawerHeader className="px-0 items-start text-left">
             <div className="flex flex-col text-left">
-              <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#10B981] uppercase tracking-[0.2em] sm:tracking-widest leading-none mb-1">
                 SELECT RATING
               </span>
-              <DrawerTitle className="text-lg font-bold">
+              <DrawerTitle className="text-base sm:text-lg font-bold">
                 평가 남기기
               </DrawerTitle>
             </div>
           </DrawerHeader>
 
-          <div className="flex flex-col items-center gap-8 my-4">
+          <div className="flex flex-col items-center gap-6 sm:gap-8 my-3 sm:my-4">
             <div
               ref={containerRef}
               onMouseDown={handleMouseDown}
@@ -111,37 +111,37 @@ export default function RatingDrawer({
               onTouchStart={() => setIsDragging(true)}
               onTouchMove={handleTouchMove}
               onTouchEnd={() => setIsDragging(false)}
-              className="relative cursor-pointer touch-none select-none py-4"
+              className="relative cursor-pointer touch-none select-none py-3 sm:py-4"
             >
-              <div className="flex gap-1">
+              <div className="flex gap-1 sm:gap-1.5">
                 {[...Array(currentMax)].map((_, i) => (
                   <Star
                     key={i}
-                    className="w-12 h-12 text-gray-200 dark:text-white/10 fill-transparent"
+                    className="w-10 sm:w-12 h-10 sm:h-12 text-gray-200 dark:text-white/10 fill-transparent"
                   />
                 ))}
               </div>
 
               <div
-                className="absolute top-4 left-0 flex gap-1 overflow-hidden pointer-events-none transition-all duration-75 ease-out"
+                className="absolute top-3 sm:top-4 left-0 flex gap-1 sm:gap-1.5 overflow-hidden pointer-events-none transition-all duration-75 ease-out"
                 style={{ width: `${(localValue / currentMax) * 100}%` }}
               >
                 {[...Array(currentMax)].map((_, i) => (
                   <Star
                     key={i}
-                    className="w-12 h-12 fill-[#FACC15] text-[#FACC15] flex-shrink-0"
+                    className="w-10 sm:w-12 h-10 sm:h-12 fill-[#FACC15] text-[#FACC15] shrink-0"
                   />
                 ))}
               </div>
             </div>
 
             {/* 수치 표시 영역 */}
-            <div className="flex flex-col items-center gap-1">
-              <div className="flex items-baseline gap-1">
-                <span className="text-6xl font-black text-[#10B981] tabular-nums">
+            <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+              <div className="flex items-baseline gap-0.5 sm:gap-1">
+                <span className="text-5xl sm:text-6xl font-black text-[#10B981] tabular-nums">
                   {localValue.toFixed(1)}
                 </span>
-                <span className="text-xl font-bold text-gray-300">
+                <span className="text-lg sm:text-xl font-bold text-gray-300">
                   / {currentMax}
                 </span>
               </div>
@@ -150,7 +150,7 @@ export default function RatingDrawer({
 
           <button
             onClick={handleConfirm}
-            className="mt-8 flex w-full py-4 rounded-2xl text-sm font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 items-center justify-center"
+            className="mt-6 sm:mt-8 flex w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold bg-itta-black text-white dark:bg-white dark:text-black shadow-xl active:scale-95 items-center justify-center"
           >
             확인
           </button>

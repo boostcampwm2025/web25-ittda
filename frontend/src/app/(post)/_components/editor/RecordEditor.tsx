@@ -655,34 +655,29 @@ export default function PostEditor({
         <AuthLoadingScreen type="publish" className="fixed inset-0 z-[9999]" />
       )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
-      <div className="mx-6 mt-3 flex flex-row gap-2">
+      <div className="mx-3 sm:mx-6 mt-2 sm:mt-3 flex flex-row gap-1.5 sm:gap-2">
         {group?.group.name ? (
-          <div className=" px-3 w-fit items-center rounded-full py-1 text-[13px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+          <div className="px-2 sm:px-3 w-fit items-center rounded-full py-0.5 sm:py-1 text-[11px] sm:text-[13px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
             <span className="truncate inline-block align-bottom">
               {group?.group.name}
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-1 px-3 py-1 rounded-full text-[13px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-            <User className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-[13px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+            <User className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
             <span>개인</span>
           </div>
         )}
         {draftId && (
-          <div className="px-3 w-fit items-center rounded-full py-1 text-[13px] font-bold bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">
-            <span className="flex items-center gap-1.5 align-bottom">
+          <div className="px-2 sm:px-3 w-fit items-center rounded-full py-0.5 sm:py-1 text-[11px] sm:text-[13px] font-bold bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">
+            <span className="flex items-center gap-1 sm:gap-1.5 align-bottom">
               공동 기록 중...
             </span>
           </div>
         )}
       </div>
 
-      <main
-        className={cn(
-          'px-6 space-y-8 pb-48 overflow-y-auto',
-          group?.group.name ? 'py-3' : 'py-6',
-        )}
-      >
+      <main className={cn('px-4 sm:px-6 space-y-4 sm:space-y-5 pb-40 sm:pb-48 overflow-y-auto py-2 sm:py-3')}>
         <RecordTitleInput
           title={title}
           setTitle={setTitle}
@@ -695,7 +690,7 @@ export default function PostEditor({
         <div
           ref={gridRef}
           onDragOver={handleGridDragOver}
-          className={`grid grid-cols-2 gap-x-3 gap-y-5 items-center pr-3 ${
+          className={`grid grid-cols-2 gap-x-2 sm:gap-x-3 gap-y-4 sm:gap-y-5 items-center pr-2 sm:pr-3 ${
             isDraggingId ? '' : 'transition-all duration-300'
           }`}
         >
@@ -724,7 +719,7 @@ export default function PostEditor({
                   }`}
                 >
                   {isLockedByOther && owner && (
-                    <div className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse">
+                    <div className="w-5 sm:w-6 h-5 sm:h-6 rounded-full ring-2 ring-itta-point animate-pulse">
                       {owner.profileImageId ? (
                         <AssetImage
                           assetId={owner.profileImageId}
@@ -749,9 +744,9 @@ export default function PostEditor({
                     onPointerDown={(e) => handlePointerDown(e, block.id)}
                     onPointerMove={(e) => handlePointerMove(e)}
                     onPointerUp={handleDragEnd}
-                    className="flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
+                    className="flex items-center justify-center w-3.5 sm:w-4 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
                   >
-                    <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
+                    <GripVertical className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-500 dark:text-gray-200" />
                   </div>
                   <RecordFieldRenderer
                     block={block}

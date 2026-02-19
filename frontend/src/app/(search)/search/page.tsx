@@ -114,9 +114,9 @@ export default function SearchPage() {
     selectedEmotions.length === 0;
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
-      <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-4 space-y-4">
+      <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* 검색바 영역 */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Back />
           <div className="flex-1 relative">
             <input
@@ -124,22 +124,23 @@ export default function SearchPage() {
               placeholder="제목이나 내용으로 검색"
               value={localQuery}
               onChange={(e) => handleQueryChange(e.target.value)}
-              className="w-full rounded-lg px-11 py-3 bg-gray-50 dark:bg-white/5 text-base outline-none dark:text-white"
+              className="w-full rounded-lg px-9 sm:px-11 py-2.5 sm:py-3 bg-gray-50 dark:bg-white/5 mobile-input outline-none dark:text-white"
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400" />
             {localQuery && (
               <button
                 onClick={() => handleQueryChange('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1"
+                className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-1"
               >
-                <X size={16} className="text-gray-400" />
+                <X size={14} className="text-gray-400 sm:hidden" />
+                <X size={16} className="text-gray-400 hidden sm:block" />
               </button>
             )}
           </div>
         </div>
 
         {/* 필터 칩 영역 */}
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar px-1">
+        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide px-1">
           <FilterChip
             type="tag"
             label={makeTagLabel(selectedTags)}
@@ -166,7 +167,7 @@ export default function SearchPage() {
             label={makeLocationLabel(locationAddress)}
             isActive={!!locationAddress}
             onClick={() =>
-              router.replace(
+              router.push(
                 `/location-picker?from=search&${new URLSearchParams(window.location.search)}`,
               )
             }
@@ -177,41 +178,42 @@ export default function SearchPage() {
         </div>
       </header>
       {isInitialState ? (
-        <section className="space-y-4 px-6 py-3">
-          <div className="flex items-center gap-2 text-itta-gray3 font-bold text-sm">
-            <Clock size={16} />
+        <section className="space-y-3 sm:space-y-4 px-4 sm:px-6 py-2 sm:py-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-itta-gray3 font-bold text-xs sm:text-sm">
+            <Clock size={14} className="sm:hidden" />
+            <Clock size={16} className="hidden sm:block" />
             <span>최근 검색어</span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {recentKeywords.length > 0 ? (
               recentKeywords.map((kw, i) => (
                 <button
                   key={i}
                   onClick={() => handleKeywordClick(kw)}
-                  className="px-4 py-2 bg-gray-50 dark:bg-white/5 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 active:scale-95 transition-all"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-white/5 rounded-full text-[11px] sm:text-xs font-medium text-gray-600 dark:text-gray-300 active:scale-95 transition-all"
                 >
                   {kw}
                 </button>
               ))
             ) : (
-              <p className="text-xs text-gray-400">
+              <p className="text-[11px] sm:text-xs text-gray-400">
                 최근 검색 기록이 없습니다.
               </p>
             )}
           </div>
         </section>
       ) : (
-        <main className="p-6 pb-20">
-          <h3 className="text-md font-bold text-itta-gray3 uppercase tracking-tight mb-4">
+        <main className="p-4 sm:p-6 pb-16 sm:pb-20">
+          <h3 className="text-sm sm:text-md font-bold text-itta-gray3 uppercase tracking-tight mb-3 sm:mb-4">
             검색 결과 <span className="text-itta-point">{items.length}</span>
           </h3>
 
           {isLoading ? (
-            <div className="py-20 flex justify-center">
-              <Loader2 className="animate-spin text-itta-point" />
+            <div className="py-16 sm:py-20 flex justify-center">
+              <Loader2 className="animate-spin w-6 sm:w-8 h-6 sm:h-8 text-itta-point" />
             </div>
           ) : items.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {items.map((record, idx) => {
                 const isLastItem = idx === items.length - 1;
                 return (
@@ -234,20 +236,20 @@ export default function SearchPage() {
 
               {/* 다음 페이지 로딩 중 표시 */}
               {isFetchingNextPage && (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="animate-spin w-6 h-6 text-itta-point" />
+                <div className="flex justify-center py-4 sm:py-6">
+                  <Loader2 className="animate-spin w-5 sm:w-6 h-5 sm:h-6 text-itta-point" />
                 </div>
               )}
             </div>
           ) : (
             /* 검색 결과 없음 UI */
-            <div className="py-32 flex flex-col items-center text-center space-y-4">
-              <Search className="w-12 h-12 text-gray-200" />
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-itta-gray3">
+            <div className="py-20 sm:py-32 flex flex-col items-center text-center space-y-3 sm:space-y-4">
+              <Search className="w-10 sm:w-12 h-10 sm:h-12 text-gray-200" />
+              <div className="space-y-0.5 sm:space-y-1">
+                <p className="text-xs sm:text-sm font-bold text-itta-gray3">
                   찾으시는 기록이 없어요
                 </p>
-                <p className="text-xs text-itta-gray2">
+                <p className="text-[11px] sm:text-xs text-itta-gray2">
                   필터를 변경하거나 다른 단어로 검색해보세요.
                 </p>
               </div>

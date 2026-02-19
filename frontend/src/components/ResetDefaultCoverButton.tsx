@@ -27,7 +27,7 @@ export function ResetDefaultCoverButton({
     <button
       onClick={handleAction}
       className={cn(
-        'flex items-center justify-center gap-2 w-full py-3 md:py-4 rounded-2xl font-bold text-sm transition-all active:scale-95',
+        'flex items-center justify-center gap-2 w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm transition-all active:scale-95',
         'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-white/5',
         className,
       )}
