@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { LocationValue } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
+import Back from '../Back';
 
 interface Props {
   isOpen: boolean;
@@ -15,23 +16,19 @@ export default function LocationDrawer({ isOpen, onSelect, onClose }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center">
+    <div className="fixed inset-0 z-100 bg-black/30 flex items-center justify-center">
       <div
         className={cn(
-          'max-w-4xl w-full h-full inset-0 z-[100] flex flex-col bg-white dark:bg-[#121212]',
+          'max-w-4xl w-full h-full inset-0 z-100 flex flex-col bg-white dark:bg-[#121212]',
           'animate-in slide-in-from-bottom duration-300',
         )}
       >
-        <header className="flex items-center justify-between px-4 h-14 border-b shrink-0 bg-white dark:bg-[#1E1E1E]">
-          <button
-            onClick={onClose}
-            className="p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6 text-itta-black dark:text-white" />
-          </button>
-
-          <h2 className="text-base font-bold text-center flex-1">위치 선택</h2>
-          <div className="w-10" />
+        <header className="dark:bg-[#121212]/90 bg-white/90 backdrop-blur-xl transition-all duration-500 sticky top-0 z-50 max-w-4xl w-full px-4 sm:px-6 py-3 sm:py-4 mx-auto flex items-center justify-between">
+          <Back onClick={onClose} />
+          <h2 className="font-semibold text-sm sm:text-base dark:text-white">
+            위치 선택
+          </h2>
+          <div className="w-5 sm:w-6" />
         </header>
 
         <div className="flex-1 min-h-0 relative">

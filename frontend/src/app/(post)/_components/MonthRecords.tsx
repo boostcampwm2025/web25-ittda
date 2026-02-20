@@ -148,7 +148,7 @@ export default function MonthRecords({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 pb-16 sm:pb-32">
         {months.map((m) => (
           <RecordCard
             key={m.id}
@@ -168,7 +168,7 @@ export default function MonthRecords({
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent className="w-full px-6 sm:px-8 pt-4 pb-8 sm:pb-10">
           <DrawerHeader>
-            <div className="pt-4 flex justify-between items-center mb-6 sm:mb-8">
+            <div className="pt-4 flex justify-between items-center mb-4 sm:mb-6">
               <DrawerTitle className="flex flex-col justify-center items-start pl-0">
                 <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
                   CHOOSE COVER

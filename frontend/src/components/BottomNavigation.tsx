@@ -60,7 +60,7 @@ export default function BottomNavigation() {
   ];
   const isDetail =
     pathname.includes('/detail/') ||
-    pathname.includes('/month/') ||
+    // pathname.includes('/month/') ||
     pathname.includes('/edit');
 
   const isGroupChat = pathname.includes('/chat');

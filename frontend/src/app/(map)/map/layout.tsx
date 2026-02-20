@@ -6,7 +6,7 @@ export default function MapLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="w-full h-screen flex flex-col">
+    <div className="w-full h-screen h-[100dvh] flex flex-col">
       <div className="hidden md:block">
         <Header />
       </div>

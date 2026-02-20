@@ -32,10 +32,10 @@ export default function RecordEditorHeader({
   const displayMembers = memberList.slice(0, 4);
   const extraCount = memberList.length - 4;
   return (
-    <header className="sticky top-0 z-50 shrink-0 px-5 py-4 flex items-center backdrop-blur-md transition-colors duration-300 bg-white/95 dark:bg-[#121212]/95 border-b border-gray-100 dark:border-white/5">
-      <div className="flex-1 flex items-center justify-start gap-3">
+    <header className="sticky top-0 z-50 shrink-0 px-4 sm:px-5 py-3 sm:py-4 flex items-center backdrop-blur-md transition-colors duration-300 bg-white/95 dark:bg-[#121212]/95 border-b border-gray-100 dark:border-white/5">
+      <div className="flex-1 flex items-center justify-start gap-2 sm:gap-3">
         <Back />
-        <h2 className="sm:hidden text-sm font-bold text-itta-black dark:text-gray-400 whitespace-nowrap">
+        <h2 className="sm:hidden text-xs font-bold text-itta-black dark:text-gray-400 whitespace-nowrap">
           {titleText}
         </h2>
       </div>
@@ -43,7 +43,7 @@ export default function RecordEditorHeader({
       <h2 className="hidden sm:block flex-none text-sm font-bold text-itta-black dark:text-gray-400 whitespace-nowrap">
         {titleText}
       </h2>
-      <div className="flex-1 flex items-center justify-end gap-3 sm:gap-4">
+      <div className="flex-1 flex items-center justify-end gap-2 sm:gap-3">
         {hasMembers && (
           <div className="flex items-center">
             <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -56,7 +56,7 @@ export default function RecordEditorHeader({
                   {displayMembers.map((member) => (
                     <div
                       key={member?.sessionId || member.actorId}
-                      className="relative inline-block h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#121212] flex-shrink-0 bg-white dark:bg-[#121212] isolate"
+                      className="relative inline-block h-6 sm:h-7 w-6 sm:w-7 rounded-full ring-2 ring-white dark:ring-[#121212] flex-shrink-0 bg-white dark:bg-[#121212] isolate"
                     >
                       {member.profileImageId ? (
                         <AssetImage
@@ -77,7 +77,7 @@ export default function RecordEditorHeader({
                     </div>
                   ))}
                   {extraCount > 0 && (
-                    <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-gray-100 dark:bg-gray-800 ring-2 ring-white dark:ring-[#121212] text-[10px] font-bold text-gray-600 dark:text-gray-400">
+                    <div className="relative flex items-center justify-center h-6 sm:h-7 w-6 sm:w-7 rounded-full bg-gray-100 dark:bg-gray-800 ring-2 ring-white dark:ring-[#121212] text-[9px] sm:text-[10px] font-bold text-gray-600 dark:text-gray-400">
                       +{extraCount}
                     </div>
                   )}
@@ -89,22 +89,22 @@ export default function RecordEditorHeader({
                 align="start"
                 sideOffset={10}
                 collisionPadding={14}
-                className="w-48 p-2 bg-white dark:bg-[#1E1E1E] shadow-xl border-gray-100 dark:border-white/10"
+                className="w-44 sm:w-48 p-1.5 sm:p-2 bg-white dark:bg-[#1E1E1E] shadow-xl border-gray-100 dark:border-white/10"
                 onMouseEnter={() => setIsOpen(true)}
                 onMouseLeave={() => setIsOpen(false)}
               >
-                <div className="px-2 py-1.5 mb-1 border-b border-gray-50 dark:border-white/5">
-                  <span className="text-xs font-semibold text-itta-gray3 uppercase tracking-wider">
+                <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 mb-0.5 sm:mb-1 border-b border-gray-50 dark:border-white/5">
+                  <span className="text-[10px] sm:text-xs font-semibold text-itta-gray3 uppercase tracking-wider">
                     편집 중인 멤버 ({memberList.length})
                   </span>
                 </div>
-                <div className="overflow-y-auto pr-1 max-h-60 pb-0!">
+                <div className="overflow-y-auto pr-0.5 sm:pr-1 max-h-52 sm:max-h-60 pb-0!">
                   {memberList.map((member) => (
                     <div
                       key={member.sessionId || member.actorId}
-                      className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group/item"
+                      className="flex items-center gap-2 sm:gap-2.5 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group/item"
                     >
-                      <div className="relative h-8 w-8 rounded-full overflow-hidden flex-shrink-0 border border-gray-100 dark:border-white/10">
+                      <div className="relative h-7 sm:h-8 w-7 sm:w-8 rounded-full overflow-hidden shrink-0 border border-gray-100 dark:border-white/10">
                         {member.profileImageId ? (
                           <AssetImage
                             assetId={
@@ -123,7 +123,7 @@ export default function RecordEditorHeader({
                           />
                         )}
                       </div>
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                      <span className="text-[11px] sm:text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
                         {member.displayName}
                       </span>
                     </div>
@@ -142,7 +142,7 @@ export default function RecordEditorHeader({
 
         <button
           onClick={onSave}
-          className="px-5 py-2 rounded-xl text-sm font-semibold active:scale-95 transition-all shadow-sm bg-itta-black text-white shrink-0"
+          className="px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold active:scale-95 transition-all shadow-sm bg-itta-black text-white shrink-0 dark:bg-white dark:text-black"
         >
           저장
         </button>

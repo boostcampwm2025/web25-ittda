@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/group';
 import { myMonthlyRecordCoverOptions } from '@/lib/api/my';
 import AssetImage from '@/components/AssetImage';
+import { ResetDefaultCoverButton } from '@/components/ResetDefaultCoverButton';
 
 interface GalleryDrawerProps {
   type: 'group' | 'personal' | 'other';
@@ -151,8 +152,8 @@ export default function GalleryDrawer({
           )}
         </div>
       )}
-
-      <DrawerClose className="cursor-pointer w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm dark:bg-white/5 dark:text-gray-500 bg-itta-black text-white shrink-0">
+      <ResetDefaultCoverButton />
+      <DrawerClose className="cursor-pointer w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm dark:bg-white dark:text-black bg-itta-black text-white shrink-0">
         닫기
       </DrawerClose>
     </div>

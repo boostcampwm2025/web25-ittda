@@ -22,14 +22,14 @@ export default function LocationPickerModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-4xl h-full bg-white rounded-t-3xl overflow-hidden animate-in slide-in-from-bottom duration-300">
-        <header className="p-4 border-b flex justify-between items-center bg-white">
+    <div className="fixed inset-0 z-100 flex items-end justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-4xl h-full bg-white rounded-t-2xl sm:rounded-t-3xl overflow-hidden animate-in slide-in-from-bottom duration-300">
+        <header className="p-3 sm:p-4 border-b flex justify-between items-center bg-white">
           <button onClick={handleCancel} className="cursor-pointer">
-            <ArrowLeft className="dark:text-white text-itta-black" />
+            <ArrowLeft className="w-5 sm:w-6 h-5 sm:h-6 dark:text-white text-itta-black" />
           </button>
-          <span className="font-bold">위치 선택</span>
-          <div className="w-8" />
+          <span className="text-sm sm:text-base font-bold">위치 선택</span>
+          <div className="w-5 sm:w-8" />
         </header>
         <div className="h-full min-h-0">
           <LocationPicker

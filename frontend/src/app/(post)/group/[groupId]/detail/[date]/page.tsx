@@ -50,7 +50,7 @@ export default async function GroupDailyDetailPage({
         <div className="w-6 sm:w-8" />
       </header>
 
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-6 pb-14 sm:pb-16">
         <HydrationBoundary state={dehydrate(queryClient)}>
           {process.env.NEXT_PUBLIC_MOCK === 'true' ? (
             <DailyDetailRecords

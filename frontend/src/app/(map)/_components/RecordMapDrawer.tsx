@@ -107,7 +107,7 @@ export default function RecordMapDrawer({
   return (
     <div
       className={cn(
-        'absolute left-0 right-0 bottom-0 z-50 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-hidden shadow-[0_-15px_60px_rgba(0,0,0,0.2)]',
+        'fixed left-0 right-0 bottom-0 z-50 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-hidden shadow-[0_-15px_60px_rgba(0,0,0,0.2)] max-w-4xl mx-auto',
         !isDragging &&
           'transition-all duration-500 cubic-bezier(0.2,0.8,0.2,1)',
       )}
@@ -115,18 +115,18 @@ export default function RecordMapDrawer({
       style={{ height, borderRadius: '40px 40px 0 0', touchAction: 'none' }}
     >
       <div
-        className="pt-5 pb-3 cursor-ns-resize shrink-0"
+        className="pt-4 sm:pt-5 pb-2 sm:pb-3 cursor-ns-resize shrink-0"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
-        <div className="w-14 h-1.5 bg-gray-200 dark:bg-white/10 rounded-full mx-auto mb-5" />
-        <div className="flex items-center justify-between px-8">
+        <div className="w-12 sm:w-14 h-1.5 bg-gray-200 dark:bg-white/10 rounded-full mx-auto mb-4 sm:mb-5" />
+        <div className="flex items-center justify-between px-6 sm:px-8 py-4">
           <div>
-            <span className="block text-[11px] font-black text-[#10B981] uppercase tracking-[0.25em] mb-1">
+            <span className="block text-[10px] sm:text-[11px] font-black text-[#10B981] uppercase tracking-[0.2em] sm:tracking-[0.25em] mb-1">
               Explore Records
             </span>
-            <h3 className="text-lg font-bold dark:text-white">
+            <h3 className="text-base sm:text-lg font-bold dark:text-white">
               {Array.isArray(selectedPostId)
                 ? `선택 지역 기록 ${displayPosts.length}개`
                 : `주변 기록 ${posts.length}개`}
@@ -139,12 +139,12 @@ export default function RecordMapDrawer({
       <div className="relative flex-1 overflow-hidden">
         <div
           ref={scrollContainerRef}
-          className="absolute inset-0 px-8 pt-4 pb-16 overflow-y-auto scrollbar-hide"
+          className="absolute inset-0 px-4 sm:px-8 pt-3 sm:pt-4 pb-16 overflow-y-auto scrollbar-hide"
           style={{ touchAction: 'pan-y' }}
         >
-          <div className="space-y-4 pb-10">
+          <div className="space-y-3 sm:space-y-4 pb-10">
             {isLoading ? (
-              <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#121212]">
+              <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-itta-point" />
               </div>
             ) : displayPosts.length ? (
@@ -172,15 +172,15 @@ export default function RecordMapDrawer({
                 )}
               </>
             ) : (
-              <div className="p-6 flex flex-col items-center justify-center text-center space-y-4 rounded-2xl dark:bg-white/5 bg-white">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
-                  <MapIcon className="w-6 h-6 text-[#10B981]" />
+              <div className="p-4 sm:p-6 flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4 rounded-2xl dark:bg-white/5 bg-white">
+                <div className="w-12 sm:w-14 h-12 sm:h-14 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+                  <MapIcon className="w-5 sm:w-6 h-5 sm:h-6 text-[#10B981]" />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-bold dark:text-gray-200 text-gray-700">
+                <div className="space-y-0.5 sm:space-y-1">
+                  <p className="text-xs sm:text-sm font-bold dark:text-gray-200 text-gray-700">
                     주변에 기록이 없어요
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-[11px] sm:text-xs text-gray-400">
                     지도를 이동하거나 필터를 조정해보세요
                   </p>
                 </div>

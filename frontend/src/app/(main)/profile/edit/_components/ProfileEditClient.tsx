@@ -62,7 +62,7 @@ export default function ProfileEditClient() {
       email={profile?.user.email || 'example.com'}
     >
       <ProfileEditHeaderActions onSave={handleSave} isPending={isPending} />
-      <div className="p-8 flex flex-col gap-10 pb-32">
+      <div className="py-8 px-6 flex flex-col gap-10 pb-32">
         <ProfileInfo
           profileImage={profile?.user.profileImageId ?? null}
           showEmail={true}

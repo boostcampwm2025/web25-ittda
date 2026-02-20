@@ -174,7 +174,7 @@ export const ContentField = ({
           onFocus={handleFocusWrapper}
           onBlur={handleBlur}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full min-h-30 border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
+          className="w-full min-h-30 border-none focus:ring-0 outline-none text-base leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
         />
       </div>
       {!isLastContentBlock && (
