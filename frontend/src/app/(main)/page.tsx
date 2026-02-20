@@ -12,6 +12,7 @@ import { recordPreviewListOptions } from '@/lib/api/records';
 import { userRecordPatternOptions } from '@/lib/api/profile';
 import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
 import ErrorFallback from '@/components/ErrorFallback';
+import { redirect } from 'next/navigation';
 
 interface HomePageProps {
   searchParams: Promise<{ date?: string }>;
@@ -39,7 +40,13 @@ export async function generateMetadata() {
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const { date } = await searchParams;
-  const selectedDate = date || formatDateISO();
+
+  // 날짜가 없으면 오늘 날짜로 리다이렉트
+  if (!date) {
+    redirect(`/?date=${formatDateISO()}`);
+  }
+
+  const selectedDate = date;
 
   const queryClient = new QueryClient();
 

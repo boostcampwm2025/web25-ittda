@@ -5,8 +5,9 @@ import { userProfileOptions } from '@/lib/api/profile';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AssetImage from '@/components/AssetImage';
+import { memo } from 'react';
 
-export default function Profile() {
+const Profile = memo(function Profile() {
   const router = useRouter();
 
   const { data: userProfile } = useSuspenseQuery(userProfileOptions());
@@ -48,4 +49,6 @@ export default function Profile() {
       </div>
     </div>
   );
-}
+});
+
+export default Profile;

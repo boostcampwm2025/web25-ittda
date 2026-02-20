@@ -12,24 +12,27 @@ import {
   ResponsiveContainer,
   XAxis,
 } from 'recharts';
+import { memo, useMemo } from 'react';
 
-export default function MonthlyUsageChart() {
+const MonthlyUsageChart = memo(function MonthlyUsageChart() {
   const { theme } = useTheme();
 
   const { data: profile, isLoading, isError } = useQuery(userProfileOptions());
 
-  // API 응답을 차트 데이터 형식으로 변환
-  const monthlyUsageData = profile?.stats.monthlyCounts
-    .slice()
-    .reverse()
-    .slice(0, 6)
-    .map((record) => {
-      const [year, month] = record.month.split('-');
-      return {
-        name: `${year.slice(2)}.${month}`,
-        value: record.count,
-      };
-    });
+  // API 응답을 차트 데이터 형식으로 변환 (useMemo로 최적화)
+  const monthlyUsageData = useMemo(() => {
+    return profile?.stats.monthlyCounts
+      .slice()
+      .reverse()
+      .slice(0, 6)
+      .map((record) => {
+        const [year, month] = record.month.split('-');
+        return {
+          name: `${year.slice(2)}.${month}`,
+          value: record.count,
+        };
+      });
+  }, [profile?.stats.monthlyCounts]);
 
   // 모든 데이터가 0인지 확인
   const hasNoData =
@@ -148,4 +151,6 @@ export default function MonthlyUsageChart() {
       </div>
     </section>
   );
-}
+});
+
+export default MonthlyUsageChart;
