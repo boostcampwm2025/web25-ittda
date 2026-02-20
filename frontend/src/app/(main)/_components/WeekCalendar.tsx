@@ -16,26 +16,29 @@ export default function WeekCalendar() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL에서 date 파라미터 읽기
-  const dateParam = searchParams.get('date');
-  const selectedDateStr = dateParam || formatDateISO();
-
-  // 초기 렌더링 시 오늘 날짜 자동 선택
-  useEffect(() => {
-    if (!dateParam) {
-      const today = formatDateISO();
-      router.replace(`/?date=${today}`);
-    }
-  }, [dateParam, router]);
+  // URL에서 date 파라미터 읽기 (서버에서 이미 리다이렉트 처리됨)
+  const selectedDateStr = searchParams.get('date') || formatDateISO();
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
     getStartOfWeek(parseLocalDate(selectedDateStr)),
   );
   const [direction, setDirection] = useState(0); // -1: 이전, 1: 다음
+  const [isMounted, setIsMounted] = useState(false); // 초기 마운트 추적
   const [displayYearMonth, setDisplayYearMonth] = useState(() => {
     const d = parseLocalDate(selectedDateStr);
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  // 초기 마운트 추적 (라우팅 후 첫 렌더링 시 애니메이션 스킵)
+  useEffect(() => {
+    const rAF = requestAnimationFrame(() => {
+      setIsMounted(true);
+    });
+
+    return () => {
+      cancelAnimationFrame(rAF);
+    };
+  }, []);
 
   // 연월 표시용 계산 (중앙 주차 기준)
   const calculateYearMonth = useCallback(
@@ -158,17 +161,20 @@ export default function WeekCalendar() {
               key={currentWeekStart.toISOString()}
               custom={direction}
               variants={variants}
-              initial="enter"
+              initial={isMounted ? 'enter' : false}
               animate="center"
-              exit="exit"
-              transition={{ type: 'spring', stiffness: 300, damping: 33 }}
-              drag="x"
+              exit={isMounted ? 'exit' : undefined}
+              transition={
+                isMounted
+                  ? { type: 'spring', stiffness: 300, damping: 33 }
+                  : { duration: 0 }
+              }
+              drag={isMounted ? 'x' : false}
               dragConstraints={{ left: 0, right: 0 }}
               onDragEnd={(e, { offset }) => {
                 const swipe = offset.x;
-                if (swipe < -50)
-                  paginate(1); // 왼쪽으로 밀면 다음주
-                else if (swipe > 50) paginate(-1); // 오른쪽으로 밀면 이전주
+                if (swipe < -50) paginate(1);
+                else if (swipe > 50) paginate(-1);
               }}
               className="absolute inset-0 px-3 sm:px-4 flex justify-between touch-none select-none bg-transparent cursor-grab"
             >

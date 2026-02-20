@@ -2,8 +2,9 @@
 
 import { userProfileOptions } from '@/lib/api/profile';
 import { useQuery } from '@tanstack/react-query';
+import { memo } from 'react';
 
-export default function WritingRecordStatistics() {
+const WritingRecordStatistics = memo(function WritingRecordStatistics() {
   const { data: profile } = useQuery(userProfileOptions());
 
   return (
@@ -46,4 +47,6 @@ export default function WritingRecordStatistics() {
       </div>
     </>
   );
-}
+});
+
+export default WritingRecordStatistics;

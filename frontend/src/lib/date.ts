@@ -71,6 +71,14 @@ export function formatRelativeTime(date: Date): string {
   return `${years}년 전`;
 }
 
+// Intl.DateTimeFormat 인스턴스를 재사용하여 성능 개선
+const isoFormatter = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 /**
  * 날짜를 YYYY-MM-DD 형식으로 포맷팅합니다.
  * @param date - 포맷팅할 날짜 (기본값: 현재 날짜)
@@ -80,14 +88,7 @@ export function formatRelativeTime(date: Date): string {
  */
 export function formatDateISO(date: Date = new Date()): string {
   // TODO: 한국 시간으로 고정 상태. 해외 지원 시 수정
-  const formatter = new Intl.DateTimeFormat('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-
-  const parts = formatter.formatToParts(date);
+  const parts = isoFormatter.formatToParts(date);
   const year = parts.find((p) => p.type === 'year')?.value;
   const month = parts.find((p) => p.type === 'month')?.value;
   const day = parts.find((p) => p.type === 'day')?.value;
@@ -162,15 +163,20 @@ export const getStartOfWeek = (date: Date) => {
 
 export const getWeekDays = (baseDate: Date = new Date()) => {
   const days = [];
+  // 루프 밖으로 이동하여 성능 개선
+  const startOfWeek = getStartOfWeek(baseDate);
+  const today = formatDateISO();
+
   for (let i = 0; i < 7; i++) {
-    const startOfWeek = getStartOfWeek(baseDate);
     const day = new Date(startOfWeek);
     day.setDate(startOfWeek.getDate() + i);
+    const dayStr = formatDateISO(day);
+
     days.push({
       date: day,
-      dateStr: formatDateISO(day),
+      dateStr: dayStr,
       dayName: ['일', '월', '화', '수', '목', '금', '토'][i],
-      isToday: formatDateISO(day) === formatDateISO(),
+      isToday: dayStr === today,
     });
   }
 

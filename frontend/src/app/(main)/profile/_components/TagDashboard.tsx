@@ -12,22 +12,26 @@ import { ProfileTag } from '@/lib/types/profile';
 import { cn } from '@/lib/utils';
 import { Search, X, Tag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { userProfileTagSummaryOptions } from '@/lib/api/profile';
 
 export default function TagDashboard() {
   const { data: tagStats } = useSuspenseQuery(userProfileTagSummaryOptions(10));
 
-  const allTags = [...tagStats.recentTags, ...tagStats.frequentTags];
-  const uniqueAll = Array.from(
-    new Map(allTags.map((item) => [item.tag, item])).values(),
-  );
-  const tags: ProfileTag = {
-    recent: tagStats.recentTags,
-    frequent: tagStats.frequentTags,
-    all: uniqueAll,
-  };
+  // 태그 처리를 useMemo로 최적화
+  const tags = useMemo(() => {
+    const allTags = [...tagStats.recentTags, ...tagStats.frequentTags];
+    const uniqueAll = Array.from(
+      new Map(allTags.map((item) => [item.tag, item])).values(),
+    );
+    return {
+      recent: tagStats.recentTags,
+      frequent: tagStats.frequentTags,
+      all: uniqueAll,
+    } satisfies ProfileTag;
+  }, [tagStats]);
+
   const [tagTab, setTagTab] = useState<'recent' | 'frequent'>('recent');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const router = useRouter();

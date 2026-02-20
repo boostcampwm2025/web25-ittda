@@ -34,24 +34,21 @@ export default function RecordStatistics() {
         </svg>
       </button>
 
-      <div
-        className={cn(
-          'overflow-hidden transition-all duration-300 ease-in-out',
-          isChartVisible ? 'max-h-300 opacity-100' : 'max-h-0 opacity-0',
-        )}
-      >
-        <div className="pt-2 sm:pt-3">
-          <MonthlyUsageChart />
-        </div>
+      {isChartVisible && (
+        <div className="overflow-hidden transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-top-2">
+          <div className="pt-2 sm:pt-3">
+            <MonthlyUsageChart />
+          </div>
 
-        <div className="pt-6 sm:pt-8">
-          <PlaceDashboard />
-        </div>
+          <div className="pt-6 sm:pt-8">
+            <PlaceDashboard />
+          </div>
 
-        <div className="pt-6 sm:pt-8">
-          <EmotionDashboard />
+          <div className="pt-6 sm:pt-8">
+            <EmotionDashboard />
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
