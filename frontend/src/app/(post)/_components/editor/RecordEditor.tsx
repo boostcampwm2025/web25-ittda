@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, memo, useMemo } from 'react';
 import { GripVertical } from 'lucide-react';
 
 // 컴포넌트 및 필드 임포트
@@ -44,7 +44,7 @@ import { useCreateRecord } from '@/hooks/useCreateRecord';
 import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
 
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
-import { useDraftPresence } from '@/hooks/useDraftPresence';
+import { useDraftPresence, PresenceMember } from '@/hooks/useDraftPresence';
 import { LockResponsePayload, useLockManager } from '@/hooks/useLockManager';
 import { useSocketStore } from '@/store/useSocketStore';
 import { useRecordCollaboration } from '@/hooks/useRecordCollaboration';
@@ -69,6 +69,142 @@ interface PostEditorProps {
   groupId?: string;
   postId?: string;
 }
+
+// 개별 블록 아이템 컴포넌트 - 콜백 최적화
+const BlockItem = memo(function BlockItem({
+  block,
+  isDraggingId,
+  locks,
+  mySessionId,
+  members,
+  streamingValues,
+  requestLock,
+  handleFieldUpdate,
+  handleFieldCommit,
+  removeBlock,
+  onOpenDrawer,
+  contentBlockCount,
+  handlePointerDown,
+  handlePointerMove,
+  handleDragEnd,
+}: {
+  block: RecordBlock;
+  isDraggingId: string | null;
+  locks: Record<string, string>;
+  mySessionId: string | null;
+  members: PresenceMember[];
+  streamingValues: Record<string, BlockValue>;
+  requestLock: (key: string) => void;
+  handleFieldUpdate: (blockId: string, newValue: BlockValue, shouldStream?: boolean) => void;
+  handleFieldCommit: (id: string, value: BlockValue) => void;
+  removeBlock: (id: string) => void;
+  onOpenDrawer: (type: FieldType | 'layout' | 'saveLayout', id?: string) => void;
+  contentBlockCount: number;
+  handlePointerDown: (e: React.PointerEvent, blockId: string) => void;
+  handlePointerMove: (e: React.PointerEvent) => void;
+  handleDragEnd: () => void;
+}) {
+  const lockKey = `block:${block.id}`;
+  const ownerSessionId = locks[lockKey];
+  const isMyLock = !!ownerSessionId && ownerSessionId === mySessionId;
+  const isLockedByOther = !!ownerSessionId && !isMyLock;
+  const owner = useMemo(
+    () => members.find((m) => m.sessionId === ownerSessionId),
+    [members, ownerSessionId],
+  );
+  const isLastContentBlock = contentBlockCount === 1;
+
+  const handlePointerDownWrapper = useCallback(
+    (e: React.PointerEvent) => {
+      handlePointerDown(e, block.id);
+    },
+    [handlePointerDown, block.id],
+  );
+
+  const handleOpenDrawer = useCallback(
+    (type: FieldType | 'layout' | 'saveLayout', id?: string) => {
+      onOpenDrawer(type, id);
+    },
+    [onOpenDrawer],
+  );
+
+  const handleRemove = useCallback(() => {
+    removeBlock(block.id);
+  }, [removeBlock, block.id]);
+
+  const handleUpdate = useCallback(
+    (blockId: string, newValue: BlockValue, shouldStream?: boolean) => {
+      handleFieldUpdate(blockId, newValue, shouldStream);
+    },
+    [handleFieldUpdate],
+  );
+
+  const handleCommit = useCallback(
+    (id: string, value: BlockValue) => {
+      handleFieldCommit(id, value);
+    },
+    [handleFieldCommit],
+  );
+
+  return (
+    <div
+      data-block-id={block.id}
+      className={`cursor-grab touch-none relative group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95 pointer-events-none' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
+    >
+      <div
+        className={`relative w-full flex flex-row gap-2 items-center ${
+          block.layout.col === 1 ? 'justify-start' : 'justify-end'
+        }`}
+      >
+        {isLockedByOther && owner && (
+          <div className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse">
+            {owner.profileImageId ? (
+              <AssetImage
+                assetId={owner.profileImageId}
+                alt={`${owner.displayName} 편집 중`}
+                width={24}
+                height={24}
+                className="w-full h-full rounded-full"
+                title={owner.displayName}
+              />
+            ) : (
+              <Image
+                width={24}
+                height={24}
+                src={'/profile_base.png'}
+                alt={`${owner.displayName} 편집 중`}
+                className="w-full h-full rounded-full"
+              />
+            )}
+          </div>
+        )}
+        <div
+          onPointerDown={handlePointerDownWrapper}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handleDragEnd}
+          className="flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
+        </div>
+        <RecordFieldRenderer
+          block={block}
+          streamingValue={streamingValues[block.id]}
+          requestLock={requestLock}
+          onUpdate={handleUpdate}
+          onCommit={handleCommit}
+          onRemove={handleRemove}
+          onOpenDrawer={handleOpenDrawer}
+          isLastContentBlock={isLastContentBlock}
+          lock={{
+            lockKey,
+            isMyLock,
+            isLockedByOther,
+          }}
+        />
+      </div>
+    </div>
+  );
+});
 
 export default function PostEditor({
   mode,
@@ -649,6 +785,14 @@ export default function PostEditor({
     addOrShowBlock(type);
   };
 
+  // BlockItem용 drawer 핸들러
+  const handleOpenDrawerWrapper = useCallback(
+    (type: FieldType | 'layout' | 'saveLayout', id?: string) => {
+      setActiveDrawer({ type, id });
+    },
+    [setActiveDrawer],
+  );
+
   return (
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
       {(isPublishing || (isMediaUploading && !draftId)) && (
@@ -694,79 +838,26 @@ export default function PostEditor({
             isDraggingId ? '' : 'transition-all duration-300'
           }`}
         >
-          {blocks.map((block) => {
-            const lockKey = `block:${block.id}`;
-            const ownerSessionId = locks[lockKey];
-
-            const isMyLock = !!ownerSessionId && ownerSessionId === mySessionId;
-            const isLockedByOther = !!ownerSessionId && !isMyLock;
-
-            const owner = members.find((m) => m.sessionId === ownerSessionId);
-
-            const contentBlockCount = blocks.filter(
-              (b) => b.type === 'content',
-            ).length;
-            const isLastContentBlock = contentBlockCount === 1;
-            return (
-              <div
-                data-block-id={block.id}
-                key={block.id}
-                className={`cursor-grab touch-none relative group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95 pointer-events-none' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
-              >
-                <div
-                  className={`relative w-full flex flex-row gap-2 items-center ${
-                    block.layout.col === 1 ? 'justify-start' : 'justify-end'
-                  }`}
-                >
-                  {isLockedByOther && owner && (
-                    <div className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse">
-                      {owner.profileImageId ? (
-                        <AssetImage
-                          assetId={owner.profileImageId}
-                          alt={`${owner.displayName} 편집 중`}
-                          width={24}
-                          height={24}
-                          className="w-full h-full rounded-full"
-                          title={owner.displayName}
-                        />
-                      ) : (
-                        <Image
-                          width={24}
-                          height={24}
-                          src={'/profile_base.png'}
-                          alt={`${owner.displayName} 편집 중`}
-                          className="w-full h-full rounded-full"
-                        />
-                      )}
-                    </div>
-                  )}
-                  <div
-                    onPointerDown={(e) => handlePointerDown(e, block.id)}
-                    onPointerMove={(e) => handlePointerMove(e)}
-                    onPointerUp={handleDragEnd}
-                    className="flex items-center justify-center w-6 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
-                  >
-                    <GripVertical className="w-4 h-4 text-gray-500 dark:text-gray-200" />
-                  </div>
-                  <RecordFieldRenderer
-                    block={block}
-                    streamingValue={streamingValues[block.id]}
-                    requestLock={requestLock}
-                    onUpdate={handleFieldUpdate}
-                    onCommit={handleFieldCommit}
-                    onRemove={removeBlock}
-                    onOpenDrawer={(type, id) => setActiveDrawer({ type, id })}
-                    isLastContentBlock={isLastContentBlock}
-                    lock={{
-                      lockKey,
-                      isMyLock,
-                      isLockedByOther,
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+          {blocks.map((block) => (
+            <BlockItem
+              key={block.id}
+              block={block}
+              isDraggingId={isDraggingId}
+              locks={locks}
+              mySessionId={mySessionId}
+              members={members}
+              streamingValues={streamingValues}
+              requestLock={requestLock}
+              handleFieldUpdate={handleFieldUpdate}
+              handleFieldCommit={handleFieldCommit}
+              removeBlock={removeBlock}
+              onOpenDrawer={handleOpenDrawerWrapper}
+              contentBlockCount={blocks.filter((b) => b.type === 'content').length}
+              handlePointerDown={handlePointerDown}
+              handlePointerMove={handlePointerMove}
+              handleDragEnd={handleDragEnd}
+            />
+          ))}
         </div>
       </main>
       <Toolbar
