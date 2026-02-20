@@ -42,11 +42,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const { date } = await searchParams;
 
   // 날짜가 없으면 오늘 날짜로 리다이렉트
-  if (!date) {
-    redirect(`/?date=${formatDateISO()}`);
-  }
+  // if (!date) {
+  //   redirect(`/?date=${formatDateISO()}`);
+  // }
 
-  const selectedDate = date;
+  const selectedDate = date || formatDateISO();
 
   const queryClient = new QueryClient();
 
