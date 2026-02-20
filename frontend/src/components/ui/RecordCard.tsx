@@ -5,6 +5,7 @@ import { PostCard } from './PostCard';
 import { useRouter } from 'next/navigation';
 import { GroupCover } from '@/lib/types/group';
 import { randomBaseImage } from '@/lib/image';
+import { memo } from 'react';
 
 /**
  * MonthRecordCard - 월별 기록 카드
@@ -24,7 +25,7 @@ export interface RecordCardProps {
   onChangeCover?: (id: string) => void;
 }
 
-export function RecordCard({
+export const RecordCard = memo(function RecordCard({
   id,
   name,
   count,
@@ -91,7 +92,7 @@ export function RecordCard({
       </PostCard.Overlay>
     </PostCard>
   );
-}
+});
 
 /**
  * DateRecordCard - 날짜 기록 카드
@@ -108,7 +109,7 @@ export interface DateRecordCardProps {
   icon?: React.ReactNode;
 }
 
-export function DateRecordCard({
+export const DateRecordCard = memo(function DateRecordCard({
   date,
   dayName,
   title,
@@ -164,7 +165,7 @@ export function DateRecordCard({
       </PostCard.Overlay>
     </PostCard>
   );
-}
+});
 
 /**
  * SimpleRecordCard - 간단한 기록 카드
@@ -179,7 +180,7 @@ export interface SimpleRecordCardProps {
   height?: string;
 }
 
-export function SimpleRecordCard({
+export const SimpleRecordCard = memo(function SimpleRecordCard({
   title,
   description,
   coverUrl,
@@ -205,4 +206,4 @@ export function SimpleRecordCard({
       </PostCard.Overlay>
     </PostCard>
   );
-}
+});

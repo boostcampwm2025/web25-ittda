@@ -32,9 +32,13 @@ export default function BottomNavigation() {
   const effectiveGroupId =
     pathGroupId || (scope === 'group' ? searchParamsGroupId : null);
 
+  const isSharedPage = pathname === '/shared';
+  const isGroupDetail = /\/group\/[^/]+\/(post|draft)\//.test(pathname);
+
+  // /shared 페이지에서는 미리 데이터를 fetch하여 drawer 열림 지연 방지
   const { data: groups = [] } = useQuery({
     ...groupListOptions(),
-    enabled: isGroupSelectOpen,
+    enabled: isGroupSelectOpen || isSharedPage,
   });
 
   // 현재 그룹의 role 조회
@@ -42,9 +46,6 @@ export default function BottomNavigation() {
     ...groupMyRoleOptions(effectiveGroupId!),
     enabled: !!effectiveGroupId,
   });
-
-  const isSharedPage = pathname === '/shared';
-  const isGroupDetail = /\/group\/[^/]+\/(post|draft)\//.test(pathname);
 
   // VIEWER 권한 확인
   const isViewer = roleData?.role === 'VIEWER';
