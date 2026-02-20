@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import Image from 'next/image';
-import { ReactNode, useState } from 'react';
+import { memo, ReactNode, useCallback, useState } from 'react';
 import { useGroupEdit } from './GroupEditContext';
 import { cn } from '@/lib/utils';
 import { useApiDelete, useApiPatch } from '@/hooks/useApi';
@@ -26,6 +26,92 @@ import { GroupEditResponse, GroupMember } from '@/lib/types/groupResponse';
 import { GroupRoleType } from '@/lib/types/group';
 import { useQueryClient } from '@tanstack/react-query';
 import AssetImage from '@/components/AssetImage';
+
+// 개별 멤버 카드 컴포넌트 - 콜백 최적화
+const MemberCard = memo(function MemberCard({
+  member,
+  me,
+  onOpenRoleDrawer,
+  onConfirmRemove,
+}: {
+  member: GroupMember;
+  me: GroupEditResponse['me'];
+  onOpenRoleDrawer: (member: GroupMember) => void;
+  onConfirmRemove: (userId: string, name: string) => void;
+}) {
+  const canManage = me.userId !== member.userId && me.role === 'ADMIN';
+
+  const handleRoleClick = useCallback(() => {
+    if (canManage) {
+      onOpenRoleDrawer(member);
+    }
+  }, [canManage, onOpenRoleDrawer, member]);
+
+  const handleRemoveClick = useCallback(() => {
+    onConfirmRemove(member.userId, member.name);
+  }, [onConfirmRemove, member.userId, member.name]);
+
+  return (
+    <div className="flex items-center justify-between p-3 rounded-2xl border transition-colors dark:bg-white/5 dark:border-white/5 bg-gray-50 border-black/2">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <div className="w-10 h-10 rounded-full border">
+          {member.profileImage?.assetId ? (
+            <AssetImage
+              width={40}
+              height={40}
+              assetId={member.profileImage.assetId}
+              alt={`${member.nicknameInGroup} 멤버의 프로필`}
+              className="w-full h-full rounded-full bg-white object-cover"
+            />
+          ) : (
+            <Image
+              width={40}
+              height={40}
+              src={'/profile_base.png'}
+              alt={`${member.nicknameInGroup} 멤버의 프로필`}
+              className="w-full h-full rounded-full bg-white object-cover"
+            />
+          )}
+        </div>
+        <div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[13px] font-bold dark:text-gray-200 text-itta-black">
+              {member.nicknameInGroup || member.name}
+            </span>
+            {member.role === 'ADMIN' && (
+              <ShieldCheck className="w-3 h-3 text-[#10B981]" />
+            )}
+          </div>
+          <button
+            onClick={handleRoleClick}
+            className="cursor-pointer flex items-center gap-1 group transition-all dark:text-gray-500 dark:hover:text-gray-300 text-gray-400 hover:text-gray-600"
+          >
+            <span className="text-[10px] text-gray-400">
+              {member.role === 'ADMIN'
+                ? '관리자'
+                : member.role === 'VIEWER'
+                  ? '뷰어'
+                  : '멤버'}
+            </span>
+
+            {canManage && (
+              <ChevronRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {canManage && (
+        <button
+          onClick={handleRemoveClick}
+          className="cursor-pointer p-2 rounded-xl transition-colors dark:hover:bg-red-500/10 dark:text-gray-500 hover:bg-red-50 text-gray-400"
+        >
+          <UserMinus className="w-4 h-4 hover:text-red-500" />
+        </button>
+      )}
+    </div>
+  );
+});
 
 interface GroupMemberManagementProps {
   groupId: string;
@@ -61,7 +147,7 @@ const ROLE: Role[] = [
   },
 ];
 
-export default function GroupMemberManagement({
+const GroupMemberManagement = memo(function GroupMemberManagement({
   groupId,
   className,
   me,
@@ -107,36 +193,36 @@ export default function GroupMemberManagement({
     },
   );
 
-  const confirmRemoveMember = (userId: string, name: string) => {
+  const confirmRemoveMember = useCallback((userId: string, name: string) => {
     setShowDeleteDrawer(true);
     setDeleteMember({ userId, name });
-  };
+  }, []);
 
-  const handleRemoveMember = () => {
+  const handleRemoveMember = useCallback(() => {
     if (deleteMember) {
       removeMember({});
     }
-  };
+  }, [deleteMember, removeMember]);
 
-  const resetDeleteMember = () => {
+  const resetDeleteMember = useCallback(() => {
     setDeleteMember(null);
-  };
+  }, []);
 
-  const openRoleDrawer = (member: GroupMember) => {
+  const openRoleDrawer = useCallback((member: GroupMember) => {
     setEditingMember(member);
     setTempRole(member.role); // 열 때 현재 멤버의 역할을 초기값으로 설정
     setShowRoleDrawer(true);
-  };
+  }, []);
 
-  const handleRoleSelect = (role: GroupRoleType) => {
+  const handleRoleSelect = useCallback((role: GroupRoleType) => {
     setTempRole(role);
-  };
+  }, []);
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = useCallback(() => {
     if (!editingMember || !tempRole) return;
 
     updateRole({ role: tempRole });
-  };
+  }, [editingMember, tempRole, updateRole]);
 
   return (
     <section className="space-y-4">
@@ -148,71 +234,13 @@ export default function GroupMemberManagement({
 
       <div className="space-y-2">
         {members.map((member) => (
-          <div
+          <MemberCard
             key={member.userId}
-            className="flex items-center justify-between p-3 rounded-2xl border transition-colors dark:bg-white/5 dark:border-white/5 bg-gray-50 border-black/2"
-          >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-10 h-10 rounded-full border">
-                {member.profileImage?.assetId ? (
-                  <AssetImage
-                    width={40}
-                    height={40}
-                    assetId={member.profileImage.assetId}
-                    alt={`${member.nicknameInGroup} 멤버의 프로필`}
-                    className="w-full h-full rounded-full bg-white object-cover"
-                  />
-                ) : (
-                  <Image
-                    width={40}
-                    height={40}
-                    src={'/profile_base.png'}
-                    alt={`${member.nicknameInGroup} 멤버의 프로필`}
-                    className="w-full h-full rounded-full bg-white object-cover"
-                  />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-bold dark:text-gray-200 text-itta-black">
-                    {member.nicknameInGroup || member.name}
-                  </span>
-                  {member.role === 'ADMIN' && (
-                    <ShieldCheck className="w-3 h-3 text-[#10B981]" />
-                  )}
-                </div>
-                <button
-                  onClick={() =>
-                    me.userId !== member.userId &&
-                    me.role === 'ADMIN' &&
-                    openRoleDrawer(member)
-                  }
-                  className="cursor-pointer flex items-center gap-1 group transition-all dark:text-gray-500 dark:hover:text-gray-300 text-gray-400 hover:text-gray-600"
-                >
-                  <span className="text-[10px] text-gray-400">
-                    {member.role === 'ADMIN'
-                      ? '관리자'
-                      : member.role === 'VIEWER'
-                        ? '뷰어'
-                        : '멤버'}
-                  </span>
-
-                  {me.userId !== member.userId && me.role === 'ADMIN' && (
-                    <ChevronRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {me.role === 'ADMIN' && me.userId !== member.userId && (
-              <button
-                onClick={() => confirmRemoveMember(member.userId, member.name)}
-                className="cursor-pointer p-2 rounded-xl transition-colors dark:hover:bg-red-500/10 dark:text-gray-500 hover:bg-red-50 text-gray-400"
-              >
-                <UserMinus className="w-4 h-4 hover:text-red-500" />
-              </button>
-            )}
-          </div>
+            member={member}
+            me={me}
+            onOpenRoleDrawer={openRoleDrawer}
+            onConfirmRemove={confirmRemoveMember}
+          />
         ))}
 
         <Drawer
@@ -321,4 +349,6 @@ export default function GroupMemberManagement({
       </div>
     </section>
   );
-}
+});
+
+export default GroupMemberManagement;

@@ -17,19 +17,20 @@ import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import { cn } from '@/lib/utils';
 import AssetImage from '@/components/AssetImage';
 import { GroupEditResponse } from '@/lib/types/groupResponse';
+import { memo, useCallback, useMemo } from 'react';
 
 type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
   groupId: string;
   me: GroupEditResponse['me'];
 };
 
-export default function GroupInfo({ groupId, me }: GroupInfoProps) {
+const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
   const { groupName, setGroupName, groupThumbnail, setGroupThumbnail } =
     useGroupEdit();
   const router = useRouter();
 
-  // 그룹 이름 유효성 검사
-  const getGroupNameError = () => {
+  // 그룹 이름 유효성 검사 - useMemo로 최적화
+  const groupNameError = useMemo(() => {
     if (groupName.length < 2) return '그룹 이름은 최소 2자 이상이어야 합니다.';
     if (groupName.length > 10)
       return '그룹 이름은 최대 10자까지 입력 가능합니다.';
@@ -47,9 +48,23 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
     }
 
     return null;
-  };
+  }, [groupName]);
 
-  const groupNameError = getGroupNameError();
+  const handleThumbnailSelect = useCallback((assetId: string, postId: string) => {
+    setGroupThumbnail({ assetId, postId });
+  }, [setGroupThumbnail]);
+
+  const handleGroupNameClear = useCallback(() => {
+    setGroupName('');
+  }, [setGroupName]);
+
+  const handleGroupNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setGroupName(e.target.value);
+  }, [setGroupName]);
+
+  const handleNavigateToProfile = useCallback(() => {
+    router.push(`/group/${groupId}/edit/profile`);
+  }, [router, groupId]);
 
   return (
     <section className="space-y-4">
@@ -101,9 +116,7 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
             <GalleryDrawer
               type="group"
               groupId={groupId}
-              onSelect={(assetId, postId) =>
-                setGroupThumbnail({ assetId, postId })
-              }
+              onSelect={handleThumbnailSelect}
             />
           </DrawerContent>
         </Drawer>
@@ -119,7 +132,7 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
             disabled={me.role === 'VIEWER'}
             value={groupName}
             placeholder="그룹명을 작성해주세요."
-            onChange={(e) => setGroupName(e.target.value)}
+            onChange={handleGroupNameChange}
             className={`w-full border-b-2 bg-transparent px-1 py-4 text-sm font-semibold transition-all outline-none dark:text-white dark:placeholder-gray-700 text-itta-black placeholder-gray-300 ${
               groupNameError
                 ? 'border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500'
@@ -128,7 +141,7 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
           />
           {groupName && (
             <button
-              onClick={() => setGroupName('')}
+              onClick={handleGroupNameClear}
               className="cursor-pointer absolute right-0 top-1/2 -translate-y-1/2 p-1 text-gray-300"
             >
               <X className="w-4 h-4" />
@@ -147,7 +160,7 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
           나의 그룹 프로필
         </label>
         <button
-          onClick={() => router.push(`/group/${groupId}/edit/profile`)}
+          onClick={handleNavigateToProfile}
           className="cursor-pointer mt-4 w-full flex items-center justify-between px-3 py-4 sm:p-4 rounded-3xl border transition-all active:scale-[0.98] dark:bg-[#10B981]/5 dark:border-[#10B981]/10 dark:hover:bg-[#10B981]/10 bg-[#10B981]/5 border-[#10B981]/10 hover:bg-[#10B981]/10"
         >
           <div className="flex items-center rounded-full gap-4 overflow-hidden">
@@ -182,4 +195,6 @@ export default function GroupInfo({ groupId, me }: GroupInfoProps) {
       </section>
     </section>
   );
-}
+});
+
+export default GroupInfo;

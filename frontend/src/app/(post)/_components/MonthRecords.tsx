@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
@@ -25,12 +25,56 @@ import {
   groupMyRoleOptions,
 } from '@/lib/api/group';
 
+// convertMontRecords의 반환 타입 추론
+type ConvertedMonthRecord = {
+  id: string;
+  name: string;
+  count: number;
+  latestTitle: string;
+  latestLocation: string;
+  cover: { assetId: string; width: number; height: number; mimeType: string } | null;
+};
+
+// 개별 월 카드 컴포넌트 - 콜백 최적화
+const MonthCard = memo(function MonthCard({
+  month,
+  onNavigate,
+  onChangeCover,
+  canChangeCover,
+}: {
+  month: ConvertedMonthRecord;
+  onNavigate: (monthId: string) => void;
+  onChangeCover: (monthId: string) => void;
+  canChangeCover: boolean;
+}) {
+  const handleClick = useCallback(() => {
+    onNavigate(month.id);
+  }, [onNavigate, month.id]);
+
+  const handleChangeCover = useCallback(() => {
+    onChangeCover(month.id);
+  }, [onChangeCover, month.id]);
+
+  return (
+    <RecordCard
+      id={month.id}
+      name={month.name}
+      count={month.count}
+      latestTitle={month.latestTitle}
+      latestLocation={month.latestLocation}
+      cover={month.cover}
+      onClick={handleClick}
+      onChangeCover={canChangeCover ? handleChangeCover : undefined}
+    />
+  );
+});
+
 interface MonthRecordsProps {
   cardRoute: string;
   groupId?: string;
 }
 
-export default function MonthRecords({
+const MonthRecords = memo(function MonthRecords({
   groupId,
   cardRoute,
 }: MonthRecordsProps) {
@@ -55,11 +99,16 @@ export default function MonthRecords({
   });
 
   const isViewer = roleData?.role === 'VIEWER';
+  const canChangeCover = !(groupId && isViewer);
 
-  const openGallery = (monthId: string) => {
+  const handleNavigate = useCallback((monthId: string) => {
+    router.push(`${cardRoute}/${monthId}`);
+  }, [router, cardRoute]);
+
+  const openGallery = useCallback((monthId: string) => {
     setActiveMonthId(monthId);
     setIsDrawerOpen(true);
-  };
+  }, []);
 
   const cacheKey = groupId
     ? ['group', groupId, 'records', 'month']
@@ -144,16 +193,12 @@ export default function MonthRecords({
     <>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {months.map((m) => (
-          <RecordCard
+          <MonthCard
             key={m.id}
-            id={m.id}
-            name={m.name}
-            count={m.count}
-            latestTitle={m.latestTitle}
-            latestLocation={m.latestLocation}
-            cover={m.cover}
-            onClick={() => router.push(`${cardRoute}/${m.id}`)}
-            onChangeCover={groupId && isViewer ? undefined : openGallery}
+            month={m}
+            onNavigate={handleNavigate}
+            onChangeCover={openGallery}
+            canChangeCover={canChangeCover}
           />
         ))}
       </div>
@@ -190,4 +235,6 @@ export default function MonthRecords({
       </Drawer>
     </>
   );
-}
+});
+
+export default MonthRecords;

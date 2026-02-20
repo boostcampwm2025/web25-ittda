@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
@@ -20,6 +20,52 @@ import {
 } from '@/lib/types/recordResponse';
 import { GroupSortOption } from './SharedHeaderActions';
 import { useApiPatch } from '@/hooks/useApi';
+
+// 개별 그룹 카드 컴포넌트 - 콜백 최적화
+const GroupCard = memo(function GroupCard({
+  group,
+  onNavigate,
+  onOpenGallery,
+}: {
+  group: GroupSummary;
+  onNavigate: (groupId: string) => void;
+  onOpenGallery: (groupId: string) => void;
+}) {
+  const isViewer = group.permission === 'VIEWER';
+
+  const handleClick = useCallback(() => {
+    onNavigate(group.groupId);
+  }, [onNavigate, group.groupId]);
+
+  const handleChangeCover = useCallback(() => {
+    onOpenGallery(group.groupId);
+  }, [onOpenGallery, group.groupId]);
+
+  const count = useMemo(
+    () => `${group.memberCount}명 • ${group.recordCount}기록`,
+    [group.memberCount, group.recordCount]
+  );
+
+  const createdAt = useMemo(
+    () => group.createdAt.split('T')[0],
+    [group.createdAt]
+  );
+
+  return (
+    <RecordCard
+      id={group.groupId}
+      name={group.name}
+      count={count}
+      latestTitle={group.latestPost?.title || '최신 기록이 없어요'}
+      latestLocation={group.latestPost?.placeName}
+      hasNotification={false}
+      cover={group.cover}
+      onClick={handleClick}
+      onChangeCover={isViewer ? undefined : handleChangeCover}
+      createdAt={createdAt}
+    />
+  );
+});
 
 interface SharedRecordProps {
   searchParams: string;
@@ -42,7 +88,7 @@ const sortGroups = (
   }
 };
 
-export default function SharedRecords({
+const SharedRecords = memo(function SharedRecords({
   searchParams,
 }: SharedRecordProps) {
   const queryClient = useQueryClient();
@@ -100,12 +146,16 @@ export default function SharedRecords({
     },
   );
 
-  const openGallery = (groupId: string) => {
+  const handleNavigate = useCallback((groupId: string) => {
+    router.push(`/group/${groupId}`);
+  }, [router]);
+
+  const openGallery = useCallback((groupId: string) => {
     setActiveGroupId(groupId);
     setIsDrawerOpen(true);
-  };
+  }, []);
 
-  const handleCoverSelect = (assetId: string, recordId: string) => {
+  const handleCoverSelect = useCallback((assetId: string, recordId: string) => {
     if (!activeGroupId) return;
 
     // 낙관적 업데이트: 캐시 직접 수정
@@ -122,7 +172,7 @@ export default function SharedRecords({
     });
 
     updateGroupCover({ assetId: assetId, sourcePostId: recordId });
-  };
+  }, [activeGroupId, queryClient, updateGroupCover]);
 
   if (sortedGroups.length === 0) {
     return (
@@ -147,26 +197,14 @@ export default function SharedRecords({
   return (
     <>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {sortedGroups.map((g) => {
-          const isViewer = g.permission === 'VIEWER';
-          return (
-            <RecordCard
-              key={g.groupId}
-              id={g.groupId}
-              name={g.name}
-              count={`${g.memberCount}명 • ${g.recordCount}기록`}
-              latestTitle={g.latestPost?.title || '최신 기록이 없어요'}
-              latestLocation={g.latestPost?.placeName}
-              hasNotification={false}
-              cover={g.cover}
-              onClick={() => router.push(`/group/${g.groupId}`)}
-              onChangeCover={
-                isViewer ? undefined : () => openGallery(g.groupId)
-              }
-              createdAt={g.createdAt.split('T')[0]}
-            />
-          );
-        })}
+        {sortedGroups.map((g) => (
+          <GroupCard
+            key={g.groupId}
+            group={g}
+            onNavigate={handleNavigate}
+            onOpenGallery={openGallery}
+          />
+        ))}
       </div>
 
       {/* 커버 변경 Drawer */}
@@ -204,4 +242,6 @@ export default function SharedRecords({
       </Drawer>
     </>
   );
-}
+});
+
+export default SharedRecords;
