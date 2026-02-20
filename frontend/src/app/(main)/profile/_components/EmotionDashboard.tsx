@@ -7,8 +7,9 @@ import { Smile } from 'lucide-react';
 import { EMOTION_MAP } from '@/lib/constants/constants';
 import { useQuery } from '@tanstack/react-query';
 import { userProfileEmotionSummaryOptions } from '@/lib/api/profile';
+import { memo, useMemo } from 'react';
 
-export default function EmotionDashboard() {
+const EmotionDashboard = memo(function EmotionDashboard() {
   const router = useRouter();
 
   const {
@@ -16,6 +17,13 @@ export default function EmotionDashboard() {
     isLoading,
     isError,
   } = useQuery(userProfileEmotionSummaryOptions(10));
+
+  // 정렬 및 슬라이스 작업을 useMemo로 최적화
+  const topEmotions = useMemo(() => {
+    return [...currentEmotions.emotion]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [currentEmotions.emotion]);
 
   if (isLoading) {
     return (
@@ -84,10 +92,7 @@ export default function EmotionDashboard() {
         {/* 리스트 형태로 감정 데이터 표시 */}
         <div className="mt-4 sm:mt-5 mb-5 sm:mb-6">
           <div className="space-y-1.5 sm:space-y-2">
-            {[...currentEmotions.emotion]
-              .sort((a, b) => b.count - a.count)
-              .slice(0, 5)
-              .map((emotion, index) => {
+            {topEmotions.map((emotion, index) => {
                 const totalCount = currentEmotions.totalCount;
                 const percentage = (
                   (emotion.count / totalCount) *
@@ -145,4 +150,6 @@ export default function EmotionDashboard() {
       </div>
     </section>
   );
-}
+});
+
+export default EmotionDashboard;

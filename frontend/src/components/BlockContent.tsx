@@ -8,11 +8,11 @@ import ImageCarousel from './ImageCarousel';
 import ImageTileGrid from './ImageTileGrid';
 import { EMOTION_MAP } from '@/lib/constants/constants';
 import { useMediaResolveMulti } from '@/hooks/useMediaResolve';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 
 type ImageLayout = 'carousel' | 'tile' | 'responsive';
 
-export default function BlockContent({
+const BlockContent = memo(function BlockContent({
   block,
   imageLayout = 'carousel',
 }: {
@@ -190,13 +190,15 @@ export default function BlockContent({
     default:
       return null;
   }
-}
+});
+
+export default BlockContent;
 
 /**
  * 이미지 블록 처리하는 내부 컴포넌트
  * imageId를 통한 solve를 위해 분리
  */
-function ImageBlock({
+const ImageBlock = memo(function ImageBlock({
   value,
   layout = 'carousel',
 }: {
@@ -253,4 +255,4 @@ function ImageBlock({
       )}
     </div>
   );
-}
+});

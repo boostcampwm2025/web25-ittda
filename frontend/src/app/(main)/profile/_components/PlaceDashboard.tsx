@@ -4,8 +4,9 @@ import { userProfileOptions } from '@/lib/api/profile';
 import { cn } from '@/lib/utils';
 import { MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { memo } from 'react';
 
-export default function PlaceDashboard() {
+const PlaceDashboard = memo(function PlaceDashboard() {
   const { data: profile, isLoading, isError } = useQuery(userProfileOptions());
 
   if (isLoading) {
@@ -96,4 +97,6 @@ export default function PlaceDashboard() {
       </div>
     </section>
   );
-}
+});
+
+export default PlaceDashboard;
