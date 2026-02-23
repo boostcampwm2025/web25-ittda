@@ -111,9 +111,11 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                     height={30}
                     className="w-full h-full object-cover rounded-full"
                     assetId={
-                      contributor.groupProfileImageId || '/profile_base.png'
+                      contributor.groupProfileImageId ||
+                      contributor.profileImageId ||
+                      '/profile_base.png'
                     }
-                    alt={`${contributor.groupNickname || contributor.nickname}의 프로필`}
+                    alt={`${contributor.groupNickname || contributor.nickname || 'anonymous'}의 프로필`}
                   />
                 </div>
                 <span className="font-medium text-gray-900 dark:text-gray-100">

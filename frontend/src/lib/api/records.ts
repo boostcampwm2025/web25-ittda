@@ -153,10 +153,13 @@ export const recordPreviewListOptions = (
   groupId?: string,
 ) =>
   queryOptions({
-    queryKey:
-      scope === 'groups'
-        ? ['group', groupId, 'records', 'daily', date]
-        : ['records', 'preview', date, 'personal'],
+    queryKey: (() => {
+      if (scope === 'groups')
+        return ['group', groupId, 'records', 'daily', date];
+      if (scope === 'personal')
+        return ['my', 'records', 'preview', date, 'personal'];
+      return ['my', 'records', 'preview', date];
+    })(),
     queryFn: async () => {
       const endpoint = !scope
         ? `/api/feed?date=${date}`
