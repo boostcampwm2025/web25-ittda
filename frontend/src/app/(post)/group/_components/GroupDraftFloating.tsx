@@ -96,7 +96,7 @@ export default function GroupDraftFloatingButton({
             align="end"
             side="top"
             sideOffset={12}
-            className="w-70 sm:w-80 lg:w-100 max-h-90 sm:max-h-100 p-0 rounded-[24px] sm:rounded-[32px] overflow-hidden border-gray-100 dark:border-white/10 bg-white/95 dark:bg-[#1E1E1E]/95 shadow-2xl flex flex-col"
+            className="w-70 sm:w-80 lg:w-100 max-h-90 sm:max-h-100 p-0 rounded-[24px] sm:rounded-[32px] overflow-hidden border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E1E1E] shadow-2xl flex flex-col"
           >
             <div className="w-full flex justify-end items-center pr-3 pt-3">
               <PopoverClose className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full text-gray-500 transition-colors">
