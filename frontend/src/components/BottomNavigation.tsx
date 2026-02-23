@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import NavItem from './NavItem';
 import GroupSelectDrawer from './GroupSelectDrawer';
 import {
@@ -76,85 +77,102 @@ export default function BottomNavigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-4 py-3 pb-4 sm:px-8 sm:py-4 sm:pb-6 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
-      {effectiveGroupId ? (
-        <>
-          <NavItem
-            icon={<Book />}
-            active={pathname === `/group/${effectiveGroupId}`}
-            onClick={() => router.push(`/group/${effectiveGroupId}`)}
-            isGroup
-          />
-          <NavItem
-            icon={<MapIcon />}
-            active={pathname === `/group/${effectiveGroupId}/map`}
-            onClick={() => router.push(`/group/${effectiveGroupId}/map`)}
-            isGroup
-          />
-          <button
-            onClick={() => !isViewer && setIsAddDrawerOpen(true)}
-            disabled={isViewer}
-            className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl ring-white flex items-center justify-center shadow-2xl transition-all ring-4 ${
-              isViewer
-                ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200'
-                : 'cursor-pointer active:scale-95 dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20]'
-            }`}
+      <AnimatePresence mode="wait" initial={false}>
+        {effectiveGroupId ? (
+          <motion.div
+            key="group-nav"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="flex items-center justify-between w-full"
           >
-            <Plus className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} />
-          </button>
-          <NavItem
-            icon={<MessageSquare />}
-            active={pathname === `/group/${effectiveGroupId}/notifications`}
-            onClick={() =>
-              router.push(`/group/${effectiveGroupId}/notifications`)
-            }
-            isGroup
-          />
-          <NavItem
-            icon={<XCircle />}
-            active={false}
-            onClick={() => router.push('/shared')}
-          />
-        </>
-      ) : (
-        <>
-          <NavItem
-            icon={<HomeIcon />}
-            active={pathname === '/'}
-            onClick={() => router.push('/')}
-          />
-          <NavItem
-            icon={<Book />}
-            active={pathname.startsWith('/my')}
-            onClick={() => router.push('/my')}
-          />
-          <button
-            onClick={() => {
-              if (isSharedPage) {
-                setIsGroupSelectOpen(true);
-              } else {
-                router.push('/add');
+            <NavItem
+              icon={<Book />}
+              active={pathname === `/group/${effectiveGroupId}`}
+              onClick={() => router.push(`/group/${effectiveGroupId}`)}
+              isGroup
+            />
+            <NavItem
+              icon={<MapIcon />}
+              active={pathname === `/group/${effectiveGroupId}/map`}
+              onClick={() => router.push(`/group/${effectiveGroupId}/map`)}
+              isGroup
+            />
+            <button
+              onClick={() => !isViewer && setIsAddDrawerOpen(true)}
+              disabled={isViewer}
+              className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl ring-white flex items-center justify-center shadow-2xl transition-all ring-4 ${
+                isViewer
+                  ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200'
+                  : 'cursor-pointer active:scale-95 dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20]'
+              }`}
+            >
+              <Plus className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} />
+            </button>
+            <NavItem
+              icon={<MessageSquare />}
+              active={pathname === `/group/${effectiveGroupId}/notifications`}
+              onClick={() =>
+                router.push(`/group/${effectiveGroupId}/notifications`)
               }
-            }}
-            className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
-              isSharedPage
-                ? 'dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20] ring-white'
-                : 'dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white'
-            }`}
+              isGroup
+            />
+            <NavItem
+              icon={<XCircle />}
+              active={false}
+              onClick={() => router.push('/shared')}
+              isGroup
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="default-nav"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="flex items-center justify-between w-full"
           >
-            <Plus className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} />
-          </button>
-          <NavItem
-            icon={<Users />}
-            active={pathname === '/shared'}
-            onClick={() => router.push('/shared')}
-          />
-          <NavItem
-            icon={<MapIcon />}
-            active={pathname === '/map'}
-            onClick={() => router.push('/map')}
-          />
-        </>
-      )}
+            <NavItem
+              icon={<HomeIcon />}
+              active={pathname === '/'}
+              onClick={() => router.push('/')}
+            />
+            <NavItem
+              icon={<Book />}
+              active={pathname.startsWith('/my')}
+              onClick={() => router.push('/my')}
+            />
+            <button
+              onClick={() => {
+                if (isSharedPage) {
+                  setIsGroupSelectOpen(true);
+                } else {
+                  router.push('/add');
+                }
+              }}
+              className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
+                isSharedPage
+                  ? 'dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20] ring-white'
+                  : 'dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white'
+              }`}
+            >
+              <Plus className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} />
+            </button>
+            <NavItem
+              icon={<Users />}
+              active={pathname === '/shared'}
+              onClick={() => router.push('/shared')}
+            />
+            <NavItem
+              icon={<MapIcon />}
+              active={pathname === '/map'}
+              onClick={() => router.push('/map')}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <GroupSelectDrawer
         open={isGroupSelectOpen}
