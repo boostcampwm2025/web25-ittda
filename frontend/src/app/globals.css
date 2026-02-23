@@ -202,11 +202,15 @@ main {
     @apply bg-background text-foreground;
   }
   button {
+    transition: transform 0.1s ease-in-out;
     cursor: pointer;
   }
   /* 비활성화된 버튼은 커서도 비활성화 */
   button:disabled {
     cursor: not-allowed;
+  }
+  button:active {
+    transform: scale(0.95);
   }
 
   /* 테이블 셀 input: 12px처럼 보이지만 확대되지 않음 */
