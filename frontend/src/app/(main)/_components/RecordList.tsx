@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { BookOpen, Plus, Users, User } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { RecordPreview } from '@/lib/types/recordResponse';
+import AssetImage from '@/components/AssetImage';
+import Image from 'next/image';
 
 type ImageLayout = 'carousel' | 'tile' | 'responsive';
 
@@ -132,6 +134,40 @@ const RecordItem = memo(function RecordItem({
             );
           }
         })}
+      </div>
+      <div className="flex justify-end items-center -space-x-2 shrink-0">
+        {record.groupId &&
+          record.contributors.slice(0, 5).map((m) => (
+            <div
+              key={m.userId}
+              className="w-8 h-8 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white"
+            >
+              {m.groupProfileImageId ? (
+                <AssetImage
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover rounded-full"
+                  assetId={m.groupProfileImageId}
+                  alt={`${m.groupNickname || m.nickname}의 프로필`}
+                />
+              ) : (
+                <Image
+                  width={32}
+                  height={32}
+                  src={'/profile_base.png'}
+                  alt={`${m.groupNickname || m.nickname}의 프로필`}
+                  className="w-full h-full rounded-full object-cover"
+                />
+              )}
+            </div>
+          ))}
+        {record.groupId && record.contributors.length > 5 && (
+          <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
+            <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">
+              +{record.contributors.length - 5}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
