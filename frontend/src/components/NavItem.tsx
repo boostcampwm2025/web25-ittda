@@ -1,7 +1,8 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { cloneElement, ReactElement, SVGProps } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { cloneElement, ReactElement, SVGProps, useState } from 'react';
 
 interface NavItemProps {
   icon: ReactElement<SVGProps<SVGSVGElement>>;
@@ -16,21 +17,41 @@ export default function NavItem({
   onClick,
   isGroup,
 }: NavItemProps) {
-  // 그룹 페이지일 경우 활성 아이콘은 그린(#10B981)으로 표시
+  const [ripple, setRipple] = useState(false);
+
+  const handleClick = () => {
+    setRipple(true);
+    onClick();
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={cn(
-        'p-1.5 sm:p-2 transition-all rounded-xl cursor-pointer',
-        active
-          ? 'dark:text-white text-[#222222]'
-          : 'dark:text-gray-500 text-gray-300 hover:text-gray-400',
-
-        isGroup && active && 'text-[#10B981]',
+        'relative overflow-hidden flex items-center justify-center w-10 h-9 sm:w-12 sm:h-10 rounded-2xl transition-colors cursor-pointer',
+        isGroup
+          ? active
+            ? 'text-[#10B981] dark:text-emerald-400'
+            : 'text-gray-400 dark:text-gray-500'
+          : active
+            ? 'text-[#222222] dark:text-white'
+            : 'text-gray-300 dark:text-gray-500',
       )}
     >
+      <AnimatePresence>
+        {ripple && (
+          <motion.span
+            initial={{ opacity: 0.25, scale: 0.6 }}
+            animate={{ opacity: 0, scale: 2.2 }}
+            exit={{}}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            onAnimationComplete={() => setRipple(false)}
+            className="absolute inset-0 rounded-2xl bg-gray-400 dark:bg-gray-300 pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
       {cloneElement(icon, {
-        className: 'w-5 h-5 sm:w-6 sm:h-6',
+        className: 'w-5 h-5 sm:w-6 sm:h-6 relative',
         strokeWidth: active ? 2.5 : 2.2,
         fill: 'none',
         fillOpacity: active ? 0.08 : 0,
