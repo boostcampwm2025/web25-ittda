@@ -26,6 +26,7 @@ export default function GroupProfileEditClient({
     `/api/groups/${groupId}/members/me`,
   );
   const { data: groupData } = useSuspenseQuery(groupDetailOptions(groupId));
+
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
 
