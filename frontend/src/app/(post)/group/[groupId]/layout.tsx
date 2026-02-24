@@ -3,6 +3,7 @@ import { getCachedGroupDetail } from '@/lib/api/group';
 import { get } from '@/lib/api/api';
 import { SingleResolveResponse } from '@/hooks/useMediaResolve';
 import { randomBaseImage } from '@/lib/image';
+import GroupAccessGuard from '../_components/GroupAccessGuard';
 
 interface GroupLayoutProps {
   children: React.ReactNode;
@@ -69,6 +70,10 @@ export async function generateMetadata({
   }
 }
 
-export default function GroupLayout({ children }: GroupLayoutProps) {
-  return <>{children}</>;
+export default async function GroupLayout({
+  children,
+  params,
+}: GroupLayoutProps) {
+  const { groupId } = await params;
+  return <GroupAccessGuard groupId={groupId}>{children}</GroupAccessGuard>;
 }
