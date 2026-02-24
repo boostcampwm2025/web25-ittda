@@ -12,7 +12,6 @@ import {
 import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
 import { useTheme } from 'next-themes';
-import { useGeolocation } from '@/hooks/useGeolocation';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 
@@ -84,10 +83,6 @@ export default function GoogleMap({
   const { theme } = useTheme();
   const placesLib = useMapsLibrary('places');
 
-  const { latitude: geoLat, longitude: geoLng } = useGeolocation({
-    reverseGeocode: true,
-  });
-
   const selectedPost = useMemo(() => {
     if (typeof selectedPostId === 'string') {
       return posts.find((p) => p.id === selectedPostId) ?? null;
@@ -112,29 +107,6 @@ export default function GoogleMap({
       logger.error('Places Service 초기화 실패', error);
     }
   }, [placesLib, mapRef, placesServiceRef]);
-
-  // 초기 유저의 위치로 지도 이동
-  useEffect(() => {
-    if (geoLat && geoLng && mapRef.current) {
-      try {
-        mapRef.current.panTo({ lat: geoLat, lng: geoLng });
-      } catch (error) {
-        // 사용자 위치로 이동 실패
-        Sentry.captureException(error, {
-          level: 'warning',
-          tags: {
-            context: 'map',
-            operation: 'pan-to-user-location',
-          },
-          extra: {
-            lat: geoLat,
-            lng: geoLng,
-          },
-        });
-        logger.error('사용자 위치로 지도 이동 실패', error);
-      }
-    }
-  }, [geoLat, geoLng, mapRef]);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID;
@@ -174,8 +146,8 @@ export default function GoogleMap({
         maxZoom={20}
         colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
         mapId={mapId}
-        defaultCenter={{ lat: 37.5665, lng: 126.978 }}
-        defaultZoom={16}
+        defaultCenter={{ lat: 37.5796, lng: 126.977 }}
+        defaultZoom={7}
         gestureHandling="greedy"
         disableDefaultUI={true}
         onClick={() => onMapClick?.()}
