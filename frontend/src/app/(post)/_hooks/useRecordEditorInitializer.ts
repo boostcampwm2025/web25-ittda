@@ -6,11 +6,13 @@ import { RecordBlock } from '@/lib/types/recordField';
 
 interface Params {
   initialPost?: { title: string; blocks: RecordBlock[] };
+  initialDate?: string;
   onInitialized: (data: { title: string; blocks: RecordBlock[] }) => void;
 }
 
 export function usePostEditorInitializer({
   initialPost,
+  initialDate,
   onInitialized,
 }: Params) {
   const hasInitializedRef = useRef(false);
@@ -31,7 +33,10 @@ export function usePostEditorInitializer({
         initialTypes.map((type) => ({
           id: uuidv4(),
           type,
-          value: getDefaultValue(type),
+          value:
+            type === 'date' && initialDate
+              ? { date: initialDate }
+              : getDefaultValue(type),
           layout: { row: 0, col: 0, span: 2 },
         })) as RecordBlock[],
       );
@@ -41,5 +46,5 @@ export function usePostEditorInitializer({
       title: baseTitle,
       blocks: baseBlocks,
     });
-  }, [initialPost, onInitialized]);
+  }, [initialPost, initialDate, onInitialized]);
 }

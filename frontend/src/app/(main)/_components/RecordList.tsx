@@ -260,7 +260,7 @@ export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
           </div>
           <button
             type="button"
-            onClick={() => router.push('/add')}
+            onClick={() => router.push(`/add?date=${selectedDateStr}`)}
             className="mt-2 flex items-center gap-1 sm:gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold text-white bg-itta-black shadow-lg shadow-itta-black/20 hover:bg-itta-black/80 active:scale-95 transition-all"
           >
             <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
