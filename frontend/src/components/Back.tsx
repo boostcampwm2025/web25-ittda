@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 interface BackProps {
   size?: number;
-  className?: number;
+  className?: string;
   onClick?: VoidFunction;
 }
 
