@@ -254,7 +254,7 @@ export default function RecordMapContent({
         <div className="absolute top-3 sm:top-4 left-0 w-full z-10 px-3 sm:px-4">
           <div className="flex flex-col gap-2 sm:gap-3">
             <div className="flex gap-1.5 sm:gap-2 items-center">
-              <Back />
+              <Back className="bg-white dark:bg-[#1E1E1E] shadow-xl rounded-full p-2 sm:p-2.5" />
               <div className="flex-1 min-w-0">
                 <MapSearchBar
                   onSelect={handleSelectPlace}
