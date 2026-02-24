@@ -49,8 +49,8 @@ export const PinMarker = ({
           'flex justify-center items-center relative rounded-full rounded-br-none transform rotate-45 overflow-hidden transition-all duration-300',
           hasThumbnail ? 'bg-secondary' : 'bg-white',
           isSelected
-            ? 'w-14 h-14 border-2 border-[#10B981] shadow-lg scale-110'
-            : 'w-11 h-11 border-[1.5px] border-secondary',
+            ? 'w-10 h-10 sm:w-14 sm:h-14 border-2 border-[#10B981] shadow-lg scale-110'
+            : 'w-8 h-8 sm:w-11 sm:h-11 border-[1.5px] border-secondary',
         )}
       >
         {hasThumbnail ? (
@@ -58,15 +58,15 @@ export const PinMarker = ({
             assetId={post.thumbnailMediaId ?? randomBaseImage(post.id)}
             alt={post.title}
             fill
-            sizes={isSelected ? '64px' : '48px'}
+            sizes={isSelected ? '(max-width: 640px) 40px, 56px' : '(max-width: 640px) 32px, 44px'}
             className="object-cover transform -rotate-45 scale-125"
             onError={() => setIsError(true)}
           />
         ) : (
           <MapIcon
             className={cn(
-              "text-gray-600 transform -rotate-45",
-              isSelected ? "w-7 h-7" : "w-6 h-6"
+              'text-gray-600 transform -rotate-45',
+              isSelected ? 'w-5 h-5 sm:w-7 sm:h-7' : 'w-4 h-4 sm:w-6 sm:h-6',
             )}
           />
         )}
