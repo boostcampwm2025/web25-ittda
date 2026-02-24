@@ -146,8 +146,8 @@ export default function GoogleMap({
         maxZoom={20}
         colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
         mapId={mapId}
-        defaultCenter={{ lat: 37.5796, lng: 126.977 }}
-        defaultZoom={7}
+        defaultCenter={{ lat: 36.0, lng: 127.9 }}
+        defaultZoom={6.7}
         gestureHandling="greedy"
         disableDefaultUI={true}
         onClick={() => onMapClick?.()}

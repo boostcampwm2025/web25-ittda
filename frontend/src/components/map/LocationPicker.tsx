@@ -28,8 +28,8 @@ export interface LocationPickerProps {
   className?: string;
 }
 
-// 기본 중심 좌표 (경복궁)
-const DEFAULT_CENTER = { lat: 37.5796, lng: 126.977 };
+// 기본 중심 좌표 (충북 음성 부근 - 우리나라가 모두 보이도록)
+const DEFAULT_CENTER = { lat: 36.0, lng: 127.9 };
 
 export function LocationPicker({
   mode,
@@ -461,7 +461,7 @@ function LocationPickerContent({
           colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
           defaultCenter={initialCenter || DEFAULT_CENTER}
-          defaultZoom={7}
+          defaultZoom={6.7}
           disableDefaultUI
           gestureHandling="greedy"
           onDragstart={() => {
