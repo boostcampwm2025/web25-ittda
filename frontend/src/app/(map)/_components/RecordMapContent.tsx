@@ -14,20 +14,16 @@ import {
 } from '@/lib/utils/filterLabels';
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
-import LocationPermissionChecker from '@/components/LocationPermissionChecker';
 import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { useDebouncedValue } from '@/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import Back from '@/components/Back';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-// 기본 중심 좌표 (서울 시청)
-const DEFAULT_CENTER_LAT = 37.5665;
-const DEFAULT_CENTER_LNG = 126.978;
+// 기본 중심 좌표 (경복궁)
+const DEFAULT_CENTER_LAT = 37.5796;
+const DEFAULT_CENTER_LNG = 126.977;
 // 기본 범위 (약 10km)
 const DEFAULT_BOUNDS_DELTA = 0.1;
 
@@ -99,21 +95,6 @@ export default function RecordMapContent({
     return () => clearInterval(interval);
   }, []);
 
-  // 사용자 위치 가져오기
-  const { latitude, longitude } = useGeolocation({
-    reverseGeocode: false, // 주소 변환 불필요
-  });
-
-  // 실제 사용할 지도 중심 (mapCenter가 있으면 사용, 없으면 사용자 위치 사용)
-  const effectiveMapCenter = useMemo(() => {
-    if (mapCenter) return mapCenter;
-    if (latitude && longitude) return { lat: latitude, lng: longitude };
-    return null;
-  }, [mapCenter, latitude, longitude]);
-
-  // 지도 중심 위치를 debounce하여 성능 최적화 (500ms)
-  const debouncedMapCenter = useDebouncedValue(effectiveMapCenter, 500);
-
   // URL 쿼리 파라미터
   const {
     query,
@@ -153,8 +134,6 @@ export default function RecordMapContent({
       tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
     }),
     placeholderData: keepPreviousData,
-    enabled:
-      debouncedMapCenter !== null || (latitude !== null && longitude !== null),
   });
 
   // 무한 스크롤 관찰자
@@ -257,7 +236,6 @@ export default function RecordMapContent({
       vaul-drawer-wrapper=""
       className="w-full h-full relative overflow-hidden bg-white"
     >
-      <LocationPermissionChecker />
       <APIProvider apiKey={apiKey!}>
         <div className="absolute inset-0 z-0">
           <GoogleMap

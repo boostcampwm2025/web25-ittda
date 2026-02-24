@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Loader2, Locate } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import {
   APIProvider,
   Map,
@@ -11,7 +11,6 @@ import {
   ColorScheme,
 } from '@vis.gl/react-google-maps';
 import { Button } from '@/components/ui/button';
-import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationValue } from '@/lib/types/recordField';
 import { useTheme } from 'next-themes';
 import { MapSearchBar } from './MapSearchBar';
@@ -28,6 +27,9 @@ export interface LocationPickerProps {
   initialCenter?: { lat: number; lng: number };
   className?: string;
 }
+
+// 기본 중심 좌표 (경복궁)
+const DEFAULT_CENTER = { lat: 37.5796, lng: 126.977 };
 
 export function LocationPicker({
   mode,
@@ -62,13 +64,10 @@ function LocationPickerContent({
     null,
   );
   const isSelectedFromSearch = useRef(false);
-  const isInitialLocationLoaded = useRef(false);
+  // GPS 없이 항상 즉시 주소 갱신 허용
+  const isInitialLocationLoaded = useRef(true);
   const mapIdleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  const { latitude: geoLat, longitude: geoLng } = useGeolocation({
-    reverseGeocode: true,
-  });
 
   const placesLib = useMapsLibrary('places');
   const geometryLib = useMapsLibrary('geometry');
@@ -100,63 +99,13 @@ function LocationPickerContent({
     };
   }, []);
 
-  useEffect(() => {
-    if (geoLat && geoLng && mapRef.current) {
-      // 지도 이동
-      mapRef.current.panTo({ lat: geoLat, lng: geoLng });
-
-      // 이동한 위치의 주소 강제 갱신
-      const updateInitialAddress = async () => {
-        setIsAddressLoading(true);
-        try {
-          const placeName = await findNearbyPlace(geoLat, geoLng);
-          const addr = await reverseGeocode(geoLat, geoLng);
-
-          setCenterAddress(addr);
-          setCenterPlaceName(placeName || '');
-          isInitialLocationLoaded.current = true;
-        } catch (error) {
-          Sentry.captureException(error, {
-            level: 'warning',
-            tags: {
-              context: 'location-picker',
-              operation: 'initial-geocode',
-            },
-            extra: {
-              lat: geoLat,
-              lng: geoLng,
-            },
-          });
-          logger.error('geocode 초기화 실패', error);
-
-          // API 실패 시 기본 메시지 표시 및 초기화 완료 표시
-          setCenterAddress('주소를 불러올 수 없습니다.');
-          setCenterPlaceName('');
-          isInitialLocationLoaded.current = true; // handleMapIdle 활성화
-        } finally {
-          setIsAddressLoading(false);
-        }
-      };
-
-      updateInitialAddress();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geoLat, geoLng]);
-
   const handleSearch = async (keyword: string) => {
     if (!keyword.trim() || !mapRef.current || !placesLib) return;
     if (!placesServiceRef.current) {
       placesServiceRef.current = new placesLib.PlacesService(mapRef.current);
     }
     const currentPlacesServiceRef = placesServiceRef.current;
-    const currentCenter = mapRef.current.getCenter();
-
-    // getCenter()가 undefined를 반환할 수 있으므로 fallback 처리
-    const searchCenter = currentCenter
-      ? currentCenter
-      : geoLat && geoLng
-        ? new google.maps.LatLng(geoLat, geoLng)
-        : undefined;
+    const searchCenter = mapRef.current.getCenter();
 
     setIsProcessing(true);
 
@@ -488,12 +437,6 @@ function LocationPickerContent({
     }
   };
 
-  const handleMyLocation = () => {
-    if (!mapRef.current || !geoLat || !geoLng) return;
-    mapRef.current.panTo({ lat: geoLat, lng: geoLng });
-    mapRef.current.setZoom(17);
-  };
-
   return (
     <div
       className={cn(
@@ -517,8 +460,8 @@ function LocationPickerContent({
         <Map
           colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}
-          defaultCenter={initialCenter || { lat: 37.5665, lng: 126.978 }}
-          defaultZoom={17}
+          defaultCenter={initialCenter || DEFAULT_CENTER}
+          defaultZoom={7}
           disableDefaultUI
           gestureHandling="greedy"
           onDragstart={() => {
@@ -532,16 +475,6 @@ function LocationPickerContent({
             }}
           />
         </Map>
-
-        {/* 내 위치로 가기 버튼 */}
-        <button
-          onClick={handleMyLocation}
-          disabled={!geoLat || !geoLng}
-          className="absolute bottom-6 right-4 z-30 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="내 위치로 이동"
-        >
-          <Locate size={20} className="text-gray-700 dark:text-gray-200" />
-        </button>
 
         {/* 중앙 핀 및 주소 표시 라벨 */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(100%-43px)] pointer-events-none z-20 flex flex-col items-center">
