@@ -16,6 +16,12 @@ export class CustomClusterRenderer implements Renderer {
     };
 
     const color = getColor(count);
+    const isMobile =
+      typeof window !== 'undefined' && window.innerWidth < 640;
+    const size = isMobile ? 40 : 56;
+    const badgeOffset = isMobile ? -6 : -8;
+    const badgeSize = isMobile ? 20 : 24;
+    const badgeFontSize = isMobile ? '0.65rem' : '0.75rem';
 
     // Map 아이콘 SVG
     const svg = `
@@ -40,8 +46,8 @@ export class CustomClusterRenderer implements Renderer {
         transform: rotate(-45deg);
         overflow: hidden;
         transition: all 300ms;
-        width: 56px;
-        height: 56px;
+        width: ${size}px;
+        height: ${size}px;
         border: 4px solid ${color};
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
       ">
@@ -53,15 +59,15 @@ export class CustomClusterRenderer implements Renderer {
       </div>
       <div style="
         position: absolute;
-        top: -8px;
-        right: -8px;
+        top: ${badgeOffset}px;
+        right: ${badgeOffset}px;
         background-color: #EF4444;
         color: white;
-        font-size: 0.75rem;
+        font-size: ${badgeFontSize};
         font-weight: 700;
         border-radius: 9999px;
-        min-width: 24px;
-        height: 24px;
+        min-width: ${badgeSize}px;
+        height: ${badgeSize}px;
         display: flex;
         align-items: center;
         justify-content: center;
