@@ -68,6 +68,7 @@ interface PostEditorProps {
   draftId?: string;
   groupId?: string;
   postId?: string;
+  initialDate?: string;
 }
 
 // 개별 블록 아이템 컴포넌트 - 콜백 최적화
@@ -219,6 +220,7 @@ export default function PostEditor({
   draftId,
   groupId,
   postId,
+  initialDate,
 }: PostEditorProps) {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState(initialPost?.title ?? '');
@@ -315,6 +317,7 @@ export default function PostEditor({
   // 에디터 초기화
   usePostEditorInitializer({
     initialPost: resolvedInitialPost,
+    initialDate,
     onInitialized: ({ title, blocks }) => {
       setTitle(title);
       setBlocks(blocks);

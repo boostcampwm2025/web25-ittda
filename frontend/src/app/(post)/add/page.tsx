@@ -7,11 +7,16 @@ import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 
 interface AddPostPageProps {
-  searchParams: Promise<{ mode: string; postId: string; groupId: string }>;
+  searchParams: Promise<{
+    mode: string;
+    postId: string;
+    groupId: string;
+    date: string;
+  }>;
 }
 
 export default async function AddPostPage({ searchParams }: AddPostPageProps) {
-  const { mode: queryMode, postId, groupId } = await searchParams;
+  const { mode: queryMode, postId, groupId, date } = await searchParams;
   const queryClient = new QueryClient();
   let initialPost = undefined;
 
@@ -53,6 +58,7 @@ export default async function AddPostPage({ searchParams }: AddPostPageProps) {
       postId={postId}
       mode={mode}
       initialPost={initialPost}
+      initialDate={date}
     />
   );
 }
