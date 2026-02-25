@@ -1,16 +1,7 @@
-import DailyDetailRecords from '../../../../../components/DailyDetailRecords';
-import DailyDetailRecordsSkeleton from '@/components/DailyDetailRecordsSkeleton';
-import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
 import Back from '@/components/Back';
-import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
-import ErrorFallback from '@/components/ErrorFallback';
-import { createMockRecordPreviews } from '@/lib/mocks/mock';
-import {
-  dehydrate,
-  HydrationBoundary,
-  QueryClient,
-} from '@tanstack/react-query';
-import { recordPreviewListOptions } from '@/lib/api/records';
+import DailyDetailRecordsSkeleton from '@/components/DailyDetailRecordsSkeleton';
+import { Suspense } from 'react';
+import MyDailyDetailData from './_components/MyDailyDetailData';
 
 interface MyMonthlyDetailPageProps {
   params: Promise<{ date: string }>;
@@ -20,16 +11,6 @@ export default async function MyDateDetailPage({
   params,
 }: MyMonthlyDetailPageProps) {
   const { date } = await params;
-  const queryClient = new QueryClient();
-
-  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
-    queryClient.setQueryData(
-      ['records', 'preview', date, 'personal'],
-      createMockRecordPreviews(date),
-    );
-  } else {
-    await queryClient.prefetchQuery(recordPreviewListOptions(date, 'personal'));
-  }
 
   return (
     <div className="-mt-4 sm:-mt-6 h-full transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -45,18 +26,9 @@ export default async function MyDateDetailPage({
         </div>
         <div className="w-6 sm:w-8" />
       </header>
-
-      <div className="py-4 sm:py-6 pb-14 sm:pb-16">
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <ErrorHandlingWrapper
-            fallbackComponent={ErrorFallback}
-            suspenseFallback={<DailyDetailRecordsSkeleton />}
-          >
-            <DailyDetailRecords date={date} scope="personal" />
-          </ErrorHandlingWrapper>
-        </HydrationBoundary>
-        <DailyDetailFloatingActions date={date} />
-      </div>
+      <Suspense fallback={<div className="py-4 sm:py-6"><DailyDetailRecordsSkeleton /></div>}>
+        <MyDailyDetailData date={date} />
+      </Suspense>
     </div>
   );
 }

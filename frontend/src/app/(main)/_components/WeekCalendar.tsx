@@ -16,11 +16,21 @@ export default function WeekCalendar() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL에서 date 파라미터 읽기 (서버에서 이미 리다이렉트 처리됨)
-  const selectedDateStr = searchParams.get('date') || formatDateISO();
+  // URL에서 date 파라미터 읽기
+  const urlDateStr = searchParams.get('date') || formatDateISO();
+
+  // 클릭 즉시 강조 표시를 위한 낙관적 상태 (URL 커밋 전에도 즉시 반영)
+  const [optimisticDate, setOptimisticDate] = useState(urlDateStr);
+
+  // URL이 커밋되면 동기화
+  useEffect(() => {
+    setOptimisticDate(urlDateStr);
+  }, [urlDateStr]);
+
+  const selectedDateStr = optimisticDate;
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
-    getStartOfWeek(parseLocalDate(selectedDateStr)),
+    getStartOfWeek(parseLocalDate(urlDateStr)),
   );
   const [direction, setDirection] = useState(0); // -1: 이전, 1: 다음
   const [isMounted, setIsMounted] = useState(false); // 초기 마운트 추적
@@ -110,6 +120,10 @@ export default function WeekCalendar() {
       return;
     }
 
+    // 클릭 즉시 강조 표시 반영
+    setOptimisticDate(dateStr);
+    // RecordList에 즉시 알림 (URL 커밋 전)
+    window.dispatchEvent(new CustomEvent('itda:dateChange', { detail: dateStr }));
     // URL 쿼리 파라미터로 날짜 설정
     router.push(`/?date=${dateStr}`);
     calculateYearMonth(dateStr);

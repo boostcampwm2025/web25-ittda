@@ -2,13 +2,14 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDateISO } from '@/lib/date';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { RecordItemSkeleton } from './HomePageSkeleton';
 import { recordPreviewListOptions } from '@/lib/api/records';
 import BlockContent from '@/components/BlockContent';
 import { Block } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { BookOpen, Plus, Users, User } from 'lucide-react';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { RecordPreview } from '@/lib/types/recordResponse';
 
 type ImageLayout = 'carousel' | 'tile' | 'responsive';
@@ -140,28 +141,67 @@ export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // URL에서 date 파라미터 읽기, 없으면 오늘 날짜
-  const selectedDateStr = searchParams.get('date') || formatDateISO();
+  const urlDateStr = searchParams.get('date') || formatDateISO();
 
-  const { data: records } = useSuspenseQuery(
+  // WeekCalendar 클릭 즉시 날짜를 받아 skeleton을 바로 표시 (URL 커밋 전)
+  const [pendingDate, setPendingDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) =>
+      setPendingDate((e as CustomEvent<string>).detail);
+    window.addEventListener('itda:dateChange', handler);
+    return () => window.removeEventListener('itda:dateChange', handler);
+  }, []);
+
+  // URL이 커밋되면 pendingDate 초기화
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setPendingDate(null);
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+    };
+  }, [urlDateStr]);
+
+  const selectedDateStr = pendingDate ?? urlDateStr;
+
+  const { data: records, isLoading } = useQuery(
     recordPreviewListOptions(selectedDateStr),
   );
+
+  const dayLabel =
+    selectedDateStr === formatDateISO()
+      ? '오늘의 기록'
+      : `${selectedDateStr.split('-')[2]}일의 기록`;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 sm:space-y-4 w-full">
+        <div className="flex items-center justify-between px-0.5 sm:px-1 animate-pulse">
+          <div className="h-3.5 sm:h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-3 w-10 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <RecordItemSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 sm:space-y-4 w-full">
       <div className="flex items-center justify-between px-0.5 sm:px-1">
         <h3 className="text-[13px] sm:text-[14px] font-bold dark:text-white text-itta-black">
-          {selectedDateStr === formatDateISO()
-            ? '오늘의 기록'
-            : `${selectedDateStr.split('-')[2]}일의 기록`}
+          {dayLabel}
         </h3>
         <span className="text-[10px] sm:text-[11px] text-[#10B981] font-bold">
-          총 {records.length}개
+          총 {(records ?? []).length}개
         </span>
       </div>
 
-      {records.length > 0 ? (
-        records.map((record) => (
+      {(records ?? []).length > 0 ? (
+        (records ?? []).map((record) => (
           <RecordItem
             key={record.postId}
             record={record}
