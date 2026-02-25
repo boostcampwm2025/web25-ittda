@@ -52,3 +52,6 @@ storybook-static
 .claude/*
 # Sentry Config File
 .env.sentry-build-plugin
+
+# lighthouse
+.lighthouseci/
