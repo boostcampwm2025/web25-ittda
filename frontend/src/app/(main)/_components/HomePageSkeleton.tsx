@@ -19,7 +19,7 @@ function StreakStatsSkeleton() {
   );
 }
 
-function RecordItemSkeleton() {
+export function RecordItemSkeleton() {
   return (
     <div className="rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100 animate-pulse">
       <div className="flex items-center justify-between mb-3 sm:mb-4 mt-1">

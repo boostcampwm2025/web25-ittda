@@ -1,16 +1,7 @@
-import DailyDetailFloatingActions from '@/app/(post)/_components/DailyDetailFloatingActions';
-import DailyDetailRecords from '@/components/DailyDetailRecords';
-import DailyDetailRecordsSkeleton from '@/components/DailyDetailRecordsSkeleton';
 import Back from '@/components/Back';
-import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
-import ErrorFallback from '@/components/ErrorFallback';
-import { createMockRecordPreviews } from '@/lib/mocks/mock';
-import {
-  dehydrate,
-  HydrationBoundary,
-  QueryClient,
-} from '@tanstack/react-query';
-import { recordPreviewListOptions } from '@/lib/api/records';
+import DailyDetailRecordsSkeleton from '@/components/DailyDetailRecordsSkeleton';
+import { Suspense } from 'react';
+import GroupDailyDetailData from './_components/GroupDailyDetailData';
 
 interface GroupDailyDetailPageProps {
   params: Promise<{ date: string; groupId: string }>;
@@ -20,16 +11,6 @@ export default async function GroupDailyDetailPage({
   params,
 }: GroupDailyDetailPageProps) {
   const { date, groupId } = await params;
-  const queryClient = new QueryClient();
-
-  if (process.env.NEXT_PUBLIC_MOCK === 'true') {
-    queryClient.setQueryData(
-      ['group', groupId, 'records', 'daily', date],
-      createMockRecordPreviews(date),
-    );
-  } else {
-    await queryClient.prefetchQuery(recordPreviewListOptions(date, 'groups', groupId));
-  }
 
   return (
     <div className="h-full transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
@@ -45,18 +26,9 @@ export default async function GroupDailyDetailPage({
         </div>
         <div className="w-6 sm:w-8" />
       </header>
-
-      <div className="p-4 sm:p-6 pb-14 sm:pb-16">
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <ErrorHandlingWrapper
-            fallbackComponent={ErrorFallback}
-            suspenseFallback={<DailyDetailRecordsSkeleton />}
-          >
-            <DailyDetailRecords date={date} scope="groups" groupId={groupId} />
-          </ErrorHandlingWrapper>
-        </HydrationBoundary>
-        <DailyDetailFloatingActions date={date} groupId={groupId} />
-      </div>
+      <Suspense fallback={<div className="p-4 sm:p-6"><DailyDetailRecordsSkeleton /></div>}>
+        <GroupDailyDetailData date={date} groupId={groupId} />
+      </Suspense>
     </div>
   );
 }
