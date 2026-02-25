@@ -24,6 +24,8 @@ jobs:
 
       - name: Build Next.js
         run: pnpm run build:fe
+        env:
+          NEXT_PUBLIC_PRODUCTION_API_URL: ${{ secrets.NEXT_PUBLIC_PRODUCTION_API_URL }}
 
       - name: Run Lighthouse CI
         # npx lhci는 루트에서 실행하되
