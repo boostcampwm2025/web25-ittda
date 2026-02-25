@@ -14,10 +14,9 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
-import { cn } from '@/lib/utils';
 import AssetImage from '@/components/AssetImage';
 import { GroupEditResponse } from '@/lib/types/groupResponse';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 
 type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
   groupId: string;
@@ -30,7 +29,7 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
   const router = useRouter();
 
   // 그룹 이름 유효성 검사 - useMemo로 최적화
-  const groupNameError = useMemo(() => {
+  const getGroupNameError = () => {
     if (groupName.length < 2) return '그룹 이름은 최소 2자 이상이어야 합니다.';
     if (groupName.length > 10)
       return '그룹 이름은 최대 10자까지 입력 가능합니다.';
@@ -48,23 +47,31 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
     }
 
     return null;
-  }, [groupName]);
+  };
 
-  const handleThumbnailSelect = useCallback((assetId: string, postId: string) => {
-    setGroupThumbnail({ assetId, postId });
-  }, [setGroupThumbnail]);
+  const handleThumbnailSelect = useCallback(
+    (assetId: string, postId: string) => {
+      setGroupThumbnail({ assetId, postId });
+    },
+    [setGroupThumbnail],
+  );
 
   const handleGroupNameClear = useCallback(() => {
     setGroupName('');
   }, [setGroupName]);
 
-  const handleGroupNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setGroupName(e.target.value);
-  }, [setGroupName]);
+  const handleGroupNameChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setGroupName(e.target.value);
+    },
+    [setGroupName],
+  );
 
   const handleNavigateToProfile = useCallback(() => {
     router.push(`/group/${groupId}/edit/profile`);
   }, [router, groupId]);
+
+  const groupNameError = getGroupNameError();
 
   return (
     <section className="space-y-4">
