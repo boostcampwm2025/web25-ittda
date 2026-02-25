@@ -178,6 +178,21 @@ export default function TagDashboard() {
                     </button>
                   );
                 })}
+                {tags.all.length === 0 && (
+                  <div className="w-full py-6 sm:py-8 flex flex-col items-center justify-center gap-2">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center dark:bg-[#10B981]/10 bg-[#10B981]/10">
+                      <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-[#10B981]" />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <p className="text-xs sm:text-sm font-bold dark:text-gray-200 text-gray-700">
+                        아직 사용한 태그가 없어요
+                      </p>
+                      <p className="text-[11px] sm:text-xs text-gray-400">
+                        태그를 추가하여 기록을 분류해보세요
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex gap-3 sm:gap-4">
