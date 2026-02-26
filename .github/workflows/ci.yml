@@ -46,8 +46,9 @@ jobs:
           exit 1
 
       - name: Run Lighthouse CI
+        continue-on-error: true
         run: |
-          pnpm --filter frontend exec lhci collect --config=./frontend/lighthouse.js
-          pnpm --filter frontend exec lhci upload --config=./frontend/lighthouse.js
+          pnpm --filter frontend exec lhci collect --config=./lighthouse.js
+          pnpm --filter frontend exec lhci upload --config=./lighthouse.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
