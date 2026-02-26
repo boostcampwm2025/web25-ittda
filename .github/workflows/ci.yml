@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Lighthouse CI
         run: |
-          npx @lhci/cli collect --config=./frontend/lighthouse.js
-          npx @lhci/cli upload --config=./frontend/lighthouse.js
+          pnpm --filter frontend exec lhci collect --config=./frontend/lighthouse.js
+          pnpm --filter frontend exec lhci upload --config=./frontend/lighthouse.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

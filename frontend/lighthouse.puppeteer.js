@@ -5,59 +5,28 @@
  * Authenticates as a guest user before running Lighthouse measurements
  */
 module.exports = async (browser, _context) => {
-  const page = await browser.newPage();
-
-  // 도메인 컨텍스트 확보를 위해 로그인 페이지로 이동
-  await page.goto('http://localhost:3000/login', {
-    waitUntil: 'domcontentloaded',
+  // Node.js fetch로 직접 게스트 토큰 발급 (page.goto 불필요)
+  const res = await fetch('http://localhost:3000/api/auth/guest', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
   });
 
-  // 브라우저 컨텍스트 안에서 게스트 API 호출
-  const authResult = await page.evaluate(async () => {
-    try {
-      const res = await fetch('/api/auth/guest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      });
-      const authHeader =
-        res.headers.get('Authorization') ||
-        res.headers.get('authorization');
-      const accessToken = authHeader ? authHeader.replace('Bearer ', '') : null;
-      const data = await res.json();
-      return { data, accessToken, ok: res.ok };
-    } catch (e) {
-      return { error: e.message, ok: false };
-    }
-  });
-
-  if (!authResult.ok || !authResult.accessToken) {
-    throw new Error(`Guest auth failed: ${JSON.stringify(authResult)}`);
+  if (!res.ok) {
+    throw new Error(`Guest auth failed: HTTP ${res.status}`);
   }
 
-  const { accessToken, data } = authResult;
+  const authHeader = res.headers.get('Authorization') || res.headers.get('authorization');
+  const accessToken = authHeader ? authHeader.replace('Bearer ', '') : null;
+  const data = await res.json();
   const { guestSessionId } = data;
 
-  // Zustand persist 상태를 localStorage에 직접 설정
-  await page.evaluate(
-    (state) => {
-      localStorage.setItem('auth-storage', JSON.stringify(state));
-    },
-    {
-      state: {
-        userType: 'guest',
-        userId: null,
-        guestSessionId,
-        guestAccessToken: accessToken,
-        guestSessionExpiresAt: guestSessionId,
-        isLoggedIn: true,
-      },
-      version: 0,
-    },
-  );
+  if (!accessToken || !guestSessionId) {
+    throw new Error(`Guest auth missing token: ${JSON.stringify({ accessToken, guestSessionId })}`);
+  }
 
-  // 쿠키 설정 (API 요청 시 인증에 사용)
-  await page.setCookie(
+  // 쿠키를 도메인에 설정 (브라우저 컨텍스트 전체에 적용)
+  await browser.defaultBrowserContext().setCookie(
     {
       name: 'x-guest-session-id',
       value: guestSessionId,
@@ -74,5 +43,27 @@ module.exports = async (browser, _context) => {
     },
   );
 
+  // Zustand persist 상태를 localStorage에 설정 (최소한의 페이지 이동만)
+  const page = await browser.newPage();
+  await page.goto('http://localhost:3000', {
+    waitUntil: 'domcontentloaded',
+    timeout: 60000,
+  });
+  await page.evaluate(
+    (state) => {
+      localStorage.setItem('auth-storage', JSON.stringify(state));
+    },
+    {
+      state: {
+        userType: 'guest',
+        userId: null,
+        guestSessionId,
+        guestAccessToken: accessToken,
+        guestSessionExpiresAt: guestSessionId,
+        isLoggedIn: true,
+      },
+      version: 0,
+    },
+  );
   await page.close();
 };
