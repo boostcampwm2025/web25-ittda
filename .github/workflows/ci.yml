@@ -27,9 +27,25 @@ jobs:
         env:
           NEXT_PUBLIC_PRODUCTION_API_URL: ${{ secrets.NEXT_PUBLIC_PRODUCTION_API_URL }}
 
+      - name: Start Next.js server
+        run: pnpm --filter frontend start &
+        env:
+          NEXT_PUBLIC_PRODUCTION_API_URL: ${{ secrets.NEXT_PUBLIC_PRODUCTION_API_URL }}
+
+      - name: Wait for server to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:3000 > /dev/null; then
+              echo "Server is ready"
+              exit 0
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+          echo "Server did not start in time"
+          exit 1
+
       - name: Run Lighthouse CI
-        # npx lhci는 루트에서 실행하되
-        # --config 경로는 frontend 폴더 안의 파일을 가리킴
         run: |
           npx @lhci/cli collect --config=./frontend/lighthouse.js
           npx @lhci/cli upload --config=./frontend/lighthouse.js
