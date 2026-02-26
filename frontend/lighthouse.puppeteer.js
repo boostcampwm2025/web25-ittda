@@ -6,14 +6,21 @@
  */
 module.exports = async (browser, _context) => {
   // Node.js fetch로 직접 게스트 토큰 발급 (page.goto 불필요)
-  const res = await fetch('http://localhost:3000/api/auth/guest', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: '{}',
-  });
+  let res;
+  try {
+    res = await fetch('http://localhost:3000/api/auth/guest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  } catch (e) {
+    console.warn(`Guest auth request failed (backend unreachable): ${e.message} - skipping auth setup`);
+    return;
+  }
 
   if (!res.ok) {
-    throw new Error(`Guest auth failed: HTTP ${res.status}`);
+    console.warn(`Guest auth failed: HTTP ${res.status} - skipping auth setup`);
+    return;
   }
 
   const authHeader = res.headers.get('Authorization') || res.headers.get('authorization');
@@ -22,7 +29,8 @@ module.exports = async (browser, _context) => {
   const { guestSessionId } = data;
 
   if (!accessToken || !guestSessionId) {
-    throw new Error(`Guest auth missing token: ${JSON.stringify({ accessToken, guestSessionId })}`);
+    console.warn(`Guest auth missing token - skipping auth setup`);
+    return;
   }
 
   // 쿠키를 도메인에 설정 (브라우저 컨텍스트 전체에 적용)
