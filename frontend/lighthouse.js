@@ -2,8 +2,6 @@
 module.exports = {
   ci: {
     collect: {
-      startServerCommand: 'pnpm --filter frontend start',
-      startServerReadyPattern: 'Ready in',
       // 측정 전 게스트 로그인 자동화
       puppeteerScript: './frontend/lighthouse.puppeteer.js',
       url: [
