@@ -5,7 +5,7 @@ module.exports = {
       startServerCommand: 'pnpm --filter frontend start',
       startServerReadyPattern: 'started server on',
       // 측정 전 게스트 로그인 자동화
-      puppeteerScript: './lighthouse.puppeteer.js',
+      puppeteerScript: './frontend/lighthouse.puppeteer.js',
       url: [
         'http://localhost:3000/login', // 로그인 (public)
         'http://localhost:3000/', // 홈
