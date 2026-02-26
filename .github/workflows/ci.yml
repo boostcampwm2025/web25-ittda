@@ -31,7 +31,7 @@ jobs:
         # npx lhci는 루트에서 실행하되
         # --config 경로는 frontend 폴더 안의 파일을 가리킴
         run: |
-          npx lhci collect --config=./frontend/lighthouse.js
-          npx lhci upload --config=./frontend/lighthouse.js
+          npx @lhci/cli collect --config=./frontend/lighthouse.js
+          npx @lhci/cli upload --config=./frontend/lighthouse.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
