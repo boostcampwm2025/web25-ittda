@@ -3,7 +3,7 @@ module.exports = {
   ci: {
     collect: {
       startServerCommand: 'pnpm --filter frontend start',
-      startServerReadyPattern: 'started server on',
+      startServerReadyPattern: 'Ready in',
       // 측정 전 게스트 로그인 자동화
       puppeteerScript: './frontend/lighthouse.puppeteer.js',
       url: [
@@ -13,7 +13,7 @@ module.exports = {
         'http://localhost:3000/search', // 검색
         'http://localhost:3000/my', // 내 기록
         'http://localhost:3000/add', // 기록 추가
-        'http://localhost:3000/share', // 함께 기록함
+        'http://localhost:3000/shared', // 함께 기록함
         'http://localhost:3000/map', // 지도
       ],
       numberOfRuns: 3,
