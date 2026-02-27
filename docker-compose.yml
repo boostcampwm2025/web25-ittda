@@ -26,6 +26,9 @@ services:
       - ./backend/.env.production
     environment:
       NODE_ENV: production # 운영 환경으로 설정
+    # Linux Docker에서 호스트(서버)로 접속할 때 사용하는 표준 별칭
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - app-net
 
