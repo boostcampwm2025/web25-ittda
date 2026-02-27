@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDateISO } from '@/lib/date';
 import { useQuery } from '@tanstack/react-query';
 import { RecordItemSkeleton } from './HomePageSkeleton';
+import DeferredComponent from '@/components/DeferredComponent';
 import { recordPreviewListOptions } from '@/lib/api/records';
 import BlockContent from '@/components/BlockContent';
 import { Block } from '@/lib/types/record';
@@ -213,15 +214,17 @@ export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-3 sm:space-y-4 w-full">
-        <div className="flex items-center justify-between px-0.5 sm:px-1 animate-pulse">
-          <div className="h-3.5 sm:h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-3 w-10 bg-gray-200 dark:bg-gray-700 rounded" />
+      <DeferredComponent>
+        <div className="space-y-3 sm:space-y-4 w-full">
+          <div className="flex items-center justify-between px-0.5 sm:px-1 animate-pulse">
+            <div className="h-3.5 sm:h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+            <div className="h-3 w-10 bg-gray-200 dark:bg-gray-700 rounded" />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <RecordItemSkeleton key={i} />
+          ))}
         </div>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <RecordItemSkeleton key={i} />
-        ))}
-      </div>
+      </DeferredComponent>
     );
   }
 
