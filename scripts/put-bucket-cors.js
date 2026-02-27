@@ -7,14 +7,18 @@ function usage() {
   console.error(
     'Usage: node scripts/put-bucket-cors.js <bucket> <cors-xml-path> [region] [endpoint]',
   );
-  console.error('Example: node scripts/put-bucket-cors.js ittda-prod-assets cors.xml');
+  console.error(
+    'Example: node scripts/put-bucket-cors.js ittda-prod-assets cors.xml',
+  );
   process.exit(1);
 }
 
 const bucket = process.argv[2];
 const xmlPath = process.argv[3];
-const region = process.argv[4] || 'kr-standard';
-const endpoint = process.argv[5] || 'https://kr.object.ncloudstorage.com';
+const region = process.argv[4] || 'ap-chuncheon-1';
+const endpoint =
+  process.argv[5] ||
+  'https://axs0pcyucuhd.compat.objectstorage.ap-chuncheon-1.oraclecloud.com';
 
 if (!bucket || !xmlPath) usage();
 
