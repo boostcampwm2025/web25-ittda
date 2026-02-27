@@ -68,7 +68,7 @@ export class MediaService {
     const accessKeyId = this.configService.get<string>('S3_ACCESS_KEY');
     const secretAccessKey = this.configService.get<string>('S3_SECRET_KEY');
     const forcePathStyle =
-      (this.configService.get<string>('S3_FORCE_PATH_STYLE') ?? 'false') ===
+      (this.configService.get<string>('S3_FORCE_PATH_STYLE') ?? 'true') ===
       'true';
     this.bucket = this.configService.get<string>('S3_BUCKET') ?? '';
     this.s3ConfigValid = Boolean(

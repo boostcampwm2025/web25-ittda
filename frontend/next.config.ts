@@ -72,7 +72,8 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'kr.object.ncloudstorage.com',
+        hostname:
+          'axs0pcyucuhd.compat.objectstorage.ap-chuncheon-1.oraclecloud.com',
         pathname: '/**',
       },
     ],
@@ -83,9 +84,9 @@ export default withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "ee4bfb86ef7d",
+  org: 'ee4bfb86ef7d',
 
-  project: "javascript-nextjs",
+  project: 'javascript-nextjs',
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
@@ -100,7 +101,7 @@ export default withSentryConfig(nextConfig, {
   // This can increase your server load as well as your hosting bill.
   // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
   // side errors will fail.
-  tunnelRoute: "/monitoring",
+  tunnelRoute: '/monitoring',
 
   // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
   // See the following for more information:
