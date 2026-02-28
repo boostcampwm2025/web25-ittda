@@ -47,14 +47,17 @@ export default function SearchPage() {
   const locationAddress = location?.address ?? null;
   const [localQuery, setLocalQuery] = useState(query);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useSearchQuery({
-      query,
-      tags: selectedTags,
-      emotions: selectedEmotions,
-      start: startDate,
-      end: endDate,
-      location,
-    });
+    useSearchQuery(
+      {
+        query,
+        tags: selectedTags,
+        emotions: selectedEmotions,
+        start: startDate,
+        end: endDate,
+        location,
+      },
+      !activeDrawer,
+    );
   const { debounced: debouncedUpdateQuery, cancel } = useDebounce(
     (val: string) => {
       updateUrl({ q: val });

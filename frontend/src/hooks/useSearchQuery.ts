@@ -33,7 +33,7 @@ export interface SearchFilters {
   };
 }
 
-export const useSearchQuery = (filters: SearchFilters) => {
+export const useSearchQuery = (filters: SearchFilters, enabled = true) => {
   return useInfiniteQuery<SearchResponse>({
     queryKey: ['search', filters],
     queryFn: async ({ pageParam }) => {
@@ -54,6 +54,7 @@ export const useSearchQuery = (filters: SearchFilters) => {
       if (!response.success) throw createApiError(response);
       return response.data;
     },
+    enabled,
     retry: false,
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
