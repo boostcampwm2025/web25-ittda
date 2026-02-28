@@ -54,6 +54,7 @@ export const useSearchQuery = (filters: SearchFilters) => {
       if (!response.success) throw createApiError(response);
       return response.data;
     },
+    retry: false,
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
