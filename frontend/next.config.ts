@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
         destination: `${backendHost}/v1/auth/guest`,
       },
       {
-        source: '/api/:path((?!auth).*)', // 'auth'를 제외한 모든 /api 요청만 백엔드로
+        source: '/api/:path((?!auth|media-image).*)', // 'auth', 'media-image'를 제외한 모든 /api 요청만 백엔드로
         destination: `${backendHost}/v1/:path*`,
       },
     ];
