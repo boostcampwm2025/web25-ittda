@@ -7,10 +7,8 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiResponse } from '@/lib/types/response';
 import {
-  refreshGroupData,
-  refreshHomeData,
-  refreshRecordData,
-  refreshSharedData,
+  refreshRecordAndHomeData,
+  refreshRecordGroupAndSharedData,
 } from '@/lib/actions/revalidate';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { handlePublishError } from '@/lib/utils/error/publishHandler';
@@ -37,7 +35,7 @@ export const useCreateRecord = (
   const { userId } = useAuthStore();
 
   const invalidateQuery = async (groupId?: string) => {
-    await Promise.all([refreshRecordData(), refreshHomeData()]);
+    await refreshRecordAndHomeData();
 
     const invalidations = [
       queryClient.invalidateQueries({ queryKey: ['my', 'records'] }),
@@ -54,8 +52,7 @@ export const useCreateRecord = (
         queryClient.invalidateQueries({
           queryKey: ['shared'],
         }),
-        refreshGroupData(groupId),
-        refreshSharedData(),
+        refreshRecordGroupAndSharedData(groupId),
       );
     }
 

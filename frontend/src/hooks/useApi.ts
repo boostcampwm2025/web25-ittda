@@ -4,6 +4,7 @@ import {
   useQueryClient,
   type UseQueryOptions,
   type UseMutationOptions,
+  type UseMutationResult,
   type QueryKey,
 } from '@tanstack/react-query';
 import { get, post, put, del, patch } from '@/lib/api/api';
@@ -11,6 +12,22 @@ import type { ApiResponse } from '@/lib/types/response';
 import { createApiError } from '@/lib/utils/errorHandler';
 
 type FetchParams = Record<string, string | number | boolean>;
+
+/**
+ * isPending 중 중복 호출을 방지하는 mutate 가드
+ * 버튼 더블 클릭 등으로 인한 중복 API 요청 방지
+ */
+function withPendingGuard<TData, TError, TVariables, TContext>(
+  mutation: UseMutationResult<TData, TError, TVariables, TContext>,
+) {
+  return {
+    ...mutation,
+    mutate: (...args: Parameters<typeof mutation.mutate>) => {
+      if (mutation.isPending) return;
+      mutation.mutate(...args);
+    },
+  };
+}
 
 interface UseApiQueryOptions<TData, TError = Error> extends Omit<
   UseQueryOptions<ApiResponse<TData>, TError, TData, QueryKey>,
@@ -79,32 +96,34 @@ export function useApiPost<
 ) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (variables: TVariables) => {
-      const response = await post<TData>(
-        endpoint,
-        variables as Record<string, unknown>,
-        { headers },
-        sendCookie,
-      );
+  return withPendingGuard(
+    useMutation({
+      mutationFn: async (variables: TVariables) => {
+        const response = await post<TData>(
+          endpoint,
+          variables as Record<string, unknown>,
+          { headers },
+          sendCookie,
+        );
 
-      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
-      if (!response.success) {
-        throw createApiError(response);
-      }
+        // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
+        if (!response.success) {
+          throw createApiError(response);
+        }
 
-      return response;
-    },
-    onSuccess: (data, variables, context, mutationContext) => {
-      if (options?.invalidateKeys) {
-        options.invalidateKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: key });
-        });
-      }
-      options?.onSuccess?.(data, variables, context, mutationContext);
-    },
-    ...options,
-  });
+        return response;
+      },
+      onSuccess: (data, variables, context, mutationContext) => {
+        if (options?.invalidateKeys) {
+          options.invalidateKeys.forEach((key) => {
+            queryClient.invalidateQueries({ queryKey: key });
+          });
+        }
+        options?.onSuccess?.(data, variables, context, mutationContext);
+      },
+      ...options,
+    }),
+  );
 }
 
 /**
@@ -124,30 +143,32 @@ export function useApiPut<
 ) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (variables: TVariables) => {
-      const response = await put<TData>(
-        endpoint,
-        variables as Record<string, unknown>,
-      );
+  return withPendingGuard(
+    useMutation({
+      mutationFn: async (variables: TVariables) => {
+        const response = await put<TData>(
+          endpoint,
+          variables as Record<string, unknown>,
+        );
 
-      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
-      if (!response.success) {
-        throw createApiError(response);
-      }
+        // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
+        if (!response.success) {
+          throw createApiError(response);
+        }
 
-      return response;
-    },
-    onSuccess: (data, variables, context, mutationContext) => {
-      if (options?.invalidateKeys) {
-        options.invalidateKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: key });
-        });
-      }
-      options?.onSuccess?.(data, variables, context, mutationContext);
-    },
-    ...options,
-  });
+        return response;
+      },
+      onSuccess: (data, variables, context, mutationContext) => {
+        if (options?.invalidateKeys) {
+          options.invalidateKeys.forEach((key) => {
+            queryClient.invalidateQueries({ queryKey: key });
+          });
+        }
+        options?.onSuccess?.(data, variables, context, mutationContext);
+      },
+      ...options,
+    }),
+  );
 }
 
 /**
@@ -164,29 +185,31 @@ export function useApiDelete<TData = unknown, TVariables = unknown>(
 ) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (variables: TVariables) => {
-      const url =
-        typeof endpoint === 'function' ? endpoint(variables) : endpoint;
-      const response = await del<TData>(url);
+  return withPendingGuard(
+    useMutation({
+      mutationFn: async (variables: TVariables) => {
+        const url =
+          typeof endpoint === 'function' ? endpoint(variables) : endpoint;
+        const response = await del<TData>(url);
 
-      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
-      if (!response.success) {
-        throw createApiError(response);
-      }
+        // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
+        if (!response.success) {
+          throw createApiError(response);
+        }
 
-      return response;
-    },
-    onSuccess: (data, variables, context, mutationContext) => {
-      if (options?.invalidateKeys) {
-        options.invalidateKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: key });
-        });
-      }
-      options?.onSuccess?.(data, variables, context, mutationContext);
-    },
-    ...options,
-  });
+        return response;
+      },
+      onSuccess: (data, variables, context, mutationContext) => {
+        if (options?.invalidateKeys) {
+          options.invalidateKeys.forEach((key) => {
+            queryClient.invalidateQueries({ queryKey: key });
+          });
+        }
+        options?.onSuccess?.(data, variables, context, mutationContext);
+      },
+      ...options,
+    }),
+  );
 }
 
 /**
@@ -206,28 +229,30 @@ export function useApiPatch<
 ) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (variables: TVariables) => {
-      const response = await patch<TData>(
-        endpoint,
-        variables as Record<string, unknown>,
-      );
+  return withPendingGuard(
+    useMutation({
+      mutationFn: async (variables: TVariables) => {
+        const response = await patch<TData>(
+          endpoint,
+          variables as Record<string, unknown>,
+        );
 
-      // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
-      if (!response.success) {
-        throw createApiError(response);
-      }
+        // 에러 응답 처리 (토큰 재발급은 fetchApi에서 자동 처리됨)
+        if (!response.success) {
+          throw createApiError(response);
+        }
 
-      return response;
-    },
-    onSuccess: (data, variables, context, mutationContext) => {
-      if (options?.invalidateKeys) {
-        options.invalidateKeys.forEach((key) => {
-          queryClient.invalidateQueries({ queryKey: key });
-        });
-      }
-      options?.onSuccess?.(data, variables, context, mutationContext);
-    },
-    ...options,
-  });
+        return response;
+      },
+      onSuccess: (data, variables, context, mutationContext) => {
+        if (options?.invalidateKeys) {
+          options.invalidateKeys.forEach((key) => {
+            queryClient.invalidateQueries({ queryKey: key });
+          });
+        }
+        options?.onSuccess?.(data, variables, context, mutationContext);
+      },
+      ...options,
+    }),
+  );
 }

@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { groupMyRoleOptions } from '@/lib/api/group';
+import { refreshSharedData } from '@/lib/actions/revalidate';
 
 interface RecordDetailHeaderActionsProps {
   record: RecordDetailResponse;
@@ -74,13 +75,23 @@ export default function RecordDetailHeaderActions({
 
   const queryClient = useQueryClient();
   const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.id}`, {
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('기록이 삭제되었습니다.');
-      queryClient.invalidateQueries({ queryKey: ['records'] });
+      queryClient.invalidateQueries({ queryKey: ['my', 'records'] });
 
-      setTimeout(() => {
-        router.back();
-      }, 1000);
+      if (record.groupId) {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ['group', record.groupId, 'records'],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ['shared'],
+          }),
+          refreshSharedData(),
+        ]);
+      }
+
+      router.back();
     },
     onError: (error: ApiError) => {
       if (error.code && error.code === 'NOT_FOUND') {

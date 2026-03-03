@@ -37,12 +37,18 @@ export default function ProfileEditHeaderActions({
       <h2 className="text-[13px] sm:text-sm font-bold dark:text-white text-itta-black">
         {title}
       </h2>
-      <button
-        onClick={handleSave}
-        className="cursor-pointer font-bold text-[13px] sm:text-sm active:scale-95 transition-all min-w-8"
-      >
-        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '저장'}
-      </button>
+      <div className="relative flex items-center justify-end min-w-8">
+        {isPending ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <button
+            onClick={handleSave}
+            className="cursor-pointer font-bold text-[13px] sm:text-sm active:scale-95 transition-all"
+          >
+            저장
+          </button>
+        )}
+      </div>
     </header>
   );
 }
