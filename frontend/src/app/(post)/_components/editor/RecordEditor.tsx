@@ -470,9 +470,7 @@ export default function PostEditor({
       await refreshGroupData(groupId);
       queryClient.invalidateQueries({ queryKey: ['group', groupId] });
       return;
-    }
-
-    if (groupId) {
+    } else if (groupId) {
       await refreshGroupData(groupId);
       queryClient.invalidateQueries({ queryKey: ['group', groupId] });
     }
@@ -866,7 +864,9 @@ export default function PostEditor({
               handleFieldCommit={handleFieldCommit}
               removeBlock={removeBlock}
               onOpenDrawer={handleOpenDrawerWrapper}
-              contentBlockCount={blocks.filter((b) => b.type === 'content').length}
+              contentBlockCount={
+                blocks.filter((b) => b.type === 'content').length
+              }
               handlePointerDown={handlePointerDown}
               handlePointerMove={handlePointerMove}
               handleDragEnd={handleDragEnd}
