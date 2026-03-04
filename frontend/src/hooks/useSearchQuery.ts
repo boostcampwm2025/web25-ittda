@@ -17,6 +17,7 @@ export interface SearchResultItem {
 
 export interface SearchResponse {
   items: SearchResultItem[];
+  count: number;
   nextCursor: string | null;
 }
 export interface SearchFilters {

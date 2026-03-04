@@ -70,6 +70,7 @@ export default function SearchPage() {
     () => data?.pages.flatMap((page) => page.items) ?? [],
     [data],
   );
+  const totalCount = data?.pages[0]?.count ?? 0;
 
   //  무한 스크롤 관찰자
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -208,7 +209,7 @@ export default function SearchPage() {
       ) : (
         <main className="p-4 sm:p-6 pb-16 sm:pb-20">
           <h3 className="text-sm sm:text-md font-bold text-itta-gray3 uppercase tracking-tight mb-3 sm:mb-4">
-            검색 결과 <span className="text-itta-point">{items.length}</span>
+            검색 결과 <span className="text-itta-point">{totalCount}</span>
           </h3>
 
           {isLoading ? (
