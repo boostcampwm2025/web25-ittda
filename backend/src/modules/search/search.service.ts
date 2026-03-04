@@ -123,6 +123,8 @@ export class SearchService {
       );
     }
 
+    const count = await query.clone().distinct(true).getCount();
+
     // Cursor Pagination Logic
     this.applyCursor(query, cursor);
 
@@ -206,6 +208,7 @@ export class SearchService {
 
     return {
       items: resultItems,
+      count,
       nextCursor,
     };
   }

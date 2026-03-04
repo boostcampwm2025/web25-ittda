@@ -92,6 +92,9 @@ export class PaginatedSearchResponseDto {
   @ApiProperty({ type: [SearchResultItemDto] })
   items: SearchResultItemDto[];
 
+  @ApiProperty({ description: '검색 조건에 매칭되는 전체 게시글 수' })
+  count: number;
+
   @ApiPropertyOptional({ description: '다음 페이지용 커서' })
   nextCursor?: string;
 }
