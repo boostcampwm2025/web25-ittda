@@ -177,7 +177,7 @@ export default function LoginContent({
             if (!code) return;
             const { Browser } = await import('@capacitor/browser');
             await Browser.close();
-            router.push(`/oauth/callback?code=${encodeURIComponent(code)}`);
+            router.replace(`/oauth/callback?code=${encodeURIComponent(code)}`);
           }
         } catch (err) {
           logger.error('appUrlOpen 처리 오류', err);
