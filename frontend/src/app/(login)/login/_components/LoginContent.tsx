@@ -15,6 +15,11 @@ import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 import { isInAppBrowser } from '@/lib/utils/browserDetect';
 
+const isNativePlatform = () =>
+  typeof window !== 'undefined' &&
+  !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+    .Capacitor?.isNativePlatform?.();
+
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
   token_not_found: '인증 토큰을 받지 못했습니다.',
@@ -156,29 +161,75 @@ export default function LoginContent({
     }
   }, [router, error, reason, isLoggedIn]);
 
+  // 네이티브 앱에서 OAuth 콜백 처리 (ittda://oauth/callback?code=XXX)
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+
+    let removeListener: (() => void) | null = null;
+
+    const setup = async () => {
+      const { App } = await import('@capacitor/app');
+      const handle = await App.addListener('appUrlOpen', async (event) => {
+        try {
+          const url = new URL(event.url);
+          if (url.protocol === 'ittda:' && url.pathname === '/callback') {
+            const code = url.searchParams.get('code');
+            if (!code) return;
+            const { Browser } = await import('@capacitor/browser');
+            await Browser.close();
+            router.push(`/oauth/callback?code=${encodeURIComponent(code)}`);
+          }
+        } catch (err) {
+          logger.error('appUrlOpen 처리 오류', err);
+        }
+      });
+      removeListener = () => handle.remove();
+    };
+
+    setup();
+    return () => {
+      removeListener?.();
+    };
+  }, [router]);
+
   const handleLoginGuest = async () => {
     guestLogin({});
   };
 
-  const handleSocialLogin = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (isInAppBrowser()) {
-      e.preventDefault();
-      toast.error(
-        '인앱 브라우저에서는 로그인이 제한될 수 있습니다.\n기본 브라우저(Chrome, Safari 등)에서 열어주세요.',
-        { duration: 5000 },
-      );
-      return;
-    }
+  const handleSocialLogin =
+    (provider: 'google' | 'kakao') =>
+    async (e: React.MouseEvent<HTMLAnchorElement>) => {
+      // 네이티브 앱: SFSafariViewController(iOS)로 OAuth 처리
+      if (isNativePlatform()) {
+        e.preventDefault();
+        if (callback) {
+          sessionStorage.setItem('auth_callback', callback);
+        }
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({
+          url: getRedirectUri({ provider, callback, forceAccountSelect, mobile: true }),
+        });
+        return;
+      }
 
-    // callback을 sessionStorage에 저장 (백엔드가 전달하지 않는 경우 대비)
-    if (callback) {
-      sessionStorage.setItem('auth_callback', callback);
-    }
-    // 로그인 버튼 누를 때 error 를 담고 있다면 무시되도록 하기
-    if (window.location.search.includes('error=')) {
-      toast.dismiss();
-    }
-  };
+      if (isInAppBrowser()) {
+        e.preventDefault();
+        toast.error(
+          '인앱 브라우저에서는 로그인이 제한될 수 있습니다.\n기본 브라우저(Chrome, Safari 등)에서 열어주세요.',
+          { duration: 5000 },
+        );
+        return;
+      }
+
+      // callback을 sessionStorage에 저장 (백엔드가 전달하지 않는 경우 대비)
+      if (callback) {
+        sessionStorage.setItem('auth_callback', callback);
+      }
+      // 로그인 버튼 누를 때 error 를 담고 있다면 무시되도록 하기
+      if (window.location.search.includes('error=')) {
+        toast.dismiss();
+      }
+    };
 
   return (
     <div className="min-h-screen w-full flex flex-col transition-colors duration-500 dark:bg-[#0F1115] bg-[#FFFFFF]">
@@ -226,7 +277,7 @@ export default function LoginContent({
               callback,
               forceAccountSelect,
             })}
-            onClick={handleSocialLogin}
+            onClick={handleSocialLogin('google')}
             className="bg-white border-gray-100 w-14 h-14 rounded-full flex items-center justify-center border shadow-sm transition-all hover:shadow-md active:scale-90"
           >
             <svg viewBox="0 0 24 24" className="w-6 h-6">
@@ -257,7 +308,7 @@ export default function LoginContent({
               callback,
               forceAccountSelect,
             })}
-            onClick={handleSocialLogin}
+            onClick={handleSocialLogin('kakao')}
             className="w-14 h-14 rounded-full bg-[#FEE500] flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90"
           >
             <svg viewBox="0 0 24 24" className="w-7 h-7 fill-[#3C1E1E]">

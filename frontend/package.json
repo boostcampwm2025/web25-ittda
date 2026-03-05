@@ -12,6 +12,9 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@lhci/cli": "^0.15.1",
     "@radix-ui/react-dialog": "^1.1.15",
