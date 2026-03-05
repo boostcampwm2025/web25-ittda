@@ -17,6 +17,20 @@ export function usePWAInstall() {
 
   useEffect(() => {
     const checkInstallation = async () => {
+      // Capacitor 네이티브 앱에서는 배너 불필요
+      if (
+        (
+          window as unknown as {
+            Capacitor?: { isNativePlatform?: () => boolean };
+          }
+        ).Capacitor?.isNativePlatform?.()
+      ) {
+        requestAnimationFrame(() => {
+          setIsInstalled(true);
+        });
+        return true;
+      }
+
       // 1. display-mode로 확인
       if (window.matchMedia('(display-mode: standalone)').matches) {
         requestAnimationFrame(() => {
