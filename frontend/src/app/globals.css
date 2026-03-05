@@ -3,6 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 네이티브 앱: status bar 영역 배경색을 앱 배경과 일치 */
+html {
+  background-color: #ffffff;
+}
+html.dark {
+  background-color: #121212;
+}
+
 :root {
   --itta-black: #333333;
   --itta-point: #10b981;
