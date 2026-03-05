@@ -26,7 +26,10 @@
     "test:fe:e2e": "pnpm --filter frontend test:e2e",
     "test:be": "pnpm --filter backend test",
     "test:be:e2e": "pnpm --filter backend test:e2e",
-    "test:all": "pnpm run test:fe && pnpm run test:be"
+    "test:all": "pnpm run test:fe && pnpm run test:be",
+    "mobile:sync": "pnpm --filter mobile-app sync",
+    "mobile:ios": "pnpm --filter mobile-app open:ios",
+    "mobile:android": "pnpm --filter mobile-app open:android"
   },
   "packageManager": "pnpm@10.25.0",
   "devDependencies": {
