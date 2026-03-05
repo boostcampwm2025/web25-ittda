@@ -216,7 +216,7 @@ export default function RootLayout({
               defaultTheme="system"
             >
               <ThemeColorSetter />
-              <div className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+              <div style={{ paddingTop: 'env(safe-area-inset-top)' }} className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
                 <PWAInstallBanner />
                 <ConditionalHeader />
                 {children}
