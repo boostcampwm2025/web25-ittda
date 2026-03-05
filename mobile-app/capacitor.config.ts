@@ -14,6 +14,9 @@ const config: CapacitorConfig = {
     scrollEnabled: true,
     allowsLinkPreview: false,
     contentInset: 'never',
+    // Google OAuth는 WKWebView를 차단하므로 Safari로 인식되도록 UA 설정
+    overrideUserAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   },
   android: {
     allowMixedContent: false,
