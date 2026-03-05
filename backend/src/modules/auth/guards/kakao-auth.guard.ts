@@ -17,7 +17,7 @@ export class KakaoAuthGuard extends AuthGuard('kakao') {
       response.cookie('oauth_mobile', '1', {
         maxAge: 5 * 60 * 1000,
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
       });
