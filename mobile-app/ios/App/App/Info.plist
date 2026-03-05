@@ -45,10 +45,16 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>WKAppBoundDomains</key>
+	<key>CFBundleURLTypes</key>
 	<array>
-		<string>ittda.vercel.app</string>
-		<string>ittda-be.o-r.kr</string>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ittda</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.ittda.app</string>
+		</dict>
 	</array>
 </dict>
 </plist>
