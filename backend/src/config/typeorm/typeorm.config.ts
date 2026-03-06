@@ -6,6 +6,7 @@ export const getTypeOrmConfig = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => {
   const nodeEnv = configService.get<string>('NODE_ENV');
+
   return {
     type: 'postgres',
     url: configService.get<string>('DATABASE_URL'),
@@ -17,5 +18,6 @@ export const getTypeOrmConfig = (
       nodeEnv === 'production'
         ? ['error', 'warn']
         : ['error', 'warn', 'migration', 'info', 'log'],
+    ...(nodeEnv === 'test' ? { retryAttempts: 0, retryDelay: 0 } : {}),
   };
 };
