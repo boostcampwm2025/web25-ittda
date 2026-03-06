@@ -8,6 +8,7 @@ import type { Repository } from 'typeorm';
 
 import { AppModule } from '../src/app.module';
 import { PostScope } from '../src/enums/post-scope.enum';
+import { PostMood } from '../src/enums/post-mood.enum';
 import { Post } from '../src/modules/post/entity/post.entity';
 import { PostDraft } from '../src/modules/post/entity/post-draft.entity';
 import { User } from '../src/modules/user/entity/user.entity';
@@ -568,9 +569,10 @@ describe('PostController (e2e)', () => {
       error: 'Bad Request',
     });
     expect(Array.isArray(badBody.message)).toBe(true);
-    expect(badBody.message.join(' ')).toContain(
-      'mood must be one of: 행복, 좋음, 만족, 재미, 보통, 피곤, 놀람, 화남, 슬픔, 아픔, 짜증',
-    );
+    const allowedMoodMessage = `mood must be one of: ${Object.values(
+      PostMood,
+    ).join(', ')}`;
+    expect(badBody.message.join(' ')).toContain(allowedMoodMessage);
   });
 
   it('POST /posts should allow up to 4 MOOD blocks', async () => {
