@@ -64,13 +64,19 @@ export const createLogFormat = (options: LogFormatterOptions = {}) => {
 /**
  * 실행 환경을 기반으로 기본 로그 레벨을 결정한다.
  *
- * @returns 로그 레벨 문자열 (개발 모드일 때는 debug(기본값), 운영 모드일 때는 info)
+ * @returns 로그 레벨 문자열
+ * test: warn, production: info, others: debug (LOG_LEVEL 지정 시 우선)
  */
 export const resolveLogLevel = (): string => {
-  return (
-    process.env.LOG_LEVEL ??
-    (process.env.NODE_ENV === 'production' ? 'info' : 'debug')
-  );
+  if (process.env.LOG_LEVEL) {
+    return process.env.LOG_LEVEL;
+  }
+
+  if (process.env.NODE_ENV === 'test') {
+    return 'warn';
+  }
+
+  return process.env.NODE_ENV === 'production' ? 'info' : 'debug';
 };
 
 /**
