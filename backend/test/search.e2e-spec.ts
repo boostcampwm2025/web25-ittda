@@ -119,7 +119,7 @@ describe('SearchController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) await app.close();
   });
 
   it('키워드가 제목 또는 텍스트 블록에 포함된 글을 반환한다', async () => {

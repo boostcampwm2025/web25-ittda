@@ -87,7 +87,7 @@ describe('PostController (e2e)', () => {
     if (otherUser?.id) {
       await userRepository.delete({ id: otherUser.id });
     }
-    await app.close();
+    if (app) await app.close();
   });
 
   it('POST /posts should create a post and be retrievable', async () => {

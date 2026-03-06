@@ -213,7 +213,7 @@ describe('FeedController (e2e)', () => {
     if (otherUser?.id) {
       await userRepository.delete({ id: otherUser.id });
     }
-    await app.close();
+    if (app) await app.close();
   });
 
   it('GET /feed should return owned and contributed posts with meta', async () => {

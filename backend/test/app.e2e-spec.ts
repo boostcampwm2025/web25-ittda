@@ -36,7 +36,7 @@ describe('AppController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close(); // 애플리케이션 인스턴스를 닫아 서버 핸들을 해제합니다.
+    if (app) await app.close(); // 애플리케이션 인스턴스를 닫아 서버 핸들을 해제합니다.
   });
 
   it('/ (GET)', () => {
