@@ -43,6 +43,12 @@ export default function SearchPage() {
     location,
     updateUrl,
   } = useSearchFilters({ withLocation: true });
+  const isInitialState =
+    !query &&
+    selectedTags.length === 0 &&
+    !startDate &&
+    !location &&
+    selectedEmotions.length === 0;
 
   const locationAddress = location?.address ?? null;
   const [localQuery, setLocalQuery] = useState(query);
@@ -56,7 +62,7 @@ export default function SearchPage() {
         end: endDate,
         location,
       },
-      !activeDrawer,
+      !activeDrawer && !isInitialState,
     );
   const { debounced: debouncedUpdateQuery, cancel } = useDebounce(
     (val: string) => {
@@ -110,12 +116,6 @@ export default function SearchPage() {
     setLocalQuery(val); // input 필드 업데이트
     updateUrl({ q: val });
   };
-  const isInitialState =
-    !query &&
-    selectedTags.length === 0 &&
-    !startDate &&
-    !location &&
-    selectedEmotions.length === 0;
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-3 sm:p-4 space-y-3 sm:space-y-4">
