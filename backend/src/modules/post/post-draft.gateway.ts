@@ -10,7 +10,7 @@ import {
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger, OnModuleDestroy, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { Server, Socket } from 'socket.io';
@@ -47,7 +47,11 @@ import type {
 })
 @UseGuards(WsJwtGuard)
 export class PostDraftGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
+  implements
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnGatewayInit,
+    OnModuleDestroy
 {
   private readonly logger = new Logger(PostDraftGateway.name);
   private static readonly PRESENCE_TTL_MS = 60_000;
@@ -94,6 +98,17 @@ export class PostDraftGateway
     this.groupDraftRefreshTimer = setInterval(() => {
       void this.broadcastGroupDraftSnapshots();
     }, PostDraftGateway.GROUP_DRAFT_REFRESH_MS);
+  }
+
+  onModuleDestroy() {
+    if (this.presenceSweepTimer) {
+      clearInterval(this.presenceSweepTimer);
+      this.presenceSweepTimer = undefined;
+    }
+    if (this.groupDraftRefreshTimer) {
+      clearInterval(this.groupDraftRefreshTimer);
+      this.groupDraftRefreshTimer = undefined;
+    }
   }
 
   @SubscribeMessage('JOIN_DRAFT')
