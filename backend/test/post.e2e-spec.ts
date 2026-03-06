@@ -239,6 +239,7 @@ describe('PostController (e2e)', () => {
     const notFoundRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(404);
 
     expect(notFoundRes.body).toMatchObject({
@@ -369,6 +370,7 @@ describe('PostController (e2e)', () => {
     const sixthRes = await request(app.getHttpServer())
       .get(`/groups/${group.id}/posts/new`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(409);
     expect(sixthRes.body).toMatchObject({
       statusCode: 409,
@@ -441,6 +443,7 @@ describe('PostController (e2e)', () => {
     const forbiddenRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${otherAccessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(403);
 
     expect(forbiddenRes.body).toMatchObject({
@@ -484,6 +487,7 @@ describe('PostController (e2e)', () => {
     const forbiddenRes = await request(app.getHttpServer())
       .delete(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${otherAccessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(403);
 
     expect(forbiddenRes.body).toMatchObject({
@@ -514,6 +518,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -555,6 +560,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -676,6 +682,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -717,6 +724,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -767,6 +775,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -815,6 +824,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 

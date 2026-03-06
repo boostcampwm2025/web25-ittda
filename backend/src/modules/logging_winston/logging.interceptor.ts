@@ -15,6 +15,8 @@ type HttpRequest = Request & {
   originalUrl?: string;
 };
 
+const EXPECTED_4XX_HEADER = 'x-test-expected-4xx';
+
 /**
  * HTTP 요청에 대한 전/후처리 로그를 생성하는 인터셉터다.
  * 요청 메타데이터와 응답 시간, 예외 정보를 winston 로거로 기록한다.
@@ -71,19 +73,25 @@ export class LoggingInterceptor implements NestInterceptor {
       catchError((error) => {
         const durationMs = Date.now() - startAt;
         const statusCode = this.resolveErrorStatus(error);
+        const shouldSuppressErrorLog = this.shouldSuppressExpected4xxLog(
+          request,
+          statusCode,
+        );
 
         const stackTrace = error instanceof Error ? error.stack : undefined;
         const errorMessage = this.getErrorMessage(error);
 
-        this.logger.error({
-          context: contextLabel,
-          message: `${method} ${path} ${statusCode} ${durationMs}ms - ${errorMessage}`,
-          method,
-          path,
-          statusCode,
-          durationMs,
-          stack: stackTrace,
-        });
+        if (!shouldSuppressErrorLog) {
+          this.logger.error({
+            context: contextLabel,
+            message: `${method} ${path} ${statusCode} ${durationMs}ms - ${errorMessage}`,
+            method,
+            path,
+            statusCode,
+            durationMs,
+            stack: stackTrace,
+          });
+        }
 
         return throwError(() =>
           error instanceof Error ? error : new Error(String(error)),
@@ -159,6 +167,27 @@ export class LoggingInterceptor implements NestInterceptor {
     }
 
     return 'UNKNOWN';
+  }
+
+  private shouldSuppressExpected4xxLog(
+    request: HttpRequest,
+    statusCode: number | string,
+  ): boolean {
+    if (process.env.NODE_ENV !== 'test') return false;
+    if ((process.env.LOG_LEVEL ?? '').toLowerCase() === 'debug') return false;
+    if (typeof statusCode !== 'number' || statusCode < 400 || statusCode >= 500)
+      return false;
+
+    return this.isExpected4xxRequest(request);
+  }
+
+  private isExpected4xxRequest(request: HttpRequest): boolean {
+    const raw = request.headers[EXPECTED_4XX_HEADER];
+    if (Array.isArray(raw)) {
+      return raw.some((value) => value.toLowerCase() === 'true');
+    }
+
+    return typeof raw === 'string' && raw.toLowerCase() === 'true';
   }
 
   /**
