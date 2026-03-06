@@ -15,6 +15,12 @@ import {
 } from './dto/search.dto';
 import { DateTime } from 'luxon';
 
+type DecodedSearchCursor = {
+  eventAt: Date;
+  id: string;
+  count?: number;
+};
+
 @Injectable()
 export class SearchService {
   // userId -> string[] (LIFO, max 10)
@@ -123,10 +129,12 @@ export class SearchService {
       );
     }
 
-    const count = await query.clone().distinct(true).getCount();
+    const decodedCursor = this.decodeCursor(cursor);
+    const count =
+      decodedCursor?.count ?? (await query.clone().distinct(true).getCount());
 
     // Cursor Pagination Logic
-    this.applyCursor(query, cursor);
+    this.applyCursor(query, decodedCursor);
 
     // Sorting: Most recent first
     query.orderBy('post.eventAt', 'DESC').addOrderBy('post.id', 'DESC');
@@ -202,7 +210,7 @@ export class SearchService {
     if (hasNextPage) {
       const lastItem = items[items.length - 1];
       if (lastItem.eventAt) {
-        nextCursor = this.encodeCursor(lastItem.eventAt, lastItem.id);
+        nextCursor = this.encodeCursor(lastItem.eventAt, lastItem.id, count);
       }
     }
 
@@ -213,29 +221,55 @@ export class SearchService {
     };
   }
 
-  private applyCursor(query: SelectQueryBuilder<Post>, cursor?: string) {
+  private applyCursor(
+    query: SelectQueryBuilder<Post>,
+    cursor: DecodedSearchCursor | null,
+  ) {
     if (!cursor) return;
+
+    query.andWhere(
+      new Brackets((qb) => {
+        qb.where('post.eventAt < :eventAt', {
+          eventAt: cursor.eventAt,
+        }).orWhere('post.eventAt = :eventAt AND post.id < :id', {
+          eventAt: cursor.eventAt,
+          id: cursor.id,
+        });
+      }),
+    );
+  }
+
+  private decodeCursor(cursor?: string): DecodedSearchCursor | null {
+    if (!cursor) return null;
 
     try {
       const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-      const [eventAtStr, id] = decoded.split('|');
-      const eventAt = new Date(eventAtStr);
+      const [eventAtStr, id, countStr] = decoded.split('|');
+      if (!eventAtStr || !id) return null;
 
-      query.andWhere(
-        new Brackets((qb) => {
-          qb.where('post.eventAt < :eventAt', { eventAt }).orWhere(
-            'post.eventAt = :eventAt AND post.id < :id',
-            { eventAt, id },
-          );
-        }),
-      );
+      const eventAt = new Date(eventAtStr);
+      if (Number.isNaN(eventAt.getTime())) return null;
+
+      const parsedCount = Number.parseInt(countStr ?? '', 10);
+      const count =
+        Number.isInteger(parsedCount) && parsedCount >= 0
+          ? parsedCount
+          : undefined;
+
+      return { eventAt, id, count };
     } catch {
-      // Ignore invalid cursor
+      // TODO: Replace permissive fallback with explicit 400 (INVALID_CURSOR)
+      // when cursor is provided but cannot be decoded/parsed.
+      // TODO: Add cursor signature (e.g., HMAC) to prevent tampering.
+      return null;
     }
   }
 
-  private encodeCursor(eventAt: Date, id: string): string {
-    const value = `${eventAt.toISOString()}|${id}`;
+  private encodeCursor(eventAt: Date, id: string, count?: number): string {
+    const value =
+      count === undefined
+        ? `${eventAt.toISOString()}|${id}`
+        : `${eventAt.toISOString()}|${id}|${count}`;
     return Buffer.from(value).toString('base64');
   }
 
