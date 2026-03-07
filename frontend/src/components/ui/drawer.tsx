@@ -68,6 +68,11 @@ function DrawerContent({
       >
         <div className="bg-muted mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
+        <div
+          aria-hidden
+          className="hidden group-data-[vaul-drawer-direction=bottom]/drawer-content:block shrink-0"
+          style={{ height: 'env(safe-area-inset-bottom)' }}
+        />
       </DrawerPrimitive.Content>
     </DrawerPortal>
   );
