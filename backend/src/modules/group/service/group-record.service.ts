@@ -133,6 +133,31 @@ export class GroupRecordService {
     return { coverAssetId, sourcePostId };
   }
 
+  async resetMonthCover(
+    userId: string,
+    groupId: string,
+    year: number,
+    month: number,
+  ) {
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId },
+    });
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    await this.groupMonthCoverRepo.delete({ groupId, year, month });
+
+    await this.groupActivityService.recordActivity({
+      groupId,
+      type: GroupActivityType.GROUP_MONTH_COVER_UPDATE,
+      actorIds: [userId],
+      meta: { year, month, reset: true },
+    });
+
+    return { coverAssetId: null, sourcePostId: null };
+  }
+
   /**
    * 그룹 월별 아카이브 조회
    */

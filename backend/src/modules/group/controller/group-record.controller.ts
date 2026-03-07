@@ -1,7 +1,8 @@
 import {
   Controller,
-  Patch,
+  Delete,
   Get,
+  Patch,
   Param,
   Body,
   Query,
@@ -74,6 +75,37 @@ export class GroupRecordController {
       month,
       body.assetId,
       body.sourcePostId,
+    );
+
+    return { data: result };
+  }
+
+  /**
+   * 그룹 월별 커버 초기화
+   */
+  @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.EDITOR)
+  @Delete(':groupId/archives/months/:yyyy_mm/cover')
+  @ApiOperation({
+    summary: '그룹 월별 커버 초기화',
+    description:
+      '특정 월의 카드 커버를 기본값으로 되돌립니다. EDITOR 이상의 권한이 필요합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiParam({ name: 'yyyy_mm', description: '연-월 (예: 2026-01)' })
+  @ApiWrappedOkResponse({ type: Object })
+  async resetMonthCover(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+    @Param('yyyy_mm') yyyy_mm: string,
+  ) {
+    const { year, month } = parseYearMonth(yyyy_mm);
+
+    const result = await this.groupRecordService.resetMonthCover(
+      user.sub,
+      groupId,
+      year,
+      month,
     );
 
     return { data: result };
