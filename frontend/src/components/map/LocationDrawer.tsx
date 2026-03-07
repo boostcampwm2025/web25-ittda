@@ -21,6 +21,7 @@ export default function LocationDrawer({ isOpen, onSelect, onClose }: Props) {
           'max-w-4xl w-full h-full inset-0 z-100 flex flex-col bg-white dark:bg-[#121212]',
           'animate-in slide-in-from-bottom duration-300',
         )}
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <header className="dark:bg-[#121212]/90 bg-white/90 backdrop-blur-xl transition-all duration-500 sticky top-0 z-50 max-w-4xl w-full px-4 sm:px-6 py-3 sm:py-4 mx-auto flex items-center justify-between">
           <button

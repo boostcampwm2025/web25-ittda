@@ -35,6 +35,18 @@ export default function ThemeColorSetter() {
       meta.content = color;
       document.head.appendChild(meta);
     }
+
+    // 네이티브 iOS statusbar 커버 뷰에 테마 변경 알림
+    const w = window as {
+      webkit?: {
+        messageHandlers?: {
+          themeChange?: { postMessage: (v: string) => void };
+        };
+      };
+    };
+    w.webkit?.messageHandlers?.themeChange?.postMessage(
+      resolvedTheme ?? 'light',
+    );
   }, [resolvedTheme, mounted]);
 
   return null;

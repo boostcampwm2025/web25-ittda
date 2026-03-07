@@ -12,6 +12,7 @@ import PWAInstallBanner from '@/components/PWAInstallBanner';
 import KakaoScript from '@/lib/services/kakaoScript';
 import AuthContext from './AuthContext';
 import { Suspense } from 'react';
+import StatusBarCover from '@/components/StatusBarCover';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -192,6 +193,10 @@ export default function RootLayout({
                   } else {
                     document.documentElement.classList.remove('dark');
                   }
+                // Capacitor 네이티브 앱 감지 → sticky 헤더 safe-area 오프셋용 클래스 부여
+                if (window.Capacitor?.isNativePlatform?.()) {
+                  document.documentElement.classList.add('cap-native');
+                }
                 } catch (e) {}
               })();
             `,
@@ -216,7 +221,14 @@ export default function RootLayout({
               defaultTheme="system"
             >
               <ThemeColorSetter />
-              <div style={{ paddingTop: 'env(safe-area-inset-top)' }} className="flex flex-col min-h-screen w-full mx-auto shadow-2xl max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+              <div data-app-root className="flex flex-col min-h-screen w-full mx-auto max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+                {/* status bar 커버: position fixed + 인라인 zIndex로 스크롤과 무관하게 항상 가림 */}
+                <StatusBarCover />
+                {/* 레이아웃 흐름상 status bar 높이만큼 공간 확보 (iOS PWA용; native는 CSS로 숨김) */}
+                <div
+                  data-layout-spacer
+                  style={{ height: 'env(safe-area-inset-top)', flexShrink: 0 }}
+                />
                 <PWAInstallBanner />
                 <ConditionalHeader />
                 {children}

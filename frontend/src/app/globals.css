@@ -3,6 +3,57 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Capacitor 네이티브 앱: scrollView.bounces = false로 bounce 스크롤을 막고,
+   CSS padding-top으로 콘텐츠를 status bar 아래에 배치.
+   status bar 배경은 html background-color로 채워짐. */
+html.cap-native body {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* cap-native: CSS 스크롤 컨테이너에서 WKWebView scrollView로의 스크롤 체이닝 방지 */
+html.cap-native body {
+  overscroll-behavior: none;
+}
+
+/* cap-native: html padding-top으로 safe area 확보 → layout spacer 불필요 */
+html.cap-native [data-layout-spacer] {
+  display: none;
+}
+
+/* cap-native: StatusBarCover는 스크롤 시 콘텐츠가 statusbar 영역으로 노출되는 것을 막기 위해 유지 */
+
+/* cap-native: toast가 statusbar 아래로 표시되도록 위치 조정 (sonner CSS 변수 직접 오버라이드) */
+html.cap-native [data-sonner-toaster] {
+  --offset-top: calc(env(safe-area-inset-top, 0px) + 16px) !important;
+  --mobile-offset-top: calc(env(safe-area-inset-top, 0px) + 16px) !important;
+}
+
+/* sticky top-0 헤더: cap-native에서 top: env(safe-area-inset-top)으로 statusbar 아래에 고정
+   키보드 열릴 때도 뷰포트 기준 62px(safe area)에 달라붙어 statusbar 침범 방지 */
+html.cap-native .sticky.top-0 {
+  top: env(safe-area-inset-top);
+  padding-top: 0.75rem;
+}
+
+/* 검색 페이지 헤더 */
+html.cap-native [data-safe-area-header] {
+  padding-top: 0.75rem;
+}
+
+/* 앱 루트: min-h-screen(100vh)이 html padding-top(safe-area)을 포함하지 않아
+   총 페이지 높이 = 100svh + safe-area-inset-top이 되어 WKWebView가 스크롤 가능해지는 문제 수정.
+   높이를 정확히 100svh - safe-area-inset-top으로 제한 → WKWebView contentSize = viewport → 스크롤 불가 */
+html.cap-native [data-app-root] {
+  min-height: 0 !important;
+  height: calc(100svh - env(safe-area-inset-top));
+}
+
+/* 검색 레이아웃: overflow: clip으로 overscroll 체이닝 방지
+   (overflow: hidden과 달리 스크롤 컨테이너를 생성하지 않음) */
+html.cap-native [data-search-layout] {
+  overflow: clip !important;
+}
+
 /* 네이티브 앱: status bar 영역 배경색을 앱 배경과 일치 */
 html {
   background-color: #ffffff;
@@ -237,6 +288,10 @@ main {
     width: 114.2857% !important; /* 1 / 0.875 = 114.2857% - scale 후에도 전체 공간 차지 */
     height: 114.2857% !important; /* 1 / 0.875 = 114.2857% - scale 후에도 전체 공간 차지 */
   }
+}
+
+.bottom-nav {
+  margin-bottom: calc(env(safe-area-inset-bottom));
 }
 
 /* @media (max-width: 768px) {
