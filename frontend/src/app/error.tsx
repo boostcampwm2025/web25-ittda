@@ -19,7 +19,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex-1 pb-20 flex flex-col items-center justify-center px-8 text-center transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD] h-full">
+    <div className="flex-1 pb-bottom-nav flex flex-col items-center justify-center px-8 text-center transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD] h-full">
       <div className="relative mb-6 sm:mb-8">
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center animate-bounce-subtle dark:bg-white/5 bg-gray-50">
           <AlertTriangle className="w-10 h-10 sm:w-12 sm:h-12 dark:text-gray-500 text-gray-300" />
