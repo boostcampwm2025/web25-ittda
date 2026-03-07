@@ -24,6 +24,12 @@ const config: CapacitorConfig = {
     captureInput: true,
     webContentsDebuggingEnabled: false,
   },
+  plugins: {
+    Keyboard: {
+      resize: 'body',
+      scrollAssist: false,
+    },
+  },
 };
 
 export default config;

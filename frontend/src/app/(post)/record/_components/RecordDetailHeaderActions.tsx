@@ -9,17 +9,17 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { Popover } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
 import { useEditPostDraft } from '@/hooks/useGrouprRecord';
 import { ImageValue, RecordDetailResponse } from '@/lib/types/record';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
-import {
-  PopoverClose,
-  PopoverContent,
-  PopoverTrigger,
-} from '@radix-ui/react-popover';
+import { PopoverClose } from '@radix-ui/react-popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
