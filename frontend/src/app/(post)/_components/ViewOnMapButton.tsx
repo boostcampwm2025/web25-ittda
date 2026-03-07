@@ -21,6 +21,7 @@ export default function ViewOnMapButton({
         'fixed bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-4 duration-500',
         className,
       )}
+      style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
     >
       <button
         onClick={() => router.push(routePath)}
