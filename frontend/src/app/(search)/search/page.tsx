@@ -15,11 +15,7 @@ import {
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
 import Back from '@/components/Back';
-import {
-  useFrequentTags,
-  useRecentSearches,
-  useSearchQuery,
-} from '@/hooks/useSearchQuery';
+import { useRecentSearches, useSearchQuery } from '@/hooks/useSearchQuery';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function SearchPage() {
@@ -29,9 +25,7 @@ export default function SearchPage() {
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
-  const { data: frequentTagsData } = useFrequentTags(10);
   const { data: recentSearchesData } = useRecentSearches();
-  const frequentTags = frequentTagsData?.tags ?? [];
   const recentKeywords = recentSearchesData?.keywords ?? [];
 
   const {
@@ -269,7 +263,6 @@ export default function SearchPage() {
         emotions={selectedEmotions}
         dateRange={{ start: startDate, end: endDate }}
         onUpdateUrl={updateUrl}
-        frequentTags={frequentTags ?? []}
       />
     </div>
   );
