@@ -316,6 +316,47 @@ export class GroupManagementService {
     };
   }
 
+  async resetGroupCover(
+    userId: string,
+    groupId: string,
+  ): Promise<{
+    groupId: string;
+    cover: null;
+    updatedAt: Date;
+  }> {
+    const member = await this.groupMemberRepo.findOne({
+      where: { groupId, userId },
+    });
+
+    if (!member) {
+      const groupExists = await this.groupRepo.exists({
+        where: { id: groupId },
+      });
+      if (!groupExists) {
+        throw new NotFoundException('존재하지 않는 그룹입니다.');
+      }
+      throw new ForbiddenException('그룹 멤버가 아닙니다.');
+    }
+
+    await this.groupRepo.update(groupId, {
+      coverMediaId: null,
+      coverSourcePostId: null,
+    });
+
+    await this.groupActivityService.recordActivity({
+      groupId,
+      type: GroupActivityType.GROUP_COVER_UPDATE,
+      actorIds: [userId],
+      meta: { reset: true },
+    });
+
+    return {
+      groupId,
+      cover: null,
+      updatedAt: new Date(),
+    };
+  }
+
   /** 그룹 설정 정보 조회 */
   async getGroupSettings(
     userId: string,
