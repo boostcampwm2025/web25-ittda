@@ -67,7 +67,7 @@ export default function DailyDetailFloatingActions({
         }
       />
 
-      <div className="fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[85%] sm:w-[80%] max-w-90 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[85%] sm:w-[80%] max-w-90 animate-in slide-in-from-bottom-4 duration-500" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex items-center justify-between px-4 sm:px-6 py-1 sm:py-1.5 rounded-full shadow-[0_20px_60px_rgba(0,0,0,0.3)] border border-white/10 transition-all bg-itta-black">
           <button
             disabled={!hasPrev}
