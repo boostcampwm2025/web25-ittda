@@ -30,7 +30,7 @@ export default async function GroupMonthlyDetailData({
   const { startDate, endDate } = getMonthRange(month);
 
   return (
-    <div className="p-4 sm:p-6 pb-28 sm:pb-40">
+    <div className="p-4 sm:p-6 pb-bottom-nav">
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ErrorHandlingWrapper
           fallbackComponent={ErrorFallback}

@@ -7,7 +7,7 @@ export default function NotFound() {
   const router = useRouter();
 
   return (
-    <div className="flex-1 pb-20 flex flex-col items-center justify-center px-8 text-center transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
+    <div className="flex-1 pb-bottom-nav flex flex-col items-center justify-center px-8 text-center transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <div className="relative mb-8">
         <div className="w-24 h-24 rounded-full flex items-center justify-center animate-bounce-subtle dark:bg-white/5 bg-gray-50">
           <SearchX className="w-12 h-12 dark:text-gray-500 text-gray-300" />

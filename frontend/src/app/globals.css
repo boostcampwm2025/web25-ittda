@@ -72,8 +72,8 @@ html.dark {
   --polar-grid-stroke: #f1f5f9;
 
   /* Navigation heights */
-  --bottom-nav-height: 7rem; /* 모바일 */
-  --bottom-nav-height-sm: 8rem; /* 데스크톱 */
+  --bottom-nav-height: calc(7rem + env(safe-area-inset-bottom, 0px)); /* 모바일 */
+  --bottom-nav-height-sm: calc(8rem + env(safe-area-inset-bottom, 0px)); /* 데스크톱 */
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);

@@ -114,7 +114,7 @@ export default function TagSearchDrawer({
               자주 사용한 태그
             </p>
             {isPending && (
-              <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#121212]">
+              <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="w-5 sm:w-6 h-5 sm:h-6 animate-spin text-itta-point" />
               </div>
             )}

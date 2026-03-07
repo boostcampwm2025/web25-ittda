@@ -23,7 +23,7 @@ export default async function MyMonthlyDetailData({ month }: MyMonthlyDetailData
   const { startDate, endDate } = getMonthRange(month);
 
   return (
-    <div className="py-4 sm:py-6 pb-28 sm:pb-40">
+    <div className="py-4 sm:py-6 pb-bottom-nav">
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ErrorHandlingWrapper
           fallbackComponent={ErrorFallback}
