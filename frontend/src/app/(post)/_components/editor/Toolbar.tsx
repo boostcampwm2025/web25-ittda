@@ -55,7 +55,7 @@ export default function Toolbar({ onAddBlock, onOpenDrawer }: ToolbarProps) {
         </button>
       </div> */}
 
-      <div className="w-full bg-white dark:bg-[#2A2A2A] border-t border-gray-100 dark:border-white/5 px-2 py-3 sm:p-4 flex justify-around items-center">
+      <div className="w-full bg-white dark:bg-[#2A2A2A] border-t border-gray-100 dark:border-white/5 px-2 py-6 sm:p-4 flex justify-around items-center">
         {TOOL_ITEMS.map(({ id, Icon }) => (
           <button
             key={id}

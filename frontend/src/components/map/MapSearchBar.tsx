@@ -64,7 +64,7 @@ export function MapSearchBar({
               onKeyDown={(e) => {
                 if (e.key === 'Enter') triggerSearch();
               }}
-              className="dark:text-white flex-1 min-w-0 mobil-input"
+              className="dark:text-white flex-1 min-w-0 mobile-input"
             />
             <Input.Right>
               <button

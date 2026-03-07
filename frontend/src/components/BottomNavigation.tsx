@@ -85,7 +85,7 @@ export default function BottomNavigation() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="flex items-center justify-between w-full"
+            className="bottom-nav flex items-center justify-between w-full"
           >
             <NavItem
               icon={<Book />}
@@ -132,7 +132,7 @@ export default function BottomNavigation() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="flex items-center justify-between w-full"
+            className="bottom-nav flex items-center justify-between w-full"
           >
             <NavItem
               icon={<HomeIcon />}
