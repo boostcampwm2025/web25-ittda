@@ -123,7 +123,9 @@ export default function WeekCalendar() {
     // 클릭 즉시 강조 표시 반영
     setOptimisticDate(dateStr);
     // RecordList에 즉시 알림 (URL 커밋 전)
-    window.dispatchEvent(new CustomEvent('itda:dateChange', { detail: dateStr }));
+    window.dispatchEvent(
+      new CustomEvent('itda:dateChange', { detail: dateStr }),
+    );
     // URL 쿼리 파라미터로 날짜 설정
     router.push(`/?date=${dateStr}`);
     calculateYearMonth(dateStr);
@@ -131,16 +133,18 @@ export default function WeekCalendar() {
 
   return (
     <div className="overflow-hidden">
-      <div
-        className="px-4 py-2 sm:px-6 flex items-center gap-1 group cursor-pointer self-start"
-        onClick={() =>
-          router.push(`/my/month/${displayYearMonth.replace('.', '-')}`)
-        }
-      >
-        <span className="text-sm sm:text-base font-semibold dark:text-white text-itta-black">
-          {displayYearMonth}
+      <div className="px-4 py-2 sm:px-6 flex items-center gap-1 group cursor-pointer self-start">
+        <span
+          className="flex items-center"
+          onClick={() =>
+            router.push(`/my/month/${displayYearMonth.replace('.', '-')}`)
+          }
+        >
+          <span className="text-sm sm:text-base font-semibold dark:text-white text-itta-black">
+            {displayYearMonth}
+          </span>
+          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform dark:text-white text-itta-black" />
         </span>
-        <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform dark:text-white text-itta-black" />
       </div>
       <div className="relative h-24">
         <div className="px-3 py-3 sm:px-4 sm:py-4 flex justify-between">
