@@ -232,25 +232,44 @@ export default function RecordMapContent({
   };
 
   return (
-    <main
-      vaul-drawer-wrapper=""
-      className="w-full h-full relative overflow-hidden bg-white"
-    >
+    <div className="w-full h-full relative overflow-hidden bg-white">
       <APIProvider apiKey={apiKey!}>
-        <div className="absolute inset-0 z-0">
-          <GoogleMap
-            posts={allPosts}
+        <main
+          vaul-drawer-wrapper=""
+          className="absolute inset-0"
+        >
+          <div className="absolute inset-0 z-0">
+            <GoogleMap
+              posts={allPosts}
+              selectedPostId={selectedPostId}
+              onSelectPost={setSelectedPostId}
+              onBoundsChange={handleBoundsChange}
+              onMapClick={() => setSelectedPostId(null)}
+              mapRef={mapRef}
+              placesServiceRef={placesServiceRef}
+              searchedLocation={searchedLocation}
+            />
+          </div>
+          <RecordMapDrawer
+            posts={drawerPosts}
             selectedPostId={selectedPostId}
             onSelectPost={setSelectedPostId}
-            onBoundsChange={handleBoundsChange}
-            onMapClick={() => setSelectedPostId(null)}
-            mapRef={mapRef}
-            placesServiceRef={placesServiceRef}
-            searchedLocation={searchedLocation}
+            isLoading={isLoading}
+            lastItemRef={lastItemRef}
+            isFetchingNextPage={isFetchingNextPage}
+            topOffset={bannerHeight}
           />
-        </div>
+          <FilterDrawerRenderer
+            activeDrawer={activeDrawer}
+            close={() => setActiveDrawer(null)}
+            tags={selectedTags}
+            emotions={selectedEmotions}
+            dateRange={{ start: startDate, end: endDate }}
+            onUpdateUrl={updateUrl}
+          />
+        </main>
 
-        {/* 검색 및 필터*/}
+        {/* 검색 및 필터 - vaul-drawer-wrapper 밖에 배치하여 drawer transform 영향 받지 않음 */}
         <div className="absolute top-3 sm:top-4 left-0 w-full z-10 px-3 sm:px-4">
           <div className="flex flex-col gap-2 sm:gap-3">
             <div className="flex gap-1.5 sm:gap-2 items-center">
@@ -295,24 +314,7 @@ export default function RecordMapContent({
             </div>
           </div>
         </div>
-        <RecordMapDrawer
-          posts={drawerPosts}
-          selectedPostId={selectedPostId}
-          onSelectPost={setSelectedPostId}
-          isLoading={isLoading}
-          lastItemRef={lastItemRef}
-          isFetchingNextPage={isFetchingNextPage}
-          topOffset={bannerHeight}
-        />
-        <FilterDrawerRenderer
-          activeDrawer={activeDrawer}
-          close={() => setActiveDrawer(null)}
-          tags={selectedTags}
-          emotions={selectedEmotions}
-          dateRange={{ start: startDate, end: endDate }}
-          onUpdateUrl={updateUrl}
-        />
       </APIProvider>
-    </main>
+    </div>
   );
 }
