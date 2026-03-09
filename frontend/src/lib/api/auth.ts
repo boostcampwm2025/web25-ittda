@@ -11,7 +11,7 @@ const INSTANCE_ID =
     ? Math.random().toString(36).substring(2, 15)
     : 'server';
 let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+let refreshSubscribers: ((token: string | null) => void)[] = [];
 
 // 클라이언트 세션 캐싱
 let cachedSession: Session | null = null;
@@ -36,6 +36,18 @@ if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
     // 세션 이벤트여야 함
     // 메세지에 senderId가 명시되어 있고, 그게 내가 아닐 때 (확실한 타 탭의 이벤트)
     if (isAuthSessionEvent && hasForeignSenderId) {
+      cachedSession = null;
+      cacheExpiry = 0;
+    }
+  });
+}
+
+// PWA / 브라우저 탭: 포그라운드 복귀 시 캐시 무효화
+// refetchOnWindowFocus는 NextAuth 내부 세션만 갱신하고 이 캐시는 갱신하지 않음
+// visibilitychange로 캐시를 비워줘야 다음 getAccessToken() 호출이 신선한 토큰을 가져옴
+if (typeof window !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
       cachedSession = null;
       cacheExpiry = 0;
     }
@@ -102,14 +114,15 @@ export async function getAccessToken() {
 /**
  * 토큰 재발급 대기열에 구독자 추가
  */
-function subscribeTokenRefresh(callback: (token: string) => void) {
+function subscribeTokenRefresh(callback: (token: string | null) => void) {
   refreshSubscribers.push(callback);
 }
 
 /**
- * 토큰 재발급 완료 시 대기 중인 요청들에게 알림
+ * 토큰 재발급 완료/실패 시 대기 중인 요청들에게 알림
+ * null이면 재발급 실패를 의미
  */
-function onTokenRefreshed(token: string) {
+function onTokenRefreshed(token: string | null) {
   refreshSubscribers.forEach((callback) => callback(token));
   refreshSubscribers = [];
 }
@@ -124,6 +137,7 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 
   isRefreshing = true;
+  let tokenResult: string | null = null;
 
   try {
     // 게스트 사용자인지 확인
@@ -137,25 +151,41 @@ export async function refreshAccessToken(): Promise<string | null> {
     // 직접 백엔드에 쏘지 않고 NextAuth의 getSession 호출
     // getSession()이 호출되면 서버의 jwt 콜백이 실행되면서
     // refreshServerAccessToken 로직이 돌아감
-    const session = await getSession({ broadcast: true });
+    // 네트워크 순단 대비: 최대 3회 시도
+    let session = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      session = await getSession({ broadcast: true });
+      if (session !== null) break;
+      if (attempt < 2) {
+        await new Promise<void>((r) => setTimeout(r, 500 * (attempt + 1)));
+      }
+    }
 
-    if (!session || session.error === 'RefreshAccessTokenError') {
+    // RefreshAccessTokenError = 서버가 명시적으로 갱신 불가 판정 → 로그아웃
+    if (session?.error === 'RefreshAccessTokenError') {
       handleLogout();
       return null;
     }
 
-    const newToken = session.accessToken;
+    // 재시도 후에도 null → 네트워크 오류로 판단, 로그아웃 없이 실패 처리
+    if (!session) {
+      return null;
+    }
 
+    const newToken = session.accessToken;
     if (!newToken) {
       return null;
     }
+
     cachedSession = session;
-    onTokenRefreshed(newToken);
+    tokenResult = newToken;
     return newToken;
   } finally {
-    setTimeout(() => {
-      isRefreshing = false;
-    }, 1000);
+    // setTimeout 제거: 1초 대기 중 도착한 구독자가 영원히 대기하는 버그 방지
+    // isRefreshing을 먼저 false로 설정한 뒤 구독자에게 알려야
+    // 구독자 콜백 실행 중 새 401이 와도 큐에 쌓이지 않음
+    isRefreshing = false;
+    onTokenRefreshed(tokenResult);
   }
 }
 
@@ -186,7 +216,7 @@ export async function refreshServerAccessToken(token: any) {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw data;
+        throw { httpStatus: response.status, ...data };
       }
 
       const newAccessToken = response.headers
@@ -214,6 +244,21 @@ export async function refreshServerAccessToken(token: any) {
         error: null,
       };
     } catch (error) {
+      const httpStatus = (error as Record<string, unknown>)?.httpStatus as
+        | number
+        | undefined;
+      // 4xx → 실제 인증 실패 (refreshToken 만료/무효)
+      // 네트워크 오류(TypeError) 또는 5xx → 일시적 문제
+      const isAuthFailure =
+        typeof httpStatus === 'number' && httpStatus >= 400 && httpStatus < 500;
+
+      if (!isAuthFailure) {
+        // 일시적 오류: RefreshAccessTokenError를 세션에 기록하지 않고
+        // 짧은 재시도 윈도우(30초)만 설정 → 다음 요청 시 재시도
+        logger.error('서버 토큰 갱신 - 일시적 오류, 잠시 후 재시도', error);
+        return { ...token, accessTokenExpires: Date.now() + 30 * 1000 };
+      }
+
       Sentry.captureException(error, {
         tags: {
           context: 'auth',
@@ -221,9 +266,10 @@ export async function refreshServerAccessToken(token: any) {
         },
         extra: {
           hasRefreshToken: !!token.refreshToken,
+          httpStatus,
         },
       });
-      logger.error('서버 토큰 갱신 실패', error);
+      logger.error('서버 토큰 갱신 실패 (인증 오류)', error);
 
       return { ...token, error: 'RefreshAccessTokenError' };
     } finally {

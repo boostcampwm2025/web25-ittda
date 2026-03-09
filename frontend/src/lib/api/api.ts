@@ -130,24 +130,9 @@ async function fetchWithRetry<T>(
 
         // 소셜 사용자 처리
         if (userType === 'social') {
-          // 소셜 사용자는 재발급 실패 시 로그아웃 처리
-          const error = new Error('토큰 재발급 실패 - 세션 만료');
-          Sentry.captureException(error, {
-            level: 'warning',
-            tags: {
-              context: 'api',
-              operation: 'token-refresh-failure',
-            },
-            extra: {
-              endpoint: url,
-            },
-          });
-
-          await handleLogout();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-            return;
-          }
+          // refreshAccessToken()이 이미 RefreshAccessTokenError 시 handleLogout()을 호출함
+          // 여기서 중복 호출하면 네트워크 오류로 인한 일시적 실패에도 로그아웃되는 문제 발생
+          // → 에러 응답만 반환하고 로그아웃은 refreshAccessToken()에 위임
           return {
             success: false,
             data: null,
