@@ -16,7 +16,7 @@ export default function SearchLayout({
             </div>
           }
         >
-          <main className="flex-1 overflow-hidden">{children}</main>
+          <main className="flex-1">{children}</main>
         </Suspense>
       </div>
     </div>

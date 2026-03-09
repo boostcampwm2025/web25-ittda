@@ -15,11 +15,7 @@ import {
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
 import Back from '@/components/Back';
-import {
-  useFrequentTags,
-  useRecentSearches,
-  useSearchQuery,
-} from '@/hooks/useSearchQuery';
+import { useRecentSearches, useSearchQuery } from '@/hooks/useSearchQuery';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function SearchPage() {
@@ -29,9 +25,7 @@ export default function SearchPage() {
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
-  const { data: frequentTagsData } = useFrequentTags(10);
   const { data: recentSearchesData } = useRecentSearches();
-  const frequentTags = frequentTagsData?.tags ?? [];
   const recentKeywords = recentSearchesData?.keywords ?? [];
 
   const {
@@ -43,18 +37,27 @@ export default function SearchPage() {
     location,
     updateUrl,
   } = useSearchFilters({ withLocation: true });
+  const isInitialState =
+    !query &&
+    selectedTags.length === 0 &&
+    !startDate &&
+    !location &&
+    selectedEmotions.length === 0;
 
   const locationAddress = location?.address ?? null;
   const [localQuery, setLocalQuery] = useState(query);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useSearchQuery({
-      query,
-      tags: selectedTags,
-      emotions: selectedEmotions,
-      start: startDate,
-      end: endDate,
-      location,
-    });
+    useSearchQuery(
+      {
+        query,
+        tags: selectedTags,
+        emotions: selectedEmotions,
+        start: startDate,
+        end: endDate,
+        location,
+      },
+      !activeDrawer && !isInitialState,
+    );
   const { debounced: debouncedUpdateQuery, cancel } = useDebounce(
     (val: string) => {
       updateUrl({ q: val });
@@ -67,6 +70,7 @@ export default function SearchPage() {
     () => data?.pages.flatMap((page) => page.items) ?? [],
     [data],
   );
+  const totalCount = data?.pages[0]?.count ?? 0;
 
   //  무한 스크롤 관찰자
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -106,12 +110,6 @@ export default function SearchPage() {
     setLocalQuery(val); // input 필드 업데이트
     updateUrl({ q: val });
   };
-  const isInitialState =
-    !query &&
-    selectedTags.length === 0 &&
-    !startDate &&
-    !location &&
-    selectedEmotions.length === 0;
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-3 sm:p-4 space-y-3 sm:space-y-4">
@@ -205,7 +203,7 @@ export default function SearchPage() {
       ) : (
         <main className="p-4 sm:p-6 pb-16 sm:pb-20">
           <h3 className="text-sm sm:text-md font-bold text-itta-gray3 uppercase tracking-tight mb-3 sm:mb-4">
-            검색 결과 <span className="text-itta-point">{items.length}</span>
+            검색 결과 <span className="text-itta-point">{totalCount}</span>
           </h3>
 
           {isLoading ? (
@@ -265,7 +263,6 @@ export default function SearchPage() {
         emotions={selectedEmotions}
         dateRange={{ start: startDate, end: endDate }}
         onUpdateUrl={updateUrl}
-        frequentTags={frequentTags ?? []}
       />
     </div>
   );

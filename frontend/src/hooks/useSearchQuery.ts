@@ -17,6 +17,7 @@ export interface SearchResultItem {
 
 export interface SearchResponse {
   items: SearchResultItem[];
+  count: number;
   nextCursor: string | null;
 }
 export interface SearchFilters {
@@ -33,7 +34,7 @@ export interface SearchFilters {
   };
 }
 
-export const useSearchQuery = (filters: SearchFilters) => {
+export const useSearchQuery = (filters: SearchFilters, enabled = true) => {
   return useInfiniteQuery<SearchResponse>({
     queryKey: ['search', filters],
     queryFn: async ({ pageParam }) => {
@@ -48,13 +49,14 @@ export const useSearchQuery = (filters: SearchFilters) => {
           longitude: filters.location?.lng,
           radius: filters.location?.radius || 10,
           emotions: filters.emotions,
-          // TODO: 현재는 감정 없음. 이후 추가 고려
         },
       );
 
       if (!response.success) throw createApiError(response);
       return response.data;
     },
+    enabled,
+    retry: false,
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });

@@ -14,7 +14,6 @@ import { useQuery } from '@tanstack/react-query';
 
 interface Props {
   onClose: () => void;
-  allTags?: string[];
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
   onReset: () => void;
@@ -22,7 +21,6 @@ interface Props {
 
 export default function TagSearchDrawer({
   onClose,
-  allTags,
   selectedTags,
   onToggleTag,
   onReset,
