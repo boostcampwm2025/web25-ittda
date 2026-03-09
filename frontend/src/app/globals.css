@@ -56,10 +56,10 @@ html.cap-native [data-search-layout] {
 
 /* 네이티브 앱: status bar 영역 배경색을 앱 배경과 일치 */
 html {
-  background-color: #ffffff;
+  /* background-color: #ffffff; */
 }
 html.dark {
-  background-color: #121212;
+  /* background-color: #121212; */
 }
 
 :root {
@@ -72,8 +72,12 @@ html.dark {
   --polar-grid-stroke: #f1f5f9;
 
   /* Navigation heights */
-  --bottom-nav-height: calc(7rem + env(safe-area-inset-bottom, 0px)); /* 모바일 */
-  --bottom-nav-height-sm: calc(8rem + env(safe-area-inset-bottom, 0px)); /* 데스크톱 */
+  --bottom-nav-height: calc(
+    7rem + env(safe-area-inset-bottom, 0px)
+  ); /* 모바일 */
+  --bottom-nav-height-sm: calc(
+    8rem + env(safe-area-inset-bottom, 0px)
+  ); /* 데스크톱 */
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);

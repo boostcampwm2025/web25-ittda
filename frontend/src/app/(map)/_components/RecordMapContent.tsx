@@ -1,6 +1,30 @@
 'use client';
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+
+// 네이티브 statusBar 테마 메시지를 iOS/Android 양쪽에 전송
+function sendNativeStatusBarTheme(theme: string) {
+  // iOS: WKWebView messageHandler
+  try {
+    (
+      window as unknown as {
+        webkit?: {
+          messageHandlers?: {
+            themeChange?: { postMessage: (t: string) => void };
+          };
+        };
+      }
+    ).webkit?.messageHandlers?.themeChange?.postMessage(theme);
+  } catch {}
+  // Android: JavascriptInterface
+  try {
+    (
+      window as unknown as {
+        AndroidBridge?: { themeChange: (t: string) => void };
+      }
+    ).AndroidBridge?.themeChange(theme);
+  } catch {}
+}
 import GoogleMap from './GoogleMap';
 import RecordMapDrawer from './RecordMapDrawer';
 import { FilterChip } from '@/components/search/FilterChip';
@@ -66,6 +90,16 @@ export default function RecordMapContent({
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(
     null,
   );
+
+  // 네이티브 iOS: 지도 페이지 진입 시 status bar 투명, 이탈 시 복원
+  useEffect(() => {
+    sendNativeStatusBarTheme('transparent');
+    return () => {
+      // 언마운트 시 현재 다크/라이트 모드에 따라 복원
+      const isDark = document.documentElement.classList.contains('dark');
+      sendNativeStatusBarTheme(isDark ? 'dark' : 'light');
+    };
+  }, []);
 
   useEffect(() => {
     if (!placesLib || placesServiceRef.current) return;
@@ -232,45 +266,55 @@ export default function RecordMapContent({
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-white">
+    // fixed inset-0: 전체 화면 커버 (status bar 영역 포함) + 문서 스크롤 이슈 방지
+    <div className="fixed inset-0 overflow-hidden bg-white">
       <APIProvider apiKey={apiKey!}>
-        <main
-          vaul-drawer-wrapper=""
-          className="absolute inset-0"
-        >
-          <div className="absolute inset-0 z-0">
-            <GoogleMap
-              posts={allPosts}
-              selectedPostId={selectedPostId}
-              onSelectPost={setSelectedPostId}
-              onBoundsChange={handleBoundsChange}
-              onMapClick={() => setSelectedPostId(null)}
-              mapRef={mapRef}
-              placesServiceRef={placesServiceRef}
-              searchedLocation={searchedLocation}
-            />
-          </div>
-          <RecordMapDrawer
-            posts={drawerPosts}
+        {/* GoogleMap: vaul-drawer-wrapper 밖 → filter drawer transform 영향 안 받음 */}
+        <div className="absolute inset-0">
+          <GoogleMap
+            posts={allPosts}
             selectedPostId={selectedPostId}
             onSelectPost={setSelectedPostId}
-            isLoading={isLoading}
-            lastItemRef={lastItemRef}
-            isFetchingNextPage={isFetchingNextPage}
-            topOffset={bannerHeight}
+            onBoundsChange={handleBoundsChange}
+            onMapClick={() => setSelectedPostId(null)}
+            mapRef={mapRef}
+            placesServiceRef={placesServiceRef}
+            searchedLocation={searchedLocation}
           />
-          <FilterDrawerRenderer
-            activeDrawer={activeDrawer}
-            close={() => setActiveDrawer(null)}
-            tags={selectedTags}
-            emotions={selectedEmotions}
-            dateRange={{ start: startDate, end: endDate }}
-            onUpdateUrl={updateUrl}
-          />
+        </div>
+
+        <main
+          vaul-drawer-wrapper=""
+          className="absolute inset-0 pointer-events-none"
+        >
+          <div className="pointer-events-auto">
+            <RecordMapDrawer
+              posts={drawerPosts}
+              selectedPostId={selectedPostId}
+              onSelectPost={setSelectedPostId}
+              isLoading={isLoading}
+              lastItemRef={lastItemRef}
+              isFetchingNextPage={isFetchingNextPage}
+              topOffset={bannerHeight}
+            />
+          </div>
+          <div className="pointer-events-auto">
+            <FilterDrawerRenderer
+              activeDrawer={activeDrawer}
+              close={() => setActiveDrawer(null)}
+              tags={selectedTags}
+              emotions={selectedEmotions}
+              dateRange={{ start: startDate, end: endDate }}
+              onUpdateUrl={updateUrl}
+            />
+          </div>
         </main>
 
-        {/* 검색 및 필터 - vaul-drawer-wrapper 밖에 배치하여 drawer transform 영향 받지 않음 */}
-        <div className="absolute top-3 sm:top-4 left-0 w-full z-10 px-3 sm:px-4">
+        {/* 검색 및 필터 - vaul-drawer-wrapper 밖, status bar 아래에 배치 */}
+        <div
+          className="absolute left-0 w-full z-10 px-3 sm:px-4"
+          style={{ top: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+        >
           <div className="flex flex-col gap-2 sm:gap-3">
             <div className="flex gap-1.5 sm:gap-2 items-center">
               <Back className="bg-white dark:bg-[#1E1E1E] shadow-xl rounded-full p-2 sm:p-2.5" />
