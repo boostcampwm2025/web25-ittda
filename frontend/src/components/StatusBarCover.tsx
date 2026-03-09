@@ -28,7 +28,7 @@ export default function StatusBarCover() {
         left: 0,
         right: 0,
         height: 'env(safe-area-inset-top)',
-        zIndex: 300,
+        zIndex: 49,
         pointerEvents: 'none',
         backgroundColor: isMapPath ? 'transparent' : bg,
       }}
