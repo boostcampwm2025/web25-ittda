@@ -13,6 +13,7 @@ import KakaoScript from '@/lib/services/kakaoScript';
 import AuthContext from './AuthContext';
 import { Suspense } from 'react';
 import StatusBarCover from '@/components/StatusBarCover';
+import NativeStatusBarSync from '@/components/NativeStatusBarSync';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -197,6 +198,10 @@ export default function RootLayout({
                 if (window.Capacitor?.isNativePlatform?.()) {
                   document.documentElement.classList.add('cap-native');
                 }
+                // Android 감지 → drawer overlay가 statusbar까지 CSS로 처리
+                if (window.Capacitor?.getPlatform?.() === 'android') {
+                  document.documentElement.classList.add('cap-android');
+                }
                 } catch (e) {}
               })();
             `,
@@ -221,6 +226,7 @@ export default function RootLayout({
               defaultTheme="system"
             >
               <ThemeColorSetter />
+              <NativeStatusBarSync />
               <div data-app-root className="flex flex-col min-h-screen w-full mx-auto max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
                 {/* status bar 커버: position fixed + 인라인 zIndex로 스크롤과 무관하게 항상 가림 */}
                 <StatusBarCover />

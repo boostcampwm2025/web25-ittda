@@ -2,29 +2,7 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 
-// 네이티브 statusBar 테마 메시지를 iOS/Android 양쪽에 전송
-function sendNativeStatusBarTheme(theme: string) {
-  // iOS: WKWebView messageHandler
-  try {
-    (
-      window as unknown as {
-        webkit?: {
-          messageHandlers?: {
-            themeChange?: { postMessage: (t: string) => void };
-          };
-        };
-      }
-    ).webkit?.messageHandlers?.themeChange?.postMessage(theme);
-  } catch {}
-  // Android: JavascriptInterface
-  try {
-    (
-      window as unknown as {
-        AndroidBridge?: { themeChange: (t: string) => void };
-      }
-    ).AndroidBridge?.themeChange(theme);
-  } catch {}
-}
+
 import GoogleMap from './GoogleMap';
 import RecordMapDrawer from './RecordMapDrawer';
 import { FilterChip } from '@/components/search/FilterChip';
@@ -91,15 +69,6 @@ export default function RecordMapContent({
     null,
   );
 
-  // 네이티브 iOS: 지도 페이지 진입 시 status bar 투명, 이탈 시 복원
-  useEffect(() => {
-    sendNativeStatusBarTheme('transparent');
-    return () => {
-      // 언마운트 시 현재 다크/라이트 모드에 따라 복원
-      const isDark = document.documentElement.classList.contains('dark');
-      sendNativeStatusBarTheme(isDark ? 'dark' : 'light');
-    };
-  }, []);
 
   useEffect(() => {
     if (!placesLib || placesServiceRef.current) return;

@@ -20,7 +20,11 @@ html.cap-native [data-layout-spacer] {
   display: none;
 }
 
-/* cap-native: StatusBarCover는 스크롤 시 콘텐츠가 statusbar 영역으로 노출되는 것을 막기 위해 유지 */
+/* cap-native: StatusBarCover는 native UIView가 담당하므로 web layer에서 숨김.
+   숨기면 drawer 열릴 때 statusbar 영역도 콘텐츠 영역과 동일한 배경 + DrawerOverlay로 seamless하게 렌더링됨. */
+html.cap-native [data-status-bar-cover] {
+  display: none;
+}
 
 /* cap-native: toast가 statusbar 아래로 표시되도록 위치 조정 (sonner CSS 변수 직접 오버라이드) */
 html.cap-native [data-sonner-toaster] {
