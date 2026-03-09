@@ -1,9 +1,15 @@
 'use client';
 
-import { SessionProvider, signOut, useSession } from 'next-auth/react';
+import { SessionProvider, getSession, signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { invalidateSessionCache } from '@/lib/api/auth';
+
+const isNativePlatform = () =>
+  typeof window !== 'undefined' &&
+  !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+    .Capacitor?.isNativePlatform?.();
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
   const { status, data: session } = useSession();
@@ -11,6 +17,28 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const userType = useAuthStore((state) => state.userType);
   const logout = useAuthStore((state) => state.logout);
+
+  // Capacitor 네이티브 앱: 포그라운드 복귀 시 세션 갱신
+  // refetchOnWindowFocus가 네이티브 WebView에서 동작하지 않으므로 명시적으로 처리
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+
+    let cleanup: (() => void) | undefined;
+
+    (async () => {
+      const { App } = await import('@capacitor/app');
+      const handle = await App.addListener('appStateChange', ({ isActive }) => {
+        if (!isActive) return;
+        invalidateSessionCache();
+        getSession();
+      });
+      cleanup = () => handle.remove();
+    })();
+
+    return () => {
+      cleanup?.();
+    };
+  }, []);
 
   useEffect(() => {
     if (pathname.startsWith('/invite')) {
