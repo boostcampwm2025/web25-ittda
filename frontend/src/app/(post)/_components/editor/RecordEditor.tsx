@@ -229,13 +229,13 @@ export default function PostEditor({
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
   const { requestLock, releaseLock } = useLockManager(draftId);
-  const { uploadMultipleMedia, isUploading: isMediaUploading } =
-    useMediaUpload();
+  const { uploadMultipleMedia } = useMediaUpload();
   const { data: group } = useQuery({
     ...groupDetailOptions(groupId!),
     enabled: !!groupId,
   });
 
+  const [isSaving, setIsSaving] = useState(false);
   const {
     streamingValues,
     emitStream,
@@ -252,6 +252,7 @@ export default function PostEditor({
   const { execute } = useCreateRecord(groupId, postId, {
     onError: () => {
       setIsPublishing(false);
+      setIsSaving(false);
     },
   });
 
@@ -481,6 +482,8 @@ export default function PostEditor({
       queryClient.invalidateQueries({ queryKey: ['group', groupId] });
       return;
     }
+
+    setIsSaving(true);
 
     if (groupId) {
       await refreshGroupData(groupId);
@@ -815,9 +818,7 @@ export default function PostEditor({
 
   return (
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
-      {(isPublishing || (isMediaUploading && !draftId)) && (
-        <AuthLoadingScreen type="publish" />
-      )}
+      {(isPublishing || isSaving) && <AuthLoadingScreen type="publish" />}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <div className="mx-3 sm:mx-6 mt-2 sm:mt-3 flex flex-row gap-1.5 sm:gap-2">
         {group?.group.name ? (
