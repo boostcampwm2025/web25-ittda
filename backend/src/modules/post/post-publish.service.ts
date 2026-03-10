@@ -55,7 +55,7 @@ export class PostPublishService {
     groupId: string,
     payload: PublishDraftDto,
   ) {
-    const { draftId, draftVersion } = payload;
+    const { draftId, draftVersion, titleOverride } = payload;
     if (!this.draftStateService.startPublishing(draftId)) {
       throw new ConflictException('Draft is already publishing.');
     }
@@ -81,7 +81,7 @@ export class PostPublishService {
             lock: { mode: 'pessimistic_write' },
           });
           if (!draft) throw new NotFoundException('Draft not found');
-          if (draft.version !== draftVersion) {
+          if (draftVersion > draft.version) {
             throw new ConflictException('Draft version mismatch.');
           }
 
@@ -112,6 +112,10 @@ export class PostPublishService {
             draft.snapshot,
             groupId,
           );
+
+          if (titleOverride && titleOverride.trim()) {
+            snapshot.title = titleOverride.trim();
+          }
 
           const snapshotBlocks = snapshot.blocks;
           ownerActorId = draft.ownerActorId;
@@ -237,7 +241,7 @@ export class PostPublishService {
     postId: string,
     payload: PublishDraftDto,
   ) {
-    const { draftId, draftVersion } = payload;
+    const { draftId, draftVersion, titleOverride } = payload;
     if (!this.draftStateService.startPublishing(draftId)) {
       throw new ConflictException('Draft is already publishing.');
     }
@@ -265,7 +269,7 @@ export class PostPublishService {
           lock: { mode: 'pessimistic_write' },
         });
         if (!draft) throw new NotFoundException('Draft not found');
-        if (draft.version !== draftVersion) {
+        if (draftVersion > draft.version) {
           throw new ConflictException('Draft version mismatch.');
         }
         draftOwnerId = draft.ownerActorId;
@@ -301,6 +305,11 @@ export class PostPublishService {
         }
 
         const snapshot = this.parseGroupDraftSnapshot(draft.snapshot, groupId);
+
+        if (titleOverride && titleOverride.trim()) {
+          snapshot.title = titleOverride.trim();
+        }
+
         afterTitle = snapshot.title;
 
         validatePostTitle(snapshot.title);

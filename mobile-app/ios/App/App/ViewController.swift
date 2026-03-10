@@ -6,6 +6,8 @@ class ViewController: CAPBridgeViewController, WKScriptMessageHandler {
 
     // 네이티브 statusbar 커버 뷰 (WKWebView 스크롤과 무관하게 항상 최상단에 위치)
     private var statusBarCoverView: UIView?
+    // drawer 열릴 때 표시되는 blur 오버레이 (CSS backdrop-blur-sm과 동일한 효과)
+    private var statusBarBlurView: UIVisualEffectView?
 
     override func capacitorDidLoad() {
         // navigationDelegate를 덮어쓰면 Capacitor 브릿지가 망가지므로
@@ -37,6 +39,7 @@ class ViewController: CAPBridgeViewController, WKScriptMessageHandler {
     // MARK: - Native StatusBar Cover
 
     private func addStatusBarCover() {
+        // 1. 솔리드 컬러 커버 (일반 페이지용)
         let coverView = UIView()
         coverView.isUserInteractionEnabled = false
         coverView.translatesAutoresizingMaskIntoConstraints = false
@@ -48,18 +51,32 @@ class ViewController: CAPBridgeViewController, WKScriptMessageHandler {
             traits.userInterfaceStyle == .dark ? darkColor : lightColor
         }
 
-        view.addSubview(coverView)
-        view.bringSubviewToFront(coverView)
+        // 2. 블러 레이어 (drawer 열릴 때 CSS backdrop-blur-sm 대응)
+        //    systemUltraThinMaterial: WKWebView 콘텐츠에 frosted texture만 추가, 색상은 coverView가 담당
+        let blurEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+        let blurView = UIVisualEffectView(effect: blurEffect)
+        blurView.isUserInteractionEnabled = false
+        blurView.translatesAutoresizingMaskIntoConstraints = false
+        blurView.alpha = 0 // 초기에는 숨김
 
-        NSLayoutConstraint.activate([
-            coverView.topAnchor.constraint(equalTo: view.topAnchor),
-            coverView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            coverView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            // safeAreaLayoutGuide.topAnchor = statusbar 하단 (= safe area 시작점)
-            coverView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-        ])
+        // 레이어 순서: WKWebView → blurView (blur texture) → coverView (tint)
+        view.addSubview(blurView)  // 먼저 추가 → 하위 레이어
+        view.addSubview(coverView) // 나중에 추가 → blurView 위
+
+        let statusBarConstraints: (UIView) -> [NSLayoutConstraint] = { subview in
+            [
+                subview.topAnchor.constraint(equalTo: self.view.topAnchor),
+                subview.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+                subview.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+                // safeAreaLayoutGuide.topAnchor = statusbar 하단 (= safe area 시작점)
+                subview.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
+            ]
+        }
+        NSLayoutConstraint.activate(statusBarConstraints(coverView))
+        NSLayoutConstraint.activate(statusBarConstraints(blurView))
 
         statusBarCoverView = coverView
+        statusBarBlurView = blurView
     }
 
     // MARK: - JS→Native Theme Bridge
@@ -71,14 +88,25 @@ class ViewController: CAPBridgeViewController, WKScriptMessageHandler {
         guard message.name == "themeChange",
               let theme = message.body as? String else { return }
         DispatchQueue.main.async {
-            let darkColor = UIColor(
-                red: 0x12 / 255.0,
-                green: 0x12 / 255.0,
-                blue: 0x12 / 255.0,
-                alpha: 1
-            )
-            self.statusBarCoverView?.backgroundColor =
-                theme == "dark" ? darkColor : .white
+            switch theme {
+            case "transparent":
+                // drawer 열림 또는 지도 페이지: native 뷰를 렌더링 파이프라인에서 완전히 제거
+                // alpha=0이나 .clear는 compositing에 여전히 참여하므로 isHidden으로 완전 제거
+                self.statusBarCoverView?.isHidden = true
+                self.statusBarBlurView?.isHidden = true
+            default:
+                // 일반 페이지: 라이트/다크 테마 배경색, native 뷰 복원
+                let darkColor = UIColor(
+                    red: 0x12 / 255.0,
+                    green: 0x12 / 255.0,
+                    blue: 0x12 / 255.0,
+                    alpha: 1
+                )
+                self.statusBarCoverView?.isHidden = false
+                self.statusBarBlurView?.isHidden = true
+                self.statusBarCoverView?.backgroundColor =
+                    theme == "dark" ? darkColor : .white
+            }
         }
     }
 

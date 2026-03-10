@@ -1,5 +1,5 @@
-import { IsInt, IsUUID, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PublishDraftDto {
   @ApiProperty({ format: 'uuid' })
@@ -10,4 +10,9 @@ export class PublishDraftDto {
   @IsInt()
   @Min(0)
   draftVersion: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  titleOverride?: string;
 }

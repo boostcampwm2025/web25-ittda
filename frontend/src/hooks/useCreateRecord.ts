@@ -23,6 +23,7 @@ export interface PublishRecordRequest {
 export interface PublishDraftDto {
   draftId: string;
   draftVersion: number;
+  titleOverride?: string;
 }
 
 export const useCreateRecord = (
@@ -30,6 +31,7 @@ export const useCreateRecord = (
   postId?: string,
   options?: {
     onError?: (error: Error) => void;
+    onSuccess?: () => void;
   },
 ) => {
   const router = useRouter();
@@ -93,6 +95,7 @@ export const useCreateRecord = (
       onSuccess: (res) => {
         queryClient.invalidateQueries({ queryKey: ['record', postId] });
         queryClient.invalidateQueries({ queryKey: ['posts'] });
+        options?.onSuccess?.();
         handleSuccess(res);
       },
       onError: (error) => {
@@ -107,7 +110,11 @@ export const useCreateRecord = (
 
   async function handleSuccess(res: ApiResponse<RecordDetail>) {
     if (res.success && res.data?.id) {
-      await Promise.all([
+      // 캐시 무효화를 기다리지 않고 즉시 이동
+      router.replace(`/record/${res.data?.id}`);
+
+      // 백그라운드에서 캐시 무효화
+      Promise.all([
         queryClient.invalidateQueries({ queryKey: ['me'] }),
         queryClient.invalidateQueries({ queryKey: ['summary'] }),
         queryClient.invalidateQueries({ queryKey: ['pattern'] }),
@@ -115,16 +122,14 @@ export const useCreateRecord = (
       ]);
       if (!res.data.groupId) {
         if (groupId) {
-          await invalidateQuery(groupId);
+          invalidateQuery(groupId);
         } else {
-          await invalidateQuery();
+          invalidateQuery();
         }
         setTimeout(() => {
           toast.success('기록이 성공적으로 저장되었습니다.');
         }, 1000);
       }
-
-      router.replace(`/record/${res.data?.id}`);
     }
   }
 
@@ -132,16 +137,19 @@ export const useCreateRecord = (
   const execute = async ({
     draftId,
     draftVersion,
+    titleOverride,
     payload,
   }: {
     draftId?: string;
     draftVersion?: number;
+    titleOverride?: string;
     payload?: CreateRecordRequest;
   }) => {
     if (groupId && draftId && typeof draftVersion === 'number') {
       return publishMutation.mutate({
         draftId,
         draftVersion,
+        ...(titleOverride ? { titleOverride } : {}),
       });
     }
 

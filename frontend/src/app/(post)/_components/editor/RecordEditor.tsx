@@ -255,6 +255,13 @@ export default function PostEditor({
     },
   });
 
+  // 네비게이션이 실패하거나 느린 경우 로딩 화면이 무한히 뜨는 것을 방지하는 안전망
+  useEffect(() => {
+    if (!isPublishing) return;
+    const timer = setTimeout(() => setIsPublishing(false), 10_000);
+    return () => clearTimeout(timer);
+  }, [isPublishing, setIsPublishing]);
+
   const {
     activeDrawer,
     setActiveDrawer,
@@ -337,7 +344,8 @@ export default function PostEditor({
     }
 
     // draftId가 있지만 initialPost가 없으면 타이머 시작
-    if (draftId && !initialPost && groupId) {
+    // isPublishing 중에는 발행 직후 재렌더링으로 initialPost가 undefined가 되는 정상 상황이므로 무시
+    if (draftId && !initialPost && groupId && !isPublishing) {
       draftTimeoutRef.current = setTimeout(() => {
         toast.error('기록을 찾을 수 없습니다.');
         window.location.href = `/group/${groupId}`;
@@ -350,7 +358,7 @@ export default function PostEditor({
         draftTimeoutRef.current = null;
       }
     };
-  }, [draftId, initialPost, groupId]);
+  }, [draftId, initialPost, groupId, isPublishing]);
 
   const { members } = useDraftPresence(draftId, groupId);
 
@@ -463,9 +471,11 @@ export default function PostEditor({
     const isDraft = !!draftId;
 
     if (groupId && draftId) {
+      setIsPublishing(true); // 동기적으로 설정해 타임아웃 useEffect 오작동 방지
       execute({
         draftId,
         draftVersion: versionRef.current,
+        titleOverride: title,
       });
       await refreshGroupData(groupId);
       queryClient.invalidateQueries({ queryKey: ['group', groupId] });
@@ -806,7 +816,7 @@ export default function PostEditor({
   return (
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
       {(isPublishing || (isMediaUploading && !draftId)) && (
-        <AuthLoadingScreen type="publish" className="fixed inset-0 z-[9999]" />
+        <AuthLoadingScreen type="publish" />
       )}
       <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
       <div className="mx-3 sm:mx-6 mt-2 sm:mt-3 flex flex-row gap-1.5 sm:gap-2">
@@ -866,7 +876,9 @@ export default function PostEditor({
               handleFieldCommit={handleFieldCommit}
               removeBlock={removeBlock}
               onOpenDrawer={handleOpenDrawerWrapper}
-              contentBlockCount={blocks.filter((b) => b.type === 'content').length}
+              contentBlockCount={
+                blocks.filter((b) => b.type === 'content').length
+              }
               handlePointerDown={handlePointerDown}
               handlePointerMove={handlePointerMove}
               handleDragEnd={handleDragEnd}
