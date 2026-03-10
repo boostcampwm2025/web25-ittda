@@ -149,7 +149,7 @@ export default function BottomNavigation() {
                 if (isSharedPage) {
                   setIsGroupSelectOpen(true);
                 } else {
-                  router.replace('/add');
+                  router.push('/add');
                 }
               }}
               className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
