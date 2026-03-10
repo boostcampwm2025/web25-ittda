@@ -10,11 +10,18 @@ import { usePathname } from 'next/navigation';
 import { isPrivateMode } from '@/lib/utils/browserDetect';
 
 export default function PWAInstallBannerClient() {
-  const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
-    usePWAInstall();
+  const {
+    isInstalled,
+    isCheckComplete,
+    promptInstall,
+    isIOS,
+    isSafari,
+    isMacOS,
+  } = usePWAInstall();
   const [showBanner, setShowBanner] = useState(true);
   const [showInstructions, setShowInstructions] = useState(false);
   const [isPrivateBrowsing, setIsPrivateBrowsing] = useState(false);
+  const [isPrivateCheckDone, setIsPrivateCheckDone] = useState(false);
 
   const pathname = usePathname();
 
@@ -22,6 +29,7 @@ export default function PWAInstallBannerClient() {
   useEffect(() => {
     isPrivateMode().then((isPrivate) => {
       setIsPrivateBrowsing(isPrivate);
+      setIsPrivateCheckDone(true);
     });
   }, []);
 
@@ -54,6 +62,11 @@ export default function PWAInstallBannerClient() {
     // 영구적으로 배너 숨김 - 쿠키에 저장
     setCookie('pwa-banner-never-show', 'true', { days: 365 * 10 }); // 10년
   };
+
+  // 모든 비동기 체크가 완료되기 전까지는 렌더링 안 함 (flash 방지)
+  if (!isCheckComplete || !isPrivateCheckDone) {
+    return null;
+  }
 
   if (isInstalled || !showBanner || isPrivateBrowsing) {
     return null;

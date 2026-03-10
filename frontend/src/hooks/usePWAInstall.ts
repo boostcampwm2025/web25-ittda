@@ -14,6 +14,7 @@ export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isCheckComplete, setIsCheckComplete] = useState(false);
 
   useEffect(() => {
     const checkInstallation = async () => {
@@ -25,17 +26,13 @@ export function usePWAInstall() {
           }
         ).Capacitor?.isNativePlatform?.()
       ) {
-        requestAnimationFrame(() => {
-          setIsInstalled(true);
-        });
+        setIsInstalled(true);
         return true;
       }
 
       // 1. display-mode로 확인
       if (window.matchMedia('(display-mode: standalone)').matches) {
-        requestAnimationFrame(() => {
-          setIsInstalled(true);
-        });
+        setIsInstalled(true);
         return true;
       }
 
@@ -51,9 +48,7 @@ export function usePWAInstall() {
           ).getInstalledRelatedApps();
 
           if (relatedApps.length > 0) {
-            requestAnimationFrame(() => {
-              setIsInstalled(true);
-            });
+            setIsInstalled(true);
             return true;
           }
         } catch (error) {
@@ -79,6 +74,7 @@ export function usePWAInstall() {
     };
 
     checkInstallation().then((installed) => {
+      setIsCheckComplete(true);
       if (!installed) {
         window.addEventListener('beforeinstallprompt', handler);
       }
@@ -137,6 +133,7 @@ export function usePWAInstall() {
   return {
     deferredPrompt,
     isInstalled,
+    isCheckComplete,
     promptInstall,
     isIOS,
     isSafari,
