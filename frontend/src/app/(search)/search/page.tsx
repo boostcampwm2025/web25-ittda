@@ -116,7 +116,7 @@ export default function SearchPage() {
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
       <header
         style={{ marginTop: 'calc(env(safe-area-inset-top))' }}
-        className="fixed top-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-3 sm:p-4 space-y-3 sm:space-y-4"
+        className="fixed top-0 left-0 right-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-3 sm:p-4 space-y-3 sm:space-y-4"
       >
         {/* 검색바 영역 */}
         <div className="flex items-center gap-2 sm:gap-3">
@@ -181,8 +181,8 @@ export default function SearchPage() {
         </div>
       </header>
       <div
-        style={{ marginTop: 'calc(env(safe-area-inset-top) + 56px)' }}
-        className="mt-8 overflow-y-auto"
+        style={{ marginTop: 'max(calc(env(safe-area-inset-top) + 54px), 120px)' }}
+        className="overflow-y-auto"
       >
         {isInitialState ? (
           <section className="space-y-3 sm:space-y-4 px-4 sm:px-6 py-2 sm:py-3">
