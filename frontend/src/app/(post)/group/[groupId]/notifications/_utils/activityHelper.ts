@@ -21,72 +21,72 @@ export const getActivityTypeTheme = (type: string) => {
   > = {
     POST_CREATE: {
       icon: PlusCircle,
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      bgColor: 'bg-green-100 dark:bg-green-900/60',
       iconColor: 'text-green-600 dark:text-green-400',
     },
     POST_COLLAB_COMPLETE: {
       icon: PlusCircle,
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      bgColor: 'bg-green-100 dark:bg-green-900/60',
       iconColor: 'text-green-600 dark:text-green-400',
     },
     POST_COLLAB_START: {
       icon: PenTool,
-      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+      bgColor: 'bg-blue-100 dark:bg-blue-900/60',
       iconColor: 'text-blue-600 dark:text-blue-400',
     },
     POST_EDIT_START: {
       icon: Clock,
-      bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+      bgColor: 'bg-amber-100 dark:bg-amber-900/60',
       iconColor: 'text-amber-600 dark:text-amber-400',
     },
     POST_EDIT_COMPLETE: {
       icon: Edit,
-      bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+      bgColor: 'bg-orange-100 dark:bg-orange-900/60',
       iconColor: 'text-orange-600 dark:text-orange-400',
     },
     POST_UPDATE: {
       icon: Edit,
-      bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+      bgColor: 'bg-orange-100 dark:bg-orange-900/60',
       iconColor: 'text-orange-600 dark:text-orange-400',
     },
     POST_DELETE: {
       icon: Trash2,
-      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      bgColor: 'bg-red-100 dark:bg-red-900/60',
       iconColor: 'text-red-600 dark:text-red-400',
     },
     MEMBER_JOIN: {
       icon: UserPlus,
-      bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
+      bgColor: 'bg-indigo-100 dark:bg-indigo-900/60',
       iconColor: 'text-indigo-600 dark:text-indigo-400',
     },
     MEMBER_LEAVE: {
       icon: UserMinus,
-      bgColor: 'bg-rose-100 dark:bg-rose-900/30',
+      bgColor: 'bg-rose-100 dark:bg-rose-900/60',
       iconColor: 'text-rose-600 dark:text-rose-400',
     },
     MEMBER_REMOVE: {
       icon: UserMinus,
-      bgColor: 'bg-rose-100 dark:bg-rose-900/30',
+      bgColor: 'bg-rose-100 dark:bg-rose-900/60',
       iconColor: 'text-rose-600 dark:text-rose-400',
     },
     MEMBER_ROLE_CHANGE: {
       icon: RefreshCw,
-      bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+      bgColor: 'bg-purple-100 dark:bg-purple-900/60',
       iconColor: 'text-purple-600 dark:text-purple-400',
     },
     GROUP_NAME_UPDATE: {
       icon: Settings,
-      bgColor: 'bg-slate-100 dark:bg-slate-700/30',
+      bgColor: 'bg-slate-100 dark:bg-slate-700/60',
       iconColor: 'text-slate-600 dark:text-slate-400',
     },
     GROUP_COVER_UPDATE: {
       icon: ImageIcon,
-      bgColor: 'bg-pink-100 dark:bg-pink-900/30',
+      bgColor: 'bg-pink-100 dark:bg-pink-900/60',
       iconColor: 'text-pink-600 dark:text-pink-400',
     },
     GROUP_MONTH_COVER_UPDATE: {
       icon: ImageIcon,
-      bgColor: 'bg-pink-100 dark:bg-pink-900/30',
+      bgColor: 'bg-pink-100 dark:bg-pink-900/60',
       iconColor: 'text-pink-600 dark:text-pink-400',
     },
   };
@@ -94,7 +94,7 @@ export const getActivityTypeTheme = (type: string) => {
   return (
     themes[type] || {
       icon: FileText,
-      bgColor: 'bg-gray-100 dark:bg-gray-700/30',
+      bgColor: 'bg-gray-100 dark:bg-gray-700/60',
       iconColor: 'text-gray-600 dark:text-gray-400',
     }
   );
