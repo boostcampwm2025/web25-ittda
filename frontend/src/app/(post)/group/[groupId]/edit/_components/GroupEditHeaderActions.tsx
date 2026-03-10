@@ -43,7 +43,7 @@ export default function GroupEditHeaderActions({
     try {
       tasks.push(updateGroup({ name: editData.groupName }));
 
-      if (editData.groupThumbnail) {
+      if (editData.groupThumbnail?.assetId) {
         tasks.push(
           updateGroupCover({
             assetId: editData.groupThumbnail.assetId,
