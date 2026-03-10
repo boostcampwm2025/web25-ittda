@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { getSession, signOut } from 'next-auth/react';
 import { deleteCookie, getCookie } from '../utils/cookie';
-import { guestCookieKey, useAuthStore } from '@/store/useAuthStore';
+import { guestCookieKey, guestTokenKey, useAuthStore } from '@/store/useAuthStore';
 import type { Session } from 'next-auth';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '../utils/logger';
@@ -285,6 +285,7 @@ export async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
 
     deleteCookie(guestCookieKey);
+    deleteCookie(guestTokenKey);
 
     await signOut({ callbackUrl: '/login?forceAccountSelect=true' });
   } catch (error) {
