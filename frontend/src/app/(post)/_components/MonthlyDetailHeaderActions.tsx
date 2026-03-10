@@ -58,7 +58,7 @@ export default function MonthlyDetailHeaderActions({
 
   return (
     <>
-      <Back />
+      <Back fallback="/" />
       <div className="flex flex-col items-center">
         <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest leading-none mb-1 text-[#10B981]">
           {title}

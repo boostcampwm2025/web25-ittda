@@ -67,7 +67,7 @@ export default function GroupHeaderActions({
 
   return (
     <div className="flex items-center justify-between mb-4 sm:mb-6">
-      <Back />
+      <Back fallback="/shared" />
       <div className="flex items-center gap-1.5 sm:gap-2">
         {!isViewer && <GroupInviteDrawer groupId={groupId || 'gruop'} />}
 

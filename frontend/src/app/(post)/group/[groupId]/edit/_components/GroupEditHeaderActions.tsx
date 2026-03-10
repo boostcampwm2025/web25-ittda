@@ -80,7 +80,7 @@ export default function GroupEditHeaderActions({
 
   return (
     <>
-      <Back />
+      <Back fallback={`/group/${groupId}`} />
       <h2 className="text-[13px] sm:text-sm font-bold dark:text-white text-itta-black">
         그룹 정보 수정
       </h2>

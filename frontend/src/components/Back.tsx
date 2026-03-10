@@ -8,13 +8,18 @@ interface BackProps {
   size?: number;
   className?: string;
   onClick?: VoidFunction;
+  fallback?: string;
 }
 
-export default function Back({ size, className, onClick }: BackProps) {
+export default function Back({ size, className, onClick, fallback }: BackProps) {
   const router = useRouter();
 
   const handleBack = () => {
-    router.back();
+    if (typeof window !== 'undefined' && window.history.length <= 1 && fallback) {
+      router.replace(fallback);
+    } else {
+      router.back();
+    }
     onClick?.();
   };
 

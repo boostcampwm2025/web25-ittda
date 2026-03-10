@@ -131,7 +131,7 @@ export default function RecordDetailHeaderActions({
 
   return (
     <>
-      <Back />
+      <Back fallback="/" />
       <div className="relative">
         <Popover>
           <PopoverTrigger
