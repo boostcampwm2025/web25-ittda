@@ -1,6 +1,6 @@
 export function ActivityItemSkeleton() {
   return (
-    <div className="flex gap-3 px-4 py-4 animate-pulse">
+    <div className="flex gap-3 py-4 animate-pulse">
       {/* 프로필 이미지 스켈레톤 */}
       <div className="shrink-0 relative">
         <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
