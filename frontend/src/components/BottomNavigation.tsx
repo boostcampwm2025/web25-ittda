@@ -90,13 +90,13 @@ export default function BottomNavigation() {
             <NavItem
               icon={<Book />}
               active={pathname === `/group/${effectiveGroupId}`}
-              onClick={() => router.push(`/group/${effectiveGroupId}`)}
+              onClick={() => router.replace(`/group/${effectiveGroupId}`)}
               isGroup
             />
             <NavItem
               icon={<MapIcon />}
               active={pathname === `/group/${effectiveGroupId}/map`}
-              onClick={() => router.push(`/group/${effectiveGroupId}/map`)}
+              onClick={() => router.replace(`/group/${effectiveGroupId}/map`)}
               isGroup
             />
             <button
@@ -114,14 +114,14 @@ export default function BottomNavigation() {
               icon={<MessageSquare />}
               active={pathname === `/group/${effectiveGroupId}/notifications`}
               onClick={() =>
-                router.push(`/group/${effectiveGroupId}/notifications`)
+                router.replace(`/group/${effectiveGroupId}/notifications`)
               }
               isGroup
             />
             <NavItem
               icon={<XCircle />}
               active={false}
-              onClick={() => router.push('/shared')}
+              onClick={() => router.replace('/shared')}
               isGroup
             />
           </motion.div>
@@ -137,19 +137,19 @@ export default function BottomNavigation() {
             <NavItem
               icon={<HomeIcon />}
               active={pathname === '/'}
-              onClick={() => router.push('/')}
+              onClick={() => router.replace('/')}
             />
             <NavItem
               icon={<Book />}
               active={pathname.startsWith('/my')}
-              onClick={() => router.push('/my')}
+              onClick={() => router.replace('/my')}
             />
             <button
               onClick={() => {
                 if (isSharedPage) {
                   setIsGroupSelectOpen(true);
                 } else {
-                  router.push('/add');
+                  router.replace('/add');
                 }
               }}
               className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
@@ -163,12 +163,12 @@ export default function BottomNavigation() {
             <NavItem
               icon={<Users />}
               active={pathname === '/shared'}
-              onClick={() => router.push('/shared')}
+              onClick={() => router.replace('/shared')}
             />
             <NavItem
               icon={<MapIcon />}
               active={pathname === '/map'}
-              onClick={() => router.push('/map')}
+              onClick={() => router.replace('/map')}
             />
           </motion.div>
         )}

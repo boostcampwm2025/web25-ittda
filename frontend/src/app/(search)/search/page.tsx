@@ -120,7 +120,7 @@ export default function SearchPage() {
       >
         {/* 검색바 영역 */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <Back />
+          <Back fallback="/" />
           <div className="flex-1 relative overflow-hidden">
             <input
               type="text"
@@ -181,7 +181,9 @@ export default function SearchPage() {
         </div>
       </header>
       <div
-        style={{ marginTop: 'max(calc(env(safe-area-inset-top) + 54px), 120px)' }}
+        style={{
+          marginTop: 'max(calc(env(safe-area-inset-top) + 54px), 120px)',
+        }}
         className="overflow-y-auto"
       >
         {isInitialState ? (

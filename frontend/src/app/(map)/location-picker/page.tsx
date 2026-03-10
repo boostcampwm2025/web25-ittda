@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { LocationValue } from '@/lib/types/recordField';
 import Back from '@/components/Back';
-import { cn } from '@/lib/utils';
 
 export default function LocationPickerPage() {
   const router = useRouter();
@@ -35,7 +34,7 @@ export default function LocationPickerPage() {
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <header className="dark:bg-[#121212] bg-white backdrop-blur-xl transition-all duration-500 sticky top-0 z-50 max-w-4xl w-full px-4 sm:px-6 py-3 sm:py-4 mx-auto flex items-center justify-between">
-          <Back />
+          <Back fallback="/search" />
           <h1 className="font-semibold text-sm sm:text-base dark:text-white">
             장소 선택
           </h1>

@@ -9,7 +9,7 @@ export default function ProfileAllTagsHeaderActions() {
 
   return (
     <header className="sticky top-0 z-50 max-w-4xl w-full mx-auto px-4 py-3 sm:px-5 sm:py-6 flex items-center justify-between dark:bg-[#121212] bg-white backdrop-blur-xl transition-all duration-500">
-      <Back />
+      <Back fallback="/profile" />
       <h2 className="text-sm sm:text-base font-medium dark:text-white text-itta-black">
         태그
       </h2>
