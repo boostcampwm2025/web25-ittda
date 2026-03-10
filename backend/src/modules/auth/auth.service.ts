@@ -108,16 +108,16 @@ export class AuthService {
       where: { token: oldToken },
     });
 
-    if (!saved || saved.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token reuse or expired');
+    if (!saved) {
+      throw new UnauthorizedException('Refresh token not found');
     }
 
-    // 2. 이미 폐기(revoked)된 토큰인 경우 Grace Period 체크
+    // revoked 체크를 expiresAt보다 먼저 수행
+    // → 토큰 rotation 직후 expiresAt이 지난 edge case에서도 grace period가 동작하도록
     if (saved.revoked) {
       const now = new Date();
-      const gracePeriod = 20 * 1000; // 네트워크 지연 고려
+      const gracePeriod = 30 * 1000; // 네트워크 지연 고려 (30초)
 
-      // saved.updatedAt이 Date 객체인지 확인하고 밀리초 단위로 비교
       const revokedAt = new Date(saved.updatedAt).getTime();
       const diff = now.getTime() - revokedAt;
 
@@ -136,6 +136,10 @@ export class AuthService {
         }
       }
       throw new UnauthorizedException('Refresh token reuse detected');
+    }
+
+    if (saved.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token expired');
     }
 
     // 정상적인 첫 번째 갱신 요청 처리
@@ -184,8 +188,8 @@ export class AuthService {
       );
     }
 
-    // 4. 정상 삭제 처리
-    await this.refreshTokenRepo.delete({ userId });
+    // 4. revoke 처리 (delete 대신 revoke → 다른 탭/기기의 grace period 대응)
+    await this.refreshTokenRepo.update({ userId }, { revoked: true });
   }
 
   async mergeGuestSession(userId: string, guestSessionId: string) {
