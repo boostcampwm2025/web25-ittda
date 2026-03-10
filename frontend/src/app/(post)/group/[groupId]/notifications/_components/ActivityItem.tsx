@@ -55,7 +55,7 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
       }`}
     >
       {/* 프로필 이미지와 타입 아이콘 */}
-      <div className="shrink-0 relative">
+      <div className="shrink-0 relative self-start">
         {firstActor?.profileImageId ? (
           <AssetImage
             assetId={firstActor.profileImageId}
@@ -75,7 +75,7 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
         )}
         {/* 활동 타입 뱃지 */}
         <div
-          className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 ${bgColor}`}
+          className={`z-100 absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 ${bgColor}`}
         >
           <Icon className={`w-3 h-3 ${iconColor}`} />
         </div>
