@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 
-
 import GoogleMap from './GoogleMap';
 import RecordMapDrawer from './RecordMapDrawer';
 import { FilterChip } from '@/components/search/FilterChip';
@@ -18,7 +17,6 @@ import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
 import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
-import { useRouter } from 'next/navigation';
 import Back from '@/components/Back';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -38,7 +36,6 @@ export default function RecordMapContent({
   scope,
   groupId,
 }: RecordMapContentProps) {
-  const router = useRouter();
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
@@ -68,7 +65,6 @@ export default function RecordMapContent({
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(
     null,
   );
-
 
   useEffect(() => {
     if (!placesLib || placesServiceRef.current) return;
@@ -286,7 +282,10 @@ export default function RecordMapContent({
         >
           <div className="flex flex-col gap-2 sm:gap-3">
             <div className="flex gap-1.5 sm:gap-2 items-center">
-              <Back className="bg-white dark:bg-[#1E1E1E] shadow-xl rounded-full p-2 sm:p-2.5" />
+              <Back
+                fallback="/"
+                className="bg-white dark:bg-[#1E1E1E] shadow-xl rounded-full p-2 sm:p-2.5"
+              />
               <div className="flex-1 min-w-0">
                 <MapSearchBar
                   onSelect={handleSelectPlace}

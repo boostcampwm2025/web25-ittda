@@ -34,7 +34,7 @@ export default function RecordEditorHeader({
   return (
     <header className="sticky top-0 z-50 shrink-0 px-4 sm:px-5 py-3 sm:py-4 flex items-center backdrop-blur-md transition-colors duration-300 bg-white/95 dark:bg-[#121212]/95 border-b border-gray-100 dark:border-white/5">
       <div className="flex-1 flex items-center justify-start gap-2 sm:gap-3">
-        <Back />
+        <Back fallback="/" />
         <h2 className="sm:hidden text-xs font-bold text-itta-black dark:text-gray-400 whitespace-nowrap">
           {titleText}
         </h2>

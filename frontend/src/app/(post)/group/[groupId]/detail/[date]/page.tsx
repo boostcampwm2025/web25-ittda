@@ -15,7 +15,7 @@ export default async function GroupDailyDetailPage({
   return (
     <div className="h-full transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <header className="sticky top-0 z-50 backdrop-blur-md px-4 py-3 sm:p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/80 bg-white/80">
-        <Back />
+        <Back fallback={`/group/${groupId}/month/${date.slice(0, 7)}`} />
         <div className="flex flex-col items-center">
           <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest leading-none mb-1 text-[#10B981]">
             RECORD OF
@@ -26,7 +26,13 @@ export default async function GroupDailyDetailPage({
         </div>
         <div className="w-6 sm:w-8" />
       </header>
-      <Suspense fallback={<div className="p-4 sm:p-6"><DailyDetailRecordsSkeleton /></div>}>
+      <Suspense
+        fallback={
+          <div className="p-4 sm:p-6">
+            <DailyDetailRecordsSkeleton />
+          </div>
+        }
+      >
         <GroupDailyDetailData date={date} groupId={groupId} />
       </Suspense>
     </div>
