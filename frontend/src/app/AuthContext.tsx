@@ -40,6 +40,19 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // 세션 확정 시 스플래시 숨기기
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (!isNativePlatform()) return;
+
+    (async () => {
+      try {
+        const { SplashScreen } = await import('@capacitor/splash-screen');
+        await SplashScreen.hide({ fadeOutDuration: 300 });
+      } catch {}
+    })();
+  }, [status]);
+
   useEffect(() => {
     if (pathname.startsWith('/invite')) {
       return;
