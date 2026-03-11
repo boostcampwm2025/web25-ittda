@@ -7,6 +7,8 @@ import { getImageDimensions } from '@/lib/utils/image';
 import { useState } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { toast } from 'sonner';
+import type { ApiError } from '@/lib/utils/errorHandler';
 
 export const useMediaUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -45,6 +47,12 @@ export const useMediaUpload = () => {
 
       return successIds; // 최종적으로 전달할 mediaId 배열 반환
     } catch (error) {
+      if ((error as ApiError)?.code === 'TIMEOUT') {
+        toast.error('이미지 업로드 시간이 초과되었습니다.', {
+          description: '네트워크 연결을 확인하고 다시 시도해 주세요.',
+        });
+      }
+
       Sentry.captureException(error, {
         tags: {
           context: 'media',

@@ -1,4 +1,5 @@
 import { post } from './api';
+import { createApiError } from '@/lib/utils/errorHandler';
 
 export interface PresignRequestFile {
   contentType: string;
@@ -18,7 +19,7 @@ export const postMediaPresign = async (files: PresignRequestFile[]) => {
       files: files.map((f) => ({ contentType: f.contentType, size: f.size })),
     },
   );
-  if (!response.success) throw new Error('Presign URL 발급 실패');
+  if (!response.success) throw createApiError(response);
   return response.data.items;
 };
 
@@ -44,6 +45,6 @@ export const postMediaComplete = async (mediaIds: string[]) => {
   const response = await post<{ successIds: string[] }>('/api/media/complete', {
     mediaIds,
   });
-  if (!response.success) throw new Error('미디어 완료 확정 실패');
+  if (!response.success) throw createApiError(response);
   return response.data.successIds;
 };

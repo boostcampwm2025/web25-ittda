@@ -10,6 +10,16 @@ export async function refreshRecordData() {
   revalidatePath('/my', 'layout');
 }
 
+export async function refreshRecordAndHomeData() {
+  revalidatePath('/', 'page');
+  revalidatePath('/my', 'layout');
+}
+
+export async function refreshRecordGroupAndSharedData(groupId: string) {
+  revalidatePath(`/group/${groupId}`, 'layout');
+  revalidatePath('/shared');
+}
+
 export async function refreshGroupData(groupId: string) {
   revalidatePath(`/group/${groupId}`, 'layout');
 }

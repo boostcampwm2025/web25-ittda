@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Toaster, toast } from 'sonner';
-import { getErrorMessage } from '@/lib/utils/errorHandler';
+import { getErrorMessage, type ApiError } from '@/lib/utils/errorHandler';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // 렌더마다 새 QueryClient 생성 방지 (중요)
@@ -18,7 +18,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         queryCache: new QueryCache({
           onError: (error, query) => {
             if (query.meta?.silent) return;
-            // 쿼리 에러 시 토스트 표시
+            if ((error as ApiError)?.code === 'TIMEOUT') {
+              toast.error('요청 시간이 초과되었습니다.', {
+                description: '네트워크 연결을 확인하고 다시 시도해 주세요.',
+              });
+              return;
+            }
             const message = getErrorMessage(error);
             toast.error(message);
           },
@@ -26,7 +31,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         mutationCache: new MutationCache({
           onError: (error, variables, context, mutation) => {
             if (mutation.meta?.silent) return;
-            // mutation 에러 시 토스트 표시
+            if ((error as ApiError)?.code === 'TIMEOUT') {
+              toast.error('요청 시간이 초과되었습니다.', {
+                description: '네트워크 연결을 확인하고 다시 시도해 주세요.',
+              });
+              return;
+            }
             const message = getErrorMessage(error);
             toast.error(message);
           },

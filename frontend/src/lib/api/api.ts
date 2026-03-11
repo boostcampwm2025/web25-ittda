@@ -33,6 +33,7 @@ interface FetchOptions extends RequestInit {
   maxRetries?: number; // 최대 재시도 횟수
   retryDelay?: number; // 초기 재시도 지연 시간 ms
   skipAuth?: boolean; // 인증 헤더 제외 (로그인, 회원가입 등)
+  timeout?: number; // 타임아웃 ms (0이면 비활성, 기본값 10000)
 }
 
 /**
@@ -69,9 +70,20 @@ async function fetchWithRetry<T>(
   maxRetries: number,
   retryDelay: number,
   skipAuth: boolean,
+  timeout: number,
 ) {
+  const controller = timeout > 0 ? new AbortController() : undefined;
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), timeout)
+    : undefined;
+
   try {
-    const response = await fetch(url, fetchOptions);
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller?.signal,
+    });
+
+    clearTimeout(timeoutId);
 
     if (response.status === 204) {
       return {
@@ -182,6 +194,7 @@ async function fetchWithRetry<T>(
         maxRetries,
         retryDelay,
         skipAuth,
+        timeout,
       );
     }
 
@@ -190,7 +203,22 @@ async function fetchWithRetry<T>(
       headers: response.headers,
     };
   } catch (error) {
+    clearTimeout(timeoutId);
+
     const err = error instanceof Error ? error : new Error('unknown error');
+
+    // 타임아웃(AbortError) - 재시도 없이 즉시 반환
+    if (err.name === 'AbortError') {
+      return {
+        success: false,
+        data: null,
+        error: {
+          code: 'TIMEOUT',
+          message: '요청 시간이 초과되었습니다.',
+          details: {},
+        },
+      };
+    }
 
     // JSON 파싱 에러는 재시도하지 않음
     if (
@@ -260,6 +288,7 @@ async function fetchWithRetry<T>(
       maxRetries,
       retryDelay,
       skipAuth,
+      timeout,
     );
   }
 }
@@ -280,6 +309,7 @@ export async function fetchApi<T>(
     maxRetries = 3,
     retryDelay = 1000,
     skipAuth = false,
+    timeout = 10000,
     ...fetchOptions
   } = options;
 
@@ -332,6 +362,7 @@ export async function fetchApi<T>(
     maxRetries,
     retryDelay,
     skipAuth,
+    timeout,
   );
 }
 
