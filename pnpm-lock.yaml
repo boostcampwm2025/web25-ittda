@@ -237,6 +237,9 @@ importers:
       '@capacitor/core':
         specifier: ^7.0.0
         version: 7.5.0
+      '@capacitor/splash-screen':
+        specifier: ^7.0.5
+        version: 7.0.5(@capacitor/core@7.5.0)
       '@googlemaps/markerclusterer':
         specifier: ^2.6.2
         version: 2.6.2
@@ -439,6 +442,9 @@ importers:
       '@capacitor/ios':
         specifier: ^7.0.0
         version: 7.5.0(@capacitor/core@7.5.0)
+      '@capacitor/splash-screen':
+        specifier: ^7.0.5
+        version: 7.0.5(@capacitor/core@7.5.0)
     devDependencies:
       '@capacitor/cli':
         specifier: ^7.0.0
@@ -909,6 +915,11 @@ packages:
     resolution: {integrity: sha512-HlEWLjmPMSyjD8pM2FSTYF7a7aoYDdrlUoA3Ybm8OnmOaby3R7L8jpzJr96igh/i2SpsHvDI7v3sO2FhSNKCKA==}
     peerDependencies:
       '@capacitor/core': ^7.5.0
+
+  '@capacitor/splash-screen@7.0.5':
+    resolution: {integrity: sha512-bPG2SamFL7VT5I3XsgsGgJhkiyxq3OXCOVKEDupSieVdtEiG7j2vLbSD0xL+91zteF/qLuxsjbugGy5LD8mS2A==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
 
   '@chromatic-com/storybook@4.1.3':
     resolution: {integrity: sha512-hc0HO9GAV9pxqDE6fTVOV5KeLpTiCfV8Jrpk5ogKLiIgeq2C+NPjpt74YnrZTjiK8E19fYcMP+2WY9ZtX7zHmw==}
@@ -9854,6 +9865,10 @@ snapshots:
       tslib: 2.8.1
 
   '@capacitor/ios@7.5.0(@capacitor/core@7.5.0)':
+    dependencies:
+      '@capacitor/core': 7.5.0
+
+  '@capacitor/splash-screen@7.0.5(@capacitor/core@7.5.0)':
     dependencies:
       '@capacitor/core': 7.5.0
 

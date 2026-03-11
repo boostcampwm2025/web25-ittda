@@ -7,3 +7,6 @@ project(':capacitor-app').projectDir = new File('../../node_modules/.pnpm/@capac
 
 include ':capacitor-browser'
 project(':capacitor-browser').projectDir = new File('../../node_modules/.pnpm/@capacitor+browser@7.0.4_@capacitor+core@7.5.0/node_modules/@capacitor/browser/android')
+
+include ':capacitor-splash-screen'
+project(':capacitor-splash-screen').projectDir = new File('../node_modules/@capacitor/splash-screen/android')

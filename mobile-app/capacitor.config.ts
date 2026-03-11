@@ -25,6 +25,13 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: false,
   },
   plugins: {
+    SplashScreen: {
+      launchShowDuration: 0,
+      launchAutoHide: false, // JS에서 직접 hide() 호출
+      backgroundColor: '#10B981',
+      androidSplashResourceName: 'splash',
+      showSpinner: false,
+    },
     Keyboard: {
       resize: 'body',
       scrollAssist: false,
