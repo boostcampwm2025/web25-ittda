@@ -26,6 +26,7 @@
     "test:fe:e2e": "pnpm --filter frontend test:e2e",
     "test:be": "pnpm --filter backend test",
     "test:be:e2e": "pnpm --filter backend test:e2e",
+    "test:be:e2e:debug": "pnpm --filter backend test:e2e:debug",
     "test:all": "pnpm run test:fe && pnpm run test:be"
   },
   "packageManager": "pnpm@10.25.0",

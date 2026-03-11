@@ -8,6 +8,7 @@ import type { Repository } from 'typeorm';
 
 import { AppModule } from '../src/app.module';
 import { PostScope } from '../src/enums/post-scope.enum';
+import { PostMood } from '../src/enums/post-mood.enum';
 import { Post } from '../src/modules/post/entity/post.entity';
 import { PostDraft } from '../src/modules/post/entity/post-draft.entity';
 import { User } from '../src/modules/user/entity/user.entity';
@@ -86,7 +87,7 @@ describe('PostController (e2e)', () => {
     if (otherUser?.id) {
       await userRepository.delete({ id: otherUser.id });
     }
-    await app.close();
+    if (app) await app.close();
   });
 
   it('POST /posts should create a post and be retrievable', async () => {
@@ -238,6 +239,7 @@ describe('PostController (e2e)', () => {
     const notFoundRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(404);
 
     expect(notFoundRes.body).toMatchObject({
@@ -368,6 +370,7 @@ describe('PostController (e2e)', () => {
     const sixthRes = await request(app.getHttpServer())
       .get(`/groups/${group.id}/posts/new`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(409);
     expect(sixthRes.body).toMatchObject({
       statusCode: 409,
@@ -440,6 +443,7 @@ describe('PostController (e2e)', () => {
     const forbiddenRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${otherAccessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(403);
 
     expect(forbiddenRes.body).toMatchObject({
@@ -483,6 +487,7 @@ describe('PostController (e2e)', () => {
     const forbiddenRes = await request(app.getHttpServer())
       .delete(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${otherAccessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(403);
 
     expect(forbiddenRes.body).toMatchObject({
@@ -513,6 +518,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -554,6 +560,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -568,9 +575,10 @@ describe('PostController (e2e)', () => {
       error: 'Bad Request',
     });
     expect(Array.isArray(badBody.message)).toBe(true);
-    expect(badBody.message.join(' ')).toContain(
-      'mood must be one of: 행복, 좋음, 만족, 재미, 보통, 피곤, 놀람, 화남, 슬픔, 아픔, 짜증',
-    );
+    const allowedMoodMessage = `mood must be one of: ${Object.values(
+      PostMood,
+    ).join(', ')}`;
+    expect(badBody.message.join(' ')).toContain(allowedMoodMessage);
   });
 
   it('POST /posts should allow up to 4 MOOD blocks', async () => {
@@ -674,6 +682,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -715,6 +724,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -765,6 +775,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -813,6 +824,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 

@@ -213,7 +213,7 @@ describe('FeedController (e2e)', () => {
     if (otherUser?.id) {
       await userRepository.delete({ id: otherUser.id });
     }
-    await app.close();
+    if (app) await app.close();
   });
 
   it('GET /feed should return owned and contributed posts with meta', async () => {
@@ -286,6 +286,7 @@ describe('FeedController (e2e)', () => {
     await request(app.getHttpServer())
       .get('/feed')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(400);
   });
 
@@ -294,6 +295,7 @@ describe('FeedController (e2e)', () => {
       .get('/feed')
       .query({ date: '2026-02-30', tz: 'Asia/Seoul' })
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(400);
   });
 
@@ -302,6 +304,7 @@ describe('FeedController (e2e)', () => {
       .get('/feed')
       .query({ date: '2026-02-28', tz: 'Not/AZone' })
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(400);
   });
 });
