@@ -49,7 +49,7 @@ export async function GET(
     headers: {
       'Content-Type': 'image/webp',
       // assetId는 불변(새 파일 = 새 UUID)이므로 1년 캐시
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cache-Control': 'private, max-age=31536000, immutable',
     },
   });
 }
