@@ -96,7 +96,7 @@ export default function BottomNavigation() {
             <NavItem
               icon={<MapIcon />}
               active={pathname === `/group/${effectiveGroupId}/map`}
-              onClick={() => router.replace(`/group/${effectiveGroupId}/map`)}
+              onClick={() => router.push(`/group/${effectiveGroupId}/map`)}
               isGroup
             />
             <button
@@ -168,7 +168,7 @@ export default function BottomNavigation() {
             <NavItem
               icon={<MapIcon />}
               active={pathname === '/map'}
-              onClick={() => router.replace('/map')}
+              onClick={() => router.push('/map')}
             />
           </motion.div>
         )}
