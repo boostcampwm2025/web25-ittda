@@ -26,7 +26,11 @@ export class GroupActivityController {
   @ApiOperation({ summary: '그룹 활동 로그 조회' })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
   @ApiQuery({ name: 'cursor', required: false })
-  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: '페이지당 조회 개수 (기본: 20, 최소: 1, 최대: 50)',
+  })
   @ApiWrappedOkResponse({ type: PaginatedGroupActivityResponseDto })
   getGroupActivities(
     @Param('groupId') groupId: string,
