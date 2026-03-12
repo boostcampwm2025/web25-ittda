@@ -85,8 +85,6 @@ const BlockItem = memo(function BlockItem({
   removeBlock,
   onOpenDrawer,
   contentBlockCount,
-  handlePointerDown,
-  handlePointerMove,
   handleDragEnd,
 }: {
   block: RecordBlock;
@@ -108,8 +106,6 @@ const BlockItem = memo(function BlockItem({
     id?: string,
   ) => void;
   contentBlockCount: number;
-  handlePointerDown: (e: React.PointerEvent, blockId: string) => void;
-  handlePointerMove: (e: React.PointerEvent) => void;
   handleDragEnd: () => void;
 }) {
   const lockKey = `block:${block.id}`;
@@ -121,13 +117,6 @@ const BlockItem = memo(function BlockItem({
     [members, ownerSessionId],
   );
   const isLastContentBlock = contentBlockCount === 1;
-
-  const handlePointerDownWrapper = useCallback(
-    (e: React.PointerEvent) => {
-      handlePointerDown(e, block.id);
-    },
-    [handlePointerDown, block.id],
-  );
 
   const handleOpenDrawer = useCallback(
     (type: FieldType | 'layout' | 'saveLayout', id?: string) => {
@@ -157,10 +146,12 @@ const BlockItem = memo(function BlockItem({
   return (
     <div
       data-block-id={block.id}
-      className={`cursor-grab touch-none relative group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95 pointer-events-none' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
+      onPointerUp={handleDragEnd}
+      onPointerCancel={handleDragEnd}
+      className={`cursor-grab touch-none relative group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
     >
       <div
-        className={`relative w-full flex flex-row gap-2 items-center ${
+        className={`relative w-full flex flex-row gap-2 items-center touch-none ${
           block.layout.col === 1 ? 'justify-start' : 'justify-end'
         }`}
       >
@@ -186,12 +177,7 @@ const BlockItem = memo(function BlockItem({
             )}
           </div>
         )}
-        <div
-          onPointerDown={handlePointerDownWrapper}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handleDragEnd}
-          className="flex items-center justify-center w-3.5 sm:w-4 h-full opacity-30 transition-opacity cursor-grab active:cursor-grabbing"
-        >
+        <div className="flex items-center justify-center w-3.5 sm:w-4 h-full opacity-30 pointer-events-none">
           <GripVertical className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-500 dark:text-gray-200" />
         </div>
         <RecordFieldRenderer
@@ -307,8 +293,6 @@ export default function PostEditor({
     isDraggingId,
     handleGridDragOver,
     handleDragEnd,
-    handlePointerDown,
-    handlePointerMove,
   } = useRecordEditorDnD(
     blocks,
     setBlocks,
@@ -880,8 +864,6 @@ export default function PostEditor({
               contentBlockCount={
                 blocks.filter((b) => b.type === 'content').length
               }
-              handlePointerDown={handlePointerDown}
-              handlePointerMove={handlePointerMove}
               handleDragEnd={handleDragEnd}
             />
           ))}
