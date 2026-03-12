@@ -17,8 +17,9 @@ import { isInAppBrowser } from '@/lib/utils/browserDetect';
 
 const isNativePlatform = () =>
   typeof window !== 'undefined' &&
-  !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-    .Capacitor?.isNativePlatform?.();
+  !!(
+    window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor?.isNativePlatform?.();
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
@@ -207,7 +208,12 @@ export default function LoginContent({
         }
         const { Browser } = await import('@capacitor/browser');
         await Browser.open({
-          url: getRedirectUri({ provider, callback, forceAccountSelect, mobile: true }),
+          url: getRedirectUri({
+            provider,
+            callback,
+            forceAccountSelect,
+            mobile: true,
+          }),
         });
         return;
       }
@@ -234,7 +240,10 @@ export default function LoginContent({
   return (
     <div className="min-h-screen w-full flex flex-col transition-colors duration-500 dark:bg-[#0F1115] bg-[#FFFFFF]">
       {/* 상단 로고 및 슬로건 영역 */}
-      <div className="flex-1 flex flex-col items-center justify-center pt-10 px-6">
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-6"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2.5rem)' }}
+      >
         <div className="flex flex-col items-center">
           {/* 서비스 명 */}
           <h1 className="text-4xl font-medium tracking-tighter mb-4 flex items-center dark:text-white text-[#111111]">
@@ -258,7 +267,13 @@ export default function LoginContent({
         </div>
       </div>
 
-      <div className="px-8 pb-32 flex flex-col items-center w-full max-w-lg mx-auto">
+      <div
+        className="px-8 flex flex-col items-center w-full max-w-lg mx-auto"
+        style={{
+          paddingBottom:
+            'max(10rem, calc(env(safe-area-inset-bottom) + 10rem))',
+        }}
+      >
         {/* SNS 구분선 */}
         <div className="w-full flex items-center gap-4 mb-10">
           <div className="flex-1 h-px dark:bg-white/20 bg-gray-200" />
