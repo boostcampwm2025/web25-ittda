@@ -88,7 +88,6 @@ export class GroupActivityService {
       logIds.length > 0
         ? await this.actorRepo.find({
             where: { logId: In(logIds) },
-            order: { createdAt: 'ASC' },
             select: {
               id: true,
               logId: true,
