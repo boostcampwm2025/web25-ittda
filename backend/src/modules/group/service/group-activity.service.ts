@@ -20,6 +20,10 @@ type RecordActivityInput = {
   meta?: Record<string, unknown> | null;
 };
 
+const DEFAULT_ACTIVITY_PAGE_LIMIT = 20;
+const MAX_ACTIVITY_PAGE_LIMIT = 50;
+const MIN_ACTIVITY_PAGE_LIMIT = 1;
+
 @Injectable()
 export class GroupActivityService {
   constructor(
@@ -63,8 +67,9 @@ export class GroupActivityService {
   async getGroupActivities(
     groupId: string,
     cursor?: string,
-    limit: number = 20,
+    limit: number = DEFAULT_ACTIVITY_PAGE_LIMIT,
   ): Promise<PaginatedGroupActivityResponseDto> {
+    const normalizedLimit = this.normalizeLimit(limit);
     const query = this.logRepo
       .createQueryBuilder('log')
       .where('log.groupId = :groupId', { groupId });
@@ -72,11 +77,11 @@ export class GroupActivityService {
     this.applyCursor(query, cursor);
 
     query.orderBy('log.createdAt', 'DESC').addOrderBy('log.id', 'DESC');
-    query.take(limit + 1);
+    query.take(normalizedLimit + 1);
 
     const logs = await query.getMany();
-    const hasNextPage = logs.length > limit;
-    const items = logs.slice(0, limit);
+    const hasNextPage = logs.length > normalizedLimit;
+    const items = logs.slice(0, normalizedLimit);
 
     const logIds = items.map((log) => log.id);
     const actorRows =
@@ -181,5 +186,15 @@ export class GroupActivityService {
   private encodeCursor(createdAt: Date, id: string): string {
     const value = `${createdAt.toISOString()}|${id}`;
     return Buffer.from(value).toString('base64');
+  }
+
+  private normalizeLimit(limit: number): number {
+    if (!Number.isFinite(limit)) return DEFAULT_ACTIVITY_PAGE_LIMIT;
+
+    const integerLimit = Math.trunc(limit);
+    if (integerLimit < MIN_ACTIVITY_PAGE_LIMIT) {
+      return MIN_ACTIVITY_PAGE_LIMIT;
+    }
+    return Math.min(integerLimit, MAX_ACTIVITY_PAGE_LIMIT);
   }
 }
