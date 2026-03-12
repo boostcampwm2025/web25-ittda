@@ -168,13 +168,14 @@ export const ContentField = ({
         <textarea
           ref={textareaRef}
           spellCheck="false"
+          rows={1}
           placeholder="어떤 기억이 있으신가요?"
           value={value.text}
           disabled={isLocked}
           onFocus={handleFocusWrapper}
           onBlur={handleBlur}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full min-h-30 border-none focus:ring-0 outline-none text-base leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
+          className="w-full h-auto border-none focus:ring-0 outline-none text-base leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
         />
       </div>
       {!isLastContentBlock && (
