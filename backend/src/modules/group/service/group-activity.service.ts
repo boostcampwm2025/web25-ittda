@@ -84,6 +84,17 @@ export class GroupActivityService {
         ? await this.actorRepo.find({
             where: { logId: In(logIds) },
             order: { createdAt: 'ASC' },
+            select: {
+              id: true,
+              logId: true,
+              userId: true,
+              createdAt: true,
+              user: {
+                id: true,
+                nickname: true,
+                profileImageId: true,
+              },
+            },
             relations: { user: true },
           })
         : [];
