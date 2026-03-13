@@ -75,7 +75,7 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
         )}
         {/* 활동 타입 뱃지 */}
         <div
-          className={`z-100 absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 ${bgColor}`}
+          className={`z-30 absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 ${bgColor}`}
         >
           <Icon className={`w-3 h-3 ${iconColor}`} />
         </div>

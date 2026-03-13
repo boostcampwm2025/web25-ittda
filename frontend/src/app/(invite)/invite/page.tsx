@@ -89,51 +89,53 @@ export default function InvitePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9] flex justify-center">
-      <div className="border-b-[0.5px] border-gray-100 dark:border-gray-800 p-6 pt-12 text-center">
-        <div className="inline-flex p-3 rounded-full bg-itta-point/10 mb-4">
-          <Users className="text-itta-point w-10 h-10" />
-        </div>
-        <h1 className="text-2xl font-bold mb-4">그룹 초대</h1>
-        <div className="bg-white dark:bg-[#1e1e1e] p-8  rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 text-center space-y-4">
-          <div>
-            <span className="text-itta-point font-semibold text-[16px]">
-              {groupName}
-            </span>
-            <span className="text-[16px] font-medium text-gray-600 dark:text-gray-300">
-              {' '}
-              그룹에서
-            </span>
+    <div className="min-h-dvh transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9] flex items-center justify-center sm:p-8">
+      {/* 모바일: 전체화면 / 데스크탑: 중앙 카드 */}
+      <div className="flex flex-col w-full h-dvh sm:h-auto sm:max-w-sm sm:rounded-2xl sm:shadow-lg sm:border sm:border-gray-200 sm:dark:border-gray-700 sm:bg-white sm:dark:bg-[#1e1e1e] justify-between pt-safe pb-safe sm:pt-0 sm:pb-0">
+        <div className="flex flex-col items-center border-b-[0.5px] border-gray-100 dark:border-gray-800 px-6 pt-16 pb-8 sm:pt-10 sm:pb-6 text-center">
+          <div className="inline-flex p-2.5 sm:p-3 rounded-full bg-itta-point/10 mb-3 sm:mb-4">
+            <Users className="text-itta-point w-8 h-8 sm:w-10 sm:h-10" />
           </div>
-          <p className="text-[15px] leading-relaxed">
-            회원님을 초대했습니다.
-            <br />
-            함께 공동 기록을 작성하고 공유할 수 있습니다.
-          </p>
+          <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-5">그룹 초대</h1>
+          <div className="w-full bg-white dark:bg-[#1e1e1e] sm:bg-gray-50 sm:dark:bg-[#2a2a2a] p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm sm:shadow-none border border-gray-100 dark:border-gray-800 text-center space-y-2 sm:space-y-3">
+            <div>
+              <span className="text-itta-point font-semibold text-base sm:text-lg">
+                {groupName}
+              </span>
+              <span className="text-base sm:text-lg font-medium text-gray-600 dark:text-gray-300">
+                {' '}
+                그룹에서
+              </span>
+            </div>
+            <p className="text-sm sm:text-base leading-relaxed text-gray-700 dark:text-gray-300">
+              회원님을 초대했습니다.
+              <br />
+              함께 공동 기록을 작성하고 공유할 수 있습니다.
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col gap-3 p-6">
-        <button
-          onClick={() => handleAccept(false)}
-          className="w-full h-14 bg-black dark:bg-white dark:text-black text-white rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-md"
-        >
-          <Check size={20} />
-          {contentConfig.button}
-        </button>
 
-        {contentConfig.showSwitch && (
+        <div className="flex flex-col gap-3 px-6 py-5 sm:py-6">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-5 text-center whitespace-pre-line">
+            {contentConfig.description}
+          </p>
           <button
-            onClick={() => handleAccept(true)}
-            className="text-sm text-gray-400 underline underline-offset-4 hover:text-gray-600 dark:hover:text-gray-200 text-center transition-colors mb-2"
+            onClick={() => handleAccept(false)}
+            className="w-full h-12 sm:h-14 bg-black dark:bg-white dark:text-black text-white rounded-xl font-semibold text-sm sm:text-base flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-md"
           >
-            다른 계정으로 시작하기
+            <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+            {contentConfig.button}
           </button>
-        )}
-      </div>
-      <div className="text-center">
-        <p className="text-xs text-gray-500 dark:text-gray-400 leading-5">
-          {contentConfig.description}
-        </p>
+
+          {contentConfig.showSwitch && (
+            <button
+              onClick={() => handleAccept(true)}
+              className="text-sm sm:text-base text-gray-400 underline underline-offset-4 hover:text-gray-600 dark:hover:text-gray-200 text-center transition-colors py-2"
+            >
+              다른 계정으로 시작하기
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
