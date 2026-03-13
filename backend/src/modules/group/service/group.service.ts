@@ -8,7 +8,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { FindOneOptions, Repository, DataSource } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -24,6 +24,8 @@ import { GetGroupsResponseDto, GroupItemDto } from '../dto/get-groups.dto';
 import { GroupActivityService } from './group-activity.service';
 
 import { resolveGroupNickname } from '../utils/group-nickname';
+
+type GroupMemberLookupOptions = Omit<FindOneOptions<GroupMember>, 'where'>;
 
 @Injectable()
 export class GroupService {
@@ -100,20 +102,35 @@ export class GroupService {
     return savedGroup;
   }
 
-  /** 그룹 멤버 조회 (Guard 핵심) */
   async findMember(
     userId: string,
     groupId: string,
+    options: GroupMemberLookupOptions = {},
   ): Promise<GroupMember | null> {
-    const member = await this.groupMemberRepo.findOne({
-      where: {
-        userId,
-        groupId,
-      },
-      relations: ['group', 'user'],
+    return this.groupMemberRepo.findOne({
+      ...options,
+      where: { userId, groupId },
     });
-    if (!member || !member.user) return null;
-    return member;
+  }
+
+  async ensureMember(
+    userId: string,
+    groupId: string,
+    options: GroupMemberLookupOptions = {},
+  ): Promise<GroupMember> {
+    const member = await this.findMember(userId, groupId, options);
+    if (member) {
+      return member;
+    }
+
+    const groupExists = await this.groupRepo.exists({
+      where: { id: groupId },
+    });
+    if (!groupExists) {
+      throw new NotFoundException('존재하지 않는 그룹입니다.');
+    }
+
+    throw new ForbiddenException('그룹 멤버가 아닙니다.');
   }
 
   /** 그룹 삭제 (방장만 가능) */
