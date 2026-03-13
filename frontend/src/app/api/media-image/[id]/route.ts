@@ -8,7 +8,7 @@ const backendUrl =
     : 'http://localhost:4000';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -16,6 +16,15 @@ export async function GET(
   const session = await auth();
   if (!session?.accessToken) {
     return new NextResponse(null, { status: 401 });
+  }
+
+  // 브라우저 캐시가 있는 경우 auth만 확인하고 304 반환
+  const ifNoneMatch = request.headers.get('If-None-Match');
+  if (ifNoneMatch === id) {
+    return new NextResponse(null, {
+      status: 304,
+      headers: { 'Cache-Control': 'private, no-cache', ETag: id },
+    });
   }
 
   // 백엔드에서 presigned URL 가져오기
@@ -48,8 +57,8 @@ export async function GET(
   return new NextResponse(new Uint8Array(webpBuffer), {
     headers: {
       'Content-Type': 'image/webp',
-      // assetId는 불변(새 파일 = 새 UUID)이므로 1년 캐시
-      'Cache-Control': 'private, max-age=31536000, immutable',
+      'Cache-Control': 'private, no-cache',
+      ETag: id,
     },
   });
 }
