@@ -37,7 +37,7 @@ export function usePostEditorInitializer({
             type === 'date' && initialDate
               ? { date: initialDate }
               : getDefaultValue(type),
-          layout: { row: 0, col: 0, span: 2 },
+          layout: { row: 0, col: 0, span: type === 'date' || type === 'time' ? 1 : 2 },
         })) as RecordBlock[],
       );
     }

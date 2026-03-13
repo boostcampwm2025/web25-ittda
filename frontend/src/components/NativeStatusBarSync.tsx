@@ -47,13 +47,13 @@ export default function NativeStatusBarSync() {
     }
   }, [isMapPage, resolvedTheme]);
 
-  // vaul drawer overlay 전역 감지
+  // vaul drawer overlay / auth loading 전역 감지
   useEffect(() => {
     const onMutation = () => {
-      const isOpen = !!document.querySelector(
-        '[data-slot="drawer-overlay"][data-state="open"]',
-      );
-      // drawer 열릴 때 native를 transparent로 → CSS overlay(bg-black/50 backdrop-blur-sm)가
+      const isOpen =
+        !!document.querySelector('[data-slot="drawer-overlay"][data-state="open"]') ||
+        !!document.querySelector('[data-auth-loading]');
+      // overlay 열릴 때 native를 transparent로 → CSS overlay(bg-black/50 backdrop-blur-sm)가
       // statusbar 영역까지 통일된 디자인으로 표시 (iOS/Android 공통)
       sendNativeStatusBarTheme(isOpen ? 'transparent' : baseThemeRef.current);
     };

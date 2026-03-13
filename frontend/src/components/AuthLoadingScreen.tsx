@@ -27,6 +27,7 @@ export default function AuthLoadingScreen({
 
   return (
     <div
+      data-auth-loading
       className={cn(
         'bg-black/50 backdrop-blur-sm fixed inset-0 z-[9999] flex items-center justify-center',
         className,
