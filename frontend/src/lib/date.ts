@@ -11,6 +11,7 @@ export function formatDate(date: Date = new Date()): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'Asia/Seoul',
   });
 }
 
@@ -26,6 +27,7 @@ export function formatTime(date: Date = new Date()): string {
   return date.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Asia/Seoul',
   });
 }
 
@@ -38,9 +40,24 @@ export function formatTime(date: Date = new Date()): string {
  */
 export function formatDateTime(date: Date = new Date()) {
   return {
+    timeZone: 'Asia/Seoul',
     date: formatDate(date),
     time: formatTime(date),
   };
+}
+
+/**
+ * "HH:mm" 형식의 시간 문자열을 "오전/오후 HH:mm" 형식으로 포맷팅
+ * @param timeStr - "22:44" 형식의 시간 문자열
+ * @returns "오후 10:44" 형식의 문자열
+ */
+export function formatTimeStr(timeStr: string): string {
+  const [hourStr, minuteStr] = timeStr.split(':');
+  const hour = parseInt(hourStr, 10);
+  if (isNaN(hour)) return timeStr;
+  const period = hour >= 12 ? '오후' : '오전';
+  const h12 = hour % 12 || 12;
+  return `${period} ${String(h12).padStart(2, '0')}:${minuteStr}`;
 }
 
 /**
@@ -137,6 +154,7 @@ export function getDateMetadata(date: Date = new Date()) {
   // 요일
   const weekdayStr = new Intl.DateTimeFormat('ko-KR', {
     weekday: 'long',
+    timeZone: 'Asia/Seoul',
   }).format(date);
 
   return {
@@ -173,6 +191,7 @@ export const getWeekDays = (baseDate: Date = new Date()) => {
     const dayStr = formatDateISO(day);
 
     days.push({
+      timeZone: 'Asia/Seoul',
       date: day,
       dateStr: dayStr,
       dayName: ['일', '월', '화', '수', '목', '금', '토'][i],
@@ -189,7 +208,10 @@ export const getWeekDays = (baseDate: Date = new Date()) => {
 export function getWeekdayFromDotString(dateStr: string): string {
   const [y, m, d] = dateStr.split('.').map(Number);
   const date = new Date(y, m - 1, d);
-  return new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date); // '월', '화' 등
+  return new Intl.DateTimeFormat('ko-KR', {
+    weekday: 'short',
+    timeZone: 'Asia/Seoul',
+  }).format(date); // '월', '화' 등
 }
 
 /**
