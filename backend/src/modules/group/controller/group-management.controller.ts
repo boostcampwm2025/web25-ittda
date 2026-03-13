@@ -122,6 +122,27 @@ export class GroupManagementController {
   }
 
   @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.EDITOR)
+  @Delete(':groupId/cover')
+  @ApiOperation({
+    summary: '그룹 커버 이미지 초기화',
+    description: '그룹의 커버 이미지를 기본값으로 되돌립니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiWrappedOkResponse({ type: Object })
+  async resetGroupCover(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+  ) {
+    return {
+      data: await this.groupManagementService.resetGroupCover(
+        user.sub,
+        groupId,
+      ),
+    };
+  }
+
+  @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.VIEWER)
   @Get(':groupId/settings')
   @ApiOperation({

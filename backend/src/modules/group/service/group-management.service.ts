@@ -31,6 +31,7 @@ import {
   CoverCandidateItemDto,
 } from '../dto/get-group-cover-candidates.dto';
 import { GroupActivityService } from './group-activity.service';
+import { GroupService } from './group.service';
 
 import {
   resolveGroupNickname,
@@ -60,6 +61,7 @@ export class GroupManagementService {
     @InjectRepository(MediaAsset)
     private readonly mediaAssetRepo: Repository<MediaAsset>,
     private readonly groupActivityService: GroupActivityService,
+    private readonly groupService: GroupService,
   ) {}
 
   /** 멤버 초대 (ADMIN만 가능하도록 Controller/Guard에서 제한) */
@@ -92,14 +94,6 @@ export class GroupManagementService {
     groupId: string,
     targetUserId: string,
   ) {
-    const requesterMember = await this.groupMemberRepo.findOne({
-      where: { groupId, userId: requesterId },
-    });
-
-    if (!requesterMember || requesterMember.role !== GroupRoleEnum.ADMIN) {
-      throw new ForbiddenException('추방 권한이 없습니다.');
-    }
-
     // 대상이 방장인지 확인 (방장은 추방 불가)
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
@@ -245,23 +239,7 @@ export class GroupManagementService {
     assetId: string,
     sourcePostId: string,
   ): Promise<UpdateGroupCoverResponseDto> {
-    // 1. 그룹 존재 확인 및 멤버 여부 확인
-    const member = await this.groupMemberRepo.findOne({
-      where: { groupId, userId },
-      relations: ['group'],
-    });
-
-    if (!member) {
-      const groupExists = await this.groupRepo.exists({
-        where: { id: groupId },
-      });
-      if (!groupExists) {
-        throw new NotFoundException('존재하지 않는 그룹입니다.');
-      }
-      throw new ForbiddenException('그룹 멤버가 아닙니다.');
-    }
-
-    // 2. 게시글 존재 및 그룹 소속 확인
+    // 1. 게시글 존재 및 그룹 소속 확인
     const post = await this.postRepo.findOne({
       where: { id: sourcePostId },
     });
@@ -274,7 +252,7 @@ export class GroupManagementService {
       throw new BadRequestException('해당 그룹의 게시글이 아닙니다.');
     }
 
-    // 3. Asset 존재 및 게시글 내 포함 여부 확인 (Block 이미지인지)
+    // 2. Asset 존재 및 게시글 내 포함 여부 확인 (Block 이미지인지)
     const postMedia = await this.postMediaRepo.findOne({
       where: {
         postId: sourcePostId,
@@ -290,7 +268,7 @@ export class GroupManagementService {
       );
     }
 
-    // 4. 그룹 정보 업데이트
+    // 3. 그룹 정보 업데이트
     await this.groupRepo.update(groupId, {
       coverMediaId: assetId,
       coverSourcePostId: sourcePostId,
@@ -303,7 +281,7 @@ export class GroupManagementService {
       meta: null,
     });
 
-    // 5. 응답 반환
+    // 4. 응답 반환
     return {
       groupId,
       cover: {
@@ -316,27 +294,39 @@ export class GroupManagementService {
     };
   }
 
+  async resetGroupCover(
+    userId: string,
+    groupId: string,
+  ): Promise<{
+    groupId: string;
+    cover: null;
+    updatedAt: Date;
+  }> {
+    await this.groupRepo.update(groupId, {
+      coverMediaId: null,
+      coverSourcePostId: null,
+    });
+
+    await this.groupActivityService.recordActivity({
+      groupId,
+      type: GroupActivityType.GROUP_COVER_UPDATE,
+      actorIds: [userId],
+      meta: { reset: true },
+    });
+
+    return {
+      groupId,
+      cover: null,
+      updatedAt: new Date(),
+    };
+  }
+
   /** 그룹 설정 정보 조회 */
   async getGroupSettings(
     userId: string,
     groupId: string,
   ): Promise<GetGroupSettingsResponseDto> {
-    // 1. 그룹 존재 및 멤버 권한 확인
-    const requesterMember = await this.groupMemberRepo.findOne({
-      where: { groupId, userId },
-    });
-
-    if (!requesterMember) {
-      const groupExists = await this.groupRepo.exists({
-        where: { id: groupId },
-      });
-      if (!groupExists) {
-        throw new NotFoundException('존재하지 않는 그룹입니다.');
-      }
-      throw new ForbiddenException('그룹 멤버가 아닙니다.');
-    }
-
-    // 2. 그룹 정보 조회 (커버 이미지 및 owner 포함)
+    // 1. 그룹 정보 조회 (커버 이미지 및 owner 포함)
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
       relations: ['coverMedia', 'owner'],
@@ -344,7 +334,7 @@ export class GroupManagementService {
 
     if (!group) throw new NotFoundException('존재하지 않는 그룹입니다.');
 
-    // 3. 전체 멤버 조회 (유저 정보 및 프로필 이미지 포함)
+    // 2. 전체 멤버 조회 (유저 정보 및 프로필 이미지 포함)
     const members = await this.groupMemberRepo.find({
       where: { groupId },
       relations: ['user', 'profileMedia'],
@@ -355,7 +345,7 @@ export class GroupManagementService {
       (member): member is GroupMember & { user: User } => Boolean(member.user),
     );
 
-    // 4. 응답 구성
+    // 3. 응답 구성
     const meMember = activeMembers.find((m) => m.userId === userId);
     if (!meMember) throw new ForbiddenException('그룹 멤버가 아닙니다.');
 
@@ -410,24 +400,10 @@ export class GroupManagementService {
     userId: string,
     groupId: string,
   ): Promise<GetGroupMemberMeResponseDto> {
-    // 1. 멤버 조회 (유저 및 프로필 미디어 포함)
-    const member = await this.groupMemberRepo.findOne({
-      where: { groupId, userId },
+    const member = await this.groupService.ensureMember(userId, groupId, {
       relations: ['user', 'profileMedia'],
     });
 
-    // 2. 멤버가 없는 경우 예외 처리
-    if (!member || !member.user) {
-      const groupExists = await this.groupRepo.exists({
-        where: { id: groupId },
-      });
-      if (!groupExists) {
-        throw new NotFoundException('존재하지 않는 그룹입니다.');
-      }
-      throw new ForbiddenException('그룹 멤버가 아닙니다.');
-    }
-
-    // 3. 응답 DTO 반환
     return {
       groupId: member.groupId,
       userId: member.userId,
@@ -448,19 +424,9 @@ export class GroupManagementService {
     userId: string,
     groupId: string,
   ): Promise<GetGroupPermissionResponseDto> {
-    const member = await this.groupMemberRepo.findOne({
-      where: { groupId, userId },
+    const member = await this.groupService.ensureMember(userId, groupId, {
       select: { role: true },
     });
-    if (!member) {
-      const groupExists = await this.groupRepo.exists({
-        where: { id: groupId },
-      });
-      if (!groupExists) {
-        throw new NotFoundException('존재하지 않는 그룹입니다.');
-      }
-      throw new ForbiddenException('그룹 멤버가 아닙니다.');
-    }
     return { role: member.role };
   }
 
@@ -478,20 +444,9 @@ export class GroupManagementService {
     }
 
     // 2. 멤버 조회 (유저 포함)
-    const member = await this.groupMemberRepo.findOne({
-      where: { groupId, userId },
+    const member = await this.groupService.ensureMember(userId, groupId, {
       relations: ['user'],
     });
-
-    if (!member || !member.user) {
-      const groupExists = await this.groupRepo.exists({
-        where: { id: groupId },
-      });
-      if (!groupExists) {
-        throw new NotFoundException('존재하지 않는 그룹입니다.');
-      }
-      throw new ForbiddenException('그룹 멤버가 아닙니다.');
-    }
 
     const beforeNickname = member.nicknameInGroup ?? null;
 
@@ -546,21 +501,13 @@ export class GroupManagementService {
 
   /** 그룹 커버 후보 조회 (월 단위, 커서 페이지네이션) */
   async getGroupCoverCandidates(
-    userId: string,
+    _userId: string,
     groupId: string,
     query: GetGroupCoverCandidatesQueryDto,
   ): Promise<GetGroupCoverCandidatesResponseDto> {
     const { month, cursor, limit = 20 } = query;
 
-    // 1. 그룹 멤버십 확인
-    const member = await this.groupMemberRepo.findOne({
-      where: { groupId, userId },
-    });
-    if (!member) {
-      throw new ForbiddenException('그룹 멤버가 아닙니다.');
-    }
-
-    // 2. 날짜 범위 계산 (UTC 기준)
+    // 1. 날짜 범위 계산 (UTC 기준)
     // month string: "YYYY-MM"
     const [yearStr, monthStr] = month.split('-');
     const year = parseInt(yearStr, 10);
@@ -569,7 +516,7 @@ export class GroupManagementService {
     const startOfMonth = new Date(Date.UTC(year, m - 1, 1, 0, 0, 0));
     const endOfMonth = new Date(Date.UTC(year, m, 0, 23, 59, 59, 999));
 
-    // 3. 커서 디코딩
+    // 2. 커서 디코딩
     // Cursor format: Base64(timestamp__id)
     let cursorTime: Date | null = null;
     let cursorId: string | null = null;
@@ -588,7 +535,7 @@ export class GroupManagementService {
       }
     }
 
-    // 4. Query Builder 생성
+    // 3. Query Builder 생성
     const qb = this.postRepo.createQueryBuilder('post');
 
     qb.leftJoinAndSelect('post.group', 'group')

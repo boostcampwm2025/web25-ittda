@@ -16,6 +16,7 @@ import { GroupRecordService } from './service/group-record.service';
 import { GroupInviteService } from './service/group-invite.service';
 import { GroupManagementService } from './service/group-management.service';
 import { GroupActivityService } from './service/group-activity.service';
+import { GroupRoleGuard } from './guards/group-roles.guard';
 
 import { User } from '../user/entity/user.entity';
 import { Post } from '../post/entity/post.entity';
@@ -51,6 +52,7 @@ import { AuthModule } from '../auth/auth.module';
     GroupInviteService,
     GroupManagementService,
     GroupActivityService,
+    GroupRoleGuard,
   ],
   controllers: [
     GroupController,
@@ -59,6 +61,6 @@ import { AuthModule } from '../auth/auth.module';
     GroupInviteController,
     GroupActivityController,
   ],
-  exports: [GroupService, GroupActivityService], // GroupRoleGuard에서 사용
+  exports: [GroupService, GroupActivityService, GroupRoleGuard],
 })
 export class GroupModule {}

@@ -438,6 +438,10 @@ export class UserService {
     }
   }
 
+  async resetMonthCover(userId: string, year: number, month: number) {
+    await this.userMonthCoverRepo.delete({ userId, year, month });
+  }
+
   private cleanupStaleUserMonthCovers(userId: string) {
     void this.userMonthCoverRepo
       .createQueryBuilder()

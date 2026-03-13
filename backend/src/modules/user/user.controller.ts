@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Patch,
   Param,
@@ -86,6 +87,28 @@ export class UserController {
 
     await this.userService.updateMonthCover(userId, year, month, body.assetId);
     return { data: { assetId: body.assetId } };
+  }
+
+  @Delete('archives/months/:yyyy_mm/cover')
+  @ApiOperation({
+    summary: '사용자 월별 커버 초기화',
+    description: '특정 월의 카드 커버를 기본값으로 되돌립니다.',
+  })
+  @ApiParam({ name: 'yyyy_mm', description: '연-월 (예: 2026-01)' })
+  @ApiWrappedOkResponse({ type: Object })
+  async resetMonthCover(
+    @User() user: MyJwtPayload,
+    @Param('yyyy_mm') yyyy_mm: string,
+  ) {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+
+    const { year, month } = parseYearMonth(yyyy_mm);
+    await this.userService.resetMonthCover(userId, year, month);
+
+    return { data: { coverAssetId: null } };
   }
 
   @Get('archives/days')
