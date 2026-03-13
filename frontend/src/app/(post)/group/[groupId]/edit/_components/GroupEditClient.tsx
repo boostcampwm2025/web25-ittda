@@ -29,7 +29,7 @@ export default function GroupEditClient({ groupId }: GroupEditClientProps) {
         <GroupEditHeaderActions groupId={groupId} me={me} />
       </header>
 
-      <div className="p-6 pb-10 flex-1 space-y-10 overflow-y-auto hide-scrollbar">
+      <div className="p-6 pb-10 flex-1 space-y-10 overflow-y-auto scrollbar-hide">
         <GroupInfo
           groupThumnail={group.cover?.assetId || ''}
           groupId={groupId}
