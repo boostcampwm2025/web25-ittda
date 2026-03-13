@@ -155,23 +155,23 @@ export default function RecordTitleInput({
         />
       )}
       {isLockedByOther && lockOwner && (
-        <div className="shrink-0">
+        <div className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse overflow-hidden shrink-0">
           {lockOwner.profileImageId ? (
             <AssetImage
               assetId={lockOwner.profileImageId}
               alt={`${lockOwner.displayName} 편집 중`}
-              width={32}
-              height={32}
-              className="w-8 h-8 rounded-full ring-2 ring-itta-point animate-pulse object-cover"
+              width={24}
+              height={24}
+              className="w-full h-full rounded-full object-cover"
               title={lockOwner.displayName}
             />
           ) : (
             <Image
-              width={32}
-              height={32}
+              width={24}
+              height={24}
               src="/profile_base.png"
               alt={`${lockOwner.displayName} 편집 중`}
-              className="w-8 h-8 rounded-full ring-2 ring-itta-point animate-pulse"
+              className="w-full h-full rounded-full object-cover"
             />
           )}
         </div>
