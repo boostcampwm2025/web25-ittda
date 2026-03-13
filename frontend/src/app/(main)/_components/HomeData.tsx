@@ -1,4 +1,8 @@
-import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 import { recordPreviewListOptions } from '@/lib/api/records';
 import { userRecordPatternOptions } from '@/lib/api/profile';
 import { formatDateISO } from '@/lib/date';
@@ -31,10 +35,12 @@ export default async function HomeData() {
         fallbackComponent={ErrorFallback}
         suspenseFallback={<HomePageSkeleton />}
       >
-        <StreakStats />
-        <div className="flex-1 w-full overflow-y-auto scrollbar-hide px-5 space-y-6 pt-7 pb-bottom-nav transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9]">
-          <div className="w-full flex flex-col gap-6">
-            <RecordList imageLayout="responsive" />
+        <div className="flex flex-col flex-1 min-h-0">
+          <StreakStats />
+          <div className="flex-1 w-full overflow-y-auto scrollbar-hide px-5 space-y-6 pt-7 pb-bottom-nav transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9]">
+            <div className="w-full flex flex-col gap-6">
+              <RecordList imageLayout="responsive" />
+            </div>
           </div>
         </div>
       </ErrorHandlingWrapper>
