@@ -1,6 +1,7 @@
 'use client';
 
 import { Block, ImageValue } from '@/lib/types/record';
+import { formatTimeStr } from '@/lib/date';
 import { cn } from '@/lib/utils';
 import { Calendar, Clock, Film, MapPin, Star } from 'lucide-react';
 import Image from 'next/image';
@@ -37,7 +38,7 @@ const BlockContent = memo(function BlockContent({
         return (
           <div className="flex items-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] font-medium text-gray-500 dark:text-gray-400">
             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            {block.value.time}
+            {formatTimeStr(block.value.time)}
           </div>
         );
       }
