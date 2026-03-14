@@ -20,6 +20,16 @@ type RecordActivityInput = {
   meta?: Record<string, unknown> | null;
 };
 
+type GroupMemberProfile = {
+  nicknameInGroup: string | null;
+  profileMediaId: string | null;
+};
+
+type ActivityLogPage = {
+  items: GroupActivityLog[];
+  hasNextPage: boolean;
+};
+
 const DEFAULT_ACTIVITY_PAGE_LIMIT = 20;
 const MAX_ACTIVITY_PAGE_LIMIT = 50;
 const MIN_ACTIVITY_PAGE_LIMIT = 1;
@@ -70,53 +80,83 @@ export class GroupActivityService {
     limit: number = DEFAULT_ACTIVITY_PAGE_LIMIT,
   ): Promise<PaginatedGroupActivityResponseDto> {
     const normalizedLimit = this.normalizeLimit(limit);
+    const { items, hasNextPage } = await this.findLogPage(
+      groupId,
+      cursor,
+      normalizedLimit,
+    );
+    const logIds = items.map((log) => log.id);
+    const actorRows = await this.findActorsByLogIds(logIds);
+    const memberByUserId = await this.findGroupMemberProfiles(
+      groupId,
+      actorRows,
+    );
+    const actorsByLogId = this.buildActorsByLogId(actorRows, memberByUserId);
+    const resultItems = this.toActivityItems(items, actorsByLogId);
+    const nextCursor = this.buildNextCursor(items, hasNextPage);
+
+    return { items: resultItems, nextCursor };
+  }
+
+  private async findLogPage(
+    groupId: string,
+    cursor: string | undefined,
+    limit: number,
+  ): Promise<ActivityLogPage> {
     const query = this.logRepo
       .createQueryBuilder('log')
       .where('log.groupId = :groupId', { groupId });
 
     this.applyCursor(query, cursor);
-
     query.orderBy('log.createdAt', 'DESC').addOrderBy('log.id', 'DESC');
-    query.take(normalizedLimit + 1);
+    query.take(limit + 1);
 
     const logs = await query.getMany();
-    const hasNextPage = logs.length > normalizedLimit;
-    const items = logs.slice(0, normalizedLimit);
+    return {
+      hasNextPage: logs.length > limit,
+      items: logs.slice(0, limit),
+    };
+  }
 
-    const logIds = items.map((log) => log.id);
-    const actorRows =
-      logIds.length > 0
-        ? await this.actorRepo.find({
-            where: { logId: In(logIds) },
-            select: {
-              id: true,
-              logId: true,
-              userId: true,
-              createdAt: true,
-              user: {
-                id: true,
-                nickname: true,
-                profileImageId: true,
-              },
-            },
-            relations: { user: true },
-          })
-        : [];
+  private async findActorsByLogIds(
+    logIds: string[],
+  ): Promise<GroupActivityActor[]> {
+    if (logIds.length === 0) return [];
 
+    return this.actorRepo.find({
+      where: { logId: In(logIds) },
+      select: {
+        id: true,
+        logId: true,
+        userId: true,
+        createdAt: true,
+        user: {
+          id: true,
+          nickname: true,
+          profileImageId: true,
+        },
+      },
+      relations: { user: true },
+    });
+  }
+
+  private async findGroupMemberProfiles(
+    groupId: string,
+    actorRows: GroupActivityActor[],
+  ): Promise<Map<string, GroupMemberProfile>> {
     const actorUserIds = Array.from(
       new Set(
         actorRows.map((actor) => actor.userId).filter(Boolean) as string[],
       ),
     );
-    const groupMembers =
-      actorUserIds.length > 0
-        ? await this.groupMemberRepo.find({
-            where: { groupId, userId: In(actorUserIds) },
-            select: ['userId', 'nicknameInGroup', 'profileMediaId'],
-          })
-        : [];
+    if (actorUserIds.length === 0) return new Map();
 
-    const memberByUserId = new Map(
+    const groupMembers = await this.groupMemberRepo.find({
+      where: { groupId, userId: In(actorUserIds) },
+      select: ['userId', 'nicknameInGroup', 'profileMediaId'],
+    });
+
+    return new Map(
       groupMembers.map((member) => [
         member.userId,
         {
@@ -125,7 +165,12 @@ export class GroupActivityService {
         },
       ]),
     );
+  }
 
+  private buildActorsByLogId(
+    actorRows: GroupActivityActor[],
+    memberByUserId: Map<string, GroupMemberProfile>,
+  ): Map<string, GroupActivityActorDto[]> {
     const actorsByLogId = new Map<string, GroupActivityActorDto[]>();
     actorRows.forEach((actor) => {
       const userId = actor.userId ?? null;
@@ -141,8 +186,15 @@ export class GroupActivityService {
       list.push(dto);
       actorsByLogId.set(actor.logId, list);
     });
+    return actorsByLogId;
+  }
 
-    const resultItems: GroupActivityItemDto[] = items.map((log) => ({
+  private toActivityItems(
+    logs: GroupActivityLog[],
+    actorsByLogId: Map<string, GroupActivityActorDto[]>,
+  ): GroupActivityItemDto[] {
+    // TODO: If UI caps displayed actors (e.g. first 3), cap actor payload here too.
+    return logs.map((log) => ({
       id: log.id,
       type: log.type,
       refId: log.refId ?? null,
@@ -150,14 +202,15 @@ export class GroupActivityService {
       createdAt: log.createdAt,
       actors: actorsByLogId.get(log.id) ?? [],
     }));
+  }
 
-    let nextCursor: string | undefined;
-    if (hasNextPage) {
-      const lastItem = items[items.length - 1];
-      nextCursor = this.encodeCursor(lastItem.createdAt, lastItem.id);
-    }
-
-    return { items: resultItems, nextCursor };
+  private buildNextCursor(
+    items: GroupActivityLog[],
+    hasNextPage: boolean,
+  ): string | undefined {
+    if (!hasNextPage) return undefined;
+    const lastItem = items[items.length - 1];
+    return this.encodeCursor(lastItem.createdAt, lastItem.id);
   }
 
   private applyCursor(
