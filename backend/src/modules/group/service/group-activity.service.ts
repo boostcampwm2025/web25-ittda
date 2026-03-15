@@ -98,6 +98,13 @@ export class GroupActivityService {
     return { items: resultItems, nextCursor };
   }
 
+  /**
+   * 그룹 활동 로그를 커서 기반으로 조회하고, 다음 페이지 존재 여부를 함께 반환한다.
+   * @param groupId 조회 대상 그룹 ID
+   * @param cursor 이전 페이지의 마지막 아이템을 가리키는 커서
+   * @param limit 페이지 크기
+   * @returns 현재 페이지 아이템과 다음 페이지 존재 여부
+   */
   private async findLogPage(
     groupId: string,
     cursor: string | undefined,
@@ -118,6 +125,11 @@ export class GroupActivityService {
     };
   }
 
+  /**
+   * 주어진 로그 ID 목록에 연결된 actor와 사용자 최소 프로필 정보를 조회한다.
+   * @param logIds actor를 조회할 로그 ID 목록
+   * @returns 로그 ID에 연결된 actor 행 목록
+   */
   private async findActorsByLogIds(
     logIds: string[],
   ): Promise<GroupActivityActor[]> {
@@ -140,6 +152,12 @@ export class GroupActivityService {
     });
   }
 
+  /**
+   * actor 목록의 userId를 기준으로 그룹 내 닉네임/프로필 정보를 맵으로 구성한다.
+   * @param groupId 그룹 멤버 프로필을 조회할 그룹 ID
+   * @param actorRows actor 조회 결과
+   * @returns key=userId, value=그룹 내 닉네임/프로필 정보 맵
+   */
   private async findGroupMemberProfiles(
     groupId: string,
     actorRows: GroupActivityActor[],
@@ -167,6 +185,12 @@ export class GroupActivityService {
     );
   }
 
+  /**
+   * actor 행을 로그 ID별 DTO 배열로 묶고 그룹 프로필 정보를 병합한다.
+   * @param actorRows actor 조회 결과
+   * @param memberByUserId 그룹 멤버 프로필 맵
+   * @returns key=logId, value=해당 로그의 actor DTO 배열
+   */
   private buildActorsByLogId(
     actorRows: GroupActivityActor[],
     memberByUserId: Map<string, GroupMemberProfile>,
@@ -188,6 +212,12 @@ export class GroupActivityService {
     return actorsByLogId;
   }
 
+  /**
+   * 로그 엔티티 목록을 API 응답 아이템 형태로 변환한다.
+   * @param logs 페이지에 포함된 그룹 활동 로그
+   * @param actorsByLogId 로그별 actor DTO 맵
+   * @returns API 응답용 활동 아이템 배열
+   */
   private toActivityItems(
     logs: GroupActivityLog[],
     actorsByLogId: Map<string, GroupActivityActorDto[]>,
@@ -203,6 +233,12 @@ export class GroupActivityService {
     }));
   }
 
+  /**
+   * 다음 페이지가 있을 때 마지막 아이템 기준 커서를 생성한다.
+   * @param items 현재 페이지 로그 아이템
+   * @param hasNextPage 다음 페이지 존재 여부
+   * @returns 다음 페이지 커서(없으면 undefined)
+   */
   private buildNextCursor(
     items: GroupActivityLog[],
     hasNextPage: boolean,
