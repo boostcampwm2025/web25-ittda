@@ -7,7 +7,6 @@ import Image from 'next/image';
 import ImageCarousel from './ImageCarousel';
 import ImageTileGrid from './ImageTileGrid';
 import { EMOTION_MAP } from '@/lib/constants/constants';
-import { useMediaResolveMulti } from '@/hooks/useMediaResolve';
 import { useState, useEffect, memo } from 'react';
 
 type ImageLayout = 'carousel' | 'tile' | 'responsive';
@@ -222,20 +221,15 @@ const ImageBlock = memo(function ImageBlock({
   }, [layout]);
 
   const { mediaIds = [], tempUrls = [], resolvedUrls = [] } = value;
-  const shouldResolveOnClient =
-    mediaIds.length > 0 && resolvedUrls.length === 0;
 
-  const { data, isLoading } = useMediaResolveMulti(
-    shouldResolveOnClient ? mediaIds : [],
-  );
-
-  const hookUrls = data?.items.map((item) => item.url) || [];
+  // assetId는 불변(UUID)이므로 presigned URL 대신 proxy URL 직접 사용
+  const proxyUrls = mediaIds.map((id) => `/api/media-image/${id}`);
 
   const displayImages =
     resolvedUrls.length > 0
       ? resolvedUrls
-      : hookUrls.length > 0
-        ? hookUrls
+      : proxyUrls.length > 0
+        ? proxyUrls
         : tempUrls;
 
   if (displayImages.length === 0) return null;
@@ -245,9 +239,7 @@ const ImageBlock = memo(function ImageBlock({
     layout === 'tile' || (layout === 'responsive' && isDesktop);
 
   return (
-    <div
-      className={cn('relative w-full', isLoading && 'opacity-70 animate-pulse')}
-    >
+    <div className="relative w-full">
       {shouldShowTile ? (
         <ImageTileGrid images={displayImages} />
       ) : (
