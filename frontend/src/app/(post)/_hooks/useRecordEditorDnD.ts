@@ -158,7 +158,7 @@ export const useRecordEditorDnD = (
         draggingBlock.layout.span !== nextSpan ||
         hoverNextSpan !== hoverBlock.layout.span
       ) {
-        const newBlocks = [...currentBlocks];
+        const newBlocks = currentBlocks.map((b) => ({ ...b, layout: { ...b.layout } }));
         newBlocks[dragIdx].layout.span = nextSpan;
         if (hoverNextSpan !== hoverBlock.layout.span) {
           newBlocks[hoverIdx].layout.span = hoverNextSpan;

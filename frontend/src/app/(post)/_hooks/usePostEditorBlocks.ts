@@ -119,17 +119,25 @@ export function usePostEditorBlocks({
 
       if (draftId) {
         const lockKey = `block:${id}`;
-        const isLockedByMe = locks?.[lockKey] === mySessionId;
+        const ownerSessionId = locks?.[lockKey];
+        const isLockedByOther = !!ownerSessionId && ownerSessionId !== mySessionId;
 
-        // 본인이 락을 이미 가지고 있다면 requestLock 스킵
-        if (!isLockedByMe) {
-          requestLock(lockKey);
+        // 다른 사용자가 편집 중인 블록은 삭제 차단
+        if (isLockedByOther) {
+          toast.error('다른 사용자가 편집 중인 필드는 삭제할 수 없습니다.', {
+            id: `delete-locked-${lockKey}`,
+          });
+          return;
         }
+
         applyPatch({
           type: 'BLOCK_DELETE',
           blockId: id,
         });
-        releaseLock(lockKey);
+        // 내가 락을 쥐고 있었다면 해제
+        if (ownerSessionId === mySessionId) {
+          releaseLock(lockKey);
+        }
       }
 
       // 로컬 상태 반영 및 레이아웃 정규화
@@ -139,7 +147,6 @@ export function usePostEditorBlocks({
       blocks,
       pendingMetadata,
       draftId,
-      requestLock,
       applyPatch,
       releaseLock,
       setBlocks,
@@ -291,7 +298,7 @@ export function usePostEditorBlocks({
 
         // 타인이 락을 쥐고 있다면 동작 차단
         if (isLockedByOther) {
-          toast.error('현재 다른 사용자가 편집 중입니다.');
+          toast.error('현재 다른 사용자가 편집 중입니다.', { id: `locked-${lockKey}` });
           return;
         }
       }
@@ -359,6 +366,7 @@ export function usePostEditorBlocks({
       }
       const targetId = updateFieldValue(getDefaultValue(type), undefined, type);
       if (meta.requiresDrawer) {
+        if (draftId && targetId) requestLock(`block:${targetId}`);
         setActiveDrawer({ type, id: targetId });
       }
     },

@@ -41,7 +41,10 @@ import {
 import { useRecordEditorDnD } from '../../_hooks/useRecordEditorDnD';
 import { usePostEditorBlocks } from '../../_hooks/usePostEditorBlocks';
 import { useCreateRecord } from '@/hooks/useCreateRecord';
-import { mapBlocksToPayload } from '@/lib/utils/mapBlocksToPayload';
+import {
+  mapBlocksToPayload,
+  RecordFieldtypeMap,
+} from '@/lib/utils/mapBlocksToPayload';
 
 import { usePostEditorInitializer } from '../../_hooks/useRecordEditorInitializer';
 import { useDraftPresence, PresenceMember } from '@/hooks/useDraftPresence';
@@ -156,14 +159,14 @@ const BlockItem = memo(function BlockItem({
         }`}
       >
         {isLockedByOther && owner && (
-          <div className="w-5 sm:w-6 h-5 sm:h-6 rounded-full ring-2 ring-itta-point animate-pulse">
+          <div className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse overflow-hidden shrink-0">
             {owner.profileImageId ? (
               <AssetImage
                 assetId={owner.profileImageId}
                 alt={`${owner.displayName} 편집 중`}
                 width={24}
                 height={24}
-                className="w-full h-full rounded-full"
+                className="w-full h-full rounded-full object-cover"
                 title={owner.displayName}
               />
             ) : (
@@ -172,7 +175,7 @@ const BlockItem = memo(function BlockItem({
                 height={24}
                 src={'/profile_base.png'}
                 alt={`${owner.displayName} 편집 중`}
-                className="w-full h-full rounded-full"
+                className="w-full h-full rounded-full object-cover"
               />
             )}
           </div>
@@ -214,7 +217,15 @@ export default function PostEditor({
 
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
-  const { requestLock, releaseLock } = useLockManager(draftId);
+
+  // LOCK_DENIED 수신 시 열려있는 drawer가 해당 블록이면 강제 닫기
+  // (usePostEditorBlocks보다 먼저 선언되므로 ref 패턴으로 최신 setActiveDrawer 참조)
+  const onLockDeniedRef = useRef<((lockKey: string) => void) | undefined>(undefined);
+  const stableOnLockDenied = useCallback((lockKey: string) => {
+    onLockDeniedRef.current?.(lockKey);
+  }, []);
+
+  const { requestLock, releaseLock, acquireExclusiveLock } = useLockManager(draftId, stableOnLockDenied);
   const { uploadMultipleMedia } = useMediaUpload();
   const { data: group } = useQuery({
     ...groupDetailOptions(groupId!),
@@ -229,6 +240,8 @@ export default function PostEditor({
     versionRef,
     isPublishing,
     setIsPublishing,
+    markNavigatingToRecord,
+    resetNavigatingToRecord,
   } = useRecordCollaboration(
     draftId,
     setBlocks,
@@ -239,6 +252,7 @@ export default function PostEditor({
     onError: () => {
       setIsPublishing(false);
       setIsSaving(false);
+      resetNavigatingToRecord();
     },
   });
 
@@ -269,6 +283,14 @@ export default function PostEditor({
     applyPatch,
   });
 
+  // LOCK_DENIED 수신 시 해당 블록의 drawer가 열려있으면 강제 닫기
+  // (렌더마다 최신 activeDrawer/setActiveDrawer를 ref에 반영)
+  onLockDeniedRef.current = (lockKey: string) => {
+    if (activeDrawer?.id && `block:${activeDrawer.id}` === lockKey) {
+      setActiveDrawer(null);
+    }
+  };
+
   const {
     pendingMetadata,
     pendingFilesRef,
@@ -288,18 +310,8 @@ export default function PostEditor({
     releaseLock,
   });
 
-  const {
-    gridRef,
-    isDraggingId,
-    handleGridDragOver,
-    handleDragEnd,
-  } = useRecordEditorDnD(
-    blocks,
-    setBlocks,
-    canBeHalfWidth,
-    applyPatch,
-    draftId,
-  );
+  const { gridRef, isDraggingId, handleGridDragOver, handleDragEnd } =
+    useRecordEditorDnD(blocks, setBlocks, canBeHalfWidth, applyPatch, draftId);
 
   // 페이지 초기화/복구 및 위치 데이터 받기
   const resolvedInitialPost = initialPost
@@ -345,30 +357,58 @@ export default function PostEditor({
     };
   }, [draftId, initialPost, groupId, isPublishing]);
 
-  const { members } = useDraftPresence(draftId, groupId);
+  const { members } = useDraftPresence(draftId, groupId, isPublishing, initialPost?.version ?? 0);
 
   // 서버의 LOCK_CHANGED 브로드캐스트 수신
   useEffect(() => {
     if (!socket) return;
-    socket.on(
-      'LOCK_CHANGED',
-      ({ lockKey, ownerSessionId }: LockResponsePayload) => {
-        setLocks((prev) => {
-          const newLocks = { ...prev };
 
-          if (ownerSessionId) {
-            // 소유자가 있으면 새로운 락 추가
-            newLocks[lockKey] = ownerSessionId;
-          } else {
-            // 소유자가 없으면 락 해제 = 해당 키 삭제
-            delete newLocks[lockKey];
-          }
-          return newLocks;
+    const handleLockChanged = ({ lockKey, ownerSessionId }: LockResponsePayload) => {
+      setLocks((prev) => {
+        const newLocks = { ...prev };
+        if (ownerSessionId) {
+          newLocks[lockKey] = ownerSessionId;
+        } else {
+          delete newLocks[lockKey];
+        }
+        return newLocks;
+      });
+    };
+
+    // 드래프트 입장 시 서버가 보내는 현재 락 상태를 즉시 반영.
+    // 이를 하지 않으면 B가 입장할 때 A가 이미 잡고 있는 락을 알 수 없어
+    // LOCK_CHANGED가 오기 전까지 "다른 유저 편집 중" 표시가 안 됨.
+    // 주의: socket.off(event) (콜백 없음)는 ALL 핸들러를 제거하므로
+    // useDraftPresence가 등록한 PRESENCE_SNAPSHOT 핸들러까지 삭제되는 버그를 방지하기 위해
+    // 반드시 콜백 참조를 저장하고 socket.off(event, handler)로 제거해야 함.
+    const handlePresenceSnapshot = ({ locks: snapshotLocks }: { locks?: Record<string, string> }) => {
+      if (snapshotLocks && Object.keys(snapshotLocks).length > 0) {
+        setLocks(snapshotLocks);
+      }
+    };
+
+    // 소켓 재연결 시 새 sessionId가 부여되면 locks에 남아있는 이전 sessionId를 갱신.
+    // 갱신하지 않으면 자신의 락이 isLockedByOther=true로 보여 "다른 사용자 편집 중" 오표시됨.
+    const handlePresenceReplaced = ({ previousSessionId, sessionId }: { previousSessionId: string; sessionId: string }) => {
+      setLocks((prev) => {
+        const hasStale = Object.values(prev).some((v) => v === previousSessionId);
+        if (!hasStale) return prev;
+        const updated: Record<string, string> = {};
+        Object.entries(prev).forEach(([key, val]) => {
+          updated[key] = val === previousSessionId ? sessionId : val;
         });
-      },
-    );
+        return updated;
+      });
+    };
+
+    socket.on('LOCK_CHANGED', handleLockChanged);
+    socket.on('PRESENCE_SNAPSHOT', handlePresenceSnapshot);
+    socket.on('PRESENCE_REPLACED', handlePresenceReplaced);
+
     return () => {
-      socket.off('LOCK_CHANGED');
+      socket.off('LOCK_CHANGED', handleLockChanged);
+      socket.off('PRESENCE_SNAPSHOT', handlePresenceSnapshot);
+      socket.off('PRESENCE_REPLACED', handlePresenceReplaced);
     };
   }, [socket, mySessionId]);
 
@@ -427,9 +467,12 @@ export default function PostEditor({
       metadataLocksRef.current = locksToRequest;
     }
 
+    // 이 effect run에서 요청한 락을 클로저에 캡처 (ref를 cleanup에서 읽으면 재실행 시 덮어쓴 값을 참조하는 버그)
+    const locksAcquiredThisRun = [...metadataLocksRef.current];
+
     // cleanup: drawer가 닫힐 때 또는 컴포넌트가 unmount될 때 락 해제
     return () => {
-      metadataLocksRef.current.forEach((lockKey) => {
+      locksAcquiredThisRun.forEach((lockKey) => {
         releaseLock(lockKey);
       });
       metadataLocksRef.current = [];
@@ -443,9 +486,24 @@ export default function PostEditor({
       return;
     }
 
+    // draft 모드에서 다른 사용자가 편집 중인 블록은 아직 커밋되지 않은 streaming 값을 사용
+    const blocksToValidate = (
+      draftId
+        ? blocks.map((b) => {
+            const ownerSessionId = locks[`block:${b.id}`];
+            const isLockedByOther =
+              !!ownerSessionId && ownerSessionId !== mySessionId;
+            if (isLockedByOther && streamingValues[b.id]) {
+              return { ...b, value: streamingValues[b.id] };
+            }
+            return b;
+          })
+        : blocks
+    ) as RecordBlock[];
+
     const { isValid, message, filteredBlocks } = validateAndCleanRecord(
       title,
-      blocks,
+      blocksToValidate,
     );
 
     if (!isValid) {
@@ -456,14 +514,24 @@ export default function PostEditor({
     const isDraft = !!draftId;
 
     if (groupId && draftId) {
+      // DRAFT_PUBLISHED 소켓이 HTTP 응답보다 먼저 도착할 수 있으므로
+      // 발행 시작 시점에 즉시 플래그를 세워 소켓 중복 네비게이션 방지
+      markNavigatingToRecord();
       setIsPublishing(true); // 동기적으로 설정해 타임아웃 useEffect 오작동 방지
       execute({
         draftId,
         draftVersion: versionRef.current,
         titleOverride: title,
+        // 소켓 BLOCK_SET_VALUE/BLOCK_INSERT와 HTTP publish 간 race condition 방지:
+        // 현재 프론트 블록 상태 전체를 전송해 서버 스냅샷을 완전 교체
+        blocksOverride: filteredBlocks.map((b) => ({
+          id: b.id,
+          type: RecordFieldtypeMap[b.type] as string,
+          value: b.value as Record<string, unknown>,
+          layout: b.layout as unknown as Record<string, unknown>,
+        })),
       });
-      await refreshGroupData(groupId);
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      // revalidation은 useCreateRecord의 handleSuccess에서 처리
       return;
     }
 
@@ -555,18 +623,14 @@ export default function PostEditor({
   const handleFieldCommit = (id: string, value: BlockValue) => {
     if (!draftId) return;
     if (isRecordBlockEmpty(value)) {
+      // 값이 비어있어도 락은 반드시 해제
+      releaseLock(`block:${id}`);
       return;
     }
     const lockKey = `block:${id}`;
-    const ownerSessionId = locks[lockKey];
 
-    // 내가 락을 갖고있는지 확인
-    const isMine = ownerSessionId === mySessionId;
-
-    // 없으면 락 먼저 받기
-    if (!isMine) {
-      requestLock(lockKey);
-    }
+    // focus 시 이미 requestLock을 호출했으므로 여기서 재요청하지 않음.
+    // !isMine일 때 requestLock + 즉시 releaseLock을 하면 재포커스 후 새로 획득한 락이 해제되는 버그 발생.
 
     // 락을 해제하기 전에 대기 중인 쓰로틀링 업데이트를 모두 실행
     flushEmitStream();
@@ -598,6 +662,8 @@ export default function PostEditor({
 
     const currentBlock = blocks.find((b) => b.id === id);
     if (!currentBlock) {
+      // 블록이 없어도(다른 유저가 삭제한 경우 등) 락은 반드시 해제
+      if (draftId) releaseLock(`block:${id}`);
       setActiveDrawer(null);
       return;
     }
@@ -828,8 +894,9 @@ export default function PostEditor({
 
       <main
         className={cn(
-          'px-4 sm:px-6 space-y-4 sm:space-y-5 pb-40 sm:pb-48 overflow-y-auto py-2 sm:py-3',
+          'flex-1 min-h-0 px-4 sm:px-6 space-y-4 sm:space-y-5 overflow-y-auto py-2 sm:py-3',
         )}
+        style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
       >
         <RecordTitleInput
           title={title}
@@ -838,7 +905,7 @@ export default function PostEditor({
           mySessionId={mySessionId}
           members={members}
           applyPatch={applyPatch}
-          lockManager={{ locks, requestLock, releaseLock }}
+          lockManager={{ locks, requestLock: acquireExclusiveLock, releaseLock }}
         />
         <div
           ref={gridRef}
@@ -856,7 +923,7 @@ export default function PostEditor({
               mySessionId={mySessionId}
               members={members}
               streamingValues={streamingValues}
-              requestLock={requestLock}
+              requestLock={acquireExclusiveLock}
               handleFieldUpdate={handleFieldUpdate}
               handleFieldCommit={handleFieldCommit}
               removeBlock={removeBlock}
