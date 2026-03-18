@@ -14,7 +14,7 @@ DEPENDENCIES:
   - "CapacitorApp (from `../../../node_modules/.pnpm/@capacitor+app@7.1.2_@capacitor+core@7.5.0/node_modules/@capacitor/app`)"
   - "CapacitorBrowser (from `../../../node_modules/.pnpm/@capacitor+browser@7.0.4_@capacitor+core@7.5.0/node_modules/@capacitor/browser`)"
   - "CapacitorCordova (from `../../../node_modules/.pnpm/@capacitor+ios@7.5.0_@capacitor+core@7.5.0/node_modules/@capacitor/ios`)"
-  - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
+  - "CapacitorSplashScreen (from `../../../node_modules/.pnpm/@capacitor+splash-screen@7.0.5_@capacitor+core@7.5.0/node_modules/@capacitor/splash-screen`)"
 
 EXTERNAL SOURCES:
   Capacitor:
@@ -26,15 +26,15 @@ EXTERNAL SOURCES:
   CapacitorCordova:
     :path: "../../../node_modules/.pnpm/@capacitor+ios@7.5.0_@capacitor+core@7.5.0/node_modules/@capacitor/ios"
   CapacitorSplashScreen:
-    :path: "../../node_modules/@capacitor/splash-screen"
+    :path: "../../../node_modules/.pnpm/@capacitor+splash-screen@7.0.5_@capacitor+core@7.5.0/node_modules/@capacitor/splash-screen"
 
 SPEC CHECKSUMS:
   Capacitor: 5f723a6113395cfef3bbabf0d2b8e9ca1201c681
   CapacitorApp: 6b89831465d6bc99bc89779b1b7f5327e33011ce
   CapacitorBrowser: d0a1ab6a22835100eb6a203a54571d11f82bf7a7
   CapacitorCordova: ae35646a9b46cfd00d637f195509c86594026aad
-  CapacitorSplashScreen: fe9384f9a8cb8c48180497d05c2354c890badaa2
+  CapacitorSplashScreen: b3d12b4324d93ce605fe57f05a199ade7f26189e
 
-PODFILE CHECKSUM: 9391e3faea8911a37da9f502c74a917576fdf351
+PODFILE CHECKSUM: b859cad3e66387b7942c21a873a98aade7d8b641
 
 COCOAPODS: 1.16.2
