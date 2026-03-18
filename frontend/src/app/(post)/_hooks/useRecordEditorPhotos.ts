@@ -394,6 +394,11 @@ export function useRecordEditorPhotos({
 
       // 메타데이터 필드 락 해제
       if (draftId && releaseLock) {
+        // photos 블록 락 해제
+        if (photosBlockId) {
+          releaseLock(`block:${photosBlockId}`);
+        }
+
         const dateBlock = blocks.find((b) => b.type === 'date');
         const timeBlock = blocks.find((b) => b.type === 'time');
         const locationBlock = blocks.find((b) => b.type === 'location');
@@ -409,6 +414,11 @@ export function useRecordEditorPhotos({
         }
       }
 
+      // photos 드로어를 직접 닫아 handleCloseDrawer 경유를 막음.
+      // handleApplyMetadata가 이미 photos BLOCK_SET_VALUE를 커밋했으므로
+      // handleCloseDrawer가 닫힐 때 동일한 baseVersion으로 PATCH_APPLY를 재전송하면
+      // PATCH_COMMITTED 도착 전에 두 번째 패치가 나가 PATCH_REJECTED_STALE이 발생함.
+      setActiveDrawer(null);
       setPendingMetadata(null); // drawer 닫기
     },
     [
