@@ -134,10 +134,8 @@ export class PostDraftGateway
     if (!existingMember && memberCount >= PostDraftGateway.DRAFT_JOIN_LIMIT) {
       throw new WsException('Draft is full.');
     }
-    const { displayName, role, profileImageId } = await this.resolveMemberInfo(
-      actorId,
-      draftId,
-    );
+    const { displayName, role, profileImageId, draftVersion } =
+      await this.resolveMemberInfo(actorId, draftId);
     const member: PresenceMember = {
       sessionId,
       displayName,
@@ -178,7 +176,7 @@ export class PostDraftGateway
       sessionId,
       members: this.presenceService.getMembersArray(draftId),
       locks: this.lockService.getLocks(draftId),
-      version: 0,
+      version: draftVersion,
     });
 
     socket.to(room).emit('PRESENCE_JOINED', { member });
@@ -361,6 +359,8 @@ export class PostDraftGateway
     if (payload.draftId === undefined || payload.draftId === null) {
       throw new WsException('draftId is required.');
     }
+    // socketData.draftId가 없으면 이미 퇴장했거나 아직 입장 전 — stale cleanup 메시지이므로 무시
+    if (!socketData.draftId) return;
     if (payload.draftId !== socketData.draftId) {
       throw new WsException('draftId mismatch.');
     }
@@ -609,7 +609,7 @@ export class PostDraftGateway
   private async resolveMemberInfo(actorId: string, draftId: string) {
     const draft = await this.postDraftRepository.findOne({
       where: { id: draftId, isActive: true },
-      select: { id: true, groupId: true },
+      select: { id: true, groupId: true, version: true },
     });
     if (!draft) {
       throw new WsException('Draft not found.');
@@ -640,6 +640,7 @@ export class PostDraftGateway
       displayName,
       role: member.role,
       profileImageId,
+      draftVersion: draft.version,
     };
   }
 
