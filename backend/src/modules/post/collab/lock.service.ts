@@ -8,15 +8,16 @@ export class LockService {
 
   private static readonly LOCK_TTL_MS = 30_000;
 
-  getLocks(draftId: string) {
+  getLocks(draftId: string): Record<string, string> {
     const locks = this.locksByDraft.get(draftId);
-    if (!locks) return [];
-    return Array.from(locks.values())
+    if (!locks) return {};
+    const result: Record<string, string> = {};
+    Array.from(locks.values())
       .filter((lock) => lock.expiresAt > Date.now())
-      .map((lock) => ({
-        lockKey: lock.lockKey,
-        ownerSessionId: lock.ownerSessionId,
-      }));
+      .forEach((lock) => {
+        result[lock.lockKey] = lock.ownerSessionId;
+      });
+    return result;
   }
 
   getActiveLockOwnerSessionId(draftId: string, lockKey: string) {
