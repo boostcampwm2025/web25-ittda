@@ -192,7 +192,7 @@ export class GroupRecordService {
       qb.andWhere('p.eventAt >= :start AND p.eventAt <= :end', { start, end });
     }
 
-    const posts = await qb.orderBy('p.eventAt', 'DESC').cache(true).getMany();
+    const posts = await qb.orderBy('p.eventAt', 'DESC').getMany();
 
     if (posts.length === 0) {
       return [];
