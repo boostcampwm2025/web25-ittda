@@ -12,12 +12,14 @@ import {
   AlertCircle,
   ChevronRight,
   Download,
+  FileText,
   LogIn,
   LogOut,
   Moon,
   Sun,
   UserX,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
@@ -173,6 +175,18 @@ export default function Setting() {
               v1.0.0
             </span>
           </button>
+          <Link
+            href="/privacy-policy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-between py-2 group"
+          >
+            <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+              개인정보처리방침
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
+          </Link>
           {!isInstalled && (
             <button
               onClick={handleInstallClick}
