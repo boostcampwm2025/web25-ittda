@@ -277,7 +277,7 @@ export default function LoginContent({
         {/* SNS 구분선 */}
         <div className="w-full flex items-center gap-4 mb-10">
           <div className="flex-1 h-px dark:bg-white/20 bg-gray-200" />
-          <span className="text-[13px] font-medium whitespace-nowrap tracking-tight dark:text-gray-400 text-gray-400">
+          <span className="text-[13px] font-medium whitespace-nowrap tracking-tight dark:text-gray-300 text-gray-500">
             SNS 계정으로 간편하게 시작하기
           </span>
           <div className="flex-1 h-px dark:bg-white/20 bg-gray-200" />
@@ -335,10 +335,19 @@ export default function LoginContent({
         <button
           onClick={handleLoginGuest}
           disabled={isPending}
-          className="text-[13px] font-medium transition-all hover:opacity-60 active:scale-95 dark:text-gray-400 text-gray-400 disabled:opacity-30"
+          className="text-[13px] font-medium transition-all hover:opacity-60 active:scale-95 dark:text-gray-300 text-gray-500 disabled:opacity-30"
         >
           {isPending ? '로그인 중...' : '가입 없이 시작하기'}
         </button>
+
+        <Link
+          href="/privacy-policy.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 text-[11px] dark:text-gray-300 text-gray-600 hover:underline transition-all"
+        >
+          개인정보처리방침
+        </Link>
       </div>
     </div>
   );
