@@ -101,20 +101,19 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
         toast.warning('참여 인원이 가득 찼어요.');
         return;
       }
-      if (data.message === 'Invalid access token.' || data.status === 'error') {
+      // draftId mismatch는 stale LEAVE_DRAFT(React StrictMode cleanup 등)로 인한 오탐이므로 무시.
+      // 이 체크는 반드시 'Invalid access token.' 체크보다 앞에 있어야 함.
+      // (data.status === 'error'로 모든 WsException을 잡으면 이 분기가 실행되지 않음)
+      if (data.message === 'draftId mismatch.') {
+        // JOIN_DRAFT가 이후 처리되어 세션이 정상화됨
+        return;
+      }
+      if (data.message === 'Invalid access token.') {
         await handleAuthError();
         return;
       }
-      if (data.message === 'draftId mismatch.') {
-        toast.warning('동기화 오류가 발생하여 이전 화면으로 이동합니다.', {
-          duration: 1500,
-        });
-
-        setTimeout(() => {
-          window.history.back();
-        }, 1500);
-        return;
-      }
+      // data.status === 'error'는 모든 WsException에 해당하므로 handleAuthError 트리거 조건으로 사용하지 않음.
+      // 인증 무관 예외(Lock owner only., Internal server error 등)에서 socket disconnect가 발생하는 것을 방지.
 
       Sentry.captureMessage(`소켓 서버 예외: ${data.message}`, {
         level: 'error',
