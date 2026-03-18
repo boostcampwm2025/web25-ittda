@@ -11,7 +11,7 @@ import {
 import { EmotionValue } from '@/lib/types/recordField';
 
 interface EmotionFieldProps {
-  emotion: EmotionValue | null;
+  emotion: EmotionValue;
   onClick: () => void;
   onRemove: () => void;
 }
@@ -21,7 +21,7 @@ export const EmotionField = ({
   onClick,
   onRemove,
 }: EmotionFieldProps) => {
-  if (!emotion)
+  if (!emotion?.mood)
     return (
       <div className="flex items-center gap-2 w-full py-1 group">
         <FieldDefaultButton onClick={onClick}>

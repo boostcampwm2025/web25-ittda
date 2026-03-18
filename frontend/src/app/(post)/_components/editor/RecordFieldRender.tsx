@@ -71,16 +71,16 @@ export const RecordFieldRenderer = memo(function RecordFieldRenderer({
 
   const handleCommit = useCallback(
     (finalValue?: BlockValue) => {
-      if (lock.isMyLock) {
+      if (!lock.isLockedByOther) {
         onCommit(block.id, finalValue ?? displayValue);
       }
     },
-    [lock.isMyLock, onCommit, block.id, displayValue],
+    [lock.isLockedByOther, onCommit, block.id, displayValue],
   );
 
   const handleLockAndAction = useCallback(() => {
     if (lock.isLockedByOther) {
-      toast.error('현재 다른 사용자가 편집 중입니다.');
+      toast.error('현재 다른 사용자가 편집 중입니다.', { id: `locked-${lock.lockKey}` });
       return;
     }
     if (draftId) requestLock(lock.lockKey);
@@ -90,9 +90,9 @@ export const RecordFieldRenderer = memo(function RecordFieldRenderer({
   // 텍스트, 테이블을 위한 락 클릭
   const handleLockedClick = useCallback(() => {
     if (lock.isLockedByOther) {
-      toast.error('현재 다른 사용자가 편집 중입니다.');
+      toast.error('현재 다른 사용자가 편집 중입니다.', { id: `locked-${lock.lockKey}` });
     }
-  }, [lock.isLockedByOther]);
+  }, [lock.isLockedByOther, lock.lockKey]);
 
   const handleRemove = useCallback(() => {
     onRemove(block.id);
