@@ -12,6 +12,7 @@ import {
   TriangleAlert,
   ShieldAlert,
   Loader2,
+  Share2,
 } from 'lucide-react';
 import {
   Drawer,
@@ -107,24 +108,29 @@ export default function GroupInviteDrawer({ groupId }: GroupInviteDrawerProps) {
     setTimeout(() => setCopyStatus('idle'), 2000);
   };
 
-  const handleKakaoShare = () => {
-    if (!window.Kakao || !window.Kakao?.Share) return;
-
-    const code = inviteResult?.code || '잇다-';
-
-    window.Kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: {
-        title: '기억과 맥락을, 잇다-',
-        description: '당신을 그룹에 초대합니다!',
-        imageUrl:
-          'https://substantial-jade-zgft0gga6m.edgeone.app/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202026-01-16%20003841.png',
-        link: {
-          mobileWebUrl: getFullInviteUrl(code),
-          webUrl: getFullInviteUrl(code),
-        },
-      },
-    });
+  const handleShare = async () => {
+    const url = getFullInviteUrl(inviteResult?.code || '');
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: '잇다- 그룹 초대',
+          text: '기억과 맥락을 잇는 공간, 잇다-로 함께해요!',
+          url,
+        });
+      } catch {
+        // 사용자가 취소한 경우 무시
+      }
+    } else {
+      // navigator.share 미지원 환경 → 링크 복사
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopyStatus('success');
+        setTimeout(() => setCopyStatus('idle'), 2000);
+      } catch {
+        setCopyStatus('error');
+        setTimeout(() => setCopyStatus('idle'), 2000);
+      }
+    }
   };
 
   return (
@@ -253,10 +259,11 @@ export default function GroupInviteDrawer({ groupId }: GroupInviteDrawerProps) {
                   닫기
                 </DrawerClose>
                 <button
-                  onClick={handleKakaoShare}
-                  className="cursor-pointer flex-2 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-itta-black dark:bg-white text-white dark:text-itta-black text-xs sm:text-sm font-bold shadow-xl active:scale-95 transition-all"
+                  onClick={handleShare}
+                  className="cursor-pointer flex-2 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-itta-black dark:bg-white text-white dark:text-itta-black text-xs sm:text-sm font-bold shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
-                  카카오톡으로 공유
+                  <Share2 className="w-4 h-4" />
+                  공유하기
                 </button>
               </div>
             </>
