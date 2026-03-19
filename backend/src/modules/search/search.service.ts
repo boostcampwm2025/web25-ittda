@@ -54,6 +54,7 @@ export class SearchService {
     let endDate = dto.endDate;
 
     if (startDate && !endDate) {
+      // 단일 날짜 선택: 해당 날짜의 시작~끝으로 범위 확장
       if (isDateOnly(startDate)) {
         const startOfDay = DateTime.fromISO(startDate, {
           zone: 'Asia/Seoul',
@@ -66,6 +67,20 @@ export class SearchService {
         if (startDt.isValid) {
           endDate = startDt.endOf('day').toISO() ?? undefined;
         }
+      }
+    } else if (startDate && endDate) {
+      // 기간 선택: date-only 문자열이면 한국 시간 기준으로 시작/끝 시각으로 변환
+      if (isDateOnly(startDate)) {
+        startDate =
+          DateTime.fromISO(startDate, { zone: 'Asia/Seoul' })
+            .startOf('day')
+            .toISO() ?? startDate;
+      }
+      if (isDateOnly(endDate)) {
+        endDate =
+          DateTime.fromISO(endDate, { zone: 'Asia/Seoul' })
+            .endOf('day')
+            .toISO() ?? endDate;
       }
     }
     const query = this.postRepository
