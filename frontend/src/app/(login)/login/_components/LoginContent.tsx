@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
+import { post } from '@/lib/api/api';
+import { guestCookieKey } from '@/store/useAuthStore';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
 import * as Sentry from '@sentry/nextjs';
@@ -47,7 +49,7 @@ export default function LoginContent({
   const router = useRouter();
   const inviteCode = getCookie('invite-code') || '';
 
-  const { setGuestInfo, isLoggedIn } = useAuthStore();
+  const { setGuestInfo, isLoggedIn, guestSessionId } = useAuthStore();
   const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
   const { mutate: guestLogin, isPending } = useApiPost<GuestInfo>(
     '/api/auth/guest',
@@ -194,6 +196,30 @@ export default function LoginContent({
   }, [router]);
 
   const handleLoginGuest = async () => {
+    const existingSessionId = getCookie(guestCookieKey) || guestSessionId;
+    if (existingSessionId) {
+      try {
+        const response = await post<GuestInfo>('/api/auth/guest/restore', {
+          sessionId: existingSessionId,
+        });
+        const authHeader =
+          response.headers?.get('Authorization') ||
+          response.headers?.get('authorization');
+        const accessToken = authHeader?.replace('Bearer ', '');
+        if (response.data && accessToken) {
+          setGuestInfo({ ...response.data, guestAccessToken: accessToken });
+          window.location.href = callback || '/';
+          return;
+        }
+      } catch {
+        // 네트워크 오류 등
+      }
+      // restore 실패 = 세션 만료 → 데이터 삭제됨
+      toast.info(
+        '이전 게스트 데이터가 만료되어 삭제되었어요.\n새 게스트 세션으로 시작할게요.',
+        { duration: 5000 },
+      );
+    }
     guestLogin({});
   };
 
