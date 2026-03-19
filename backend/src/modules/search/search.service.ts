@@ -7,6 +7,7 @@ import {
   PostMedia,
   PostMediaKind,
 } from '@/modules/post/entity/post-media.entity';
+import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import {
   SearchPostsDto,
@@ -95,7 +96,23 @@ export class SearchService {
       )
       .leftJoinAndSelect('postMedia.media', 'media')
       .leftJoin('post.ownerUser', 'ownerUser')
-      .where('post.ownerUserId = :userId', { userId }) // 기본적으로 내 글만 검색 (비즈니스 로직에 따라 변경 가능)
+      .where(
+        new Brackets((qb) => {
+          qb.where('post.ownerUserId = :userId', { userId }).orWhere(
+            (subQb: SelectQueryBuilder<Post>) => {
+              const sub = subQb
+                .subQuery()
+                .select('1')
+                .from(PostContributor, 'pc')
+                .where('pc.postId = post.id')
+                .andWhere('pc.userId = :userId')
+                .getQuery();
+              return `EXISTS ${sub}`;
+            },
+            { userId },
+          );
+        }),
+      )
       .andWhere('post.deletedAt IS NULL');
 
     // Keyword Search (Title or Content Blocks)
