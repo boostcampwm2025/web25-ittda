@@ -41,6 +41,10 @@ const nextConfig: NextConfig = {
         destination: `${backendHost}/v1/auth/guest/restore`,
       },
       {
+        source: '/api/posts/shared/:shareToken',
+        destination: `${backendHost}/v1/posts/shared/:shareToken`,
+      },
+      {
         source: '/api/:path((?!auth|media-image).*)', // 'auth', 'media-image'를 제외한 모든 /api 요청만 백엔드로
         destination: `${backendHost}/v1/:path*`,
       },

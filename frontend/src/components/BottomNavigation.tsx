@@ -63,7 +63,8 @@ export default function BottomNavigation() {
   const isDetail =
     pathname.includes('/detail/') ||
     // pathname.includes('/month/') ||
-    pathname.includes('/edit');
+    pathname.includes('/edit') ||
+    pathname.includes('/share');
 
   const isGroupChat = pathname.includes('/chat');
   const isLogin =

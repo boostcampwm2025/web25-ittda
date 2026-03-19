@@ -23,6 +23,7 @@ import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { EditPostDto } from './dto/edit-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
+import { ShareTokenResponseDto } from './dto/shared-post.dto';
 import {
   LocationValueDto,
   MoodValueDto,
@@ -132,6 +133,46 @@ export class PostController {
       throw new UnauthorizedException('Access token is required.');
     }
     return this.postService.updatePost(postId, requesterId, dto);
+  }
+
+  @HttpPost(':id/share')
+  @ApiOperation({
+    summary: '공유 링크 생성',
+    description:
+      '기록 소유자가 공유 토큰을 생성합니다. 이미 있으면 기존 토큰을 반환합니다.',
+  })
+  @ApiParam({ name: 'id', description: '게시글 ID' })
+  @ApiWrappedOkResponse({ type: ShareTokenResponseDto })
+  async createShareToken(
+    @User() user: MyJwtPayload,
+    @Param('id') id: string,
+  ): Promise<ShareTokenResponseDto> {
+    const requesterId = user?.sub;
+    if (!requesterId)
+      throw new UnauthorizedException('Access token is required.');
+    const shareToken = await this.postService.createShareToken(id, requesterId);
+    return {
+      shareToken,
+      shareUrl: `${process.env.CLIENT_URL ?? ''}/share/${shareToken}`,
+    };
+  }
+
+  @Delete(':id/share')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: '공유 링크 삭제',
+    description: '기록 소유자가 공유 토큰을 삭제합니다.',
+  })
+  @ApiParam({ name: 'id', description: '게시글 ID' })
+  @ApiNoContentResponse()
+  async revokeShareToken(
+    @User() user: MyJwtPayload,
+    @Param('id') id: string,
+  ): Promise<void> {
+    const requesterId = user?.sub;
+    if (!requesterId)
+      throw new UnauthorizedException('Access token is required.');
+    await this.postService.revokeShareToken(id, requesterId);
   }
 
   @Delete(':id')

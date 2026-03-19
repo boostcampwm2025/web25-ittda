@@ -23,7 +23,8 @@ export default function ConditionalHeader() {
     pathname.includes('/record/') ||
     pathname.includes('/detail/') ||
     pathname.includes('/month/') ||
-    pathname.includes('/edit');
+    pathname.includes('/edit') ||
+    pathname.includes('/share');
 
   const isLogin =
     pathname.includes('/login') || pathname.includes('/oauth/callback');
