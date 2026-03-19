@@ -35,6 +35,15 @@ export class GuestSessionService {
     });
   }
 
+  async restore(sessionId: string): Promise<GuestSession | null> {
+    const session = await this.guestSessionRepo.findOne({
+      where: { id: sessionId },
+    });
+    if (!session) return null;
+    if (session.expiresAt < new Date()) return null;
+    return session;
+  }
+
   async invalidate(id: string) {
     await this.guestSessionRepo.delete(id);
   }
