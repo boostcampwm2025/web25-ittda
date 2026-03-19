@@ -28,6 +28,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: (() => {
+    const base = process.env.NEXT_PUBLIC_CLIENT_URL ?? 'https://ittda.vercel.app';
+    return new URL(base.startsWith('http') ? base : `http://${base}`);
+  })(),
   title: {
     default: '잇다-',
     template: '%s',

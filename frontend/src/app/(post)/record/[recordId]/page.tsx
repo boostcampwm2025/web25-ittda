@@ -39,15 +39,16 @@ export async function generateMetadata({
       imageAssetId?.startsWith('https://');
 
     //url이 없고 로컬 경로나 URL이 아닐 때만 assetId로 solve 호출하기
-    const response = await get<SingleResolveResponse>(
-      `/api/media/${imageAssetId}/url`,
-    );
+    const response =
+      !isLocalPath && !isAlreadyUrl && imageAssetId
+        ? await get<SingleResolveResponse>(`/api/media/${imageAssetId}/url`)
+        : null;
 
     const imageSrc = isLocalPath
       ? imageAssetId
       : isAlreadyUrl
         ? imageAssetId
-        : response.data?.url;
+        : response?.data?.url;
 
     const imageUrl = imageSrc
       ? imageSrc
@@ -60,6 +61,7 @@ export async function generateMetadata({
         title: `${record.title} - 잇다`,
         description,
         type: 'article',
+        url: `${process.env.NEXT_PUBLIC_CLIENT_URL}/record/${recordId}`,
         images: [
           {
             url: imageUrl,
@@ -68,6 +70,12 @@ export async function generateMetadata({
             alt: record.title,
           },
         ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${record.title} - 잇다`,
+        description,
+        images: [imageUrl],
       },
     };
   } catch (error) {
