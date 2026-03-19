@@ -119,8 +119,7 @@ export class GroupActivityService {
         userId,
         nickname: actor.user?.nickname ?? null,
         groupNickname: groupMember?.nicknameInGroup ?? null,
-        profileImageId:
-          groupMember?.profileMediaId ?? actor.user?.profileImageId ?? null,
+        profileImageId: groupMember?.profileMediaId ?? null,
       };
       const list = actorsByLogId.get(actor.logId) ?? [];
       list.push(dto);
