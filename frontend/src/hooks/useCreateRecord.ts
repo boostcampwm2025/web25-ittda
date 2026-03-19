@@ -7,8 +7,12 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiResponse } from '@/lib/types/response';
 import {
+  refreshGroupData,
+  refreshHomeData,
   refreshRecordAndHomeData,
+  refreshRecordData,
   refreshRecordGroupAndSharedData,
+  refreshSharedData,
 } from '@/lib/actions/revalidate';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { handlePublishError } from '@/lib/utils/error/publishHandler';
@@ -22,7 +26,12 @@ export interface PublishDraftDto {
   draftId: string;
   draftVersion: number;
   titleOverride?: string;
-  blocksOverride?: { id: string; type: string; value: Record<string, unknown>; layout: Record<string, unknown> }[];
+  blocksOverride?: {
+    id: string;
+    type: string;
+    value: Record<string, unknown>;
+    layout: Record<string, unknown>;
+  }[];
 }
 
 export const useCreateRecord = (
@@ -162,7 +171,12 @@ export const useCreateRecord = (
     draftId?: string;
     draftVersion?: number;
     titleOverride?: string;
-    blocksOverride?: { id: string; type: string; value: Record<string, unknown>; layout: Record<string, unknown> }[];
+    blocksOverride?: {
+      id: string;
+      type: string;
+      value: Record<string, unknown>;
+      layout: Record<string, unknown>;
+    }[];
     payload?: CreateRecordRequest;
   }) => {
     if (groupId && draftId && typeof draftVersion === 'number') {
