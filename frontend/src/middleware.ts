@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
 // 인증 없이 접근 가능한 경로
-const PUBLIC_PATHS = ['/login', '/oauth/callback', '/invite', '/monitoring'];
+const PUBLIC_PATHS = ['/login', '/oauth/callback', '/invite', '/monitoring', '/share'];
 
 export default auth((req) => {
   const { nextUrl, auth: session, cookies } = req;

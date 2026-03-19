@@ -307,6 +307,36 @@ export class MediaService {
     return { ok: true as const, url, expiresAt };
   }
 
+  async resolveUrlPublic(mediaId: string) {
+    this.ensureS3Config();
+    const asset = await this.mediaAssetRepository.findOne({
+      where: { id: mediaId },
+    });
+    if (!asset) return { ok: false as const, reason: 'NOT_FOUND' as const };
+    if (asset.status !== MediaAssetStatus.READY)
+      return { ok: false as const, reason: 'NOT_READY' as const };
+
+    const expiresAt = new Date(
+      Date.now() + this.presignTtlSeconds * 1000,
+    ).toISOString();
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: asset.storageKey,
+    });
+    try {
+      const url = await getSignedUrl(this.s3Client, command, {
+        expiresIn: this.presignTtlSeconds,
+      });
+      return { ok: true as const, url, expiresAt };
+    } catch (err) {
+      this.logger.error(
+        `Presigned URL 생성 실패 (mediaId=${mediaId})`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException('조회 URL 생성 실패');
+    }
+  }
+
   private ensureS3Config() {
     if (this.s3ConfigValid) {
       return;

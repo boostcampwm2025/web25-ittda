@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import sharp from 'sharp';
 
 const backendUrl =
@@ -14,7 +15,11 @@ export async function GET(
   const { id } = await params;
 
   const session = await auth();
-  if (!session?.accessToken) {
+  const cookieStore = await cookies();
+  const guestToken = cookieStore.get('x-guest-access-token')?.value;
+  const accessToken = session?.accessToken ?? guestToken;
+
+  if (!accessToken) {
     return new NextResponse(null, { status: 401 });
   }
 
@@ -29,7 +34,7 @@ export async function GET(
 
   // 백엔드에서 presigned URL 가져오기
   const urlRes = await fetch(`${backendUrl}/v1/media/${id}/url`, {
-    headers: { Authorization: `Bearer ${session.accessToken}` },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!urlRes.ok) {

@@ -230,6 +230,7 @@ export interface RecordDetailResponse {
   blocks: Block[];
   contributors: Contributor[];
   hasActiveEditDraft?: boolean;
+  shareToken?: string | null;
 }
 
 // 지도 리스트 아이템

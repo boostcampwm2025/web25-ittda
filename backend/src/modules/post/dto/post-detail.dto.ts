@@ -55,4 +55,10 @@ export class PostDetailDto {
     description: '해당 게시글의 공동 수정 드래프트가 열려있는지 여부',
   })
   hasActiveEditDraft?: boolean;
+
+  @ApiPropertyOptional({
+    description: '공유 토큰 (공유 링크 활성화된 경우)',
+    format: 'uuid',
+  })
+  shareToken?: string | null;
 }

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
 import type { Point } from 'geojson';
 
 import { Post } from './entity/post.entity';
@@ -27,6 +28,8 @@ import { EditPostDto } from './dto/edit-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
 import { PostScope } from '@/enums/post-scope.enum';
 import { PostBlockType } from '@/enums/post-block-type.enum';
+import { MediaService } from '@/modules/media/media.service';
+import { SharedPostResponseDto } from './dto/shared-post.dto';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { PostContributorRole } from '@/enums/post-contributor-role.enum';
 import { validateBlocks } from './validator/blocks.validator';
@@ -64,6 +67,7 @@ export class PostService {
     private readonly presenceService: PresenceService,
     private readonly postDraftGateway: PostDraftGateway,
     private readonly groupActivityService: GroupActivityService,
+    private readonly mediaService: MediaService,
   ) {}
 
   /**
@@ -351,6 +355,7 @@ export class PostService {
       contributors: contributorDtos,
       permission,
       hasActiveEditDraft,
+      shareToken: post.shareToken ?? null,
     };
     return dto;
   }
@@ -381,6 +386,84 @@ export class PostService {
     if (!contributor) {
       throw new ForbiddenException('You do not have access to this post');
     }
+  }
+
+  async createShareToken(postId: string, userId: string): Promise<string> {
+    const post = await this.postRepository.findOne({
+      where: { id: postId, deletedAt: IsNull() },
+      select: { id: true, ownerUserId: true, shareToken: true },
+    });
+    if (!post) throw new NotFoundException('Post not found');
+    if (post.ownerUserId !== userId)
+      throw new ForbiddenException('Only the owner can share this post');
+
+    if (post.shareToken) return post.shareToken;
+
+    const shareToken = randomUUID();
+    await this.postRepository.update(postId, { shareToken });
+    return shareToken;
+  }
+
+  async revokeShareToken(postId: string, userId: string): Promise<void> {
+    const post = await this.postRepository.findOne({
+      where: { id: postId, deletedAt: IsNull() },
+      select: { id: true, ownerUserId: true },
+    });
+    if (!post) throw new NotFoundException('Post not found');
+    if (post.ownerUserId !== userId)
+      throw new ForbiddenException('Only the owner can revoke this share');
+
+    await this.postRepository.update(postId, { shareToken: null });
+  }
+
+  async findByShareToken(shareToken: string): Promise<SharedPostResponseDto> {
+    const post = await this.postRepository.findOne({
+      where: { shareToken, deletedAt: IsNull() },
+    });
+    if (!post) throw new NotFoundException('Shared post not found');
+
+    const blocks = await this.postBlockRepository.find({
+      where: { postId: post.id },
+      order: { layoutRow: 'ASC', layoutCol: 'ASC', layoutSpan: 'ASC' },
+    });
+
+    // IMAGE 블록에서 mediaId 수집 후 URL 일괄 resolve
+    const mediaIds: string[] = [];
+    for (const block of blocks) {
+      if (
+        block.type === PostBlockType.IMAGE &&
+        block.value &&
+        typeof block.value === 'object' &&
+        'mediaIds' in block.value
+      ) {
+        const ids = (block.value as { mediaIds?: string[] }).mediaIds ?? [];
+        mediaIds.push(...ids);
+      }
+    }
+
+    const resolvedMediaUrls: Record<string, string> = {};
+    await Promise.all(
+      mediaIds.map(async (mediaId) => {
+        const result = await this.mediaService.resolveUrlPublic(mediaId);
+        if (result.ok) {
+          resolvedMediaUrls[mediaId] = result.url;
+        }
+      }),
+    );
+
+    return {
+      id: post.id,
+      title: post.title,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      blocks: blocks.map((b) => ({
+        id: b.id,
+        type: b.type,
+        value: b.value,
+        layout: { row: b.layoutRow, col: b.layoutCol, span: b.layoutSpan },
+      })),
+      resolvedMediaUrls,
+    };
   }
 
   async getEditSnapshot(postId: string, userId: string): Promise<EditPostDto> {

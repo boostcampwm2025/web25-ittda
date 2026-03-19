@@ -14,14 +14,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useApiDelete } from '@/hooks/useApi';
+import { useApiDelete, useApiPost } from '@/hooks/useApi';
 import { useEditPostDraft } from '@/hooks/useGrouprRecord';
 import { ImageValue, RecordDetailResponse } from '@/lib/types/record';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
 import { PopoverClose } from '@radix-ui/react-popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, MoreHorizontal } from 'lucide-react';
+import { AlertCircle, Link2, Link2Off, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -39,7 +39,34 @@ export default function RecordDetailHeaderActions({
   const [currentUrl, setCurrentUrl] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(
+    record.shareToken ?? null,
+  );
   const { userId } = useAuthStore();
+
+  const { mutate: createShareLink, isPending: isCreatingShare } = useApiPost<{
+    shareToken: string;
+    shareUrl: string;
+  }>(`/api/posts/${record.id}/share`, {
+    onSuccess: (res) => {
+      if (res.data?.shareToken) {
+        setShareToken(res.data.shareToken);
+        setShareOpen(true);
+      }
+    },
+    onError: () => toast.error('공유 링크 생성에 실패했습니다.'),
+  });
+
+  const { mutate: revokeShareLink, isPending: isRevokingShare } = useApiDelete(
+    `/api/posts/${record.id}/share`,
+    {
+      onSuccess: () => {
+        setShareToken(null);
+        toast.success('공유 링크가 해제되었어요.');
+      },
+      onError: () => toast.error('공유 링크 해제에 실패했습니다.'),
+    },
+  );
   const { mutateAsync: startGroupEdit } = useEditPostDraft(
     record.groupId || '',
     record.id,
@@ -65,12 +92,16 @@ export default function RecordDetailHeaderActions({
     });
   }, [record.id]);
 
+  const shareUrl = shareToken
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${shareToken}`
+    : currentUrl;
+
   // TEXT 타입 블록에서 내용 추출
   const shareData = {
     id: record.id,
     title: record.title,
     text: content,
-    url: currentUrl,
+    url: shareUrl,
   };
 
   const queryClient = useQueryClient();
@@ -121,8 +152,12 @@ export default function RecordDetailHeaderActions({
     }
   };
 
-  const handleShare = async () => {
-    setShareOpen(true);
+  const handleShare = () => {
+    if (shareToken) {
+      setShareOpen(true);
+    } else {
+      createShareLink({});
+    }
   };
 
   const handleDelete = () => {
@@ -151,6 +186,25 @@ export default function RecordDetailHeaderActions({
             >
               공유하기
             </PopoverClose>
+            {shareToken ? (
+              <PopoverClose
+                onClick={() => revokeShareLink({})}
+                disabled={isRevokingShare}
+                className="cursor-pointer w-full text-left px-5 py-3.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
+              >
+                <Link2Off className="w-3.5 h-3.5" />
+                공유 링크 해제
+              </PopoverClose>
+            ) : (
+              <PopoverClose
+                onClick={() => createShareLink({})}
+                disabled={isCreatingShare}
+                className="cursor-pointer w-full text-left px-5 py-3.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                공유 링크 생성
+              </PopoverClose>
+            )}
             <PopoverClose
               className="cursor-pointer w-full text-left px-5 py-3.5 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
               onClick={handleEdit}
