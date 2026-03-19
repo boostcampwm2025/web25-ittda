@@ -3,24 +3,37 @@ import { Socket } from 'socket.io';
 import { ArgumentsHost, Catch, ExceptionFilter, Logger } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 
-@Catch(WsException)
+@Catch()
 export class AllWsExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllWsExceptionFilter.name);
 
-  catch(exception: WsException, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToWs();
     const client = ctx.getClient<Socket>();
 
+    const isWsException = exception instanceof WsException;
+    const message = isWsException
+      ? exception.message
+      : exception instanceof Error
+        ? exception.message
+        : 'Internal server error';
+
     const errorResponse = {
-      code: 'WS_ERROR',
-      message: exception.message,
+      code: isWsException ? 'WS_ERROR' : 'INTERNAL_ERROR',
+      message,
     };
 
-    this.logger.error(
-      `[WS Exception] Client: ${client.id}, Error: ${exception.message}`,
-      exception.stack,
-    );
+    if (isWsException) {
+      this.logger.warn(
+        `[WS Exception] Client: ${client.id}, Error: ${message}`,
+      );
+    } else {
+      this.logger.error(
+        `[WS Unhandled Exception] Client: ${client.id}, Error: ${message}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    }
 
-    client.emit('error', errorResponse);
+    client.emit('exception', errorResponse);
   }
 }

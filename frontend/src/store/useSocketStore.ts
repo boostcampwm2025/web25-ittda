@@ -97,6 +97,9 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     });
 
     socket.on('exception', async (data: SocketExceptionResponse) => {
+      // message가 없는 빈 exception은 무시 (백엔드가 payload 없이 exception을 emit하는 경우)
+      if (!data?.message) return;
+
       if (data.message === 'Draft is full.') {
         toast.warning('참여 인원이 가득 찼어요.');
         return;
