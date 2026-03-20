@@ -119,21 +119,21 @@ export class MapService {
       });
     }
 
-    const locationMap = new Map<
-      string,
-      BlockValueMap[typeof PostBlockType.LOCATION]
-    >();
+    const placeDisplayByPostId = new Map<string, string | null>();
     if (postIds.length > 0) {
       const locationBlocks = await this.postBlockRepository.find({
         where: {
           postId: In(postIds),
           type: PostBlockType.LOCATION,
         },
+        select: { postId: true, value: true },
       });
       locationBlocks.forEach((block) => {
-        if (locationMap.has(block.postId)) return;
+        if (placeDisplayByPostId.has(block.postId)) return;
         const val = block.value as BlockValueMap[typeof PostBlockType.LOCATION];
-        locationMap.set(block.postId, val);
+        const placeDisplay: string | null =
+          val?.placeName || val?.address || null;
+        placeDisplayByPostId.set(block.postId, placeDisplay);
       });
     }
 
@@ -141,16 +141,7 @@ export class MapService {
       const thumbnailMediaId = thumbnailMap.get(post.id) ?? null;
 
       // Find location block for placeName/address
-      const locationBlock = locationMap.get(post.id);
-
-      let placeDisplay: string | null = null;
-      if (locationBlock) {
-        const val = locationBlock as {
-          address?: string;
-          placeName?: string;
-        };
-        placeDisplay = val.placeName || val.address || null;
-      }
+      const locationData = placeDisplayByPostId.get(post.id);
 
       return {
         id: post.id,
@@ -161,7 +152,7 @@ export class MapService {
         createdAt: post.eventAt || post.createdAt,
         tags: post.tags || [],
         emotion: post.emotion ?? [],
-        placeName: placeDisplay,
+        placeName: locationData,
       };
     });
 
