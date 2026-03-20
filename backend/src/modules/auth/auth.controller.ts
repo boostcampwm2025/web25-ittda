@@ -196,13 +196,15 @@ export class AuthController {
       const { accessToken, refreshToken } =
         await this.authService.refreshAccessToken(oldToken);
 
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 1000 * 60 * 60 * 24 * 14,
-      });
+      if (refreshToken) {
+        res.cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 1000 * 60 * 60 * 24 * 14,
+        });
+      }
 
       res.set('Authorization', `Bearer ${accessToken}`);
       res.set('Access-Control-Expose-Headers', 'Authorization');

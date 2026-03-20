@@ -103,7 +103,9 @@ export class AuthService {
     };
   }
 
-  async refreshAccessToken(oldToken: string) {
+  async refreshAccessToken(
+    oldToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string | null }> {
     const saved = await this.refreshTokenRepo.findOne({
       where: { token: oldToken },
     });
@@ -112,8 +114,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token not found');
     }
 
-    // revoked 체크를 expiresAt보다 먼저 수행
-    // → 토큰 rotation 직후 expiresAt이 지난 edge case에서도 grace period가 동작하도록
+    // revoked 체크: 슬라이딩으로 rotation이 발생했을 때 동시 요청 처리용 grace period
     if (saved.revoked) {
       const now = new Date();
       const gracePeriod = 30 * 1000; // 네트워크 지연 고려 (30초)
@@ -142,8 +143,20 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token expired');
     }
 
-    // 정상적인 첫 번째 갱신 요청 처리
-    return await this.issueNewTokens(saved.userId, saved.id);
+    // 만료까지 7일 미만 → 슬라이딩: refresh token도 함께 재발급
+    const SLIDING_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+    const timeUntilExpiry = saved.expiresAt.getTime() - Date.now();
+
+    if (timeUntilExpiry < SLIDING_THRESHOLD_MS) {
+      return await this.issueNewTokens(saved.userId, saved.id);
+    }
+
+    // 7일 이상 남음 → access token만 재발급, refresh token 유지
+    const accessToken = this.jwtService.sign(
+      { sub: saved.userId },
+      { expiresIn: '15m' },
+    );
+    return { accessToken, refreshToken: null };
   }
 
   /**
