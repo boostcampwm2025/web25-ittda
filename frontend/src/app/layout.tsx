@@ -239,7 +239,9 @@ export default function RootLayout({
                   data-layout-spacer
                   style={{ height: 'env(safe-area-inset-top)', flexShrink: 0 }}
                 />
-                <PWAInstallBanner />
+                <Suspense fallback={null}>
+                  <PWAInstallBanner />
+                </Suspense>
                 <ConditionalHeader />
                 {children}
                 <Suspense fallback={null}>

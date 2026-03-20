@@ -3,6 +3,7 @@
 import LoginContent from '@/app/(login)/login/_components/LoginContent';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { userProfileOptions } from '@/lib/api/profile';
+import type { UserProfileResponse } from '@/lib/types/profileResponse';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { createApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -62,9 +63,9 @@ export default function OAuthCallbackContent({
       } else {
         // 유저 프로필 조회 및 캐시 저장
         let userId: string | null = null;
+        let profileData: UserProfileResponse | null = null;
         try {
-          const profileData =
-            await queryClient.fetchQuery(userProfileOptions());
+          profileData = await queryClient.fetchQuery(userProfileOptions());
           userId = profileData.userId;
           const userInfo = {
             id: profileData.userId,
@@ -133,12 +134,11 @@ export default function OAuthCallbackContent({
           ? `/group/${inviteGroupId}`
           : finalCallback || '/';
 
-        // 온보딩 체크 (userId별로 저장)
+        // 온보딩 체크 (DB settings 기준)
         if (userId) {
-          const hasSeenOnboarding = localStorage.getItem(
-            `has_seen_onboarding_${userId}`,
-          );
-          if (hasSeenOnboarding === 'true') {
+          const hasSeenOnboarding =
+            profileData?.user?.settings?.hasSeenOnboarding === true;
+          if (hasSeenOnboarding) {
             // window.location.replace를 사용하여 즉시 리디렉션
             window.location.replace(redirectPath);
           } else {

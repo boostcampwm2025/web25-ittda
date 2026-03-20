@@ -8,6 +8,8 @@ import PWAInstallModal from './PWAInstallModal';
 import { setCookie } from '@/lib/utils/cookie';
 import { usePathname } from 'next/navigation';
 import { isPrivateMode } from '@/lib/utils/browserDetect';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useApiPatch } from '@/hooks/useApi';
 
 export default function PWAInstallBannerClient() {
   const {
@@ -24,6 +26,12 @@ export default function PWAInstallBannerClient() {
   const [isPrivateCheckDone, setIsPrivateCheckDone] = useState(false);
 
   const pathname = usePathname();
+  const userId = useAuthStore((state) => state.userId);
+
+  const { mutate: updateSettings } = useApiPatch<
+    unknown,
+    { settings: Record<string, unknown> }
+  >('/api/me/settings');
 
   // 시크릿 모드 감지
   useEffect(() => {
@@ -50,17 +58,26 @@ export default function PWAInstallBannerClient() {
 
   const handleClose = () => {
     setShowBanner(false);
-    // 2주(14일) 동안 배너 숨김 - 쿠키에 저장
-    const dismissedUntil = Date.now() + 14 * 24 * 60 * 60 * 1000;
-    setCookie('pwa-banner-dismissed-until', dismissedUntil.toString(), {
-      days: 14,
-    });
+    if (userId) {
+      const dismissedUntil = Date.now() + 14 * 24 * 60 * 60 * 1000;
+      updateSettings({ settings: { pwaBannerDismissedUntil: dismissedUntil } });
+    } else {
+      // 게스트: 쿠키에 저장 (2주)
+      const dismissedUntil = Date.now() + 14 * 24 * 60 * 60 * 1000;
+      setCookie('pwa-banner-dismissed-until', dismissedUntil.toString(), {
+        days: 14,
+      });
+    }
   };
 
   const handleNeverShowAgain = () => {
     setShowBanner(false);
-    // 영구적으로 배너 숨김 - 쿠키에 저장
-    setCookie('pwa-banner-never-show', 'true', { days: 365 * 10 }); // 10년
+    if (userId) {
+      updateSettings({ settings: { pwaBannerNeverShow: true } });
+    } else {
+      // 게스트: 쿠키에 저장 (영구)
+      setCookie('pwa-banner-never-show', 'true', { days: 365 * 10 });
+    }
   };
 
   // 모든 비동기 체크가 완료되기 전까지는 렌더링 안 함 (flash 방지)
