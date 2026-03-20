@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/useAuthStore';
 import Image from 'next/image';
+import { useApiPatch } from '@/hooks/useApi';
 
 const ONBOARDING_DATA = [
   {
@@ -45,14 +45,15 @@ interface OnboardingContentProps {
 export default function OnboardingContent({ callback }: OnboardingContentProps) {
   const [step, setStep] = useState(0);
   const router = useRouter();
-  const userId = useAuthStore((state) => state.userId);
   const isLastStep = step === ONBOARDING_DATA.length - 1;
 
+  const { mutate: markOnboardingSeen } = useApiPatch<
+    unknown,
+    { settings: Record<string, unknown> }
+  >('/api/me/settings');
+
   const finishOnboarding = () => {
-    if (userId) {
-      localStorage.setItem(`has_seen_onboarding_${userId}`, 'true');
-    }
-    // callback이 있으면 해당 페이지로, 없으면 홈으로
+    markOnboardingSeen({ settings: { hasSeenOnboarding: true } });
     router.replace(callback || '/');
   };
 
@@ -99,7 +100,7 @@ export default function OnboardingContent({ callback }: OnboardingContentProps) 
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.5}
-            onDragEnd={(e, { offset, velocity }) => {
+            onDragEnd={(_, { offset, velocity }) => {
               const swipeThreshold = 50;
               const swipeVelocity = 500;
 
