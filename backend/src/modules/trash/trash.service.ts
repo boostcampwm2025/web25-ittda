@@ -89,14 +89,14 @@ export class TrashService {
       'info',
       'Starting scheduled permanent deletion for soft-deleted posts older than 30 days...',
     );
+    const thirtyDaysAgo = DateTime.now().minus({ days: 30 }).toJSDate();
 
     const result = await this.postRepo
       .createQueryBuilder()
       .delete()
       .from(Post)
       .where('deletedAt IS NOT NULL') // soft-delete 된 것 중
-      .andWhere('deletedAt <= NOW() - INTERVAL 30 DAY') // 30일 이상 지난 것만
-      // INTERVAL 30 DAY는 postgresql 전용 데이터 타입 연산자
+      .andWhere('deletedAt <= :thirtyDaysAgo', { thirtyDaysAgo }) // 30일 이상 지난 것만
       .execute();
 
     this.logger.log(
