@@ -16,6 +16,7 @@ import {
   LogIn,
   LogOut,
   Megaphone,
+  MessageSquare,
   Moon,
   Sun,
   UserX,
@@ -106,6 +107,17 @@ export default function Setting() {
     setTheme(nextTheme);
   };
 
+  const handleContact = async () => {
+    const url =
+      'https://docs.google.com/forms/d/e/1FAIpQLSfuK6An86OJ7C_cj-oEuRhLxORYSYKif7e-dekh383mpnOraw/viewform';
+    try {
+      const { Browser } = await import('@capacitor/browser');
+      await Browser.open({ url });
+    } catch {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const handleInstallClick = async () => {
     // Chrome/Edge 등에서 기본 프롬프트 지원하는 경우
     const outcome = await promptInstall();
@@ -186,6 +198,16 @@ export default function Setting() {
             </span>
             <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
           </Link>
+          <button
+            onClick={handleContact}
+            className="cursor-pointer w-full flex items-center justify-between py-2 group"
+          >
+            <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+              문의하기
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
+          </button>
           <Link
             href="/privacy-policy.html"
             target="_blank"
