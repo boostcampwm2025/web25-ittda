@@ -1,6 +1,7 @@
 import { BadRequestException, Logger } from '@nestjs/common';
 import { isUUID } from 'class-validator';
 import { PostBlockType } from '@/enums/post-block-type.enum';
+import { MAX_POST_IMAGE_MEDIA_IDS } from '@/common/constants/media-limits';
 
 type ValidateBlocksOptions = {
   requireDateTimeBlocks?: boolean; // default true
@@ -110,8 +111,10 @@ function validateImageMediaIds(blocks: BlockDto[]) {
   if (unique.size !== mediaIds.length) {
     throw new BadRequestException('IMAGE.mediaIds must be unique.');
   }
-  if (mediaIds.length > 15) {
-    throw new BadRequestException('IMAGE.mediaIds must be at most 15.');
+  if (mediaIds.length > MAX_POST_IMAGE_MEDIA_IDS) {
+    throw new BadRequestException(
+      `IMAGE.mediaIds must be at most ${MAX_POST_IMAGE_MEDIA_IDS}.`,
+    );
   }
 }
 

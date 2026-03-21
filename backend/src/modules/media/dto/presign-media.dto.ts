@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsInt,
@@ -11,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MAX_MEDIA_PRESIGN_BATCH_SIZE } from '@/common/constants/media-limits';
 
 export class PresignFileRequestDto {
   @ApiProperty({ example: 'image/png' })
@@ -41,6 +43,7 @@ export class MediaPresignRequestDto {
   @ApiProperty({ type: [PresignFileRequestDto] })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(MAX_MEDIA_PRESIGN_BATCH_SIZE)
   @ValidateNested({ each: true })
   @Type(() => PresignFileRequestDto)
   files: PresignFileRequestDto[];

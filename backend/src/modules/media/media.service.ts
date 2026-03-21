@@ -27,6 +27,7 @@ import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/entity/user.entity';
 import type { PresignFileRequestDto } from './dto/presign-media.dto';
+import { MAX_MEDIA_PRESIGN_BATCH_SIZE } from '@/common/constants/media-limits';
 
 @Injectable()
 export class MediaService {
@@ -104,6 +105,12 @@ export class MediaService {
     ownerUserId: string,
     files: PresignFileRequestDto[],
   ) {
+    if (files.length > MAX_MEDIA_PRESIGN_BATCH_SIZE) {
+      throw new BadRequestException(
+        `files must be at most ${MAX_MEDIA_PRESIGN_BATCH_SIZE}.`,
+      );
+    }
+
     this.ensureS3Config();
     // TODO: presign 단계에서는 요청 값 기반 검증만 가능함(실제 파일은 complete에서 검증).
     // 추후 PUT -> POST 전환 시점에 contentType/size 재검증 로직 추가 필요.
