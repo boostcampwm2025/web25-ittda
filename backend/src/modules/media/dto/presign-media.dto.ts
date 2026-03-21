@@ -40,7 +40,24 @@ export class PresignFileRequestDto {
 }
 
 export class MediaPresignRequestDto {
-  @ApiProperty({ type: [PresignFileRequestDto] })
+  @ApiProperty({
+    type: [PresignFileRequestDto],
+    description: `업로드할 파일 목록 (최대 ${MAX_MEDIA_PRESIGN_BATCH_SIZE}개)`,
+    example: [
+      {
+        contentType: 'image/jpeg',
+        size: 204800,
+        width: 1200,
+        height: 800,
+      },
+      {
+        contentType: 'image/png',
+        size: 102400,
+        width: 800,
+        height: 800,
+      },
+    ],
+  })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(MAX_MEDIA_PRESIGN_BATCH_SIZE)
