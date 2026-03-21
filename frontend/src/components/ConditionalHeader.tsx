@@ -6,6 +6,7 @@ import Header from './Header';
 export default function ConditionalHeader() {
   const pathname = usePathname();
 
+  const isAdmin = pathname.includes('/admin');
   const isGroupChat = pathname.includes('/chat');
   const isGroupDetail = /\/group\/[^/]+\/(post|draft)\//.test(pathname);
   const minimalPaths = [
@@ -37,7 +38,8 @@ export default function ConditionalHeader() {
     !isGroupChat &&
     !isProfile &&
     !isMap &&
-    !isGroupDetail;
+    !isGroupDetail &&
+    !isAdmin;
 
   if (!showHeader) return null;
 

@@ -52,7 +52,8 @@ export default function NativeStatusBarSync() {
     const onMutation = () => {
       const isOpen =
         !!document.querySelector('[data-slot="drawer-overlay"][data-state="open"]') ||
-        !!document.querySelector('[data-auth-loading]');
+        !!document.querySelector('[data-auth-loading]') ||
+        !!document.querySelector('[data-announcement-modal]');
       // overlay 열릴 때 native를 transparent로 → CSS overlay(bg-black/50 backdrop-blur-sm)가
       // statusbar 영역까지 통일된 디자인으로 표시 (iOS/Android 공통)
       sendNativeStatusBarTheme(isOpen ? 'transparent' : baseThemeRef.current);

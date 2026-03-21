@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
 // 인증 없이 접근 가능한 경로
-const PUBLIC_PATHS = ['/login', '/oauth/callback', '/invite', '/monitoring', '/share'];
+const PUBLIC_PATHS = ['/login', '/oauth/callback', '/invite', '/monitoring', '/share', '/admin'];
 
 export default auth((req) => {
   const { nextUrl, auth: session, cookies } = req;
+
+  // 서버 컴포넌트에서 현재 경로를 읽을 수 있도록 요청 헤더에 pathname 추가
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set('x-pathname', nextUrl.pathname);
+  const next = () => NextResponse.next({ request: { headers: requestHeaders } });
 
   const isSocialLoggedIn = !!session;
   const isGuestLoggedIn =
@@ -24,12 +29,12 @@ export default auth((req) => {
     if (isSocialLoggedIn) {
       return NextResponse.redirect(new URL('/', nextUrl));
     }
-    return NextResponse.next();
+    return next();
   }
 
   // 초대 링크 처리
   if (nextUrl.pathname.startsWith('/invite') && hasInviteCode) {
-    return NextResponse.next();
+    return next();
   }
 
   // 로그인 안 했고, 공개 경로도 아니고, 초대 코드도 없으면 로그인으로
@@ -40,7 +45,7 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  return next();
 });
 
 export const config = {

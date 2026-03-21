@@ -71,11 +71,23 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.kopis.or.kr',
       },
-      // 로컬 개발 이미지 조회용
+      // 공지사항 등 어드민이 등록하는 외부 이미지 (https 전체 허용)
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      // 로컬 개발 이미지 조회용 (MinIO)
       {
         protocol: 'http',
         hostname: 'localhost',
         port: '9000',
+        pathname: '/**',
+      },
+      // 로컬 개발 Next.js public 폴더 이미지
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
         pathname: '/**',
       },
       {

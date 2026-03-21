@@ -10,7 +10,8 @@ import {
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
-import { Logger, OnModuleDestroy, UseGuards } from '@nestjs/common';
+import { Logger, OnModuleDestroy, UseFilters, UseGuards } from '@nestjs/common';
+import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { Server, Socket } from 'socket.io';
@@ -45,6 +46,7 @@ import type {
     credentials: true,
   },
 })
+@UseFilters(AllWsExceptionFilter)
 @UseGuards(WsJwtGuard)
 export class PostDraftGateway
   implements
