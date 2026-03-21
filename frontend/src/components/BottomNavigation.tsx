@@ -60,6 +60,7 @@ export default function BottomNavigation() {
     '/invite',
     '/onboarding',
   ];
+  const isAdmin = pathname.includes('/admin');
   const isDetail =
     pathname.includes('/detail/') ||
     // pathname.includes('/month/') ||
@@ -71,7 +72,11 @@ export default function BottomNavigation() {
     pathname.includes('/login') || pathname.includes('/oauth/callback');
 
   const showNav =
-    !minimalPaths.includes(pathname) && !isDetail && !isGroupChat && !isLogin;
+    !minimalPaths.includes(pathname) &&
+    !isDetail &&
+    !isGroupChat &&
+    !isLogin &&
+    !isAdmin;
 
   if (!showNav) return null;
   if (isGroupDetail) return null;

@@ -15,6 +15,7 @@ import {
   FileText,
   LogIn,
   LogOut,
+  Megaphone,
   Moon,
   Sun,
   UserX,
@@ -175,6 +176,16 @@ export default function Setting() {
               v1.0.0
             </span>
           </button>
+          <Link
+            href="/announcements"
+            className="w-full flex items-center justify-between py-2 group"
+          >
+            <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+              <Megaphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+              공지사항
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
+          </Link>
           <Link
             href="/privacy-policy.html"
             target="_blank"

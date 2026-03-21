@@ -2,6 +2,7 @@ import WeekCalendar from './_components/WeekCalendar';
 import HomeData from './_components/HomeData';
 import HomePageSkeleton from './_components/HomePageSkeleton';
 import { Suspense } from 'react';
+import AnnouncementModal from '@/components/AnnouncementModal';
 
 export async function generateMetadata() {
   return {
@@ -37,6 +38,9 @@ function WeekCalendarSkeleton() {
 export default function HomePage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
+      <Suspense fallback={null}>
+        <AnnouncementModal />
+      </Suspense>
       <Suspense fallback={<WeekCalendarSkeleton />}>
         <WeekCalendar />
       </Suspense>

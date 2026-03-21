@@ -19,6 +19,7 @@ import { MapModule } from './modules/map/map.module';
 import { TemplateModule } from './modules/template/template.module';
 import { MediaModule } from './modules/media/media.module';
 import { TrashModule } from './modules/trash/trash.module';
+import { AnnouncementModule } from './modules/announcement/announcement.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { TrashModule } from './modules/trash/trash.module';
     TemplateModule,
     MediaModule,
     TrashModule,
+    AnnouncementModule,
   ],
   controllers: [AppController],
   providers: [AppService],
