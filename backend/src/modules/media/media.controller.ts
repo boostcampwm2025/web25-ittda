@@ -8,7 +8,6 @@ import {
   Param,
   Post,
   Query,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -43,11 +42,7 @@ export class MediaController {
     @User() user: MyJwtPayload,
     @Body() body: MediaPresignRequestDto,
   ) {
-    const requesterId = user?.sub;
-    if (!requesterId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
-
+    const requesterId = user.sub;
     return this.mediaService.createPresignedUploads(requesterId, body.files);
   }
 
@@ -60,11 +55,7 @@ export class MediaController {
     @User() user: MyJwtPayload,
     @Body() body: MediaCompleteRequestDto,
   ) {
-    const requesterId = user?.sub;
-    if (!requesterId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
-
+    const requesterId = user.sub;
     return this.mediaService.completeUploads(requesterId, body.mediaIds);
   }
 
@@ -77,11 +68,7 @@ export class MediaController {
     @User() user: MyJwtPayload,
     @Body() body: MediaResolveRequestDto,
   ) {
-    const requesterId = user?.sub;
-    if (!requesterId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
-
+    const requesterId = user.sub;
     return this.mediaService.resolveUrls(
       requesterId,
       body.mediaIds,
@@ -99,11 +86,7 @@ export class MediaController {
     @Param('mediaId') mediaId: string,
     @Query('draftId') draftId?: string,
   ) {
-    const requesterId = user?.sub;
-    if (!requesterId) {
-      throw new UnauthorizedException('Access token is required.');
-    }
-
+    const requesterId = user.sub;
     const result = await this.mediaService.resolveUrl(
       requesterId,
       mediaId,
