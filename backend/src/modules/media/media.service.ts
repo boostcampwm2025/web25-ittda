@@ -122,6 +122,7 @@ export class MediaService {
         throw new BadRequestException('File size exceeds limit.');
       }
     });
+
     const assets = files.map((file) => {
       const id = randomUUID();
       const storageKey = this.buildStorageKey(ownerUserId, id);
@@ -136,16 +137,6 @@ export class MediaService {
         height: file.height,
       });
     });
-
-    try {
-      await this.mediaAssetRepository.save(assets);
-    } catch (err) {
-      this.logger.error(
-        'DB 저장 실패',
-        err instanceof Error ? err.stack : String(err),
-      );
-      throw new InternalServerErrorException('파일 메타데이터 저장 실패');
-    }
 
     const expiresAt = new Date(
       Date.now() + this.presignTtlSeconds * 1000,
@@ -187,6 +178,16 @@ export class MediaService {
         };
       }),
     );
+
+    try {
+      await this.mediaAssetRepository.save(assets);
+    } catch (err) {
+      this.logger.error(
+        'DB 저장 실패',
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException('파일 메타데이터 저장 실패');
+    }
 
     return { items };
   }
