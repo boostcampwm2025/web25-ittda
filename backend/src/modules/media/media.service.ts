@@ -356,6 +356,7 @@ export class MediaService {
   }
 
   async completeUploads(ownerUserId: string, mediaIds: string[]) {
+    this.ensureS3Config();
     const assets = await this.mediaAssetRepository.find({
       where: mediaIds.map((id) => ({ id })),
     });
