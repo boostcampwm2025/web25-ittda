@@ -38,7 +38,10 @@ export default async function AnnouncementsPage() {
   const announcements = await fetchAnnouncements();
 
   return (
-    <div className="w-full pb-bottom-nav flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+    <div
+      className="w-full flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black"
+      style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+    >
       <header className="sticky top-0 z-50 max-w-4xl w-full mx-auto px-4 py-3 sm:px-5 sm:py-6 flex items-center justify-between dark:bg-[#121212] bg-white transition-all duration-500">
         <Back fallback="/profile" />
         <h2 className="text-sm sm:text-base font-medium dark:text-white text-itta-black">

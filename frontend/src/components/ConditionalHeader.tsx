@@ -20,6 +20,7 @@ export default function ConditionalHeader() {
     '/invite',
     '/onboarding',
     '/announcements',
+    '/inquiry',
   ];
   const isDetail =
     pathname.includes('/record/') ||

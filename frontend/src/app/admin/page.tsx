@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, Plus, Trash2, Radio, CircleOff, Loader2 } from 'lucide-react';
+import {
+  Lock,
+  Plus,
+  Trash2,
+  Radio,
+  CircleOff,
+  Loader2,
+  Check,
+  CheckCheck,
+} from 'lucide-react';
 
 interface Announcement {
   id: string;
@@ -11,6 +20,15 @@ interface Announcement {
   isActive: boolean;
   startAt?: string | null;
   endAt?: string | null;
+  createdAt: string;
+}
+
+interface Inquiry {
+  id: string;
+  category: string;
+  content: string;
+  email?: string | null;
+  isRead: boolean;
   createdAt: string;
 }
 
@@ -52,6 +70,16 @@ function adminFetch(path: string, key: string, options: RequestInit = {}) {
       'x-admin-key': key,
       ...(options.headers ?? {}),
     },
+  });
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -248,9 +276,9 @@ function AnnouncementForm({
   );
 }
 
-// ─── Main Dashboard ──────────────────────────────────────────────────────────
+// ─── Announcements Tab ───────────────────────────────────────────────────────
 
-function Dashboard({ adminKey }: { adminKey: string }) {
+function AnnouncementsTab({ adminKey }: { adminKey: string }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [fetching, setFetching] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -334,130 +362,324 @@ function Dashboard({ adminKey }: { adminKey: string }) {
   };
 
   return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          공지사항 관리
+        </h2>
+        <button
+          onClick={() => setShowCreate((v) => !v)}
+          className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold hover:opacity-90 transition-opacity"
+        >
+          <Plus className="w-4 h-4" />새 공지
+        </button>
+      </div>
+
+      {showCreate && (
+        <AnnouncementForm
+          initial={EMPTY_FORM}
+          onSubmit={handleCreate}
+          onCancel={() => setShowCreate(false)}
+          loading={submitting}
+        />
+      )}
+
+      {error && (
+        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 rounded-xl px-4 py-3">
+          {error}
+        </p>
+      )}
+
+      {fetching ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+        </div>
+      ) : announcements.length === 0 ? (
+        <div className="text-center py-12 text-sm text-gray-400">
+          등록된 공지사항이 없습니다
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {announcements.map((item) => (
+            <div
+              key={item.id}
+              className={`bg-white dark:bg-[#1E1E1E] rounded-2xl p-4 shadow-sm border ${
+                item.isActive
+                  ? 'border-green-200 dark:border-green-800'
+                  : 'border-gray-100 dark:border-gray-800'
+              }`}
+            >
+              {item.imageUrl && isValidUrl(item.imageUrl) && (
+                <div className="relative w-full h-32 mb-3 rounded-xl overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    {item.isActive && (
+                      <span className="shrink-0 text-[10px] font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                        활성
+                      </span>
+                    )}
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      {item.title}
+                    </h3>
+                  </div>
+                  {item.content && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 whitespace-pre-line">
+                      {item.content}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1.5">
+                    {formatDate(item.createdAt)}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => handleToggleActive(item)}
+                    disabled={actionLoading === item.id}
+                    title={item.isActive ? '비활성화' : '활성화'}
+                    className={`p-2 rounded-xl transition-colors ${
+                      item.isActive
+                        ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {actionLoading === item.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : item.isActive ? (
+                      <Radio className="w-4 h-4" />
+                    ) : (
+                      <CircleOff className="w-4 h-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={actionLoading === item.id}
+                    title="삭제"
+                    className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Inquiries Tab ───────────────────────────────────────────────────────────
+
+function InquiriesTab({ adminKey }: { adminKey: string }) {
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [fetching, setFetching] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const loadInquiries = useCallback(async () => {
+    try {
+      const res = await adminFetch('/admin/inquiries', adminKey);
+      if (res.ok) {
+        const data = await res.json();
+        setInquiries(Array.isArray(data) ? data : (data.data ?? []));
+      }
+    } finally {
+      setFetching(false);
+    }
+  }, [adminKey]);
+
+  useEffect(() => {
+    loadInquiries();
+  }, [loadInquiries]);
+
+  const handleMarkRead = async (item: Inquiry) => {
+    if (item.isRead) return;
+    setActionLoading(item.id);
+    try {
+      const res = await adminFetch(
+        `/admin/inquiries/${item.id}/read`,
+        adminKey,
+        { method: 'PATCH' },
+      );
+      if (res.ok) {
+        setInquiries((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, isRead: true } : i)),
+        );
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    setActionLoading(id);
+    try {
+      const res = await adminFetch(`/admin/inquiries/${id}`, adminKey, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setInquiries((prev) => prev.filter((i) => i.id !== id));
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const unreadCount = inquiries.filter((i) => !i.isRead).length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          문의 내역
+        </h2>
+        {unreadCount > 0 && (
+          <span className="text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
+            미읽음 {unreadCount}
+          </span>
+        )}
+      </div>
+
+      {fetching ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+        </div>
+      ) : inquiries.length === 0 ? (
+        <div className="text-center py-12 text-sm text-gray-400">
+          접수된 문의가 없습니다
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {inquiries.map((item) => (
+            <div
+              key={item.id}
+              className={`bg-white dark:bg-[#1E1E1E] rounded-2xl p-4 shadow-sm border transition-colors ${
+                item.isRead
+                  ? 'border-gray-100 dark:border-gray-800'
+                  : 'border-blue-200 dark:border-blue-800'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <button
+                  className="flex-1 min-w-0 text-left"
+                  onClick={() => {
+                    setExpanded((prev) => (prev === item.id ? null : item.id));
+                    handleMarkRead(item);
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {!item.isRead && (
+                      <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    )}
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      {item.category}
+                    </h3>
+                  </div>
+                  {item.email && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {item.email}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {formatDate(item.createdAt)}
+                  </p>
+                </button>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => handleMarkRead(item)}
+                    disabled={item.isRead || actionLoading === item.id}
+                    title="읽음 처리"
+                    className={`p-2 rounded-xl transition-colors ${
+                      item.isRead
+                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600 cursor-default'
+                        : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60'
+                    }`}
+                  >
+                    {actionLoading === item.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : item.isRead ? (
+                      <CheckCheck className="w-4 h-4" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={actionLoading === item.id}
+                    title="삭제"
+                    className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {expanded === item.id && (
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">
+                    {item.content}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Dashboard ──────────────────────────────────────────────────────────
+
+function Dashboard({ adminKey }: { adminKey: string }) {
+  const [tab, setTab] = useState<'announcements' | 'inquiries'>(
+    'announcements',
+  );
+
+  return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0F1115] pb-16">
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            공지사항 관리
-          </h1>
+        {/* 탭 */}
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
           <button
-            onClick={() => setShowCreate((v) => !v)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold hover:opacity-90 transition-opacity"
+            onClick={() => setTab('announcements')}
+            className={`flex-1 h-9 rounded-lg text-sm font-semibold transition-colors ${
+              tab === 'announcements'
+                ? 'bg-white dark:bg-[#1E1E1E] text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
           >
-            <Plus className="w-4 h-4" />새 공지
+            공지사항
+          </button>
+          <button
+            onClick={() => setTab('inquiries')}
+            className={`flex-1 h-9 rounded-lg text-sm font-semibold transition-colors ${
+              tab === 'inquiries'
+                ? 'bg-white dark:bg-[#1E1E1E] text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            문의 내역
           </button>
         </div>
 
-        {/* 생성 폼 */}
-        {showCreate && (
-          <AnnouncementForm
-            initial={EMPTY_FORM}
-            onSubmit={handleCreate}
-            onCancel={() => setShowCreate(false)}
-            loading={submitting}
-          />
-        )}
-
-        {error && (
-          <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 rounded-xl px-4 py-3">
-            {error}
-          </p>
-        )}
-
-        {/* 목록 */}
-        {fetching ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-          </div>
-        ) : announcements.length === 0 ? (
-          <div className="text-center py-12 text-sm text-gray-400">
-            등록된 공지사항이 없습니다
-          </div>
+        {tab === 'announcements' ? (
+          <AnnouncementsTab adminKey={adminKey} />
         ) : (
-          <div className="space-y-3">
-            {announcements.map((item) => (
-              <div
-                key={item.id}
-                className={`bg-white dark:bg-[#1E1E1E] rounded-2xl p-4 shadow-sm border ${
-                  item.isActive
-                    ? 'border-green-200 dark:border-green-800'
-                    : 'border-gray-100 dark:border-gray-800'
-                }`}
-              >
-                {/* 이미지 미리보기 */}
-                {item.imageUrl && isValidUrl(item.imageUrl) && (
-                  <div className="relative w-full h-32 mb-3 rounded-xl overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {item.isActive && (
-                        <span className="shrink-0 text-[10px] font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
-                          활성
-                        </span>
-                      )}
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        {item.title}
-                      </h3>
-                    </div>
-                    {item.content && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 whitespace-pre-line">
-                        {item.content}
-                      </p>
-                    )}
-                    <p className="text-[11px] text-gray-400 mt-1.5">
-                      {new Date(item.createdAt).toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-
-                  {/* 액션 버튼 */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={() => handleToggleActive(item)}
-                      disabled={actionLoading === item.id}
-                      title={item.isActive ? '비활성화' : '활성화'}
-                      className={`p-2 rounded-xl transition-colors ${
-                        item.isActive
-                          ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {actionLoading === item.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : item.isActive ? (
-                        <Radio className="w-4 h-4" />
-                      ) : (
-                        <CircleOff className="w-4 h-4" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      disabled={actionLoading === item.id}
-                      title="삭제"
-                      className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <InquiriesTab adminKey={adminKey} />
         )}
       </div>
     </div>
