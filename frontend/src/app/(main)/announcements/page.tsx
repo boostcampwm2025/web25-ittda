@@ -25,11 +25,12 @@ async function fetchAnnouncements(): Promise<Announcement[]> {
 }
 
 function formatKoreanDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('ko-KR', {
+  return new Date(dateStr).toLocaleDateString('ko-KR', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -38,7 +39,7 @@ export default async function AnnouncementsPage() {
 
   return (
     <div className="w-full pb-bottom-nav flex flex-col min-h-screen dark:bg-[#121212] dark:text-white bg-white text-itta-black">
-      <header className="sticky top-0 z-50 max-w-4xl w-full mx-auto px-4 py-3 sm:px-5 sm:py-6 flex items-center justify-between dark:bg-[#121212] bg-white backdrop-blur-xl transition-all duration-500">
+      <header className="sticky top-0 z-50 max-w-4xl w-full mx-auto px-4 py-3 sm:px-5 sm:py-6 flex items-center justify-between dark:bg-[#121212] bg-white transition-all duration-500">
         <Back fallback="/profile" />
         <h2 className="text-sm sm:text-base font-medium dark:text-white text-itta-black">
           공지사항
@@ -55,37 +56,37 @@ export default async function AnnouncementsPage() {
           announcements.map((announcement) => (
             <div
               key={announcement.id}
-              className="rounded-xl sm:rounded-2xl p-4 sm:p-5 border dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100 shadow-xs flex flex-col gap-2"
+              className="bg-white dark:bg-[#1E1E1E] rounded-2xl p-4 shadow-sm"
             >
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm sm:text-base font-bold dark:text-white text-itta-black leading-snug">
-                  {announcement.title}
-                </h3>
-                {announcement.isActive && (
-                  <span className="shrink-0 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400">
-                    진행 중
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] sm:text-xs text-gray-400 font-medium">
-                {formatKoreanDate(announcement.createdAt)}
-              </p>
               {announcement.imageUrl && (
-                <div className="relative w-full aspect-video mt-1">
+                <div className="relative w-full h-36 mb-3 rounded-xl overflow-hidden">
                   <AssetImage
                     assetId={announcement.imageUrl}
                     alt={announcement.title}
                     fill
-                    className="object-cover rounded-lg"
+                    className="object-cover"
                     sizes="(max-width: 896px) 100vw, 896px"
                   />
                 </div>
               )}
+              <div className="flex items-center gap-2 mb-1">
+                {announcement.isActive && (
+                  <span className="shrink-0 text-[10px] font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                    진행 중
+                  </span>
+                )}
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                  {announcement.title}
+                </h3>
+              </div>
               {announcement.content && (
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 whitespace-pre-line">
                   {announcement.content}
                 </p>
               )}
+              <p className="text-[11px] text-gray-400 mt-1.5">
+                {formatKoreanDate(announcement.createdAt)}
+              </p>
             </div>
           ))
         )}
