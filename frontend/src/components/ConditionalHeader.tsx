@@ -19,6 +19,7 @@ export default function ConditionalHeader() {
     '/location-picker',
     '/invite',
     '/onboarding',
+    '/announcements',
   ];
   const isDetail =
     pathname.includes('/record/') ||
