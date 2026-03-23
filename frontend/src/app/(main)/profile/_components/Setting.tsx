@@ -107,15 +107,8 @@ export default function Setting() {
     setTheme(nextTheme);
   };
 
-  const handleContact = async () => {
-    const url =
-      'https://docs.google.com/forms/d/e/1FAIpQLSfuK6An86OJ7C_cj-oEuRhLxORYSYKif7e-dekh383mpnOraw/viewform';
-    try {
-      const { Browser } = await import('@capacitor/browser');
-      await Browser.open({ url });
-    } catch {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+  const handleContact = () => {
+    router.push('/inquiry');
   };
 
   const handleInstallClick = async () => {

@@ -59,6 +59,8 @@ export default function BottomNavigation() {
     '/location-picker',
     '/invite',
     '/onboarding',
+    '/announcements',
+    '/inquiry',
   ];
   const isAdmin = pathname.includes('/admin');
   const isDetail =
