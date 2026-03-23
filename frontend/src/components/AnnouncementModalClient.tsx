@@ -8,6 +8,7 @@ import { useApiPatch } from '@/hooks/useApi';
 import { setCookie } from '@/lib/utils/cookie';
 import AssetImage from '@/components/AssetImage';
 import type { AnnouncementData } from './AnnouncementModal';
+import { useRouter } from 'next/navigation';
 
 interface Props {
   announcement: AnnouncementData;
@@ -16,6 +17,7 @@ interface Props {
 export default function AnnouncementModalClient({ announcement }: Props) {
   const [isOpen, setIsOpen] = useState(true);
   const userId = useAuthStore((state) => state.userId);
+  const router = useRouter();
 
   const { mutate: updateSettings } = useApiPatch<
     unknown,
@@ -25,9 +27,13 @@ export default function AnnouncementModalClient({ announcement }: Props) {
   const handleClose = () => {
     setIsOpen(false);
     if (userId) {
-      updateSettings({ settings: { dismissedAnnouncementId: announcement.id } });
+      updateSettings(
+        { settings: { dismissedAnnouncementId: announcement.id } },
+        { onSuccess: () => router.refresh() },
+      );
     } else {
       setCookie('dismissed-announcement-id', announcement.id, { days: 30 });
+      router.refresh();
     }
   };
 
