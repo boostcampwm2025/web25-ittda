@@ -43,6 +43,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         }),
         defaultOptions: {
           queries: {
+            refetchOnWindowFocus: false,
             retry: (failureCount, error) => {
               // 인증 에러는 재시도하지 않음
               if (

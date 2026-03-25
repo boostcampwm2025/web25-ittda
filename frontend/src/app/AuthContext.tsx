@@ -95,7 +95,7 @@ export default function AuthContext({
   children: React.ReactNode;
 }) {
   return (
-    <SessionProvider refetchOnWindowFocus={true}>
+    <SessionProvider refetchOnWindowFocus={false}>
       <SessionGuard>{children}</SessionGuard>
     </SessionProvider>
   );
