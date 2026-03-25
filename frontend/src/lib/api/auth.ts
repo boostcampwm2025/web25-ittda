@@ -42,17 +42,10 @@ if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
   });
 }
 
-// PWA / 브라우저 탭: 포그라운드 복귀 시 캐시 무효화
-// refetchOnWindowFocus는 NextAuth 내부 세션만 갱신하고 이 캐시는 갱신하지 않음
-// visibilitychange로 캐시를 비워줘야 다음 getAccessToken() 호출이 신선한 토큰을 가져옴
-if (typeof window !== 'undefined') {
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      cachedSession = null;
-      cacheExpiry = 0;
-    }
-  });
-}
+// 웹 브라우저 탭: 포그라운드 복귀 시 별도 처리 없음
+// - 캐시는 5분 후 자연만료 → 다음 API 호출 시 getSession() 1회 실행
+// - 만료 토큰은 401 → refreshAccessToken() 흐름으로 처리됨
+// - 네이티브(Capacitor)는 AuthContext의 appStateChange에서 invalidateSessionCache() 호출
 
 let sessionPromise: Promise<Session | null> | null = null;
 
