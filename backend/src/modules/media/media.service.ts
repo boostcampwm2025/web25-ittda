@@ -570,27 +570,53 @@ export class MediaService {
         status: MediaAssetStatus.PENDING,
         createdAt: LessThan(cutoff),
       },
+      select: {
+        id: true,
+        storageKey: true,
+      },
     });
 
     if (expired.length === 0) return;
 
-    await Promise.all(
-      expired.map((asset) =>
-        this.s3Client
-          .send(
-            new DeleteObjectCommand({
-              Bucket: this.bucket,
-              Key: asset.storageKey,
-            }),
-          )
-          .catch(() => undefined),
-      ),
-    );
+    const deletedAssetIds = (
+      await Promise.all(
+        expired.map((asset) =>
+          this.deletePendingAssetFromStorage(asset).then((deleted) =>
+            deleted ? asset.id : null,
+          ),
+        ),
+      )
+    ).filter((assetId): assetId is string => assetId !== null);
 
-    await this.mediaAssetRepository.delete(expired.map((asset) => asset.id));
+    if (deletedAssetIds.length === 0) return;
+
+    await this.mediaAssetRepository.delete(deletedAssetIds);
   }
 
   private buildStorageKey(ownerUserId: string, mediaId: string) {
     return `media/${ownerUserId}/${mediaId}`;
+  }
+
+  private async deletePendingAssetFromStorage(asset: MediaAsset) {
+    try {
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: asset.storageKey,
+        }),
+      );
+      return true;
+    } catch (error) {
+      const name = (error as { name?: string }).name;
+      if (name === 'NotFound' || name === 'NoSuchKey') {
+        return true;
+      }
+
+      this.logger.warn(
+        `Failed to delete pending media asset from storage: ${asset.id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      return false;
+    }
   }
 }
