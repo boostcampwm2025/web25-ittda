@@ -14,6 +14,7 @@ import AuthContext from './AuthContext';
 import { Suspense } from 'react';
 import StatusBarCover from '@/components/StatusBarCover';
 import NativeStatusBarSync from '@/components/NativeStatusBarSync';
+import NetworkGuard from '@/components/NetworkGuard';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -231,6 +232,7 @@ export default function RootLayout({
             >
               <ThemeColorSetter />
               <NativeStatusBarSync />
+              <NetworkGuard />
               <div data-app-root className="flex flex-col min-h-screen w-full mx-auto max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
                 {/* status bar 커버: position fixed + 인라인 zIndex로 스크롤과 무관하게 항상 가림 */}
                 <StatusBarCover />
