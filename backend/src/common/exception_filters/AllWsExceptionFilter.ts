@@ -11,29 +11,22 @@ export class AllWsExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToWs();
     const client = ctx.getClient<Socket>();
 
-    const isWsException = exception instanceof WsException;
-    const message = isWsException
-      ? exception.message
-      : exception instanceof Error
-        ? exception.message
-        : 'Internal server error';
-
-    const errorResponse = {
-      code: isWsException ? 'WS_ERROR' : 'INTERNAL_ERROR',
-      message,
-    };
-
-    if (isWsException) {
+    if (exception instanceof WsException) {
+      const message = exception.message;
       this.logger.warn(
         `[WS Exception] Client: ${client.id}, Error: ${message}`,
       );
-    } else {
-      this.logger.error(
-        `[WS Unhandled Exception] Client: ${client.id}, Error: ${message}`,
-        exception instanceof Error ? exception.stack : String(exception),
-      );
+      client.emit('exception', { code: 'WS_ERROR', message });
+      return;
     }
 
-    client.emit('exception', errorResponse);
+    const message =
+      exception instanceof Error ? exception.message : 'Internal server error';
+
+    this.logger.error(
+      `[WS Unhandled Exception] Client: ${client.id}, Error: ${message}`,
+      exception instanceof Error ? exception.stack : String(exception),
+    );
+    client.emit('exception', { code: 'INTERNAL_ERROR', message });
   }
 }
