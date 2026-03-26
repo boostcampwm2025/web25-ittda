@@ -38,6 +38,14 @@ import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 import { GroupActivityService } from '@/modules/group/service/group-activity.service';
 
+type GroupDraftSnapshot = Pick<
+  CreatePostDto,
+  'title' | 'blocks' | 'groupId' | 'scope'
+>;
+type PublishBlockOverride = NonNullable<
+  PublishDraftDto['blocksOverride']
+>[number];
+
 @Injectable()
 export class PostPublishService {
   private readonly logger = new Logger(PostPublishService.name);
@@ -112,52 +120,7 @@ export class PostPublishService {
             draft.snapshot,
             groupId,
           );
-
-          if (titleOverride && titleOverride.trim()) {
-            snapshot.title = titleOverride.trim();
-          }
-
-          // 프론트 상태를 최종 반영 (소켓 BLOCK_SET_VALUE/BLOCK_INSERT와 HTTP publish 간 race condition 방지)
-          // 전략: publisher가 아는 블록은 override 값으로 업데이트/삽입,
-          //       스냅샷에만 있는 블록(다른 유저가 추가했지만 미수신)은 그대로 보존.
-          if (Array.isArray(blocksOverride) && blocksOverride.length > 0) {
-            type OverrideBlock = {
-              id: string;
-              type: string;
-              value: Record<string, unknown>;
-              layout: Record<string, unknown>;
-            };
-            const prevBlocks = snapshot.blocks;
-            const overrideIds = new Set(
-              blocksOverride.map((o) => (o as OverrideBlock).id),
-            );
-            // publisher가 보내온 블록 순서대로 (신규 블록 포함)
-            const merged = blocksOverride.map((override) => {
-              const o = override as OverrideBlock;
-              const existing = prevBlocks.find((b) => b.id === o.id);
-              if (existing) {
-                return {
-                  ...existing,
-                  value: o.value as unknown as typeof existing.value,
-                  layout: o.layout as unknown as typeof existing.layout,
-                };
-              }
-              return {
-                id: o.id,
-                type: o.type,
-                value: o.value,
-                layout: o.layout,
-              };
-            });
-            // 다른 유저가 추가했지만 publisher 클라이언트에 미수신된 블록은 뒤에 보존
-            const snapshotOnly = prevBlocks.filter(
-              (b) => b.id && !overrideIds.has(b.id),
-            );
-            snapshot.blocks = [
-              ...merged,
-              ...snapshotOnly,
-            ] as typeof snapshot.blocks;
-          }
+          this.applyPublishOverrides(snapshot, titleOverride, blocksOverride);
 
           const snapshotBlocks = snapshot.blocks;
           ownerActorId = draft.ownerActorId;
@@ -347,45 +310,7 @@ export class PostPublishService {
         }
 
         const snapshot = this.parseGroupDraftSnapshot(draft.snapshot, groupId);
-
-        if (titleOverride && titleOverride.trim()) {
-          snapshot.title = titleOverride.trim();
-        }
-
-        // 프론트 상태를 최종 반영 (race condition 방지)
-        // publishGroupDraft와 동일한 전략: publisher가 아는 블록은 override 값/레이아웃으로 업데이트/삽입,
-        // 스냅샷에만 있는 블록(다른 유저가 추가했지만 미수신)은 그대로 보존.
-        if (Array.isArray(blocksOverride) && blocksOverride.length > 0) {
-          type OverrideBlock = {
-            id: string;
-            type: string;
-            value: Record<string, unknown>;
-            layout: Record<string, unknown>;
-          };
-          const prevBlocks = snapshot.blocks;
-          const overrideIds = new Set(
-            blocksOverride.map((o) => (o as OverrideBlock).id),
-          );
-          const merged = blocksOverride.map((override) => {
-            const o = override as OverrideBlock;
-            const existing = prevBlocks.find((b) => b.id === o.id);
-            if (existing) {
-              return {
-                ...existing,
-                value: o.value as unknown as typeof existing.value,
-                layout: o.layout as unknown as typeof existing.layout,
-              };
-            }
-            return { id: o.id, type: o.type, value: o.value, layout: o.layout };
-          });
-          const snapshotOnly = prevBlocks.filter(
-            (b) => b.id && !overrideIds.has(b.id),
-          );
-          snapshot.blocks = [
-            ...merged,
-            ...snapshotOnly,
-          ] as typeof snapshot.blocks;
-        }
+        this.applyPublishOverrides(snapshot, titleOverride, blocksOverride);
 
         afterTitle = snapshot.title;
 
@@ -570,7 +495,7 @@ export class PostPublishService {
   private parseGroupDraftSnapshot(
     snapshot: unknown,
     groupId: string,
-  ): Pick<CreatePostDto, 'title' | 'blocks' | 'groupId' | 'scope'> {
+  ): GroupDraftSnapshot {
     const candidate = snapshot as Partial<CreatePostDto> | null | undefined;
     if (
       !candidate ||
@@ -583,10 +508,55 @@ export class PostPublishService {
     if (candidate.groupId && candidate.groupId !== groupId) {
       throw new BadRequestException('groupId mismatch.');
     }
-    return candidate as Pick<
-      CreatePostDto,
-      'title' | 'blocks' | 'groupId' | 'scope'
-    >;
+    return candidate as GroupDraftSnapshot;
+  }
+
+  private applyPublishOverrides(
+    snapshot: GroupDraftSnapshot,
+    titleOverride?: string,
+    blocksOverride?: PublishDraftDto['blocksOverride'],
+  ) {
+    if (titleOverride && titleOverride.trim()) {
+      snapshot.title = titleOverride.trim();
+    }
+
+    // 프론트 상태를 최종 반영해 소켓 이벤트와 HTTP publish 간 race condition을 줄인다.
+    // publisher가 아는 블록은 override 값으로 업데이트/삽입하고,
+    // 스냅샷에만 있는 블록은 뒤에 보존한다.
+    if (!Array.isArray(blocksOverride) || blocksOverride.length === 0) {
+      return;
+    }
+
+    const prevBlocks = snapshot.blocks;
+    const overrideIds = new Set(blocksOverride.map((override) => override.id));
+    const merged = blocksOverride.map((override) =>
+      this.mergePublishOverrideBlock(prevBlocks, override),
+    );
+    const snapshotOnly = prevBlocks.filter(
+      (block) => block.id && !overrideIds.has(block.id),
+    );
+    snapshot.blocks = [...merged, ...snapshotOnly] as typeof snapshot.blocks;
+  }
+
+  private mergePublishOverrideBlock(
+    prevBlocks: GroupDraftSnapshot['blocks'],
+    override: PublishBlockOverride,
+  ) {
+    const existing = prevBlocks.find((block) => block.id === override.id);
+    if (existing) {
+      return {
+        ...existing,
+        value: override.value as unknown as typeof existing.value,
+        layout: override.layout as unknown as typeof existing.layout,
+      };
+    }
+
+    return {
+      id: override.id,
+      type: override.type,
+      value: override.value,
+      layout: override.layout,
+    };
   }
 
   private buildBlockMediaEntries(
