@@ -71,18 +71,8 @@ export class SearchService {
       }
     } else if (startDate && endDate) {
       // 기간 선택: date-only 문자열이면 한국 시간 기준으로 시작/끝 시각으로 변환
-      if (isDateOnly(startDate)) {
-        startDate =
-          DateTime.fromISO(startDate, { zone: 'Asia/Seoul' })
-            .startOf('day')
-            .toISO() ?? startDate;
-      }
-      if (isDateOnly(endDate)) {
-        endDate =
-          DateTime.fromISO(endDate, { zone: 'Asia/Seoul' })
-            .endOf('day')
-            .toISO() ?? endDate;
-      }
+      startDate = this.normalizeDateOnlyBoundary(startDate, 'start');
+      endDate = this.normalizeDateOnlyBoundary(endDate, 'end');
     }
     const query = this.postRepository
       .createQueryBuilder('post')
@@ -295,6 +285,18 @@ export class SearchService {
       // TODO: Add cursor signature (e.g., HMAC) to prevent tampering.
       return null;
     }
+  }
+
+  private normalizeDateOnlyBoundary(value: string, boundary: 'start' | 'end') {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+    const dateTime = DateTime.fromISO(value, { zone: 'Asia/Seoul' });
+    return (
+      (boundary === 'start'
+        ? dateTime.startOf('day')
+        : dateTime.endOf('day')
+      ).toISO() ?? value
+    );
   }
 
   private encodeCursor(eventAt: Date, id: string, count?: number): string {
