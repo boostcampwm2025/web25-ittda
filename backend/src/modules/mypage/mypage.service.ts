@@ -1,7 +1,7 @@
 import {
   Injectable,
   BadRequestException,
-  UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -20,7 +20,7 @@ export class MyPageService {
   async findOne(userId: string): Promise<User> {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) {
-      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+      throw new NotFoundException('해당 사용자를 찾을 수 없습니다.');
     }
     return user;
   }
