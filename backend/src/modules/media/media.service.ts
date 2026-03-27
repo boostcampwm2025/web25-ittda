@@ -285,26 +285,7 @@ export class MediaService {
       return { ok: false as const, reason: 'NOT_READY' as const };
     }
 
-    const expiresAt = new Date(
-      Date.now() + this.presignTtlSeconds * 1000,
-    ).toISOString();
-    const command = new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: asset.storageKey,
-    });
-    let url: string;
-    try {
-      url = await getSignedUrl(this.s3Client, command, {
-        expiresIn: this.presignTtlSeconds,
-      });
-    } catch (err) {
-      this.logger.error(
-        `Presigned URL 생성 실패 (mediaId=${mediaId})`,
-        err instanceof Error ? err.stack : String(err),
-      );
-      throw new InternalServerErrorException('조회 URL 생성 실패');
-    }
-    return { ok: true as const, url, expiresAt };
+    return this.createResolvedUrl(asset);
   }
 
   async resolveUrlPublic(mediaId: string) {
@@ -316,25 +297,7 @@ export class MediaService {
     if (asset.status !== MediaAssetStatus.READY)
       return { ok: false as const, reason: 'NOT_READY' as const };
 
-    const expiresAt = new Date(
-      Date.now() + this.presignTtlSeconds * 1000,
-    ).toISOString();
-    const command = new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: asset.storageKey,
-    });
-    try {
-      const url = await getSignedUrl(this.s3Client, command, {
-        expiresIn: this.presignTtlSeconds,
-      });
-      return { ok: true as const, url, expiresAt };
-    } catch (err) {
-      this.logger.error(
-        `Presigned URL 생성 실패 (mediaId=${mediaId})`,
-        err instanceof Error ? err.stack : String(err),
-      );
-      throw new InternalServerErrorException('조회 URL 생성 실패');
-    }
+    return this.createResolvedUrl(asset);
   }
 
   private ensureS3Config() {
@@ -345,6 +308,29 @@ export class MediaService {
     throw new InternalServerErrorException(
       '스토리지 설정이 올바르지 않습니다.',
     );
+  }
+
+  private async createResolvedUrl(asset: MediaAsset) {
+    const expiresAt = new Date(
+      Date.now() + this.presignTtlSeconds * 1000,
+    ).toISOString();
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: asset.storageKey,
+    });
+
+    try {
+      const url = await getSignedUrl(this.s3Client, command, {
+        expiresIn: this.presignTtlSeconds,
+      });
+      return { ok: true as const, url, expiresAt };
+    } catch (err) {
+      this.logger.error(
+        `Presigned URL 생성 실패 (mediaId=${asset.id})`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException('조회 URL 생성 실패');
+    }
   }
 
   async completeUploads(ownerUserId: string, mediaIds: string[]) {
