@@ -6,8 +6,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
-// import { Post } from '../post/entity/post.entity';
-// import { Not } from 'typeorm';
 
 // Mypage Service에서 기능 구현
 @Injectable()
@@ -69,10 +67,7 @@ export class MyPageService {
     return this.findOne(userId);
   }
 
-  /**
-   * 회원 탈퇴 (Hard Delete & Ownership Transfer)
-   * @param userId 탈퇴 대상 사용자 ID
-   */
+  /** 회원 탈퇴 (사용자 soft delete) */
   async withdraw(userId: string): Promise<void> {
     const result = await this.userRepo.softDelete({ id: userId });
 
@@ -81,63 +76,5 @@ export class MyPageService {
         '존재하지 않는 사용자이거나 이미 탈퇴 처리되었습니다.',
       );
     }
-    //   await this.userRepo.manager.transaction(async (em) => {
-    //     // 1. 사용자가 소유한 게시글(Post) 조회
-    //     const ownedPosts = await em.find(Post, {
-    //       where: { ownerUserId: userId },
-    //     });
-
-    //     for (const post of ownedPosts) {
-    //       if (post.groupId) {
-    //         // 그룹에 속한 게시글인 경우 소유권 이전 대상 탐색
-    //         // 우선순위: Admin -> Editor 순으로 검색
-    //         let targetMember = await em.findOne('GroupMember', {
-    //           where: {
-    //             groupId: post.groupId,
-    //             userId: Not(userId),
-    //             role: 'ADMIN', // Role 정의에 따라 문자열 또는 Enum 사용
-    //           },
-    //         });
-
-    //         if (!targetMember) {
-    //           targetMember = await em.findOne('GroupMember', {
-    //             where: {
-    //               groupId: post.groupId,
-    //               userId: Not(userId),
-    //               role: 'EDITOR',
-    //             },
-    //           });
-    //         }
-
-    //         if (targetMember) {
-    //           // A. 소유권 이전 대상이 있는 경우
-    //           post.ownerUserId = targetMember.userId as string;
-    //           await em.save(post);
-    //         } else {
-    //           // B. Admin/Editor가 모두 없는 경우: 그룹 게시글 삭제
-    //           await em.delete(Post, { id: post.id });
-    //         }
-    //       } else {
-    //         // 그룹에 속하지 않은 개인 게시글은 즉시 삭제
-    //         await em.delete(Post, { id: post.id });
-    //       }
-    //     }
-
-    //     // 2. 기타 연관 데이터 삭제 (순서 유의)
-    //     await em.softDelete('GroupMember', { userId });
-    //     await em.softDelete('PostContributor', { userId }); // TODO: 삭제 대신 null 처리/탈퇴 표시로 변경?
-    //     await em.softDelete('UserMonthCover', { userId });
-    //     await em.softDelete('Template', { ownerUserId: userId });
-
-    //     // 3. 사용자 본인 삭제 (TODO: soft delete로 변경?)
-    //     const result = await em.softDelete(User, { id: userId });
-
-    //     if (result.affected === 0) {
-    //       throw new BadRequestException(
-    //         '존재하지 않는 사용자이거나 이미 탈퇴 처리되었습니다.',
-    //       );
-    //     }
-    //   });
-    // }
   }
 }
