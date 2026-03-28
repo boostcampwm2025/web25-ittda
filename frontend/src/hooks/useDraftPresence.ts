@@ -36,6 +36,7 @@ export function useDraftPresence(draftId?: string, groupId?: string, isPublishin
   const { socket, setSessionId } = useSocketStore();
   const [members, setMembers] = useState<PresenceMember[]>([]);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const didLeaveRef = useRef(false);
   const isPublishingRef = useRef(false);
   const router = useRouter();
@@ -103,7 +104,7 @@ export function useDraftPresence(draftId?: string, groupId?: string, isPublishin
           },
         );
 
-        setTimeout(() => {
+        reconnectTimerRef.current = setTimeout(() => {
           window.location.reload();
         }, 2000);
       } else {
@@ -121,6 +122,11 @@ export function useDraftPresence(draftId?: string, groupId?: string, isPublishin
     };
 
     const handleConnectSuccess = () => {
+      // 재연결 성공 시 예약된 리로드 타이머 취소
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
       // 연결 성공 시 횟수 초기화
       if (sessionStorage.getItem(RETRY_KEY)) {
         sessionStorage.removeItem(RETRY_KEY);
