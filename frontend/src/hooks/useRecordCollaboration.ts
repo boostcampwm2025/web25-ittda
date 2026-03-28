@@ -162,6 +162,9 @@ export function useRecordCollaboration(
         });
       }
       // 커밋 완료 시 스트리밍 값 제거
+      // BLOCK_INSERT는 제거하지 않음: 확정 시점에 User A가 아직 타이핑 중일 수 있으며,
+      // streaming value가 살아있어야 User B가 실시간 내용을 볼 수 있음.
+      // streaming value는 이후 BLOCK_SET_VALUE(blur 시) 또는 BLOCK_DELETE가 확정될 때 제거됨.
       setStreamingValues((prev) => {
         const nextStreaming = { ...prev };
 
@@ -169,6 +172,8 @@ export function useRecordCollaboration(
           (cmd: { type: string; blockId?: string; block?: RecordBlock }) => {
             if (cmd.type === 'BLOCK_SET_TITLE') {
               delete nextStreaming['title'];
+            } else if (cmd.type === 'BLOCK_INSERT') {
+              // 유지: User A가 타이핑 중일 수 있으므로 스트리밍 값 보존
             } else {
               const targetId = cmd.blockId || (cmd.block && cmd.block.id);
               if (targetId) {

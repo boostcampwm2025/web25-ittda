@@ -365,8 +365,12 @@ export function usePostEditorBlocks({
         return;
       }
       const targetId = updateFieldValue(getDefaultValue(type), undefined, type);
+      // 새 블록 생성 시 즉시 락 요청.
+      // 서버는 BLOCK_INSERT 처리 후 자동으로 락을 획득하고 LOCK_GRANTED를 보내는데,
+      // activeLockKeys에 해당 키가 없으면 handleLockGranted가 즉시 LOCK_RELEASE를 날려버림.
+      // 미리 activeLockKeys에 등록해두면 LOCK_GRANTED 수신 시 하트비트가 정상 시작됨.
+      if (draftId && targetId) requestLock(`block:${targetId}`);
       if (meta.requiresDrawer) {
-        if (draftId && targetId) requestLock(`block:${targetId}`);
         setActiveDrawer({ type, id: targetId });
       }
     },
