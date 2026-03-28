@@ -211,14 +211,16 @@ export default function LoginContent({
           window.location.href = callback || '/';
           return;
         }
+        // restore 실패 = 세션 만료 → 데이터 삭제됨
+        toast.info(
+          '이전 게스트 데이터가 만료되어 삭제되었어요.\n새 게스트 세션으로 시작할게요.',
+          { duration: 5000 },
+        );
       } catch {
-        // 네트워크 오류 등
+        // 네트워크 오류 등 restore 자체가 실패한 경우
+        toast.error('네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+        return;
       }
-      // restore 실패 = 세션 만료 → 데이터 삭제됨
-      toast.info(
-        '이전 게스트 데이터가 만료되어 삭제되었어요.\n새 게스트 세션으로 시작할게요.',
-        { duration: 5000 },
-      );
     }
     guestLogin({});
   };
