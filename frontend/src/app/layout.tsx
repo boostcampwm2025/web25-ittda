@@ -15,6 +15,7 @@ import { Suspense } from 'react';
 import StatusBarCover from '@/components/StatusBarCover';
 import NativeStatusBarSync from '@/components/NativeStatusBarSync';
 import NetworkGuard from '@/components/NetworkGuard';
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const notoSans = Noto_Sans_KR({
   variable: '--font-geist-sans',
@@ -253,6 +254,7 @@ export default function RootLayout({
             </ThemeProvider>
           </Providers>
         </AuthContext>
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
       </body>
     </html>
   );
