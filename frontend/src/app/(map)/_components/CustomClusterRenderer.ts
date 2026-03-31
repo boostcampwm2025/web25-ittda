@@ -18,14 +18,15 @@ export class CustomClusterRenderer implements Renderer {
     const color = getColor(count);
     const isMobile =
       typeof window !== 'undefined' && window.innerWidth < 640;
-    const size = isMobile ? 40 : 56;
+    const size = isMobile ? 46 : 62;
     const badgeOffset = isMobile ? -6 : -8;
     const badgeSize = isMobile ? 20 : 24;
     const badgeFontSize = isMobile ? '0.65rem' : '0.75rem';
 
     // Map 아이콘 SVG
+    const iconSize = isMobile ? 18 : 22;
     const svg = `
-      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <svg width="${iconSize}" height="${iconSize}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
       </svg>
     `;
