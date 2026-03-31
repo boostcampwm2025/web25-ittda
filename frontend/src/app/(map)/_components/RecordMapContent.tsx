@@ -239,7 +239,11 @@ export default function RecordMapContent({
           <GoogleMap
             posts={allPosts}
             selectedPostId={selectedPostId}
-            onSelectPost={setSelectedPostId}
+            onSelectPost={(id) => {
+              setSelectedPostId(id);
+              // 클러스터 선택 시 검색 마커 제거 (fitBounds 이동으로 검색 핀이 뷰포트 안으로 들어오는 문제)
+              if (Array.isArray(id)) setSearchedLocation(null);
+            }}
             onBoundsChange={handleBoundsChange}
             onMapClick={() => setSelectedPostId(null)}
             mapRef={mapRef}
