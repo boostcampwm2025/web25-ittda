@@ -5,11 +5,9 @@ const config: CapacitorConfig = {
   appName: '잇다',
   webDir: 'src',
   server: {
-    // 로컬 테스트용 — 배포 전 반드시 https://ittda.vercel.app 으로 되돌릴 것
-    url: 'http://localhost:3000',
-    cleartext: true,
-    androidScheme: 'http',
-    allowNavigation: ['ittda.vercel.app', 'ittda-be.o-r.kr', 'localhost'],
+    url: 'https://ittda.vercel.app',
+    androidScheme: 'https',
+    allowNavigation: ['ittda.vercel.app', 'ittda-be.o-r.kr'],
   },
   ios: {
     scrollEnabled: true,
