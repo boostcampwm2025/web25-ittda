@@ -114,7 +114,7 @@ export default function SearchPage() {
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
       <header
         style={{ marginTop: 'calc(env(safe-area-inset-top))' }}
-        className="fixed top-0 left-0 right-0 z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-3 sm:p-4 space-y-3 sm:space-y-4"
+        className="fixed top-0 left-0 right-0 max-w-4xl mx-auto z-20 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md p-3 sm:p-4 space-y-3 sm:space-y-4"
       >
         {/* 검색바 영역 */}
         <div className="flex items-center gap-2 sm:gap-3">

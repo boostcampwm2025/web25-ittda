@@ -232,7 +232,7 @@ export default function RecordMapContent({
 
   return (
     // fixed inset-0: 전체 화면 커버 (status bar 영역 포함) + 문서 스크롤 이슈 방지
-    <div className="fixed inset-0 overflow-hidden bg-white">
+    <div className="fixed top-0 bottom-0 left-0 right-0 max-w-4xl mx-auto overflow-hidden bg-white">
       <APIProvider apiKey={apiKey!}>
         {/* GoogleMap: vaul-drawer-wrapper 밖 → filter drawer transform 영향 안 받음 */}
         <div className="absolute inset-0">
