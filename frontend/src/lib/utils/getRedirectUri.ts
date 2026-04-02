@@ -3,6 +3,7 @@ type GetRedirectUriArg = {
   callback?: string;
   forceAccountSelect?: boolean;
   mobile?: boolean;
+  android?: boolean;
 };
 
 export const getRedirectUri = ({
@@ -10,6 +11,7 @@ export const getRedirectUri = ({
   callback,
   forceAccountSelect = false,
   mobile = false,
+  android = false,
 }: GetRedirectUriArg) => {
   const baseUrl = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/v1/auth/${provider}`;
 
@@ -22,6 +24,9 @@ export const getRedirectUri = ({
   }
   if (mobile) {
     params.set('mobile', 'true');
+  }
+  if (android) {
+    params.set('android', 'true');
   }
 
   const queryString = params.toString();

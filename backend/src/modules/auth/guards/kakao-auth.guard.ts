@@ -12,9 +12,19 @@ export class KakaoAuthGuard extends AuthGuard('kakao') {
     const response = context.switchToHttp().getResponse();
     const prompt = request.query.prompt;
     const mobile = request.query.mobile;
+    const android = request.query.android;
 
     if (mobile === 'true') {
       response.cookie('oauth_mobile', '1', {
+        maxAge: 5 * 60 * 1000,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+      });
+    }
+    if (android === 'true') {
+      response.cookie('oauth_android', '1', {
         maxAge: 5 * 60 * 1000,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

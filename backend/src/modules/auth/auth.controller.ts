@@ -83,9 +83,13 @@ export class AuthController {
 
     // 3. FE로 리다이렉트 (모바일 앱은 커스텀 스킴으로)
     const isMobile = req.cookies?.oauth_mobile === '1';
+    const isAndroid = req.cookies?.oauth_android === '1';
     res.clearCookie('oauth_mobile', { path: '/' });
+    res.clearCookie('oauth_android', { path: '/' });
     const redirectUrl = isMobile
-      ? `ittda://oauth/callback?code=${code}`
+      ? isAndroid
+        ? `intent://oauth/callback?code=${code}#Intent;scheme=ittda;package=com.ittda.app;end`
+        : `ittda://oauth/callback?code=${code}`
       : `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
     return res.redirect(302, redirectUrl);
   }
@@ -117,9 +121,13 @@ export class AuthController {
     });
 
     const isMobile = req.cookies?.oauth_mobile === '1';
+    const isAndroid = req.cookies?.oauth_android === '1';
     res.clearCookie('oauth_mobile', { path: '/' });
+    res.clearCookie('oauth_android', { path: '/' });
     const redirectUrl = isMobile
-      ? `ittda://oauth/callback?code=${code}`
+      ? isAndroid
+        ? `intent://oauth/callback?code=${code}#Intent;scheme=ittda;package=com.ittda.app;end`
+        : `ittda://oauth/callback?code=${code}`
       : `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
     return res.redirect(302, redirectUrl);
   }
