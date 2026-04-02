@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import { Loader2, Search, Tag, X } from 'lucide-react';
 import {
   Drawer,
@@ -26,6 +27,7 @@ export default function TagSearchDrawer({
   onReset,
 }: Props) {
   const [keyword, setKeyword] = useState('');
+  const imeProps = useIMEInput(setKeyword);
   const { data: tags, isPending } = useQuery(userProfileTagSummaryOptions(10));
 
   const suggestedTags = useMemo(() => {
@@ -92,7 +94,7 @@ export default function TagSearchDrawer({
                   : '태그를 입력하세요'
               }
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
+              {...imeProps}
               onKeyDown={handleKeyDown}
               className="w-full py-3 sm:py-4 pl-10 sm:pl-12 pr-3 sm:pr-4 rounded-lg sm:rounded-xl bg-gray-50 dark:bg-white/5 border-none mobile-input text-itta-black dark:text-white placeholder-gray-400 outline-none focus:ring-1 focus:ring-itta-point/60 transition-all shadow-inner"
             />

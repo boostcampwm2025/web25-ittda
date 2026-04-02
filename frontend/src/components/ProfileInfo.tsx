@@ -1,6 +1,7 @@
 'use client';
 
 import { Camera, X } from 'lucide-react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import Image from 'next/image';
 import { useRef, useMemo, useEffect } from 'react';
 import { useProfileEdit } from '../app/(main)/profile/edit/_components/ProfileEditContext';
@@ -17,6 +18,7 @@ export default function ProfileInfo({
 }: ProfileInfoProps) {
   const { image, setImage, nickname, setNickname, email } = useProfileEdit();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nicknameImeProps = useIMEInput(setNickname);
 
   // Blob URL을 메모이제이션하여 불필요한 재생성 방지
   const imagePreviewUrl = useMemo(() => {
@@ -114,7 +116,7 @@ export default function ProfileInfo({
               <input
                 type="text"
                 value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
+                {...nicknameImeProps}
                 className={`w-full border-b-2 bg-transparent px-1 py-4 text-base font-semibold transition-all outline-none dark:text-white dark:placeholder-gray-700 text-itta-black placeholder-gray-300 ${
                   nicknameError
                     ? 'border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500'

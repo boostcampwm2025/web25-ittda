@@ -17,6 +17,7 @@ import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import AssetImage from '@/components/AssetImage';
 import { GroupEditResponse } from '@/lib/types/groupResponse';
 import { memo, useCallback } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 
 type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
   groupId: string;
@@ -60,12 +61,7 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
     setGroupName('');
   }, [setGroupName]);
 
-  const handleGroupNameChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setGroupName(e.target.value);
-    },
-    [setGroupName],
-  );
+  const groupNameImeProps = useIMEInput(setGroupName);
 
   const handleNavigateToProfile = useCallback(() => {
     router.push(`/group/${groupId}/edit/profile`);
@@ -139,7 +135,7 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
             disabled={me.role === 'VIEWER'}
             value={groupName}
             placeholder="그룹명을 작성해주세요."
-            onChange={handleGroupNameChange}
+            {...groupNameImeProps}
             className={`mobile-input w-full border-b-2 bg-transparent px-1 py-4 text-sm font-semibold transition-all outline-none dark:text-white dark:placeholder-gray-700 text-itta-black placeholder-gray-300 ${
               groupNameError
                 ? 'border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500'

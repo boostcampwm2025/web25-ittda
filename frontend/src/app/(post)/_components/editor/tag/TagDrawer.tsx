@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Tag as TagIcon, Loader2 } from 'lucide-react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import {
   Drawer,
   DrawerClose,
@@ -27,6 +28,7 @@ export default function TagDrawer({
   onUpdateTags,
 }: TagDrawerProps) {
   const [inputValue, setInputValue] = useState('');
+  const imeProps = useIMEInput(setInputValue);
   const [showWarning, setShowWarning] = useState(false); // 경고 메시지
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [isPending, setIsPending] = useState(true);
@@ -34,6 +36,21 @@ export default function TagDrawer({
   const prevTags = tags.tags;
   const MAX_TAGS = 4;
   const isLimitReached = prevTags.length >= MAX_TAGS;
+
+  // 키보드 닫힘 감지 → vaul이 safe-area 포함한 레이아웃을 재계산하도록 resize 이벤트 발생
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    let prevHeight = vv.height;
+    const onResize = () => {
+      if (vv.height > prevHeight) {
+        window.dispatchEvent(new Event('resize'));
+      }
+      prevHeight = vv.height;
+    };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     async function fetchTags() {
@@ -172,7 +189,7 @@ export default function TagDrawer({
                 </span>
                 <input
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  {...imeProps}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();

@@ -4,6 +4,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useState } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import Input from '../Input';
 import { Search, MapPin, Loader2, X } from 'lucide-react';
 
@@ -29,6 +30,7 @@ export function MapSearchBar({
 }: MapSearchBarProps) {
   const [query, setQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const queryImeProps = useIMEInput(setQuery);
 
   // 검색 실행 함수
   const triggerSearch = () => {
@@ -60,7 +62,7 @@ export function MapSearchBar({
             <Input.Field
               placeholder={placeholder}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              {...queryImeProps}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') triggerSearch();
               }}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import { useRouter } from 'next/navigation';
 import Back from '@/components/Back';
 import { useApiPost } from '@/hooks/useApi';
@@ -18,6 +19,9 @@ export default function InquiryPage() {
   const [otherText, setOtherText] = useState('');
   const [content, setContent] = useState('');
   const [email, setEmail] = useState('');
+  const otherTextImeProps = useIMEInput(setOtherText);
+  const contentImeProps = useIMEInput(setContent);
+  const emailImeProps = useIMEInput(setEmail);
 
   const { mutate: submit, isPending } = useApiPost('/api/inquiries', {
     onSuccess: () => {
@@ -97,7 +101,7 @@ export default function InquiryPage() {
                   {cat === '기타' && category === '기타' && (
                     <input
                       value={otherText}
-                      onChange={(e) => setOtherText(e.target.value)}
+                      {...otherTextImeProps}
                       placeholder="직접 입력"
                       maxLength={80}
                       className="flex-1 h-8 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1E1E1E] text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
@@ -118,7 +122,7 @@ export default function InquiryPage() {
             </p>
             <textarea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              {...contentImeProps}
               placeholder="내 답변"
               rows={6}
               maxLength={2000}
@@ -141,7 +145,7 @@ export default function InquiryPage() {
             <input
               type="text"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              {...emailImeProps}
               placeholder="내 답변"
               className={`w-full h-11 px-4 rounded-xl border bg-gray-50 dark:bg-[#1E1E1E] text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-colors ${
                 emailError

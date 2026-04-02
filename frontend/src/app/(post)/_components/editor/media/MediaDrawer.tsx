@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import {
   Drawer,
   DrawerContent,
@@ -40,6 +41,7 @@ const CATEGORIES = [
 export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
   const [isManualInput, setIsManualInput] = useState(false);
   const [query, setQuery] = useState('');
+  const queryImeProps = useIMEInput(setQuery);
   const [results, setResults] = useState<MediaValue[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -126,7 +128,7 @@ export default function MediaDrawer({ onClose, onSelect }: MediaDrawerProps) {
                       type="text"
                       placeholder="이름을 입력하세요"
                       value={query}
-                      onChange={(e) => setQuery(e.target.value)}
+                      {...queryImeProps}
                       className="w-full bg-[#F4F4F4] dark:bg-white/5 border-none rounded-lg sm:rounded-xl px-10 sm:px-12 py-3 sm:py-4 mobile-input font-medium focus:ring-1 focus:ring-[#10B981] transition-all outline-none text-itta-black dark:text-white"
                     />
                     <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400" />

@@ -9,6 +9,7 @@ import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
 import { cn } from '@/lib/utils';
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import { DateValue, TextValue, TimeValue } from '@/lib/types/record';
 
 interface DateProps {
@@ -86,6 +87,7 @@ export const ContentField = ({
   onLockedClick,
 }: ContentProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imeProps = useIMEInput(onChange);
   const isInternalFocus = useRef(false);
 
   useEffect(() => {
@@ -174,7 +176,7 @@ export const ContentField = ({
           disabled={isLocked}
           onFocus={handleFocusWrapper}
           onBlur={handleBlur}
-          onChange={(e) => onChange(e.target.value)}
+          {...imeProps}
           className="w-full h-auto border-none focus:ring-0 outline-none text-base leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
         />
       </div>
