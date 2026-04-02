@@ -5,7 +5,8 @@
   "scripts": {
     "sync": "cap sync",
     "open:ios": "cap open ios",
-    "open:android": "cap open android"
+    "open:android": "cap open android",
+    "dev:android": "adb reverse tcp:3000 tcp:3000 && cap sync android && cap run android"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
+    "@types/node": "^25.5.0",
     "typescript": "^5.9.3"
   }
 }
