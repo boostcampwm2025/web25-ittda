@@ -23,6 +23,11 @@ const isNativePlatform = () =>
     window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
   ).Capacitor?.isNativePlatform?.();
 
+const isAndroidPlatform = () =>
+  typeof window !== 'undefined' &&
+  (window as unknown as { Capacitor?: { getPlatform?: () => string } })
+    .Capacitor?.getPlatform?.() === 'android';
+
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
   token_not_found: '인증 토큰을 받지 못했습니다.',
@@ -241,6 +246,7 @@ export default function LoginContent({
             callback,
             forceAccountSelect,
             mobile: true,
+            android: isAndroidPlatform(),
           }),
         });
         return;
