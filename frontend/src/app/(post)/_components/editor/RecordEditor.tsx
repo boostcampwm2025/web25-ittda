@@ -537,59 +537,64 @@ export default function PostEditor({
 
     setIsSaving(true);
 
-    if (groupId) {
-      await refreshGroupData(groupId);
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-    }
-
-    // 개인용 게시글 이미지 -> id 변환 로직
-    const finalizedBlocks = await Promise.all(
-      filteredBlocks.map(async (block) => {
-        if (block.type === 'photos') {
-          const tempUrls = block.value.tempUrls || [];
-          const filesToUpload: File[] = [];
-
-          // Ref에서 실제 파일 매칭
-          tempUrls.forEach((url) => {
-            const file = pendingFilesRef.current.get(url);
-            if (file) filesToUpload.push(file);
-          });
-
-          if (filesToUpload.length > 0) {
-            const newMediaIds = await uploadMultipleMedia(filesToUpload);
-            const updatedValue = {
-              mediaIds: [...(block.value.mediaIds || []), ...newMediaIds],
-              tempUrls: [], // 업로드 완료 후 비움
-            };
-
-            return { ...block, value: updatedValue };
-          }
-        }
-        return block;
-      }),
-    );
-
-    // 빈 photos 블록 필터링 (mediaIds와 tempUrls가 모두 비어있는 경우 제거)
-    const validBlocks = finalizedBlocks.filter((block) => {
-      if (block.type === 'photos') {
-        const mediaIds = block.value.mediaIds || [];
-        const tempUrls = block.value.tempUrls || [];
-        return mediaIds.length > 0 || tempUrls.length > 0;
+    try {
+      if (groupId) {
+        await refreshGroupData(groupId);
+        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
       }
-      return true;
-    });
 
-    const postPayload: CreateRecordRequest = {
-      title,
-      blocks: mapBlocksToPayload(validBlocks, isDraft),
-      ...(groupId ? { groupId } : {}),
-      ...(!postId ? { scope } : {}),
-    };
+      // 개인용 게시글 이미지 -> id 변환 로직
+      const finalizedBlocks = await Promise.all(
+        filteredBlocks.map(async (block) => {
+          if (block.type === 'photos') {
+            const tempUrls = block.value.tempUrls || [];
+            const filesToUpload: File[] = [];
 
-    queryClient.invalidateQueries({ queryKey: ['my', 'records'] });
-    execute({
-      payload: postPayload,
-    });
+            // Ref에서 실제 파일 매칭
+            tempUrls.forEach((url) => {
+              const file = pendingFilesRef.current.get(url);
+              if (file) filesToUpload.push(file);
+            });
+
+            if (filesToUpload.length > 0) {
+              const newMediaIds = await uploadMultipleMedia(filesToUpload);
+              const updatedValue = {
+                mediaIds: [...(block.value.mediaIds || []), ...newMediaIds],
+                tempUrls: [], // 업로드 완료 후 비움
+              };
+
+              return { ...block, value: updatedValue };
+            }
+          }
+          return block;
+        }),
+      );
+
+      // 빈 photos 블록 필터링 (mediaIds와 tempUrls가 모두 비어있는 경우 제거)
+      const validBlocks = finalizedBlocks.filter((block) => {
+        if (block.type === 'photos') {
+          const mediaIds = block.value.mediaIds || [];
+          const tempUrls = block.value.tempUrls || [];
+          return mediaIds.length > 0 || tempUrls.length > 0;
+        }
+        return true;
+      });
+
+      const postPayload: CreateRecordRequest = {
+        title,
+        blocks: mapBlocksToPayload(validBlocks, isDraft),
+        ...(groupId ? { groupId } : {}),
+        ...(!postId ? { scope } : {}),
+      };
+
+      queryClient.invalidateQueries({ queryKey: ['my', 'records'] });
+      execute({
+        payload: postPayload,
+      });
+    } catch {
+      toast.error('사진 업로드에 실패했습니다. 다시 시도해 주세요.');
+      setIsSaving(false);
+    }
   };
 
   const { throttled: throttledEmitStream, flush: flushEmitStream } =
