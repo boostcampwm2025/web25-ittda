@@ -2,6 +2,11 @@ name: Android APK Build
 
 on:
   workflow_dispatch:
+    inputs:
+      server_url:
+        description: '앱이 로드할 서버 URL (비워두면 프로덕션 https://ittda.vercel.app 사용)'
+        required: false
+        default: ''
 
 jobs:
   android:
@@ -33,6 +38,8 @@ jobs:
 
       - name: Sync Capacitor
         working-directory: mobile-app
+        env:
+          CAPACITOR_SERVER_URL: ${{ github.event.inputs.server_url }}
         run: pnpm exec cap sync android
 
       - name: Create local.properties
