@@ -72,6 +72,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         richColors
         closeButton
         duration={3000}
+        offset={{ top: 32, bottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}
         toastOptions={{
           classNames: {
             error: 'bg-red-500 text-white',
