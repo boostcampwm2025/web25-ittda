@@ -4,6 +4,35 @@ import { TableValue } from '@/lib/types/recordField';
 import { cn } from '@/lib/utils';
 import { Plus, MinusCircle, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
+
+interface TableCellInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  onFocus?: () => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
+  placeholder?: string;
+  className?: string;
+}
+
+function TableCellInput({ value, onChange, disabled, onFocus, onBlur, inputRef, placeholder, className }: TableCellInputProps) {
+  const imeProps = useIMEInput(onChange);
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      value={value}
+      {...imeProps}
+      disabled={disabled}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+}
 
 interface TableFieldProps {
   data: TableValue | null;
@@ -183,11 +212,10 @@ export const TableField = ({
                       key={cIdx}
                       className="p-0 border-r border-gray-100/50 dark:border-white/5 last:border-none overflow-hidden"
                     >
-                      <input
-                        ref={rIdx === 0 && cIdx === 0 ? firstInputRef : null}
-                        type="text"
+                      <TableCellInput
+                        inputRef={rIdx === 0 && cIdx === 0 ? firstInputRef : null}
                         value={cell}
-                        onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
+                        onChange={(val) => updateCell(rIdx, cIdx, val)}
                         disabled={isLocked && !isMyLock}
                         onFocus={handleFocusWrapper}
                         onBlur={handleBlurWrapper}

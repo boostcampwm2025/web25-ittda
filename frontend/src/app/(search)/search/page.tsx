@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import { useRouter } from 'next/navigation';
 import { Search, X, Loader2, Clock } from 'lucide-react';
 import { FilterChip } from '@/components/search/FilterChip';
@@ -104,6 +105,7 @@ export default function SearchPage() {
 
     debouncedUpdateQuery(val);
   };
+  const queryImeProps = useIMEInput(handleQueryChange);
 
   // 키워드 클릭 핸들러
   const handleKeywordClick = (val: string) => {
@@ -124,7 +126,7 @@ export default function SearchPage() {
               type="text"
               placeholder="제목이나 내용으로 검색"
               value={localQuery}
-              onChange={(e) => handleQueryChange(e.target.value)}
+              {...queryImeProps}
               className="w-full rounded-lg px-9 sm:px-11 py-2.5 sm:py-3 bg-gray-50 dark:bg-white/5 mobile-input outline-none dark:text-white"
             />
             <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400" />

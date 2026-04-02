@@ -6,6 +6,7 @@ import {
   LucideMusic4,
 } from 'lucide-react';
 import { CategoryChip } from './MediaCategoryChip';
+import { useIMEInput } from '@/hooks/useIMEInput';
 
 interface ManualInputProps {
   manualType: string;
@@ -30,6 +31,8 @@ export const MediaManualInput = ({
   manualYear,
   setManualYear,
 }: ManualInputProps) => {
+  const titleImeProps = useIMEInput(setManualTitle);
+  const yearImeProps = useIMEInput(setManualYear);
   return (
     <div className="px-4 sm:px-8 py-1.5 sm:py-2 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {/* 카테고리 섹션 */}
@@ -70,7 +73,7 @@ export const MediaManualInput = ({
           type="text"
           placeholder="직접 입력해 주세요"
           value={manualTitle}
-          onChange={(e) => setManualTitle(e.target.value)}
+          {...titleImeProps}
           className="w-full bg-transparent border-b border-gray-100 dark:border-white/10 py-2.5 sm:py-3 mobile-input font-bold text-[#333] dark:text-white outline-none focus:border-itta-point transition-colors"
         />
       </section>
@@ -90,7 +93,7 @@ export const MediaManualInput = ({
             type="text"
             inputMode="numeric"
             value={manualYear}
-            onChange={(e) => setManualYear(e.target.value)}
+            {...yearImeProps}
             className="w-full bg-transparent text-lg sm:text-xl font-bold text-[#333] dark:text-white outline-none scrollbar-hide"
           />
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col text-itta-gray3 gap-0.5 sm:gap-1">

@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import Image from 'next/image';
 import { PresenceMember } from '@/hooks/useDraftPresence';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
@@ -101,14 +102,13 @@ export default function RecordTitleInput({
     3000,
   );
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVal = e.target.value;
+  const handleChangeValue = (newVal: string) => {
     setTitle(newVal);
-
     if (isMyLock) {
       throttledApplyPatch(newVal);
     }
   };
+  const imeProps = useIMEInput(handleChangeValue);
 
   const handleBlur = () => {
     if (!draftId) return;
@@ -218,7 +218,7 @@ export default function RecordTitleInput({
         type="text"
         placeholder="제목을 입력하세요"
         value={title}
-        onChange={handleChange}
+        {...imeProps}
         onFocus={handleFocus}
         onBlur={handleBlur}
         disabled={isLockedByOther}
