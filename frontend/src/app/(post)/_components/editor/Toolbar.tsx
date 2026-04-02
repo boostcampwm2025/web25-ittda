@@ -57,7 +57,7 @@ export default function Toolbar({ onAddBlock, onOpenDrawer }: ToolbarProps) {
 
       <div
         className="w-full bg-white dark:bg-[#2A2A2A] border-t border-gray-100 dark:border-white/5 px-2 pt-4 sm:px-4 sm:pt-3 flex justify-around items-center"
-        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
       >
         {TOOL_ITEMS.map(({ id, Icon }) => (
           <button
