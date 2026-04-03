@@ -175,79 +175,85 @@ export default function SharedHeaderActions() {
         >
           <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
         </DrawerTrigger>
-        <DrawerContent className="w-full px-6 sm:px-8 pt-4 pb-8 sm:pb-10">
-          <div className="flex justify-between items-center mb-6 sm:mb-8 w-full">
-            <DrawerHeader className="pl-0">
-              <DrawerTitle className="flex flex-col justify-center items-start pl-0">
-                <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
-                  CREATE GROUP
-                </span>
-                <span className="text-base sm:text-xl dark:text-white text-itta-black">
-                  새 공유 기록함 만들기
-                </span>
-              </DrawerTitle>
-            </DrawerHeader>
-            <DrawerClose
-              onClick={() => setShowCreateModal(false)}
-              className="cursor-pointer p-2 text-gray-400"
-            >
-              <X className="w-6 h-6" />
-            </DrawerClose>
-          </div>
+        <DrawerContent className="h-[85%]">
+          <div className="w-full flex flex-col h-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 pt-4">
+              <div className="flex justify-between items-center mb-6 sm:mb-8 w-full">
+                <DrawerHeader className="pl-0">
+                  <DrawerTitle className="flex flex-col justify-center items-start pl-0">
+                    <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                      CREATE GROUP
+                    </span>
+                    <span className="text-base sm:text-xl dark:text-white text-itta-black">
+                      새 공유 기록함 만들기
+                    </span>
+                  </DrawerTitle>
+                </DrawerHeader>
+                <DrawerClose
+                  onClick={() => setShowCreateModal(false)}
+                  className="cursor-pointer p-2 text-gray-400"
+                >
+                  <X className="w-6 h-6" />
+                </DrawerClose>
+              </div>
 
-          <div className="space-y-4 sm:space-y-6 mb-8 sm:mb-10">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                기록함 이름
-              </label>
-              <input
-                autoFocus
-                type="text"
-                placeholder="예: 제주도 여행기"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                className="w-full border-b-2 bg-transparent py-2.5 sm:py-3 text-base sm:text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
-              />
-              {groupNicknameError ? (
-                <p className="text-[10px] text-red-500 font-medium">
-                  {groupNicknameError}
-                </p>
-              ) : (
-                <p className="text-[10px] text-gray-400 px-1">
-                  * 그룹 이름은 한글/영문/숫자/공백만 사용이 가능합니다.
-                </p>
-              )}
+              <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    기록함 이름
+                  </label>
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="예: 제주도 여행기"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    className="w-full border-b-2 bg-transparent py-2.5 sm:py-3 text-base sm:text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
+                  />
+                  {groupNicknameError ? (
+                    <p className="text-[10px] text-red-500 font-medium">
+                      {groupNicknameError}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-gray-400 px-1">
+                      * 그룹 이름은 한글/영문/숫자/공백만 사용이 가능합니다.
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="flex gap-4">
-            <DrawerClose
-              onClick={() => setShowCreateModal(false)}
-              className="cursor-pointer flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400"
-            >
-              취소
-            </DrawerClose>
-            <button
-              onClick={handleCreateGroup}
-              disabled={
-                !newGroupName.trim() || !!groupNicknameError || isCreating
-              }
-              className={cn(
-                'flex-2 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2',
-                newGroupName.trim() && !isCreating && !groupNicknameError
-                  ? 'bg-[#10B981] text-white active:scale-95 cursor-pointer'
-                  : 'bg-gray-100 text-gray-300 cursor-not-allowed',
-              )}
-            >
-              {isCreating ? (
-                '생성 중...'
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  기록함 만들기
-                </>
-              )}
-            </button>
+            <div className="px-6 sm:px-8 pb-8 sm:pb-10 pt-4">
+              <div className="flex gap-4">
+                <DrawerClose
+                  onClick={() => setShowCreateModal(false)}
+                  className="cursor-pointer flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400"
+                >
+                  취소
+                </DrawerClose>
+                <button
+                  onClick={handleCreateGroup}
+                  disabled={
+                    !newGroupName.trim() || !!groupNicknameError || isCreating
+                  }
+                  className={cn(
+                    'flex-2 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2',
+                    newGroupName.trim() && !isCreating && !groupNicknameError
+                      ? 'bg-[#10B981] text-white active:scale-95 cursor-pointer'
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+                  )}
+                >
+                  {isCreating ? (
+                    '생성 중...'
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      기록함 만들기
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </DrawerContent>
       </Drawer>
