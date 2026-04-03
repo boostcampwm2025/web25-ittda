@@ -37,21 +37,6 @@ export default function TagDrawer({
   const MAX_TAGS = 4;
   const isLimitReached = prevTags.length >= MAX_TAGS;
 
-  // 키보드 닫힘 감지 → vaul이 safe-area 포함한 레이아웃을 재계산하도록 resize 이벤트 발생
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    let prevHeight = vv.height;
-    const onResize = () => {
-      if (vv.height > prevHeight) {
-        window.dispatchEvent(new Event('resize'));
-      }
-      prevHeight = vv.height;
-    };
-    vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
-  }, []);
-
   useEffect(() => {
     async function fetchTags() {
       try {
@@ -141,8 +126,9 @@ export default function TagDrawer({
 
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent>
-        <div className="w-full p-6 sm:p-8 pb-10 sm:pb-12">
+      <DrawerContent className="h-[85%]">
+        <div className="w-full flex flex-col h-full overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
           <DrawerHeader className="px-0 items-start text-left">
             <div className="flex flex-col text-left">
               <span className="text-[10px] sm:text-[11px] font-bold text-[#10B981] uppercase tracking-[0.2em] sm:tracking-widest leading-none mb-1">
@@ -214,7 +200,7 @@ export default function TagDrawer({
 
           {/* 이전 사용 태그 섹션 */}
 
-          <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+          <div className="space-y-3 sm:space-y-4">
             <p className="text-[9px] sm:text-[10px] font-bold text-itta-gray3">
               이전에 사용한 태그
             </p>
@@ -263,6 +249,10 @@ export default function TagDrawer({
             )}
           </div>
 
+        </div>
+
+        {/* 고정 푸터 */}
+        <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2">
           {/* 경고 메시지 영역 (이후 토스트로 변경?)*/}
           <div className="h-5 sm:h-6 mb-1.5 sm:mb-2 flex justify-center items-center">
             {showWarning && (
@@ -275,6 +265,7 @@ export default function TagDrawer({
           <DrawerClose className="w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold bg-itta-black text-white active:scale-95 transition-all shadow-lg shadow-black/10 dark:bg-white dark:text-black">
             확인
           </DrawerClose>
+        </div>
         </div>
       </DrawerContent>
     </Drawer>
