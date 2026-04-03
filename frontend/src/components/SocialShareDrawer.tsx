@@ -68,29 +68,37 @@ export default function SocialShareDrawer({
   const { data } = useMediaResolveSingle(record.image ?? undefined);
   const [copied, setCopied] = useState(false);
 
-  const canNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
+  const isNative =
+    typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
+  const canNativeShare =
+    isNative || (typeof navigator !== 'undefined' && !!navigator.share);
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(path);
+      const { copyToClipboard } = await import('@/lib/utils/clipboard');
+      await copyToClipboard(path);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.info('클립보드를 지원하지 않는 환경입니다.');
-      // 클립보드 API 미지원 환경에서는 무시
     }
   };
 
   const handleNativeShare = async () => {
-    if (!navigator.share) return;
+    const shareData = {
+      title: record.title || '오늘의 기록을 확인해보세요',
+      text:
+        record.content ||
+        '기억과 맥락을 잇는 우리의 소중한 순간을 확인해보세요.',
+      url: path,
+    };
     try {
-      await navigator.share({
-        title: record.title || '오늘의 기록을 확인해보세요',
-        text:
-          record.content ||
-          '기억과 맥락을 잇는 우리의 소중한 순간을 확인해보세요.',
-        url: path,
-      });
+      if (isNative) {
+        const { Share } = await import('@capacitor/share');
+        await Share.share(shareData);
+      } else if (navigator.share) {
+        await navigator.share(shareData);
+      }
     } catch {
       // 사용자가 공유 취소한 경우 등 — 무시
     }

@@ -100,7 +100,8 @@ export default function GroupInviteDrawer({ groupId }: GroupInviteDrawerProps) {
   const handleCopyCode = async () => {
     const code = inviteResult?.code || '잇다-';
     try {
-      await navigator.clipboard.writeText(getFullInviteUrl(code));
+      const { copyToClipboard } = await import('@/lib/utils/clipboard');
+      await copyToClipboard(getFullInviteUrl(code));
       setCopyStatus('success');
     } catch {
       setCopyStatus('error');
@@ -123,7 +124,8 @@ export default function GroupInviteDrawer({ groupId }: GroupInviteDrawerProps) {
     } else {
       // navigator.share 미지원 환경 → 링크 복사
       try {
-        await navigator.clipboard.writeText(url);
+        const { copyToClipboard } = await import('@/lib/utils/clipboard');
+        await copyToClipboard(url);
         setCopyStatus('success');
         setTimeout(() => setCopyStatus('idle'), 2000);
       } catch {
