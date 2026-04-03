@@ -22,7 +22,7 @@ html.cap-native [data-layout-spacer] {
 
 /* cap-native: StatusBarCover는 native UIView가 담당하므로 web layer에서 숨김.
    숨기면 drawer 열릴 때 statusbar 영역도 콘텐츠 영역과 동일한 배경 + DrawerOverlay로 seamless하게 렌더링됨. */
-html.cap-native [data-status-bar-cover] {
+html.cap-native:not(.cap-android) [data-status-bar-cover] {
   display: none;
 }
 
