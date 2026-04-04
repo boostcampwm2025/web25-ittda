@@ -35,7 +35,7 @@ const config: CapacitorConfig = {
       showSpinner: false,
     },
     Keyboard: {
-      resize: 'body',
+      resize: 'none',
       scrollAssist: false,
     },
   },
