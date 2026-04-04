@@ -8,5 +8,14 @@ project(':capacitor-app').projectDir = new File('../../node_modules/.pnpm/@capac
 include ':capacitor-browser'
 project(':capacitor-browser').projectDir = new File('../../node_modules/.pnpm/@capacitor+browser@7.0.4_@capacitor+core@7.5.0/node_modules/@capacitor/browser/android')
 
+include ':capacitor-clipboard'
+project(':capacitor-clipboard').projectDir = new File('../../node_modules/.pnpm/@capacitor+clipboard@7.0.4_@capacitor+core@7.5.0/node_modules/@capacitor/clipboard/android')
+
+include ':capacitor-share'
+project(':capacitor-share').projectDir = new File('../../node_modules/.pnpm/@capacitor+share@7.0.4_@capacitor+core@7.5.0/node_modules/@capacitor/share/android')
+
 include ':capacitor-splash-screen'
 project(':capacitor-splash-screen').projectDir = new File('../../node_modules/.pnpm/@capacitor+splash-screen@7.0.5_@capacitor+core@7.5.0/node_modules/@capacitor/splash-screen/android')
+
+include ':capacitor-status-bar'
+project(':capacitor-status-bar').projectDir = new File('../../node_modules/.pnpm/@capacitor+status-bar@7.0.6_@capacitor+core@7.5.0/node_modules/@capacitor/status-bar/android')
