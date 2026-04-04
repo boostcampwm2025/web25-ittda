@@ -67,18 +67,37 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // 세션 확정 시 스플래시 숨기기
+  // 세션 + 테마 모두 확정된 후 status bar 설정 → 스플래시 숨기기
+  // resolvedTheme가 결정되기 전에 숨기면 status bar가 잠깐 기본(light) 상태로 노출됨
   useEffect(() => {
     if (status === 'loading') return;
+    if (!resolvedTheme) return; // 테마 미확정 시 대기
     if (!isNativePlatform()) return;
 
     (async () => {
+      try {
+        const platform = (
+          window as unknown as { Capacitor?: { getPlatform?: () => string } }
+        ).Capacitor?.getPlatform?.();
+        if (platform === 'android') {
+          const { StatusBar, Style } = await import('@capacitor/status-bar');
+          await StatusBar.setStyle({
+            style: resolvedTheme === 'dark' ? Style.Dark : Style.Light,
+          });
+          // 커버뷰 배경색도 SplashScreen 숨기기 전에 미리 설정 (흰색 flash 방지)
+          (
+            window as unknown as {
+              AndroidBridge?: { themeChange: (t: string) => void };
+            }
+          ).AndroidBridge?.themeChange(resolvedTheme === 'dark' ? 'dark' : 'light');
+        }
+      } catch {}
       try {
         const { SplashScreen } = await import('@capacitor/splash-screen');
         await SplashScreen.hide({ fadeOutDuration: 300 });
       } catch {}
     })();
-  }, [status]);
+  }, [status, resolvedTheme]);
 
   useEffect(() => {
     if (pathname.startsWith('/invite')) {

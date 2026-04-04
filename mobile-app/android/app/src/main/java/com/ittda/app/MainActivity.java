@@ -1,5 +1,6 @@
 package com.ittda.app;
 
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
@@ -40,7 +41,10 @@ public class MainActivity extends BridgeActivity {
         statusBarCoverView = new View(this);
         statusBarCoverView.setClickable(false);
         statusBarCoverView.setFocusable(false);
-        statusBarCoverView.setBackgroundColor(Color.WHITE); // 기본: 라이트 모드
+        // JS 로드 전 flash 방지: 시스템 다크모드 설정으로 초기 배경색 결정
+        boolean isDarkMode = (getResources().getConfiguration().uiMode &
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        statusBarCoverView.setBackgroundColor(isDarkMode ? Color.parseColor("#121212") : Color.WHITE);
 
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,

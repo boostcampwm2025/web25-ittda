@@ -36,6 +36,7 @@ export default function NativeStatusBarSync() {
 
   // pathname 또는 테마 변경 시 기본 테마 갱신 + 전송 (drawer가 없을 때만)
   useEffect(() => {
+    if (!resolvedTheme) return; // 테마 미확정 시 잘못된 'light' fallback 방지
     const base = isMapPage ? 'transparent' : resolvedTheme === 'dark' ? 'dark' : 'light';
     baseThemeRef.current = base;
 
