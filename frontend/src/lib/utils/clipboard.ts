@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 /**
  * 클립보드 복사 유틸리티.
  *
@@ -5,16 +7,8 @@
  * 예외 없이 resolve되지만 실제 클립보드에 쓰지 않는 문제가 있어,
  * Android Capacitor에서는 @capacitor/clipboard 네이티브 플러그인을 사용합니다.
  */
-function isAndroidCapacitor() {
-  return (
-    typeof window !== 'undefined' &&
-    (window as unknown as { Capacitor?: { getPlatform?: () => string } })
-      .Capacitor?.getPlatform?.() === 'android'
-  );
-}
-
 export async function copyToClipboard(text: string): Promise<void> {
-  if (isAndroidCapacitor()) {
+  if (Capacitor.getPlatform() === 'android') {
     const { Clipboard } = await import('@capacitor/clipboard');
     await Clipboard.write({ string: text });
     return;

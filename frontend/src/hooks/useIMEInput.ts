@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * Android Capacitor WebView에서 한국어 등 IME 조합 입력 시 글자가 잘리는 문제를 방지하는 hook.
@@ -26,20 +27,11 @@ import { useRef } from 'react';
  *   <textarea ref={setRef} {...imeHandlers} />
  */
 
-function isAndroidCapacitor() {
-  return (
-    typeof window !== 'undefined' &&
-    (
-      window as unknown as { Capacitor?: { getPlatform?: () => string } }
-    ).Capacitor?.getPlatform?.() === 'android'
-  );
-}
-
 type InputElement = HTMLInputElement | HTMLTextAreaElement;
 
 export function useIMEInput(onChange: (value: string) => void) {
   const isComposingRef = useRef(false);
-  const isAndroid = isAndroidCapacitor();
+  const isAndroid = Capacitor.getPlatform() === 'android';
 
   // Android: 조합 중에도 onChange를 항상 호출해 React state = IME 현재값 유지.
   // 이렇게 하면 React re-render 시 node.value === localQuery → DOM 업데이트 스킵.
