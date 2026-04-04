@@ -27,23 +27,28 @@ public class MainActivity extends BridgeActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
 
-        // 네이티브 커버 뷰 추가 (iOS addStatusBarCover() 동일 패턴)
-        addStatusBarCover();
+        // JS 로드 전 flash 방지: 시스템 다크모드를 기준으로 커버뷰 배경색 + 아이콘 색상 초기 설정
+        boolean isDarkMode = (getResources().getConfiguration().uiMode &
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+
+        addStatusBarCover(isDarkMode);
+
+        WindowInsetsControllerCompat insetsController = new WindowInsetsControllerCompat(
+                getWindow(), getWindow().getDecorView()
+        );
+        insetsController.setAppearanceLightStatusBars(!isDarkMode);
 
         // WebView 로드 전에 브릿지 등록 (onStart보다 이른 시점 → 타이밍 문제 해소)
         getBridge().getWebView().addJavascriptInterface(new StatusBarBridge(), "AndroidBridge");
     }
 
     // iOS addStatusBarCover()에 대응: 상태바 높이만큼 View를 DecorView 최상단에 추가
-    private void addStatusBarCover() {
+    private void addStatusBarCover(boolean isDarkMode) {
         ViewGroup rootView = (ViewGroup) getWindow().getDecorView();
 
         statusBarCoverView = new View(this);
         statusBarCoverView.setClickable(false);
         statusBarCoverView.setFocusable(false);
-        // JS 로드 전 flash 방지: 시스템 다크모드 설정으로 초기 배경색 결정
-        boolean isDarkMode = (getResources().getConfiguration().uiMode &
-                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         statusBarCoverView.setBackgroundColor(isDarkMode ? Color.parseColor("#121212") : Color.WHITE);
 
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
