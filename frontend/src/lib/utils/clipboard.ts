@@ -1,9 +1,25 @@
 /**
  * 클립보드 복사 유틸리티.
- * Android WebView에서 navigator.clipboard.writeText()가 동작하지 않는 경우
- * textarea + execCommand 폴백을 사용합니다.
+ *
+ * Android Capacitor WebView에서 navigator.clipboard.writeText()가
+ * 예외 없이 resolve되지만 실제 클립보드에 쓰지 않는 문제가 있어,
+ * Android Capacitor에서는 @capacitor/clipboard 네이티브 플러그인을 사용합니다.
  */
+function isAndroidCapacitor() {
+  return (
+    typeof window !== 'undefined' &&
+    (window as unknown as { Capacitor?: { getPlatform?: () => string } })
+      .Capacitor?.getPlatform?.() === 'android'
+  );
+}
+
 export async function copyToClipboard(text: string): Promise<void> {
+  if (isAndroidCapacitor()) {
+    const { Clipboard } = await import('@capacitor/clipboard');
+    await Clipboard.write({ string: text });
+    return;
+  }
+
   if (navigator.clipboard && window.isSecureContext) {
     try {
       await navigator.clipboard.writeText(text);
@@ -13,7 +29,7 @@ export async function copyToClipboard(text: string): Promise<void> {
     }
   }
 
-  // Android WebView 폴백
+  // 최후 폴백: textarea + execCommand
   const textArea = document.createElement('textarea');
   textArea.value = text;
   textArea.style.cssText =
