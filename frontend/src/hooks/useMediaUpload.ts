@@ -22,7 +22,10 @@ export const useMediaUpload = () => {
       const fileInfos = await Promise.all(
         files.map(async (f) => ({
           file: f,
-          dimensions: await getImageDimensions(f),
+          dimensions: await getImageDimensions(f).catch(() => ({
+            width: 0,
+            height: 0,
+          })),
         })),
       );
 

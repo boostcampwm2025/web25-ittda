@@ -27,6 +27,9 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: isLocal,
   },
   plugins: {
+    CapacitorHttp: {
+      enabled: false,
+    },
     SplashScreen: {
       launchShowDuration: 0,
       launchAutoHide: false, // JS에서 직접 hide() 호출
