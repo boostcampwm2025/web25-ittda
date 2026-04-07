@@ -33,10 +33,8 @@ public class MainActivity extends BridgeActivity {
 
         addStatusBarCover(isDarkMode);
 
-        WindowInsetsControllerCompat insetsController = new WindowInsetsControllerCompat(
-                getWindow(), getWindow().getDecorView()
-        );
-        insetsController.setAppearanceLightStatusBars(!isDarkMode);
+        new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView())
+            .setAppearanceLightStatusBars(!isDarkMode);
 
         // WebView 로드 전에 브릿지 등록 (onStart보다 이른 시점 → 타이밍 문제 해소)
         getBridge().getWebView().addJavascriptInterface(new StatusBarBridge(), "AndroidBridge");
@@ -68,41 +66,39 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void applyStatusBarTheme(String theme) {
-        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(
-            getWindow(), getWindow().getDecorView()
-        );
+        // 배경색·가시성: 즉시 적용
+        // 아이콘 색상: 다음 프레임으로 미룸 (같은 프레임 내 Android/Capacitor 덮어쓰기 방지)
+        final boolean lightBars;
         switch (theme) {
             case "transparent":
-                // 지도 페이지: 커버 뷰 숨김 → 지도 타일이 status bar 아래까지 보임
                 getWindow().setStatusBarColor(Color.TRANSPARENT);
-                controller.setAppearanceLightStatusBars(false);
                 if (statusBarCoverView != null) statusBarCoverView.setVisibility(View.GONE);
+                lightBars = false;
                 break;
             case "map-overlay":
-                // 지도 페이지 + drawer 열림: 커버 뷰 숨기고 반투명 오버레이
                 getWindow().setStatusBarColor(Color.argb(102, 0, 0, 0));
-                controller.setAppearanceLightStatusBars(false);
                 if (statusBarCoverView != null) statusBarCoverView.setVisibility(View.GONE);
+                lightBars = false;
                 break;
             case "dark":
-                // 다크 모드 일반 페이지
                 getWindow().setStatusBarColor(Color.parseColor("#121212"));
-                controller.setAppearanceLightStatusBars(false);
                 if (statusBarCoverView != null) {
                     statusBarCoverView.setBackgroundColor(Color.parseColor("#121212"));
                     statusBarCoverView.setVisibility(View.VISIBLE);
                 }
+                lightBars = false;
                 break;
             default:
-                // 라이트 모드 일반 페이지
                 getWindow().setStatusBarColor(Color.WHITE);
-                controller.setAppearanceLightStatusBars(true);
                 if (statusBarCoverView != null) {
                     statusBarCoverView.setBackgroundColor(Color.WHITE);
                     statusBarCoverView.setVisibility(View.VISIBLE);
                 }
+                lightBars = true;
                 break;
         }
+        new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView())
+            .setAppearanceLightStatusBars(lightBars);
     }
 
     private class StatusBarBridge {

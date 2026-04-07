@@ -75,27 +75,37 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
     if (!isNativePlatform()) return;
 
     (async () => {
-      try {
-        const platform = (
-          window as unknown as { Capacitor?: { getPlatform?: () => string } }
-        ).Capacitor?.getPlatform?.();
-        if (platform === 'android') {
+      const platform = (
+        window as unknown as { Capacitor?: { getPlatform?: () => string } }
+      ).Capacitor?.getPlatform?.();
+      const androidTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
+      const androidBridge = (
+        window as unknown as {
+          AndroidBridge?: { themeChange: (t: string) => void };
+        }
+      ).AndroidBridge;
+
+      // SplashScreen 페이드아웃 전: 커버뷰 배경색 + 아이콘 색상 먼저 설정
+      if (platform === 'android') {
+        androidBridge?.themeChange(androidTheme);
+      } else {
+        try {
           const { StatusBar, Style } = await import('@capacitor/status-bar');
           await StatusBar.setStyle({
             style: resolvedTheme === 'dark' ? Style.Dark : Style.Light,
           });
-          // 커버뷰 배경색도 SplashScreen 숨기기 전에 미리 설정 (흰색 flash 방지)
-          (
-            window as unknown as {
-              AndroidBridge?: { themeChange: (t: string) => void };
-            }
-          ).AndroidBridge?.themeChange(resolvedTheme === 'dark' ? 'dark' : 'light');
-        }
-      } catch {}
+        } catch {}
+      }
+
       try {
         const { SplashScreen } = await import('@capacitor/splash-screen');
         await SplashScreen.hide({ fadeOutDuration: 300 });
       } catch {}
+
+      // SplashScreen hide 완료 후 재적용: hide() 내부에서 플래그가 리셋될 수 있음
+      if (platform === 'android') {
+        androidBridge?.themeChange(androidTheme);
+      }
     })();
   }, [status, resolvedTheme]);
 
