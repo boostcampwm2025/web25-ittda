@@ -113,13 +113,28 @@ export const ContentField = ({
 
   const adjustHeight = useCallback(() => {
     const target = textareaRef.current;
-    // 현재 텍스트 크기에 맞게 높이 조절
-    if (target) {
-      requestAnimationFrame(() => {
+    if (!target) return;
+    // height: auto 로 먼저 줄이면 스크롤 컨테이너가 위로 점프하는 문제가 발생.
+    // scrollHeight는 overflow:hidden 상태에서도 콘텐츠 전체 높이를 반환하므로
+    // 현재 높이보다 커질 때만 늘리고, 줄어들 때는 height: auto 후 재측정.
+    requestAnimationFrame(() => {
+      const newHeight = target.scrollHeight;
+      if (newHeight > target.offsetHeight) {
+        // 콘텐츠가 늘어난 경우: 높이만 확장 후 커서가 보이도록 스크롤
+        target.style.height = `${newHeight}px`;
+        // 커서 위치를 뷰포트 안으로 부드럽게 스크롤
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        // 콘텐츠가 줄어든 경우: 스크롤 위치 저장 후 복원
+        const scrollEl = target.closest('[data-radix-scroll-area-viewport]') ??
+          target.parentElement?.closest('[style*="overflow"]') ??
+          document.scrollingElement;
+        const savedScroll = scrollEl?.scrollTop ?? 0;
         target.style.height = 'auto';
         target.style.height = `${target.scrollHeight}px`;
-      });
-    }
+        if (scrollEl) scrollEl.scrollTop = savedScroll;
+      }
+    });
   }, []);
 
   // value 변경될 때 높이 조절
