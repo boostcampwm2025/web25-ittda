@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useIMEInput } from '@/hooks/useIMEInput';
-import { Loader2, Search, Tag, X } from 'lucide-react';
+import { Loader2, Plus, Search, Tag, X } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -46,6 +46,14 @@ export default function TagSearchDrawer({
     }
   };
 
+  // 태그 추가 로직
+  const addTag = () => {
+    if (!selectedTags.includes(keyword.trim())) {
+      onToggleTag(keyword.trim());
+    }
+    setKeyword(''); // 입력창 초기화
+  };
+
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="h-[85%] dark:bg-[#1E1E1E]">
@@ -64,7 +72,7 @@ export default function TagSearchDrawer({
 
             {/* 현재 선택된 태그 리스트 */}
             {selectedTags.length !== 0 && (
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-3 min-h-7 sm:min-h-8">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 min-h-7 sm:min-h-8">
                 {selectedTags.map((tag) => (
                   <span
                     key={tag}
@@ -86,27 +94,36 @@ export default function TagSearchDrawer({
               </div>
             )}
             {/* 검색 및 상태 입력창 */}
-            <div className="relative group">
-              <input
-                type="text"
-                placeholder={
-                  selectedTags.length > 0
-                    ? `${selectedTags.length}개의 태그 선택됨`
-                    : '태그를 입력하세요'
-                }
-                value={keyword}
-                {...imeProps}
-                onKeyDown={handleKeyDown}
-                className="w-full py-3 sm:py-4 pl-10 sm:pl-12 pr-3 sm:pr-4 rounded-lg sm:rounded-xl bg-gray-50 dark:bg-white/5 border-none mobile-input text-itta-black dark:text-white placeholder-gray-400 outline-none focus:ring-1 focus:ring-itta-point/60 transition-all shadow-inner"
-              />
-              <Search
-                size={16}
-                className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-itta-point transition-colors sm:hidden"
-              />
-              <Search
-                size={18}
-                className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-itta-point transition-colors hidden sm:block"
-              />
+            <div className="relative group flex justify-center items-center gap-1.5 sm:gap-2">
+              <div className="w-full">
+                <input
+                  type="text"
+                  placeholder={
+                    selectedTags.length > 0
+                      ? `${selectedTags.length}개의 태그 선택됨`
+                      : '태그를 입력하세요'
+                  }
+                  value={keyword}
+                  {...imeProps}
+                  onKeyDown={handleKeyDown}
+                  className="w-full py-3 sm:py-4 pl-10 sm:pl-12 pr-3 sm:pr-4 rounded-lg sm:rounded-xl bg-gray-50 dark:bg-white/5 border-none mobile-input text-itta-black dark:text-white placeholder-gray-400 outline-none focus:ring-1 focus:ring-itta-point/60 transition-all shadow-inner"
+                />
+                <Search
+                  size={16}
+                  className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-itta-point transition-colors sm:hidden"
+                />
+                <Search
+                  size={18}
+                  className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-itta-point transition-colors hidden sm:block"
+                />
+              </div>
+              <button
+                onClick={addTag}
+                className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-itta-point text-white shadow-lg shadow-itta-point/20 active:scale-90 transition-transform"
+              >
+                <Plus size={18} className="sm:hidden" />
+                <Plus size={20} className="hidden sm:block" />
+              </button>
             </div>
 
             {/* 태그 목록 영역 */}
@@ -135,7 +152,9 @@ export default function TagSearchDrawer({
                       >
                         <span
                           className={
-                            isSelected ? 'text-itta-point' : 'text-itta-point/40'
+                            isSelected
+                              ? 'text-itta-point'
+                              : 'text-itta-point/40'
                           }
                         >
                           #
