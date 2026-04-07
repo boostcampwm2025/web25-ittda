@@ -6,10 +6,23 @@ import { toast } from 'sonner';
 
 /**
  * Android 하드웨어/제스처 뒤로가기 처리 컴포넌트.
+ * - drawer 등 오버레이가 열려 있으면 → 오버레이 닫기 (핸들러 스택)
  * - 뒤로 갈 히스토리가 있으면 → history.back()
  * - 루트(히스토리 없음)에서 한 번 → "한 번 더 누르면 종료" 토스트
  * - 2초 내 한 번 더 → 앱 종료
  */
+
+type BackHandler = () => void;
+const backHandlerStack: BackHandler[] = [];
+
+export function pushBackHandler(handler: BackHandler): () => void {
+  backHandlerStack.push(handler);
+  return () => {
+    const idx = backHandlerStack.lastIndexOf(handler);
+    if (idx >= 0) backHandlerStack.splice(idx, 1);
+  };
+}
+
 export default function AndroidBackHandler() {
   useEffect(() => {
     const platform = (
@@ -20,17 +33,14 @@ export default function AndroidBackHandler() {
     let backPressedOnce = false;
     let timer: ReturnType<typeof setTimeout>;
 
-    // 같은 pathname의 검색 파라미터 변경 히스토리를 건너뛰어 이전 "실제 페이지"로 이동
     const goBackToRealPage = () => {
       const originPathname = window.location.pathname;
 
       const tryBack = () => {
         const onPopState = () => {
           if (window.location.pathname === originPathname) {
-            // 같은 페이지(검색 파라미터만 다름) → 한 번 더 뒤로
             tryBack();
           }
-          // 다른 pathname으로 이동됐으면 완료
         };
         window.addEventListener('popstate', onPopState, { once: true });
         window.history.back();
@@ -40,6 +50,12 @@ export default function AndroidBackHandler() {
     };
 
     const listenerPromise = App.addListener('backButton', (data) => {
+      // 오버레이(drawer 등)가 열려 있으면 최상단 핸들러 실행
+      if (backHandlerStack.length > 0) {
+        backHandlerStack[backHandlerStack.length - 1]();
+        return;
+      }
+
       if (data.canGoBack) {
         goBackToRealPage();
         return;

@@ -4,11 +4,36 @@ import * as React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
 
 import { cn } from '@/lib/utils';
+import { pushBackHandler } from '@/components/AndroidBackHandler';
 
 function Drawer({
+  open,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
+  const onOpenChangeRef = React.useRef(onOpenChange);
+  React.useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  });
+
+  React.useEffect(() => {
+    if (open === undefined || !open) return;
+
+    // drawer 열릴 때 Android 백버튼 핸들러 등록 → 닫힐 때 자동 해제
+    const remove = pushBackHandler(() => {
+      onOpenChangeRef.current?.(false);
+    });
+    return remove;
+  }, [open]);
+
+  return (
+    <DrawerPrimitive.Root
+      data-slot="drawer"
+      open={open}
+      onOpenChange={onOpenChange}
+      {...props}
+    />
+  );
 }
 
 function DrawerTrigger({
