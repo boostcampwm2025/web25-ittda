@@ -151,10 +151,10 @@ const BlockItem = memo(function BlockItem({
       data-block-id={block.id}
       onPointerUp={handleDragEnd}
       onPointerCancel={handleDragEnd}
-      className={`cursor-grab touch-none relative group/field ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
+      className={`cursor-grab relative group/field ${isDraggingId ? 'touch-none' : 'touch-auto'} ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
     >
       <div
-        className={`relative w-full flex flex-row gap-2 items-center touch-none ${
+        className={`relative w-full flex flex-row gap-2 items-center ${isDraggingId ? 'touch-none' : 'touch-auto'} ${
           block.layout.col === 1 ? 'justify-start' : 'justify-end'
         }`}
       >
@@ -220,12 +220,17 @@ export default function PostEditor({
 
   // LOCK_DENIED 수신 시 열려있는 drawer가 해당 블록이면 강제 닫기
   // (usePostEditorBlocks보다 먼저 선언되므로 ref 패턴으로 최신 setActiveDrawer 참조)
-  const onLockDeniedRef = useRef<((lockKey: string) => void) | undefined>(undefined);
+  const onLockDeniedRef = useRef<((lockKey: string) => void) | undefined>(
+    undefined,
+  );
   const stableOnLockDenied = useCallback((lockKey: string) => {
     onLockDeniedRef.current?.(lockKey);
   }, []);
 
-  const { requestLock, releaseLock, acquireExclusiveLock } = useLockManager(draftId, stableOnLockDenied);
+  const { requestLock, releaseLock, acquireExclusiveLock } = useLockManager(
+    draftId,
+    stableOnLockDenied,
+  );
   const { uploadMultipleMedia } = useMediaUpload();
   const { data: group } = useQuery({
     ...groupDetailOptions(groupId!),
@@ -357,13 +362,21 @@ export default function PostEditor({
     };
   }, [draftId, initialPost, groupId, isPublishing]);
 
-  const { members } = useDraftPresence(draftId, groupId, isPublishing, initialPost?.version ?? 0);
+  const { members } = useDraftPresence(
+    draftId,
+    groupId,
+    isPublishing,
+    initialPost?.version ?? 0,
+  );
 
   // 서버의 LOCK_CHANGED 브로드캐스트 수신
   useEffect(() => {
     if (!socket) return;
 
-    const handleLockChanged = ({ lockKey, ownerSessionId }: LockResponsePayload) => {
+    const handleLockChanged = ({
+      lockKey,
+      ownerSessionId,
+    }: LockResponsePayload) => {
       setLocks((prev) => {
         const newLocks = { ...prev };
         if (ownerSessionId) {
@@ -381,7 +394,11 @@ export default function PostEditor({
     // 주의: socket.off(event) (콜백 없음)는 ALL 핸들러를 제거하므로
     // useDraftPresence가 등록한 PRESENCE_SNAPSHOT 핸들러까지 삭제되는 버그를 방지하기 위해
     // 반드시 콜백 참조를 저장하고 socket.off(event, handler)로 제거해야 함.
-    const handlePresenceSnapshot = ({ locks: snapshotLocks }: { locks?: Record<string, string> }) => {
+    const handlePresenceSnapshot = ({
+      locks: snapshotLocks,
+    }: {
+      locks?: Record<string, string>;
+    }) => {
       if (snapshotLocks && Object.keys(snapshotLocks).length > 0) {
         setLocks(snapshotLocks);
       }
@@ -389,9 +406,17 @@ export default function PostEditor({
 
     // 소켓 재연결 시 새 sessionId가 부여되면 locks에 남아있는 이전 sessionId를 갱신.
     // 갱신하지 않으면 자신의 락이 isLockedByOther=true로 보여 "다른 사용자 편집 중" 오표시됨.
-    const handlePresenceReplaced = ({ previousSessionId, sessionId }: { previousSessionId: string; sessionId: string }) => {
+    const handlePresenceReplaced = ({
+      previousSessionId,
+      sessionId,
+    }: {
+      previousSessionId: string;
+      sessionId: string;
+    }) => {
       setLocks((prev) => {
-        const hasStale = Object.values(prev).some((v) => v === previousSessionId);
+        const hasStale = Object.values(prev).some(
+          (v) => v === previousSessionId,
+        );
         if (!hasStale) return prev;
         const updated: Record<string, string> = {};
         Object.entries(prev).forEach(([key, val]) => {
@@ -591,7 +616,8 @@ export default function PostEditor({
       execute({
         payload: postPayload,
       });
-    } catch {
+    } catch (e) {
+      console.log(e);
       toast.error('사진 업로드에 실패했습니다. 다시 시도해 주세요.');
       setIsSaving(false);
     }
@@ -910,7 +936,11 @@ export default function PostEditor({
           mySessionId={mySessionId}
           members={members}
           applyPatch={applyPatch}
-          lockManager={{ locks, requestLock: acquireExclusiveLock, releaseLock }}
+          lockManager={{
+            locks,
+            requestLock: acquireExclusiveLock,
+            releaseLock,
+          }}
         />
         <div
           ref={gridRef}
