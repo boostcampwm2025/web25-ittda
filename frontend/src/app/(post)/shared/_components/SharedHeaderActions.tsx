@@ -203,7 +203,6 @@ export default function SharedHeaderActions() {
                     기록함 이름
                   </label>
                   <input
-                    autoFocus
                     type="text"
                     placeholder="예: 제주도 여행기"
                     value={newGroupName}

@@ -1,37 +1,22 @@
-import { useRef } from 'react';
-
 /**
- * 한국어 등 IME 조합 입력 시 마지막 글자가 잘리는 문제를 방지하는 hook.
+ * captureInput: false (Capacitor Android 설정) 환경에서는 WebView가 표준 IME를
+ * 직접 처리하므로 조합 차단 없이 onChange를 그대로 전달합니다.
  *
- * 브라우저 표준 동작:
- *   compositionStart → onChange 차단 → compositionEnd 시 최종값 반영
+ * 브라우저(데스크톱/iOS)에서는 compositionEnd로 최종값을 보장합니다.
  *
- * 사용법 (ref 없는 컴포넌트):
+ * 사용법:
  *   const imeProps = useIMEInput(setValue);
  *   <input value={value} {...imeProps} />
- *
- * 사용법 (기존 ref가 있는 컴포넌트 - CoreField 등):
- *   const { ref: imeRef, ...imeHandlers } = useIMEInput(onChange);
- *   const setRef = useCallback((el) => { myRef.current = el; imeRef?.(el); }, [imeRef]);
- *   <textarea ref={setRef} {...imeHandlers} />
  */
 
 type InputElement = HTMLInputElement | HTMLTextAreaElement;
 
 export function useIMEInput(onChange: (value: string) => void) {
-  const isComposingRef = useRef(false);
-
   return {
     onChange: (e: React.ChangeEvent<InputElement>) => {
-      if (!isComposingRef.current) {
-        onChange(e.target.value);
-      }
-    },
-    onCompositionStart: () => {
-      isComposingRef.current = true;
+      onChange(e.target.value);
     },
     onCompositionEnd: (e: React.CompositionEvent<InputElement>) => {
-      isComposingRef.current = false;
       onChange((e.target as InputElement).value);
     },
   };
