@@ -4,7 +4,8 @@ import { FieldType } from '@/lib/types/record';
 import { normalizeLayout } from '../_utils/recordLayoutHelper';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 
-const DRAG_THRESHOLD = 8;
+const LONG_PRESS_DURATION = 300; // ms — 이 시간 이상 누르고 있어야 드래그 시작
+const SCROLL_CANCEL_THRESHOLD = 6; // px — 롱프레스 대기 중 이 이상 움직이면 스크롤로 판단해 취소
 
 export const useRecordEditorDnD = (
   blocks: RecordBlock[],
@@ -21,20 +22,22 @@ export const useRecordEditorDnD = (
   const pointerIdRef = useRef<number | null>(null);
   const capturedElementRef = useRef<HTMLElement | null>(null);
 
-  // pointer 이벤트 기반 드래그 대기 (non-textarea/input)
+  // pointer 이벤트 기반 롱프레스 대기 (non-textarea/input)
   const pendingDragRef = useRef<{
     pointerId: number;
     blockId: string;
     startX: number;
     startY: number;
+    timer: ReturnType<typeof setTimeout>;
   } | null>(null);
 
-  // touch 이벤트 기반 드래그 대기 (textarea/input — iOS pointercancel 우회)
+  // touch 이벤트 기반 롱프레스 대기 (textarea/input — iOS pointercancel 우회)
   const pendingTouchDragRef = useRef<{
     touchId: number;
     blockId: string;
     startX: number;
     startY: number;
+    timer: ReturnType<typeof setTimeout>;
   } | null>(null);
 
   // blocks를 ref로 미러링 — 전역 listener에서 항상 최신 값 참조
@@ -57,17 +60,42 @@ export const useRecordEditorDnD = (
       const blockId = blockEl.getAttribute('data-block-id');
       if (!blockId) return;
 
+      const timer = setTimeout(() => {
+        if (pendingDragRef.current?.blockId === blockId) {
+          // 롱프레스 완료 → 드래그 활성화
+          const blockEl = document.querySelector(
+            `[data-block-id="${blockId}"]`,
+          ) as HTMLElement | null;
+          if (blockEl) {
+            try {
+              blockEl.setPointerCapture(e.pointerId);
+            } catch {}
+            pointerIdRef.current = e.pointerId;
+            capturedElementRef.current = blockEl;
+          }
+          isPointerDraggingRef.current = true;
+          isDraggingIdRef.current = blockId;
+          setIsDraggingId(blockId);
+          pendingDragRef.current = null;
+        }
+      }, LONG_PRESS_DURATION);
+
       pendingDragRef.current = {
         pointerId: e.pointerId,
         blockId,
         startX: e.clientX,
         startY: e.clientY,
+        timer,
       };
     };
 
-    document.addEventListener('pointerdown', handleGlobalDown, { capture: true });
+    document.addEventListener('pointerdown', handleGlobalDown, {
+      capture: true,
+    });
     return () => {
-      document.removeEventListener('pointerdown', handleGlobalDown, { capture: true });
+      document.removeEventListener('pointerdown', handleGlobalDown, {
+        capture: true,
+      });
     };
   }, []);
 
@@ -87,11 +115,22 @@ export const useRecordEditorDnD = (
       const touch = e.changedTouches[0];
       if (!touch) return;
 
+      const timer = setTimeout(() => {
+        if (pendingTouchDragRef.current?.blockId === blockId) {
+          // 롱프레스 완료 → 드래그 활성화
+          isPointerDraggingRef.current = true;
+          isDraggingIdRef.current = blockId;
+          setIsDraggingId(blockId);
+          pendingTouchDragRef.current = null;
+        }
+      }, LONG_PRESS_DURATION);
+
       pendingTouchDragRef.current = {
         touchId: touch.identifier,
         blockId,
         startX: touch.clientX,
         startY: touch.clientY,
+        timer,
       };
     };
 
@@ -100,7 +139,9 @@ export const useRecordEditorDnD = (
       capture: true,
     });
     return () => {
-      document.removeEventListener('touchstart', handleGlobalTouchStart, { capture: true });
+      document.removeEventListener('touchstart', handleGlobalTouchStart, {
+        capture: true,
+      });
     };
   }, []);
 
@@ -120,7 +161,9 @@ export const useRecordEditorDnD = (
       lastUpdateRef.current = now;
 
       const currentBlocks = blocksRef.current;
-      const dragIdx = currentBlocks.findIndex((b) => b.id === currentDraggingId);
+      const dragIdx = currentBlocks.findIndex(
+        (b) => b.id === currentDraggingId,
+      );
       const hoverIdx = currentBlocks.findIndex((b) => b.id === targetId);
       if (dragIdx === -1 || hoverIdx === -1) return;
 
@@ -158,7 +201,10 @@ export const useRecordEditorDnD = (
         draggingBlock.layout.span !== nextSpan ||
         hoverNextSpan !== hoverBlock.layout.span
       ) {
-        const newBlocks = currentBlocks.map((b) => ({ ...b, layout: { ...b.layout } }));
+        const newBlocks = currentBlocks.map((b) => ({
+          ...b,
+          layout: { ...b.layout },
+        }));
         newBlocks[dragIdx].layout.span = nextSpan;
         if (hoverNextSpan !== hoverBlock.layout.span) {
           newBlocks[hoverIdx].layout.span = hoverNextSpan;
@@ -208,28 +254,21 @@ export const useRecordEditorDnD = (
 
     // pointer 이벤트 기반 drag (non-textarea/input)
     const handleGlobalMove = (e: PointerEvent) => {
-      if (pendingDragRef.current && e.pointerId === pendingDragRef.current.pointerId) {
+      if (
+        pendingDragRef.current &&
+        e.pointerId === pendingDragRef.current.pointerId
+      ) {
         const dx = e.clientX - pendingDragRef.current.startX;
         const dy = e.clientY - pendingDragRef.current.startY;
-        if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
-          const { pointerId, blockId } = pendingDragRef.current;
-          const blockEl = document.querySelector(
-            `[data-block-id="${blockId}"]`,
-          ) as HTMLElement | null;
-          if (blockEl) {
-            try {
-              blockEl.setPointerCapture(pointerId);
-            } catch {}
-            pointerIdRef.current = pointerId;
-            capturedElementRef.current = blockEl;
-          }
-          isPointerDraggingRef.current = true;
-          isDraggingIdRef.current = blockId;
-          setIsDraggingId(blockId);
+        // 롱프레스 대기 중 스크롤 의도 감지 → 타이머 취소
+        if (
+          dx * dx + dy * dy >
+          SCROLL_CANCEL_THRESHOLD * SCROLL_CANCEL_THRESHOLD
+        ) {
+          clearTimeout(pendingDragRef.current.timer);
           pendingDragRef.current = null;
-        } else {
-          return;
         }
+        return;
       }
 
       processDragOver(e.clientX, e.clientY);
@@ -237,28 +276,30 @@ export const useRecordEditorDnD = (
 
     // touch 이벤트 기반 drag (textarea/input — iOS pointercancel 우회)
     const handleGlobalTouchMove = (e: TouchEvent) => {
-      const touch = Array.from(e.changedTouches).find(
-        (t) =>
+      const touch =
+        Array.from(e.changedTouches).find((t) =>
           pendingTouchDragRef.current
             ? t.identifier === pendingTouchDragRef.current.touchId
             : false,
-      ) ?? (isPointerDraggingRef.current ? e.touches[0] : null);
+        ) ?? (isPointerDraggingRef.current ? e.touches[0] : null);
 
       if (!touch) return;
 
-      if (pendingTouchDragRef.current && touch.identifier === pendingTouchDragRef.current.touchId) {
+      if (
+        pendingTouchDragRef.current &&
+        touch.identifier === pendingTouchDragRef.current.touchId
+      ) {
         const dx = touch.clientX - pendingTouchDragRef.current.startX;
         const dy = touch.clientY - pendingTouchDragRef.current.startY;
-        if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
-          e.preventDefault();
-          const { blockId } = pendingTouchDragRef.current;
-          isPointerDraggingRef.current = true;
-          isDraggingIdRef.current = blockId;
-          setIsDraggingId(blockId);
+        // 롱프레스 대기 중 스크롤 의도 감지 → 타이머 취소
+        if (
+          dx * dx + dy * dy >
+          SCROLL_CANCEL_THRESHOLD * SCROLL_CANCEL_THRESHOLD
+        ) {
+          clearTimeout(pendingTouchDragRef.current.timer);
           pendingTouchDragRef.current = null;
-        } else {
-          return;
         }
+        return;
       }
 
       if (isPointerDraggingRef.current && isDraggingIdRef.current) {
@@ -268,7 +309,11 @@ export const useRecordEditorDnD = (
     };
 
     const handleGlobalUp = (e: PointerEvent) => {
-      if (pendingDragRef.current && e.pointerId === pendingDragRef.current.pointerId) {
+      if (
+        pendingDragRef.current &&
+        e.pointerId === pendingDragRef.current.pointerId
+      ) {
+        clearTimeout(pendingDragRef.current.timer);
         pendingDragRef.current = null;
       }
     };
@@ -280,12 +325,17 @@ export const useRecordEditorDnD = (
           (t) => t.identifier === pendingTouchDragRef.current?.touchId,
         )
       ) {
+        clearTimeout(pendingTouchDragRef.current.timer);
         pendingTouchDragRef.current = null;
       }
     };
 
-    document.addEventListener('pointermove', handleGlobalMove, { passive: true });
-    document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+    document.addEventListener('pointermove', handleGlobalMove, {
+      passive: true,
+    });
+    document.addEventListener('touchmove', handleGlobalTouchMove, {
+      passive: false,
+    });
     document.addEventListener('pointerup', handleGlobalUp);
     document.addEventListener('pointercancel', handleGlobalUp);
     document.addEventListener('touchend', handleTouchEnd);
@@ -302,8 +352,14 @@ export const useRecordEditorDnD = (
   }, [canBeHalfWidth, setBlocks]);
 
   const handleDragEnd = useCallback(() => {
-    pendingDragRef.current = null;
-    pendingTouchDragRef.current = null;
+    if (pendingDragRef.current) {
+      clearTimeout(pendingDragRef.current.timer);
+      pendingDragRef.current = null;
+    }
+    if (pendingTouchDragRef.current) {
+      clearTimeout(pendingTouchDragRef.current.timer);
+      pendingTouchDragRef.current = null;
+    }
     isPointerDraggingRef.current = false;
 
     if (pointerIdRef.current !== null && capturedElementRef.current !== null) {
@@ -320,7 +376,10 @@ export const useRecordEditorDnD = (
         e.stopPropagation();
         e.preventDefault();
       };
-      document.addEventListener('click', suppressClick, { capture: true, once: true });
+      document.addEventListener('click', suppressClick, {
+        capture: true,
+        once: true,
+      });
       setTimeout(() => {
         document.removeEventListener('click', suppressClick, { capture: true });
       }, 300);
