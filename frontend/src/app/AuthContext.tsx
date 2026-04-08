@@ -26,24 +26,6 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
   const logout = useAuthStore((state) => state.logout);
   const { resolvedTheme } = useTheme();
 
-  // Android 네이티브 앱: 테마 변경 시 상태바 아이콘 색상 동기화
-  useEffect(() => {
-    if (!isNativePlatform()) return;
-    if (typeof window === 'undefined') return;
-    const platform = (
-      window as unknown as { Capacitor?: { getPlatform?: () => string } }
-    ).Capacitor?.getPlatform?.();
-    if (platform !== 'android') return;
-
-    (async () => {
-      try {
-        const { StatusBar, Style } = await import('@capacitor/status-bar');
-        await StatusBar.setStyle({
-          style: resolvedTheme === 'dark' ? Style.Dark : Style.Light,
-        });
-      } catch {}
-    })();
-  }, [resolvedTheme]);
 
   // Capacitor 네이티브 앱: 포그라운드 복귀 시 세션 갱신
   // refetchOnWindowFocus가 네이티브 WebView에서 동작하지 않으므로 명시적으로 처리
@@ -91,8 +73,9 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
       } else {
         try {
           const { StatusBar, Style } = await import('@capacitor/status-bar');
+          // Style.Light = light icons (dark background용), Style.Dark = dark icons (light background용)
           await StatusBar.setStyle({
-            style: resolvedTheme === 'dark' ? Style.Dark : Style.Light,
+            style: resolvedTheme === 'dark' ? Style.Light : Style.Dark,
           });
         } catch {}
       }

@@ -31,6 +31,7 @@ import type { PresignFileRequestDto } from './dto/presign-media.dto';
 @Injectable()
 export class MediaService {
   private readonly s3Client: S3Client;
+  private readonly s3PresignClient: S3Client;
   private readonly bucket: string;
   private readonly s3ConfigValid: boolean;
   private readonly logger = new Logger(MediaService.name);
@@ -64,6 +65,8 @@ export class MediaService {
     private readonly userRepository: Repository<User>,
   ) {
     const endpoint = this.configService.get<string>('S3_ENDPOINT');
+    const publicEndpoint =
+      this.configService.get<string>('S3_PUBLIC_ENDPOINT') ?? endpoint;
     const region = this.configService.get<string>('S3_REGION') ?? 'us-east-1';
     const accessKeyId = this.configService.get<string>('S3_ACCESS_KEY');
     const secretAccessKey = this.configService.get<string>('S3_SECRET_KEY');
@@ -75,14 +78,25 @@ export class MediaService {
       endpoint && accessKeyId && secretAccessKey && this.bucket,
     );
 
+    const credentials =
+      accessKeyId && secretAccessKey
+        ? { accessKeyId, secretAccessKey }
+        : undefined;
+
     this.s3Client = new S3Client({
       region,
       endpoint,
       forcePathStyle,
-      credentials:
-        accessKeyId && secretAccessKey
-          ? { accessKeyId, secretAccessKey }
-          : undefined,
+      credentials,
+    });
+
+    // Presigned URL 생성 전용 클라이언트: 외부에서 접근 가능한 public endpoint 사용
+    // S3_PUBLIC_ENDPOINT가 없으면 s3Client와 동일하게 동작
+    this.s3PresignClient = new S3Client({
+      region,
+      endpoint: publicEndpoint,
+      forcePathStyle,
+      credentials,
     });
   }
 
@@ -148,7 +162,7 @@ export class MediaService {
         });
         let uploadUrl: string;
         try {
-          uploadUrl = await getSignedUrl(this.s3Client, command, {
+          uploadUrl = await getSignedUrl(this.s3PresignClient, command, {
             expiresIn: this.presignTtlSeconds,
           });
         } catch (err) {
