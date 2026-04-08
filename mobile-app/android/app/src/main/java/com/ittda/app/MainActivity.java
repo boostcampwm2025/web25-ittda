@@ -22,10 +22,14 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        
         super.onCreate(savedInstanceState);
         // 컨텐츠가 status bar / navigation bar 영역으로 확장되도록 설정
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
+        // WebView 로드 전 검은 화면 방지: 스플래시 배경을 window background로 유지
+        getWindow().setBackgroundDrawableResource(R.drawable.splash);
 
         // JS 로드 전 flash 방지: 시스템 다크모드를 기준으로 커버뷰 배경색 + 아이콘 색상 초기 설정
         boolean isDarkMode = (getResources().getConfiguration().uiMode &
@@ -33,8 +37,10 @@ public class MainActivity extends BridgeActivity {
 
         addStatusBarCover(isDarkMode);
 
-        new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView())
-            .setAppearanceLightStatusBars(!isDarkMode);
+        WindowInsetsControllerCompat insetsController =
+            new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        insetsController.setAppearanceLightStatusBars(!isDarkMode);
+        insetsController.setAppearanceLightNavigationBars(!isDarkMode);
 
         // WebView 로드 전에 브릿지 등록 (onStart보다 이른 시점 → 타이밍 문제 해소)
         getBridge().getWebView().addJavascriptInterface(new StatusBarBridge(), "AndroidBridge");
@@ -97,8 +103,10 @@ public class MainActivity extends BridgeActivity {
                 lightBars = true;
                 break;
         }
-        new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView())
-            .setAppearanceLightStatusBars(lightBars);
+        WindowInsetsControllerCompat insetsController =
+            new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        insetsController.setAppearanceLightStatusBars(lightBars);
+        insetsController.setAppearanceLightNavigationBars(lightBars);
     }
 
     private class StatusBarBridge {
