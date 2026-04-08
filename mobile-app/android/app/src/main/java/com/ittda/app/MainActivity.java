@@ -30,7 +30,7 @@ public class MainActivity extends BridgeActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         // WebView 로드 전 검은 화면 방지: 스플래시 배경을 window background로 유지
-        getWindow().setBackgroundDrawableResource(R.drawable.splash);
+        getWindow().setBackgroundDrawableResource(R.drawable.splash_background);
 
         // JS 로드 전 flash 방지: 시스템 다크모드를 기준으로 커버뷰 배경색 + 아이콘 색상 초기 설정
         boolean isDarkMode = (getResources().getConfiguration().uiMode &
