@@ -178,7 +178,7 @@ export default function RecordDetailHeaderActions({
           <PopoverContent
             align="end"
             sideOffset={8}
-            className="z-20 min-w-45 rounded-2xl shadow-2xl border p-2 animate-in fade-in zoom-in-95 duration-200 dark:bg-[#1E1E1E] dark:border-white/10 bg-white border-gray-100"
+            className="min-w-45 rounded-2xl shadow-2xl border p-2 animate-in fade-in zoom-in-95 duration-200 dark:bg-[#1E1E1E] dark:border-white/10 bg-white border-gray-100"
           >
             <PopoverClose
               onClick={handleShare}
