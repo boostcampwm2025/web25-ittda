@@ -109,7 +109,7 @@ const BlockContent = memo(function BlockContent({
       if ('mood' in block.value) {
         return (
           <div className="flex items-center gap-0.5 sm:gap-1">
-            <span className="text-lg sm:text-xl leading-none flex justify-center items-center">
+            <span className="text-lg sm:text-xl flex justify-center items-center">
               {EMOTION_MAP[block.value.mood]}&nbsp;
               <span className="text-[11px] sm:text-xs ml-1">
                 {block.value.mood}

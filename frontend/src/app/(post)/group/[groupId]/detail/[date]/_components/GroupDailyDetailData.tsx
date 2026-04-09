@@ -28,7 +28,7 @@ export default async function GroupDailyDetailData({
   }
 
   return (
-    <div className="p-4 sm:p-6 pb-14 sm:pb-16">
+    <div className="p-4 sm:p-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ErrorHandlingWrapper
           fallbackComponent={ErrorFallback}

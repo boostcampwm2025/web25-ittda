@@ -24,7 +24,7 @@ export default async function MyDailyDetailData({ date }: MyDailyDetailDataProps
   }
 
   return (
-    <div className="py-4 sm:py-6 pb-14 sm:pb-16">
+    <div className="py-4 sm:py-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ErrorHandlingWrapper
           fallbackComponent={ErrorFallback}
