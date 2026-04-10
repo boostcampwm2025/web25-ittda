@@ -39,9 +39,7 @@ export default function RecordDetailHeaderActions({
   const [currentUrl, setCurrentUrl] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [shareToken, setShareToken] = useState<string | null>(
-    record.shareToken ?? null,
-  );
+  const shareToken = record.shareToken ?? null;
   const { userId } = useAuthStore();
 
   const { mutate: createShareLink, isPending: isCreatingShare } = useApiPost<{
@@ -50,8 +48,8 @@ export default function RecordDetailHeaderActions({
   }>(`/api/posts/${record.id}/share`, {
     onSuccess: (res) => {
       if (res.data?.shareToken) {
-        setShareToken(res.data.shareToken);
         setShareOpen(true);
+        queryClient.invalidateQueries({ queryKey: ['record', record.id] });
       }
     },
     onError: () => toast.error('공유 링크 생성에 실패했습니다.'),
@@ -61,8 +59,8 @@ export default function RecordDetailHeaderActions({
     `/api/posts/${record.id}/share`,
     {
       onSuccess: () => {
-        setShareToken(null);
         toast.success('공유 링크가 해제되었어요.');
+        queryClient.invalidateQueries({ queryKey: ['record', record.id] });
       },
       onError: () => toast.error('공유 링크 해제에 실패했습니다.'),
     },
