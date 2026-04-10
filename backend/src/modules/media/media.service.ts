@@ -107,7 +107,7 @@ export class MediaService {
   ) {
     if (files.length > MAX_MEDIA_PRESIGN_BATCH_SIZE) {
       throw new BadRequestException(
-        `files must be at most ${MAX_MEDIA_PRESIGN_BATCH_SIZE}.`,
+        `파일은 최대 ${MAX_MEDIA_PRESIGN_BATCH_SIZE}개까지 요청할 수 있습니다.`,
       );
     }
 
@@ -116,10 +116,10 @@ export class MediaService {
     // 추후 PUT -> POST 전환 시점에 contentType/size 재검증 로직 추가 필요.
     files.forEach((file) => {
       if (!this.allowedContentTypes.has(file.contentType)) {
-        throw new BadRequestException('Invalid contentType.');
+        throw new BadRequestException('지원하지 않는 파일 형식입니다.');
       }
       if (file.size !== undefined && file.size > this.maxUploadSizeBytes) {
-        throw new BadRequestException('File size exceeds limit.');
+        throw new BadRequestException('파일 크기가 제한을 초과했습니다.');
       }
     });
 
