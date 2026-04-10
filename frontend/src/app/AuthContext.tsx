@@ -49,50 +49,39 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // 세션 + 테마 모두 확정된 후 status bar 설정 → 스플래시 숨기기
-  // resolvedTheme가 결정되기 전에 숨기면 status bar가 잠깐 기본(light) 상태로 노출됨
+  // [1단계] 세션 + 테마 확정 후 status bar 테마 적용 → 스플래시 숨기기
+  // resolvedTheme를 기다려야 올바른 테마로 status bar를 설정할 수 있음
   useEffect(() => {
     if (status === 'loading') return;
+    if (!resolvedTheme) return;
     if (!isNativePlatform()) return;
-    // resolvedTheme가 없으면 system 기본값('light') 사용 — 스플래시가 무한 대기하는 것 방지
-    const theme = resolvedTheme ?? 'light';
 
     (async () => {
       const platform = (
         window as unknown as { Capacitor?: { getPlatform?: () => string } }
       ).Capacitor?.getPlatform?.();
-      const androidTheme = theme === 'dark' ? 'dark' : 'light';
+      const androidTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
       const androidBridge = (
         window as unknown as {
-          AndroidBridge?: { themeChange: (t: string) => void };
+          AndroidBridge?: { themeChange: (t: string) => void; appReady: () => void };
         }
       ).AndroidBridge;
 
       // SplashScreen 페이드아웃 전: 커버뷰 배경색 + 아이콘 색상 먼저 설정
       if (platform === 'android') {
         androidBridge?.themeChange(androidTheme);
+        androidBridge?.appReady();
       } else {
         try {
           const { StatusBar, Style } = await import('@capacitor/status-bar');
-          // Style.Light = light icons (dark background용), Style.Dark = dark icons (light background용)
           await StatusBar.setStyle({
-            style: theme === 'dark' ? Style.Light : Style.Dark,
+            style: resolvedTheme === 'dark' ? Style.Light : Style.Dark,
           });
         } catch {}
       }
 
       try {
         const { SplashScreen } = await import('@capacitor/splash-screen');
-        // Android: 네이티브 스플래시를 setKeepOnScreenCondition으로 유지하다가
-        // appReady() 신호로 해제 → Capacitor 스플래시와 gap 없이 전환
-        if (platform === 'android') {
-          const androidBridgeRef = (
-            window as unknown as {
-              AndroidBridge?: { appReady: () => void };
-            }
-          ).AndroidBridge;
-          androidBridgeRef?.appReady();
-        }
         await SplashScreen.hide({ fadeOutDuration: 300 });
       } catch {}
 
@@ -101,7 +90,30 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
         androidBridge?.themeChange(androidTheme);
       }
     })();
-  }, [status, resolvedTheme]); // resolvedTheme: 결정되면 정확한 테마로 재적용
+  }, [status, resolvedTheme]);
+
+  // [2단계] status 확정 시 resolvedTheme와 무관하게 Android appReady() 호출 보장
+  // next-themes가 resolvedTheme를 늦게 확정하는 경우 스플래시가 무한 대기하는 것 방지
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (!isNativePlatform()) return;
+
+    const platform = (
+      window as unknown as { Capacitor?: { getPlatform?: () => string } }
+    ).Capacitor?.getPlatform?.();
+    if (platform !== 'android') return;
+
+    // resolvedTheme가 이미 확정됐으면 [1단계]에서 처리하므로 여기선 skip
+    if (resolvedTheme) return;
+
+    // resolvedTheme 미확정인 채로 status만 확정된 경우: 테마 없이 appReady만 호출
+    const androidBridge = (
+      window as unknown as {
+        AndroidBridge?: { appReady: () => void };
+      }
+    ).AndroidBridge;
+    androidBridge?.appReady();
+  }, [status, resolvedTheme]);
 
   useEffect(() => {
     if (pathname.startsWith('/invite')) {
