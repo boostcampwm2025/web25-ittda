@@ -68,9 +68,7 @@ export default function AndroidBackHandler() {
       }
 
       backPressedOnce = true;
-      toast('뒤로 가기를 한 번 더 누르면 앱이 종료됩니다.', {
-        duration: 2000,
-      });
+      toast.info('뒤로 가기를 한 번 더 누르면 앱이 종료됩니다.');
 
       timer = setTimeout(() => {
         backPressedOnce = false;

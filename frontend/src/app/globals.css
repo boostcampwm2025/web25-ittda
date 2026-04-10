@@ -26,11 +26,6 @@ html.cap-native:not(.cap-android) [data-status-bar-cover] {
   display: none;
 }
 
-/* cap-native: toast가 statusbar 아래로 표시되도록 위치 조정 (sonner CSS 변수 직접 오버라이드) */
-html.cap-native [data-sonner-toaster] {
-  --offset-top: calc(env(safe-area-inset-top, 0px) + 16px) !important;
-  --mobile-offset-top: calc(env(safe-area-inset-top, 0px) + 16px) !important;
-}
 
 /* sticky top-0 헤더: cap-native에서 top: env(safe-area-inset-top)으로 statusbar 아래에 고정
    키보드 열릴 때도 뷰포트 기준 62px(safe area)에 달라붙어 statusbar 침범 방지 */
