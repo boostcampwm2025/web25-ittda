@@ -199,7 +199,7 @@ export default function DailyDetailRecordItem({
                     >
                       {sortedBlocks.map((block) => (
                         <div
-                          key={block.id}
+                          key={`${record.postId}-${block.id}`}
                           className={cn(
                             'min-w-0 shrink',
                             block.layout.col === 2 ? 'text-right' : 'text-left',
