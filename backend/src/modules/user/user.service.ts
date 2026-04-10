@@ -472,19 +472,16 @@ export class UserService {
     }
   }
 
-<<<<<<< HEAD
   async resetMonthCover(userId: string, year: number, month: number) {
     await this.userMonthCoverRepo.delete({ userId, year, month });
   }
 
-=======
   /**
    * 사용자의 월별 커버 매핑 중 삭제된 미디어를 참조하는 레코드를 비운다.
    * 비동기 후처리 성격이라 호출부를 블로킹하지 않는다.
    *
    * @param userId 정리 대상 사용자 ID
    */
->>>>>>> abacb763 (docs: UserService JSDoc 정리 (#273))
   private cleanupStaleUserMonthCovers(userId: string) {
     void this.userMonthCoverRepo
       .createQueryBuilder()
