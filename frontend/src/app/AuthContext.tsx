@@ -82,6 +82,16 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
 
       try {
         const { SplashScreen } = await import('@capacitor/splash-screen');
+        // Android: 네이티브 스플래시를 setKeepOnScreenCondition으로 유지하다가
+        // appReady() 신호로 해제 → Capacitor 스플래시와 gap 없이 전환
+        if (platform === 'android') {
+          const androidBridgeRef = (
+            window as unknown as {
+              AndroidBridge?: { appReady: () => void };
+            }
+          ).AndroidBridge;
+          androidBridgeRef?.appReady();
+        }
         await SplashScreen.hide({ fadeOutDuration: 300 });
       } catch {}
 

@@ -21,20 +21,29 @@ public class MainActivity extends BridgeActivity {
     // iOS의 statusBarCoverView와 동일한 역할: 상태바 영역을 앱 배경색으로 덮는 네이티브 뷰
     private View statusBarCoverView;
 
+    // JS가 appReady()를 호출할 때까지 네이티브 스플래시를 유지
+    private volatile boolean appReady = false;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
-        
+        splashScreen.setKeepOnScreenCondition(() -> !appReady);
+
         super.onCreate(savedInstanceState);
         // 컨텐츠가 status bar / navigation bar 영역으로 확장되도록 설정
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
-        // WebView 로드 전 검은 화면 방지: 스플래시 배경을 window background로 유지
-        getWindow().setBackgroundDrawableResource(R.drawable.splash_background);
-
         // JS 로드 전 flash 방지: 시스템 다크모드를 기준으로 커버뷰 배경색 + 아이콘 색상 초기 설정
         boolean isDarkMode = (getResources().getConfiguration().uiMode &
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+
+        // 스플래시 fadeOut 시 WebView 뒤에 보이는 window background를 앱 배경색으로 설정
+        // (DayNight 테마가 다크모드에서 검정으로 설정하는 것을 재정의)
+        int appBgColor = isDarkMode ? Color.parseColor("#121212") : Color.WHITE;
+        getWindow().getDecorView().setBackgroundColor(appBgColor);
+
+        // WebView 자체 배경도 동일하게 설정 (WebView 로드 전 잠깐 노출되는 영역)
+        getBridge().getWebView().setBackgroundColor(appBgColor);
 
         addStatusBarCover(isDarkMode);
 
@@ -114,6 +123,11 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void themeChange(String theme) {
             runOnUiThread(() -> applyStatusBarTheme(theme));
+        }
+
+        @JavascriptInterface
+        public void appReady() {
+            appReady = true;
         }
     }
 }
