@@ -88,7 +88,7 @@ export class AuthController {
     res.clearCookie('oauth_android', { path: '/' });
     const redirectUrl = isMobile
       ? isAndroid
-        ? `intent://oauth/callback?code=${code}#Intent;scheme=ittda;package=com.ittda.app;end`
+        ? `${this.FRONTEND_URL}/oauth/callback?code=${code}&platform=android`
         : `ittda://oauth/callback?code=${code}`
       : `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
     return res.redirect(302, redirectUrl);
@@ -126,7 +126,7 @@ export class AuthController {
     res.clearCookie('oauth_android', { path: '/' });
     const redirectUrl = isMobile
       ? isAndroid
-        ? `intent://oauth/callback?code=${code}#Intent;scheme=ittda;package=com.ittda.app;end`
+        ? `${this.FRONTEND_URL}/oauth/callback?code=${code}&platform=android`
         : `ittda://oauth/callback?code=${code}`
       : `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
     return res.redirect(302, redirectUrl);
