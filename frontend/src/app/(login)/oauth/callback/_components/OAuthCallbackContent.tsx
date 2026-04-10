@@ -19,12 +19,14 @@ interface OAuthCallbackContentProps {
   code: string | undefined;
   error: string | undefined;
   callback?: string | undefined;
+  platform?: string | undefined;
 }
 
 export default function OAuthCallbackContent({
   code,
   error,
   callback,
+  platform,
 }: OAuthCallbackContentProps) {
   const router = useRouter();
   const inviteCode = getCookie('invite-code') || '';
@@ -35,6 +37,13 @@ export default function OAuthCallbackContent({
   const hasRun = useRef(false);
 
   useEffect(() => {
+    // Android 앱에서 Chrome Custom Tab을 통해 돌아온 경우:
+    // 웹에서 로그인을 처리하지 않고 앱의 커스텀 스킴으로 핸드오프
+    if (platform === 'android' && code) {
+      window.location.href = `ittda://oauth/callback?code=${encodeURIComponent(code)}`;
+      return;
+    }
+
     // OAuth 인증 코드가 없으면 로그인 페이지로
     if (!code) {
       router.push('/login?error=invalid_callback');
@@ -157,7 +166,7 @@ export default function OAuthCallbackContent({
 
     handleLogin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, platform]);
 
   return <LoginContent error={error} />;
 }
