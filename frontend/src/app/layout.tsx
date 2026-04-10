@@ -201,6 +201,9 @@ export default function RootLayout({
                   } else {
                     document.documentElement.classList.remove('dark');
                   }
+                  // WebView 배경색을 즉시 설정: 스플래시 fadeOut 시 검은 화면 방지
+                  document.documentElement.style.backgroundColor = isDark ? '#121212' : '#ffffff';
+                  document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
                 // Capacitor 네이티브 앱 감지 → sticky 헤더 safe-area 오프셋용 클래스 부여
                 if (window.Capacitor?.isNativePlatform?.()) {
                   document.documentElement.classList.add('cap-native');
