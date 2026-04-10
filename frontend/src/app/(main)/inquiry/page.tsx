@@ -81,7 +81,7 @@ export default function InquiryPage() {
             <label className="text-sm font-semibold text-gray-900 dark:text-white">
               문의 유형 <span className="text-red-500">*</span>
             </label>
-            <div className="space-y-2.5">
+            <div className="mt-2 space-y-2.5">
               {CATEGORIES.map((cat) => (
                 <label
                   key={cat}

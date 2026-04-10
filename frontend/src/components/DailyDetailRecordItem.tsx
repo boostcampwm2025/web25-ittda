@@ -182,9 +182,9 @@ export default function DailyDetailRecordItem({
                   // Span 2인 경우: 전체 너비
                   return (
                     <div key={rowNumber} className="w-full">
-                      {sortedBlocks.map((block) => (
+                      {sortedBlocks.map((block, idx) => (
                         <BlockContent
-                          key={`${record.postId}-${block.id}`}
+                          key={`${record.postId}-${rowNumber}-${block.id ?? idx}`}
                           block={block}
                         />
                       ))}
@@ -197,9 +197,9 @@ export default function DailyDetailRecordItem({
                       key={rowNumber}
                       className="flex justify-between items-center gap-3 w-full overflow-hidden"
                     >
-                      {sortedBlocks.map((block) => (
+                      {sortedBlocks.map((block, idx) => (
                         <div
-                          key={`${record.postId}-${block.id}`}
+                          key={`${record.postId}-${rowNumber}-${block.id ?? idx}`}
                           className={cn(
                             'min-w-0 shrink',
                             block.layout.col === 2 ? 'text-right' : 'text-left',
