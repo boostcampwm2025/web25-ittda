@@ -6,7 +6,6 @@ import { BlockValue, FieldType, LocationValue } from '@/lib/types/record';
 import { RecordBlock, PhotoValue } from '@/lib/types/recordField';
 
 import {
-  extractMultipleExifMetadata,
   extractExifFromDataUrl,
   ExifMetadata,
 } from '@/lib/utils/exifExtractor';
@@ -144,15 +143,16 @@ export function useRecordEditorPhotos({
         })),
       );
 
-      // 새 이미지 메타데이터
-      const metadataResults = await extractMultipleExifMetadata(filesToRead);
-
-      const newImagesWithMetadata = metadataResults
-        .map((result, idx) => ({
-          imageUrl: newImages[idx],
-          metadata: result.metadata,
-        }))
-        .filter((img) => img.metadata.hasMetadata);
+      // 새 이미지 메타데이터: File 객체 대신 data URL로 추출
+      // Android에서 File 객체로는 EXIF 접근이 안 되지만 data URL에는 EXIF가 보존됨
+      const newImagesWithMetadata = (
+        await Promise.all(
+          newImages.map(async (url) => ({
+            imageUrl: url,
+            metadata: await extractExifFromDataUrl(url),
+          })),
+        )
+      ).filter((img) => img.metadata.hasMetadata);
 
       const allImagesWithMetadata = [
         ...existingImagesWithMetadata.filter((img) => img.metadata.hasMetadata),
@@ -211,7 +211,7 @@ export function useRecordEditorPhotos({
   const handleApplyMetadata = useCallback(
     (
       metadata: ExifMetadata,
-      imageUrl: string,
+      _imageUrl: string,
       fields: {
         applyDate: boolean;
         applyTime: boolean;
