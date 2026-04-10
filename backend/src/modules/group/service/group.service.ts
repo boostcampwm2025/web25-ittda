@@ -256,10 +256,19 @@ export class GroupService {
     }
 
     // 5. 결과 조립
+    const validGroupIds = groupIds.filter((id) => groupMap.has(id));
+    const coverResults = await Promise.all(
+      validGroupIds.map((groupId) =>
+        this.resolveGroupCover(groupMap.get(groupId)!),
+      ),
+    );
+    const coverByGroupId = new Map(
+      validGroupIds.map((id, i) => [id, coverResults[i]]),
+    );
+
     const items: GroupItemDto[] = [];
-    for (const groupId of groupIds) {
-      const group = groupMap.get(groupId);
-      if (!group) continue;
+    for (const groupId of validGroupIds) {
+      const group = groupMap.get(groupId)!;
 
       const memberCount = memberCountMap.get(groupId) ?? 0;
       const recordCount = recordCountMap.get(groupId) ?? 0;
@@ -269,16 +278,7 @@ export class GroupService {
       items.push({
         groupId: group.id,
         name: group.name,
-        cover:
-          group.coverMedia && !group.coverMedia.deletedAt
-            ? {
-                assetId: group.coverMedia.id,
-                width: group.coverMedia.width ?? 0,
-                height: group.coverMedia.height ?? 0,
-                mimeType:
-                  group.coverMedia.mimeType ?? 'application/octet-stream',
-              }
-            : null,
+        cover: coverByGroupId.get(groupId) ?? null,
         memberCount,
         recordCount,
         createdAt: group.createdAt,
@@ -305,12 +305,12 @@ export class GroupService {
   }
 
   private async resolveGroupCover(group: Group) {
-    if (group.coverMedia) {
+    if (group.coverMedia && !group.coverMedia.deletedAt) {
       return {
         assetId: group.coverMedia.id,
-        width: group.coverMedia.width,
-        height: group.coverMedia.height,
-        mimeType: group.coverMedia.mimeType,
+        width: group.coverMedia.width ?? 0,
+        height: group.coverMedia.height ?? 0,
+        mimeType: group.coverMedia.mimeType ?? 'application/octet-stream',
       };
     }
 
@@ -334,9 +334,9 @@ export class GroupService {
 
     return {
       assetId: latestMedia.media.id,
-      width: latestMedia.media.width,
-      height: latestMedia.media.height,
-      mimeType: latestMedia.media.mimeType,
+      width: latestMedia.media.width ?? 0,
+      height: latestMedia.media.height ?? 0,
+      mimeType: latestMedia.media.mimeType ?? 'application/octet-stream',
     };
   }
 
