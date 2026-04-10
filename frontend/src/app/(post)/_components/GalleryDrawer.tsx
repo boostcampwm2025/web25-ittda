@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Check, ImageIcon } from 'lucide-react';
 import { useCallback, useMemo, useRef } from 'react';
 import { DrawerClose } from '../../../components/ui/drawer';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import {
   groupRecordCoverOptions,
   groupMonthlyRecordCoverOptions,
@@ -12,6 +12,8 @@ import {
 import { myMonthlyRecordCoverOptions } from '@/lib/api/my';
 import AssetImage from '@/components/AssetImage';
 import { ResetDefaultCoverButton } from '@/components/ResetDefaultCoverButton';
+import { useApiDelete } from '@/hooks/useApi';
+import { toast } from 'sonner';
 
 interface GalleryDrawerProps {
   type: 'group' | 'personal' | 'other';
@@ -28,6 +30,31 @@ export default function GalleryDrawer({
   currentAssetId,
   onSelect,
 }: GalleryDrawerProps) {
+  const queryClient = useQueryClient();
+
+  const resetEndpoint = groupId
+    ? month
+      ? `/api/groups/${groupId}/archives/months/${month}/cover`
+      : `/api/groups/${groupId}/cover`
+    : `/api/user/archives/months/${month}/cover`;
+
+  const { mutate: resetCover } = useApiDelete(resetEndpoint, {
+    onSuccess: () => {
+      toast.success('커버가 기본값으로 변경되었습니다.');
+      if (groupId && !month) {
+        queryClient.invalidateQueries({ queryKey: ['group', groupId, 'edit'] });
+        queryClient.invalidateQueries({ queryKey: ['shared'] });
+      } else if (groupId && month) {
+        queryClient.invalidateQueries({
+          queryKey: ['group', groupId, 'records', 'month'],
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['my', 'records', 'month'] });
+      }
+    },
+    onError: () => toast.error('기본값으로 변경에 실패했습니다.'),
+  });
+
   // 그룹 쿼리
   const groupQuery = useInfiniteQuery({
     ...groupRecordCoverOptions(groupId!),
@@ -162,7 +189,7 @@ export default function GalleryDrawer({
           )}
         </div>
       )}
-      <ResetDefaultCoverButton />
+      <ResetDefaultCoverButton onClick={() => resetCover({})} />
       <DrawerClose className="cursor-pointer w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm dark:bg-white dark:text-black bg-itta-black text-white shrink-0">
         닫기
       </DrawerClose>
