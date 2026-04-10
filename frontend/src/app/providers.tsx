@@ -75,10 +75,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         offset={{ top: 32, bottom: 'var(--bottom-nav-height)' }}
         toastOptions={{
           classNames: {
-            error: 'bg-red-500 text-white',
-            success: 'bg-green-500 text-white',
-            warning: 'bg-yellow-500 text-white',
-            info: 'bg-blue-500 text-white',
+            error: 'bg-red-500 text-white mt-5',
+            success: 'bg-green-500 text-white mt-5',
+            warning: 'bg-yellow-500 text-white mt-5',
+            info: 'bg-blue-500 text-white mt-5',
           },
         }}
       />
