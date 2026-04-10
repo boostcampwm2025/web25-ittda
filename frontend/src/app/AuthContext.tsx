@@ -53,14 +53,15 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
   // resolvedTheme가 결정되기 전에 숨기면 status bar가 잠깐 기본(light) 상태로 노출됨
   useEffect(() => {
     if (status === 'loading') return;
-    if (!resolvedTheme) return; // 테마 미확정 시 대기
     if (!isNativePlatform()) return;
+    // resolvedTheme가 없으면 system 기본값('light') 사용 — 스플래시가 무한 대기하는 것 방지
+    const theme = resolvedTheme ?? 'light';
 
     (async () => {
       const platform = (
         window as unknown as { Capacitor?: { getPlatform?: () => string } }
       ).Capacitor?.getPlatform?.();
-      const androidTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
+      const androidTheme = theme === 'dark' ? 'dark' : 'light';
       const androidBridge = (
         window as unknown as {
           AndroidBridge?: { themeChange: (t: string) => void };
@@ -75,7 +76,7 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
           const { StatusBar, Style } = await import('@capacitor/status-bar');
           // Style.Light = light icons (dark background용), Style.Dark = dark icons (light background용)
           await StatusBar.setStyle({
-            style: resolvedTheme === 'dark' ? Style.Light : Style.Dark,
+            style: theme === 'dark' ? Style.Light : Style.Dark,
           });
         } catch {}
       }
@@ -100,7 +101,7 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
         androidBridge?.themeChange(androidTheme);
       }
     })();
-  }, [status, resolvedTheme]);
+  }, [status, resolvedTheme]); // resolvedTheme: 결정되면 정확한 테마로 재적용
 
   useEffect(() => {
     if (pathname.startsWith('/invite')) {

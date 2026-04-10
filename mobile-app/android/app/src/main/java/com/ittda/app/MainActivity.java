@@ -3,6 +3,8 @@ package com.ittda.app;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
@@ -28,6 +30,9 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         splashScreen.setKeepOnScreenCondition(() -> !appReady);
+
+        // JS가 appReady()를 호출하지 못하는 경우 최대 5초 후 강제 해제
+        new Handler(Looper.getMainLooper()).postDelayed(() -> appReady = true, 5000);
 
         super.onCreate(savedInstanceState);
         // 컨텐츠가 status bar / navigation bar 영역으로 확장되도록 설정
