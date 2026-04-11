@@ -41,7 +41,7 @@ export class Post {
   @Column({ name: 'group_id', type: 'uuid', nullable: true })
   groupId?: string | null;
 
-  @ManyToOne(() => Group, { nullable: true })
+  @ManyToOne(() => Group, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'group_id' })
   group?: Group | null;
 
