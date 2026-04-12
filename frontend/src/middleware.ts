@@ -12,7 +12,7 @@ export default auth((req) => {
   requestHeaders.set('x-pathname', nextUrl.pathname);
   const next = () => NextResponse.next({ request: { headers: requestHeaders } });
 
-  const isSocialLoggedIn = !!session;
+  const isSocialLoggedIn = !!session?.accessToken && !session.error;
   const isGuestLoggedIn =
     !!cookies.get('x-guest-session-id') ||
     !!cookies.get('x-guest-access-token');
