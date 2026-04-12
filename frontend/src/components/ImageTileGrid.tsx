@@ -38,9 +38,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 1}`}
-                width={600}
-                height={600}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
           ))}
@@ -59,9 +58,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
               assetId={images[0]}
               url={images[0]}
               alt="메인 이미지"
-              width={600}
-              height={600}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
             />
           </div>
           {images.slice(1, 3).map((url, index) => (
@@ -70,9 +68,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 2}`}
-                width={600}
-                height={600}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
           ))}
@@ -92,9 +89,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 1}`}
-                width={600}
-                height={600}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
           ))}
@@ -112,9 +108,8 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
             assetId={images[0]}
             url={images[0]}
             alt="메인 이미지"
-            width={600}
-            height={600}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         </div>
         {images.slice(1, 5).map((url, index) => (
