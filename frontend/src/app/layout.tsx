@@ -211,6 +211,14 @@ export default function RootLayout({
                 // Android 감지 → drawer overlay가 statusbar까지 CSS로 처리
                 if (window.Capacitor?.getPlatform?.() === 'android') {
                   document.documentElement.classList.add('cap-android');
+                  // env(safe-area-inset-top)이 0인 Android 기기 대비:
+                  // native bridge에서 실제 상태바 높이를 읽어 CSS 변수로 설정
+                  try {
+                    const h = window.AndroidBridge?.getStatusBarHeightDp?.();
+                    if (h > 0) {
+                      document.documentElement.style.setProperty('--cap-status-bar-height', h + 'px');
+                    }
+                  } catch (_) {}
                 }
                 } catch (e) {}
               })();
@@ -224,7 +232,7 @@ export default function RootLayout({
       >
         <Script
           src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
         />
         <KakaoScript />
         <AuthContext>
