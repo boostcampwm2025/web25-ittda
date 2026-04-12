@@ -17,6 +17,13 @@ export function useRecordCollaboration(
   initialVersion: number = 0,
 ) {
   const { socket, sessionId: mySessionId } = useSocketStore();
+  // mySessionId를 ref로도 유지 — PATCH_COMMITTED 핸들러가 effect 클로저에 캡처된 값이 아닌
+  // 항상 최신 sessionId를 참조하도록 함 (sessionId 설정 전에 이벤트가 도착하면
+  // authorSessionId !== null 조건이 true가 되어 자신의 패치를 타인 패치로 잘못 처리하는 버그 방지)
+  const mySessionIdRef = useRef(mySessionId);
+  useEffect(() => {
+    mySessionIdRef.current = mySessionId;
+  });
   const router = useRouter();
   const versionRef = useRef(initialVersion);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -48,7 +55,7 @@ export function useRecordCollaboration(
       partialValue: BlockValue;
       sessionId: string;
     }) => {
-      if (sessionId === mySessionId) return;
+      if (sessionId === mySessionIdRef.current) return;
 
       const localType = ServerToFieldTypeMap[type] || 'content';
 
@@ -102,7 +109,7 @@ export function useRecordCollaboration(
       const commands = Array.isArray(patch) ? patch : [patch];
 
       // 블록 데이터 반영
-      if (authorSessionId !== mySessionId) {
+      if (authorSessionId !== mySessionIdRef.current) {
         // BLOCK_SET_TITLE은 setBlocks updater 밖에서 별도 처리
         // (updater 함수는 순수 함수여야 하므로 내부에서 다른 setState 호출 금지 — Concurrent Mode 이중 실행 방지)
         const titleCmd = commands.find(
@@ -262,7 +269,7 @@ export function useRecordCollaboration(
       socket.off('DRAFT_PUBLISHED', handleDraftPublished);
       socket.off('DRAFT_PUBLISH_ENDED', handleDraftPublishEnded);
     };
-  }, [socket, draftId, mySessionId, setBlocks, setTitle, router]);
+  }, [socket, draftId, setBlocks, setTitle, router]);
 
   const emitStream = useCallback(
     (blockId: string, partialValue: BlockValue) => {
@@ -278,13 +285,27 @@ export function useRecordCollaboration(
 
   const applyPatch = useCallback(
     (patch: PatchApplyPayload | PatchApplyPayload[]) => {
+      // photos 블록의 tempUrls(data URL)는 로컬 미리보기 전용이므로 WebSocket 전송 전에 제거
+      const sanitize = (p: PatchApplyPayload): PatchApplyPayload => {
+        if (p.type === 'BLOCK_SET_VALUE' && p.value != null && 'tempUrls' in p.value) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return { ...p, value: { ...(p.value as any), tempUrls: [] } };
+        }
+        if (p.type === 'BLOCK_INSERT' && p.block?.value != null && 'tempUrls' in p.block.value) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return { ...p, block: { ...p.block, value: { ...(p.block.value as any), tempUrls: [] } } };
+        }
+        return p;
+      };
+
+      const sanitized = Array.isArray(patch) ? patch.map(sanitize) : sanitize(patch);
       socket?.emit('PATCH_APPLY', {
         draftId,
         baseVersion: versionRef.current,
-        patch,
+        patch: sanitized,
       });
     },
-    [socket, draftId],
+    [socket, draftId, versionRef],
   );
 
   const markNavigatingToRecord = () => {
