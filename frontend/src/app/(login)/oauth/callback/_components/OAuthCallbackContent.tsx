@@ -29,7 +29,10 @@ export default function OAuthCallbackContent({
   platform,
 }: OAuthCallbackContentProps) {
   const router = useRouter();
-  const inviteCode = getCookie('invite-code') || '';
+  const inviteCode =
+    getCookie('invite-code') ||
+    (typeof window !== 'undefined' ? sessionStorage.getItem('invite-code') : null) ||
+    '';
   const queryClient = useQueryClient();
   const setLogin = useAuthStore((state) => state.setLogin);
   const setSocialLogin = useAuthStore((state) => state.setSocialLogin);
@@ -112,11 +115,13 @@ export default function OAuthCallbackContent({
             inviteGroupId = response.data.groupId;
             if (!inviteGroupId) createApiError(response);
             deleteCookie('invite-code');
+            sessionStorage.removeItem('invite-code');
             toast.success(`그룹에 참여되었습니다!`);
           } catch (error) {
             // 그룹 가입 실패 시에도 로그인은 계속 진행
             toast.error('그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.');
             deleteCookie('invite-code'); // 실패한 초대 코드 제거
+            sessionStorage.removeItem('invite-code');
 
             Sentry.captureException(error, {
               level: 'warning',

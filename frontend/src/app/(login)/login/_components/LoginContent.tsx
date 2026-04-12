@@ -52,7 +52,10 @@ export default function LoginContent({
   forceAccountSelect?: boolean;
 }) {
   const router = useRouter();
-  const inviteCode = getCookie('invite-code') || '';
+  const inviteCode =
+    getCookie('invite-code') ||
+    (typeof window !== 'undefined' ? sessionStorage.getItem('invite-code') : null) ||
+    '';
 
   const { setGuestInfo, isLoggedIn, guestSessionId } = useAuthStore();
   const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
@@ -83,6 +86,7 @@ export default function LoginContent({
               inviteGroupId = groupResponse.data.groupId;
               if (!inviteGroupId) createApiError(groupResponse);
               deleteCookie('invite-code');
+              sessionStorage.removeItem('invite-code');
               toast.success(`그룹에 참여되었습니다!`);
             } catch (error) {
               // 그룹 가입 실패 시에도 로그인은 계속 진행
@@ -90,6 +94,7 @@ export default function LoginContent({
                 '그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.',
               );
               deleteCookie('invite-code'); // 실패한 초대 코드 제거
+              sessionStorage.removeItem('invite-code');
 
               Sentry.captureException(error, {
                 level: 'warning',
@@ -213,7 +218,27 @@ export default function LoginContent({
         const accessToken = authHeader?.replace('Bearer ', '');
         if (response.data && accessToken) {
           setGuestInfo({ ...response.data, guestAccessToken: accessToken });
-          window.location.href = callback || '/';
+
+          // 초대 코드가 있으면 그룹 자동 가입 시도
+          let redirectPath = callback || '/';
+          if (inviteCode) {
+            try {
+              const groupResponse = await joinGroup({});
+              const inviteGroupId = groupResponse.data.groupId;
+              if (!inviteGroupId) createApiError(groupResponse);
+              deleteCookie('invite-code');
+              sessionStorage.removeItem('invite-code');
+              toast.success(`그룹에 참여되었습니다!`);
+              redirectPath = `/group/${inviteGroupId}`;
+            } catch (error) {
+              toast.error('그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.');
+              deleteCookie('invite-code');
+              sessionStorage.removeItem('invite-code');
+              logger.error('게스트 복원 후 그룹 가입 실패', error);
+            }
+          }
+
+          window.location.href = redirectPath;
           return;
         }
         // restore 실패 = 세션 만료 → 데이터 삭제됨
