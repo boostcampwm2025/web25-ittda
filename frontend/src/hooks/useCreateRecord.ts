@@ -75,6 +75,10 @@ export const useCreateRecord = (
     '/api/posts',
     {
       onSuccess: handleSuccess,
+      onError: (error) => {
+        toast.error('기록 저장에 실패했습니다. 다시 시도해 주세요.');
+        options?.onError?.(error);
+      },
     },
     false,
     { 'x-user-id': userId ?? '' },
@@ -88,6 +92,10 @@ export const useCreateRecord = (
         queryClient.invalidateQueries({ queryKey: ['record', postId] });
         queryClient.invalidateQueries({ queryKey: ['posts'] });
         handleSuccess(res);
+      },
+      onError: (error) => {
+        toast.error('기록 저장에 실패했습니다. 다시 시도해 주세요.');
+        options?.onError?.(error);
       },
     },
   );
