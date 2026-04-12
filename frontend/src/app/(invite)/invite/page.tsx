@@ -72,10 +72,14 @@ export default function InvitePage() {
     }
 
     // 다른 계정으로 가입하거나 로그인이 필요한 경우
-    // 로그인 성공 후 그룹 가입시키기 위해 쿠키에 추가
+    // 로그인 성공 후 그룹 가입시키기 위해 쿠키와 sessionStorage에 저장
+    // (OAuth 리다이렉트 중 쿠키가 유실될 경우를 대비한 이중 저장)
     setCookie('invite-code', inviteCode, {
       days: 1,
     });
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('invite-code', inviteCode);
+    }
 
     // forceLogin이 true이고 현재 로그인되어 있다면 로그아웃 먼저 수행
     if (forceLogin && isLoggedIn) {
