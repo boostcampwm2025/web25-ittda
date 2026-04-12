@@ -42,6 +42,8 @@ export class MediaService {
     'image/jpeg',
     'image/jpg',
     'image/webp',
+    'image/heic',
+    'image/heif',
   ]);
   private readonly pendingRetentionMs = 7 * 24 * 60 * 60 * 1000;
 
@@ -247,7 +249,7 @@ export class MediaService {
       });
       let url: string;
       try {
-        url = await getSignedUrl(this.s3Client, command, {
+        url = await getSignedUrl(this.s3PresignClient, command, {
           expiresIn: this.presignTtlSeconds,
         });
       } catch (err) {
@@ -334,7 +336,7 @@ export class MediaService {
     });
 
     try {
-      const url = await getSignedUrl(this.s3Client, command, {
+      const url = await getSignedUrl(this.s3PresignClient, command, {
         expiresIn: this.presignTtlSeconds,
       });
       return { ok: true as const, url, expiresAt };

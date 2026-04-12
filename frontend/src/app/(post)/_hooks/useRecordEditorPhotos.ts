@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
 
@@ -49,7 +49,7 @@ interface RecordEditorPhotos {
   applyPatch?: (patch: PatchApplyPayload | PatchApplyPayload[]) => void;
   releaseLock?: (lockKey: string) => void;
 }
-const PHOTO_LIMIT = MULTI_INSTANCE_LIMITS['photos'] || 10;
+const PHOTO_LIMIT = MULTI_INSTANCE_LIMITS['photos'] || 5;
 export function useRecordEditorPhotos({
   blocks,
   setBlocks,
@@ -61,6 +61,14 @@ export function useRecordEditorPhotos({
   applyPatch,
   releaseLock,
 }: RecordEditorPhotos) {
+  // draft 모드에서 생성한 blob URL 목록 — 언마운트 시 revoke
+  const blobUrlsRef = useRef<string[]>([]);
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
+
   // EXIF 메타데이터 상태
   const pendingFilesRef = useRef<Map<string, File>>(new Map());
   const [pendingMetadata, setPendingMetadata] = useState<{
@@ -115,27 +123,80 @@ export function useRecordEditorPhotos({
     }
     const isDraft = !!draftId;
     let uploadedIds: string[] = [];
+    let newImages: string[] = [];
+
+    // 1단계: 이미지 업로드 + 미리보기 URL 생성 (핵심 단계 — 실패 시 toast)
+    // draft 모드: blob URL 사용 (HEIC 등 WebView에서 data URL 렌더링 불가 문제 방지)
+    // 일반 모드: data URL 사용 (저장 시 pendingFilesRef로 File 매칭 필요)
+    let dataUrls: string[] = []; // EXIF 추출용 data URL (draft 포함)
     try {
       if (isDraft && uploadMultipleMedia) {
         uploadedIds = await uploadMultipleMedia(filesToRead);
       }
-      // 이미지를 Base64로 변환
-      const newImages = await Promise.all(
-        filesToRead.map(
-          (file) =>
-            new Promise<string>((res) => {
-              const reader = new FileReader();
-              reader.onload = (ev) => {
-                const url = ev.target?.result as string;
-                pendingFilesRef.current.set(url, file);
-                res(url);
-              };
-              reader.readAsDataURL(file);
-            }),
-        ),
-      );
 
-      // 기존 이미지 메타데이터
+      if (isDraft) {
+        // draft 모드: tempUrls = blob URL (미리보기) — HEIC 포함 모든 포맷 렌더링 가능
+        newImages = filesToRead.map((file) => {
+          const url = URL.createObjectURL(file);
+          blobUrlsRef.current.push(url);
+          return url;
+        });
+        // EXIF용 data URL은 별도 비필수 단계에서 추출 (실패해도 업로드에 영향 없음)
+        dataUrls = newImages; // 일단 blob URL로 채워둠 (아래 EXIF 단계에서 교체 시도)
+      } else {
+        newImages = await Promise.all(
+          filesToRead.map(
+            (file) =>
+              new Promise<string>((res, rej) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  const url = ev.target?.result as string;
+                  pendingFilesRef.current.set(url, file);
+                  res(url);
+                };
+                reader.onerror = rej;
+                reader.readAsDataURL(file);
+              }),
+          ),
+        );
+        dataUrls = newImages;
+      }
+    } catch (err) {
+      Sentry.captureException(err, {
+        level: 'error',
+        tags: { context: 'post-editor', operation: 'image-upload' },
+        extra: { isDraft },
+      });
+      logger.error('이미지 업로드에 실패', err);
+      toast.error('이미지 업로드에 실패했습니다.');
+      e.target.value = '';
+      return;
+    }
+
+    // 2단계: EXIF 메타데이터 추출 (실패해도 이미지 추가는 계속 진행)
+    let allImagesWithMetadata: {
+      imageUrl: string;
+      metadata: import('@/lib/utils/exifExtractor').ExifMetadata;
+    }[] = [];
+    try {
+      // draft 모드: blob URL로는 EXIF 추출 불가 → data URL로 변환 시도 (실패해도 계속 진행)
+      if (isDraft) {
+        const resolved = await Promise.allSettled(
+          filesToRead.map(
+            (file) =>
+              new Promise<string>((res, rej) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => res(ev.target?.result as string);
+                reader.onerror = rej;
+                reader.readAsDataURL(file);
+              }),
+          ),
+        );
+        dataUrls = resolved.map((r, i) =>
+          r.status === 'fulfilled' ? r.value : newImages[i],
+        );
+      }
+
       const existingImagesWithMetadata = await Promise.all(
         (currentPhotoValue.tempUrls || []).map(async (url) => ({
           imageUrl: url,
@@ -143,66 +204,49 @@ export function useRecordEditorPhotos({
         })),
       );
 
-      // 새 이미지 메타데이터: File 객체 대신 data URL로 추출
-      // Android에서 File 객체로는 EXIF 접근이 안 되지만 data URL에는 EXIF가 보존됨
       const newImagesWithMetadata = (
         await Promise.all(
-          newImages.map(async (url) => ({
-            imageUrl: url,
-            metadata: await extractExifFromDataUrl(url),
+          dataUrls.map(async (url, i) => ({
+            imageUrl: newImages[i], // 미리보기용 URL (blob or data)
+            metadata: await extractExifFromDataUrl(url), // EXIF는 data URL 필요
           })),
         )
       ).filter((img) => img.metadata.hasMetadata);
 
-      const allImagesWithMetadata = [
+      allImagesWithMetadata = [
         ...existingImagesWithMetadata.filter((img) => img.metadata.hasMetadata),
         ...newImagesWithMetadata,
       ];
-
-      if (allImagesWithMetadata.length > 0) {
-        setPendingMetadata((prev) => ({
-          images: allImagesWithMetadata,
-          newImageUrls: newImages,
-          uploadedIds: uploadedIds.length > 0 ? uploadedIds : undefined,
-          appliedMetadata: prev?.appliedMetadata || {},
-        }));
-      } else {
-        // 메타데이터 없으면 바로 추가
-        let updatedPhotoValue: PhotoValue = {};
-        if (draftId) {
-          updatedPhotoValue = {
-            mediaIds: [
-              ...(existingPhotos?.value.mediaIds || []),
-              ...uploadedIds,
-            ],
-            tempUrls: [],
-          };
-        } else {
-          updatedPhotoValue = {
-            ...currentPhotoValue,
-            tempUrls: [...(currentPhotoValue.tempUrls || []), ...newImages],
-          };
-        }
-
-        handleDone(updatedPhotoValue, false);
-      }
-    } catch (err) {
-      Sentry.captureException(err, {
-        level: 'error',
-        tags: {
-          context: 'post-editor',
-          operation: 'image-upload',
-        },
-        extra: {
-          isDraft: isDraft,
-        },
-      });
-      logger.error('이미지 업로드에 실패', err);
-
-      toast.error('이미지 업로드에 실패했습니다.');
-    } finally {
-      e.target.value = '';
+    } catch {
+      // EXIF 추출 실패는 무시 — 이미지 추가는 정상 진행
     }
+
+    // 3단계: 메타데이터 있으면 drawer, 없으면 바로 추가
+    if (allImagesWithMetadata.length > 0) {
+      setPendingMetadata((prev) => ({
+        images: allImagesWithMetadata,
+        newImageUrls: newImages,
+        uploadedIds: uploadedIds.length > 0 ? uploadedIds : undefined,
+        appliedMetadata: prev?.appliedMetadata || {},
+      }));
+    } else {
+      let updatedPhotoValue: PhotoValue = {};
+      if (draftId) {
+        // tempUrls는 로컬 미리보기용 fallback — WebSocket 전송 시에는 제거됨 (useRecordCollaboration.applyPatch)
+        updatedPhotoValue = {
+          mediaIds: [...(existingPhotos?.value.mediaIds || []), ...uploadedIds],
+          tempUrls: [...(existingPhotos?.value.tempUrls || []), ...newImages],
+        };
+      } else {
+        updatedPhotoValue = {
+          ...currentPhotoValue,
+          tempUrls: [...(currentPhotoValue.tempUrls || []), ...newImages],
+        };
+      }
+      handleDone(updatedPhotoValue, false);
+    }
+
+    e.target.value = '';
   };
 
   /**
@@ -260,7 +304,11 @@ export function useRecordEditorPhotos({
                 ...(currentPhotoValue.mediaIds || []),
                 ...(pendingMetadata.uploadedIds || []),
               ],
-              tempUrls: [],
+              // tempUrls: 로컬 미리보기용 fallback (WebSocket 전송 시 제거됨)
+              tempUrls: [
+                ...(currentPhotoValue.tempUrls || []),
+                ...(pendingMetadata.newImageUrls || []),
+              ],
             }
           : {
               mediaIds: currentPhotoValue.mediaIds || [],
@@ -467,7 +515,11 @@ export function useRecordEditorPhotos({
                           ...(b.value.mediaIds || []),
                           ...(pendingMetadata.uploadedIds || []),
                         ],
-                        tempUrls: [],
+                        // tempUrls: 로컬 미리보기용 fallback (WebSocket 전송 시 제거됨)
+                        tempUrls: [
+                          ...(b.value.tempUrls || []),
+                          ...(pendingMetadata.newImageUrls || []),
+                        ],
                       }
                     : {
                         mediaIds: b.value.mediaIds || [],
@@ -490,7 +542,8 @@ export function useRecordEditorPhotos({
             value: draftId
               ? {
                   mediaIds: pendingMetadata.uploadedIds || [],
-                  tempUrls: [],
+                  // tempUrls: 로컬 미리보기용 fallback (WebSocket 전송 시 제거됨)
+                  tempUrls: pendingMetadata.newImageUrls || [],
                 }
               : {
                   mediaIds: [],

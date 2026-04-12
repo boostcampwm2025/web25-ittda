@@ -268,6 +268,16 @@ export default function PostEditor({
     return () => clearTimeout(timer);
   }, [isPublishing, setIsPublishing]);
 
+  // 개인 기록 저장 응답이 너무 오래 걸릴 경우 로딩 화면 해제 및 알림
+  useEffect(() => {
+    if (!isSaving) return;
+    const timer = setTimeout(() => {
+      setIsSaving(false);
+      toast.error('네트워크 지연 또는 기록 저장에 실패했습니다. 다시 시도해 주세요.');
+    }, 10_000);
+    return () => clearTimeout(timer);
+  }, [isSaving]);
+
   const {
     activeDrawer,
     setActiveDrawer,
@@ -552,7 +562,10 @@ export default function PostEditor({
         blocksOverride: filteredBlocks.map((b) => ({
           id: b.id,
           type: RecordFieldtypeMap[b.type] as string,
-          value: b.value as Record<string, unknown>,
+          // tempUrls는 로컬 미리보기 전용 — 서버 전송 불필요 (photos 블록에만 존재)
+          value: (b.type === 'photos'
+            ? { ...b.value, tempUrls: [] }
+            : b.value) as Record<string, unknown>,
           layout: b.layout as unknown as Record<string, unknown>,
         })),
       });
@@ -572,6 +585,11 @@ export default function PostEditor({
       const finalizedBlocks = await Promise.all(
         filteredBlocks.map(async (block) => {
           if (block.type === 'photos') {
+            // draft 모드: tempUrls는 이미 업로드된 미리보기용 data URL — 재업로드 없이 제거
+            if (isDraft) {
+              return { ...block, value: { ...block.value, tempUrls: [] } };
+            }
+
             const tempUrls = block.value.tempUrls || [];
             const filesToUpload: File[] = [];
 
@@ -816,23 +834,22 @@ export default function PostEditor({
             photos={photoValue}
             onUploadClick={() => fileInputRef.current?.click()}
             onRemovePhoto={(idx) => {
-              //TODO: 임시로 mediaIds, tempUrls 각각 취급하고 tempUrls 에만 경로 넣어줌
-              // 이후 백엔드 로직 확정 시 변경
               const mediaIds = photoValue.mediaIds || [];
               const tempUrls = photoValue.tempUrls || [];
 
               let nextValue;
-              if (idx < mediaIds.length) {
+              if (mediaIds.length > 0) {
+                // draft 모드: mediaIds와 tempUrls가 인덱스 대응 — 같이 제거
                 nextValue = {
                   ...photoValue,
                   mediaIds: mediaIds.filter((_, i) => i !== idx),
+                  tempUrls: tempUrls.filter((_, i) => i !== idx),
                 };
               } else {
+                // 일반 모드: tempUrls만
                 nextValue = {
                   ...photoValue,
-                  tempUrls: tempUrls.filter(
-                    (_, i) => i !== idx - mediaIds.length,
-                  ),
+                  tempUrls: tempUrls.filter((_, i) => i !== idx),
                 };
               }
 
@@ -981,7 +998,7 @@ export default function PostEditor({
         ref={fileInputRef}
         className="hidden"
         multiple
-        accept="image/jpeg, image/jpg, image/png, image/webp"
+        accept="image/jpeg, image/jpg, image/png, image/webp, image/heic, image/heif"
         onChange={handlePhotoUpload}
       />
       {renderActiveDrawer()}

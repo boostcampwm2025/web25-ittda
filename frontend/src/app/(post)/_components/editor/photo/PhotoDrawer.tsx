@@ -42,16 +42,24 @@ export default function PhotoDrawer({
   const mediaIds = photos.mediaIds || [];
   const { data: resolvedData } = useMediaResolveMulti(mediaIds, draftId);
 
-  // resolve 된 url
   const urlMap = new Map(
     resolvedData?.items.map((item) => [item.mediaId, item.url]),
   );
 
-  // 전체 사진
-  const allPhotos = [
-    ...mediaIds.map((id) => urlMap.get(id) || id),
-    ...(photos.tempUrls || []),
-  ];
+  // 총 사진 수: mediaIds 기준 (로딩 중에도 개수 유지)
+  const totalCount = mediaIds.length > 0 ? mediaIds.length : (photos.tempUrls?.length || 0);
+
+  // 각 슬롯의 URL(null이면 로딩 스켈레톤): tempUrl 우선, 없으면 resolved URL
+  const photoSlots =
+    mediaIds.length > 0
+      ? mediaIds.map((id, i) => ({
+          key: id,
+          url: photos.tempUrls?.[i] || urlMap.get(id) || null,
+        }))
+      : (photos.tempUrls || []).map((url, i) => ({
+          key: `temp-${i}`,
+          url,
+        }));
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="h-[80vh] flex flex-col outline-none">
@@ -62,10 +70,10 @@ export default function PhotoDrawer({
                 SELECT PHOTOS
               </span>
               <DrawerTitle className="text-lg font-bold">
-                사진 관리 ({allPhotos.length})
+                사진 관리 ({totalCount})
               </DrawerTitle>
             </div>
-            {!draftId && onEditMetadata && allPhotos.length > 0 && (
+            {!draftId && onEditMetadata && totalCount > 0 && (
               <button
                 onClick={onEditMetadata}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-medium hover:bg-gray-200 dark:hover:bg-white/20 active:scale-95 transition-all"
@@ -86,9 +94,8 @@ export default function PhotoDrawer({
                 <span className="text-[10px] font-bold">사진 추가</span>
               </button>
 
-              {allPhotos.map((url, idx) => {
-                // 해당 이미지에 적용된 필드가 하나라도 있는지 확인
-                const appliedFields = appliedMetadata[url];
+              {photoSlots.map(({ key, url }, idx) => {
+                const appliedFields = url ? appliedMetadata[url] : undefined;
                 const isMetadataApplied =
                   appliedFields &&
                   (appliedFields.date ||
@@ -96,19 +103,24 @@ export default function PhotoDrawer({
                     appliedFields.location);
                 return (
                   <div
-                    key={`${url}-${idx}`}
+                    key={`${key}-${idx}`}
                     className={`relative aspect-square rounded-2xl overflow-hidden shadow-sm group bg-gray-100 dark:bg-white/5 ${
                       isMetadataApplied ? 'ring-4 ring-[#10B981]' : ''
                     }`}
                   >
-                    <Image
-                      src={url}
-                      width={253}
-                      height={253}
-                      alt={`첨부사진 ${url}`}
-                      className="w-full h-full object-cover rounded-2xl"
-                      unoptimized={true}
-                    />
+                    {url ? (
+                      <Image
+                        src={url}
+                        width={253}
+                        height={253}
+                        alt={`첨부사진 ${idx + 1}`}
+                        className="w-full h-full object-cover rounded-2xl"
+                        unoptimized={true}
+                      />
+                    ) : (
+                      // URL 아직 로딩 중 — 스켈레톤
+                      <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-white/20 rounded-2xl" />
+                    )}
                     {isMetadataApplied && (
                       <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-2 py-1 bg-[#10B981] rounded-full">
                         <CheckCircle2 size={12} className="text-white" />
@@ -130,7 +142,7 @@ export default function PhotoDrawer({
           </div>
 
           <div className="mt-6 flex flex-col gap-3 shrink-0">
-            {allPhotos.length > 0 && (
+            {totalCount > 0 && (
               <button
                 onClick={() => {
                   onRemoveAll();
