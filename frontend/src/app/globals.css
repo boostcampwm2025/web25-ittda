@@ -3,11 +3,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Capacitor 네이티브: safe area 높이.
+   --cap-status-bar-height: Android에서 JS bridge로 설정 (env() 미지원 기기 대비).
+   iOS는 env(safe-area-inset-top)이 신뢰 가능하므로 fallback으로 사용. */
+
 /* Capacitor 네이티브 앱: scrollView.bounces = false로 bounce 스크롤을 막고,
    CSS padding-top으로 콘텐츠를 status bar 아래에 배치.
    status bar 배경은 html background-color로 채워짐. */
 html.cap-native body {
-  padding-top: env(safe-area-inset-top);
+  padding-top: var(--cap-status-bar-height, env(safe-area-inset-top));
 }
 
 /* cap-native: CSS 스크롤 컨테이너에서 WKWebView scrollView로의 스크롤 체이닝 방지 */
@@ -26,11 +30,15 @@ html.cap-native:not(.cap-android) [data-status-bar-cover] {
   display: none;
 }
 
+/* Android: web StatusBarCover 높이도 CSS 변수와 동기화 */
+html.cap-android [data-status-bar-cover] {
+  height: var(--cap-status-bar-height, env(safe-area-inset-top));
+}
 
-/* sticky top-0 헤더: cap-native에서 top: env(safe-area-inset-top)으로 statusbar 아래에 고정
-   키보드 열릴 때도 뷰포트 기준 62px(safe area)에 달라붙어 statusbar 침범 방지 */
+/* sticky top-0 헤더: cap-native에서 top을 statusbar 높이로 고정
+   키보드 열릴 때도 뷰포트 기준 safe-area 아래에 달라붙어 statusbar 침범 방지 */
 html.cap-native .sticky.top-0 {
-  top: env(safe-area-inset-top);
+  top: var(--cap-status-bar-height, env(safe-area-inset-top));
   padding-top: 0.75rem;
 }
 
@@ -44,7 +52,7 @@ html.cap-native [data-safe-area-header] {
    높이를 정확히 100svh - safe-area-inset-top으로 제한 → WKWebView contentSize = viewport → 스크롤 불가 */
 html.cap-native [data-app-root] {
   min-height: 0 !important;
-  height: calc(100svh - env(safe-area-inset-top));
+  height: calc(100svh - var(--cap-status-bar-height, env(safe-area-inset-top)));
 }
 
 /* 검색 레이아웃: overflow: clip으로 overscroll 체이닝 방지

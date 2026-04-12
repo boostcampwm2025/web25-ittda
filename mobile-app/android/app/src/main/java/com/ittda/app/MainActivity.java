@@ -61,6 +61,9 @@ public class MainActivity extends BridgeActivity {
         getBridge().getWebView().addJavascriptInterface(new StatusBarBridge(), "AndroidBridge");
     }
 
+    // 상태바 높이 (px): insets 콜백에서 설정, JS bridge에서 읽음
+    private volatile int statusBarHeightPx = 0;
+
     // iOS addStatusBarCover()에 대응: 상태바 높이만큼 View를 DecorView 최상단에 추가
     private void addStatusBarCover(boolean isDarkMode) {
         ViewGroup rootView = (ViewGroup) getWindow().getDecorView();
@@ -79,9 +82,15 @@ public class MainActivity extends BridgeActivity {
         // 상태바 실제 높이를 insets에서 가져와 적용
         ViewCompat.setOnApplyWindowInsetsListener(statusBarCoverView, (v, insets) -> {
             int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            statusBarHeightPx = statusBarHeight;
             ViewGroup.LayoutParams lp = v.getLayoutParams();
             lp.height = statusBarHeight;
             v.setLayoutParams(lp);
+            // CSS custom property 업데이트: env(safe-area-inset-top)이 0인 경우 대비
+            float density = getResources().getDisplayMetrics().density;
+            float dp = statusBarHeight / density;
+            String js = "document.documentElement.style.setProperty('--cap-status-bar-height','" + dp + "px');";
+            getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(js, null));
             return insets;
         });
     }
@@ -133,6 +142,13 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void appReady() {
             appReady = true;
+        }
+
+        // 상태바 높이를 CSS dp 단위로 반환 (env(safe-area-inset-top) 미지원 시 fallback용)
+        @JavascriptInterface
+        public float getStatusBarHeightDp() {
+            if (statusBarHeightPx <= 0) return 0f;
+            return statusBarHeightPx / getResources().getDisplayMetrics().density;
         }
     }
 }
