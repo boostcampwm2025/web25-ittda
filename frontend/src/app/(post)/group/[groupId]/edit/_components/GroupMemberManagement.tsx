@@ -26,6 +26,7 @@ import { GroupEditResponse, GroupMember } from '@/lib/types/groupResponse';
 import { GroupRoleType } from '@/lib/types/group';
 import { useQueryClient } from '@tanstack/react-query';
 import AssetImage from '@/components/AssetImage';
+import { toast } from 'sonner';
 
 // 개별 멤버 카드 컴포넌트 - 콜백 최적화
 const MemberCard = memo(function MemberCard({
@@ -164,9 +165,10 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
   const [tempRole, setTempRole] = useState<GroupRoleType | null>(null);
 
   const { mutate: removeMember } = useApiDelete(
-    `/api/${groupId}/members/${deleteMember?.userId}`,
+    `/api/groups/${groupId}/members/${deleteMember?.userId}`,
     {
       onSuccess: () => {
+        toast.success(`${deleteMember?.name}을 내보냈습니다.`);
         setMembers(members.filter((m) => m.userId !== deleteMember?.userId));
         setDeleteMember(null);
       },
@@ -202,6 +204,7 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
     if (deleteMember) {
       removeMember({});
     }
+    setShowDeleteDrawer(false);
   }, [deleteMember, removeMember]);
 
   const resetDeleteMember = useCallback(() => {
@@ -266,12 +269,12 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
               <DrawerClose className="cursor-pointer flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
                 취소
               </DrawerClose>
-              <DrawerClose
+              <button
                 onClick={handleRemoveMember}
                 className="cursor-pointer flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
               >
                 내보내기
-              </DrawerClose>
+              </button>
             </div>
           </DrawerContent>
         </Drawer>
