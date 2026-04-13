@@ -59,12 +59,21 @@ export async function extractExifMetadata(file: File): Promise<ExifMetadata> {
 
     if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
       result.hasMetadata = true;
-      const address = await reverseGeocodeAddress(lat, lng);
-      result.location = {
-        latitude: lat,
-        longitude: lng,
-        address,
-      };
+      try {
+        const address = await reverseGeocodeAddress(lat, lng);
+        result.location = {
+          latitude: lat,
+          longitude: lng,
+          address,
+        };
+      } catch {
+        // GPS 역지오코딩 실패(Maps 미로드 등) — 위치 없이 날짜/시간만 반환
+        result.location = {
+          latitude: lat,
+          longitude: lng,
+          address: '',
+        };
+      }
     }
 
     return result;
@@ -113,12 +122,21 @@ export async function extractExifFromDataUrl(
 
     if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
       result.hasMetadata = true;
-      const address = await reverseGeocodeAddress(lat, lng);
-      result.location = {
-        latitude: lat,
-        longitude: lng,
-        address,
-      };
+      try {
+        const address = await reverseGeocodeAddress(lat, lng);
+        result.location = {
+          latitude: lat,
+          longitude: lng,
+          address,
+        };
+      } catch {
+        // GPS 역지오코딩 실패(Maps 미로드 등) — 위치 없이 날짜/시간만 반환
+        result.location = {
+          latitude: lat,
+          longitude: lng,
+          address: '',
+        };
+      }
     }
 
     return result;
