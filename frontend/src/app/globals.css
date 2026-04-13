@@ -42,6 +42,11 @@ html.cap-native .sticky.top-0 {
   padding-top: 0.75rem;
 }
 
+header.sticky.top-0 {
+  top: var(--cap-status-bar-height, env(safe-area-inset-top));
+  padding-top: 0.75rem;
+}
+
 /* 검색 페이지 헤더 */
 html.cap-native [data-safe-area-header] {
   padding-top: 0.75rem;
