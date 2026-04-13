@@ -7,6 +7,7 @@ import { RecordBlock, PhotoValue } from '@/lib/types/recordField';
 
 import {
   extractExifFromDataUrl,
+  extractExifMetadata,
   ExifMetadata,
 } from '@/lib/utils/exifExtractor';
 
@@ -176,27 +177,9 @@ export function useRecordEditorPhotos({
     // 2단계: EXIF 메타데이터 추출 (실패해도 이미지 추가는 계속 진행)
     let allImagesWithMetadata: {
       imageUrl: string;
-      metadata: import('@/lib/utils/exifExtractor').ExifMetadata;
+      metadata: ExifMetadata;
     }[] = [];
     try {
-      // draft 모드: blob URL로는 EXIF 추출 불가 → data URL로 변환 시도 (실패해도 계속 진행)
-      if (isDraft) {
-        const resolved = await Promise.allSettled(
-          filesToRead.map(
-            (file) =>
-              new Promise<string>((res, rej) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => res(ev.target?.result as string);
-                reader.onerror = rej;
-                reader.readAsDataURL(file);
-              }),
-          ),
-        );
-        dataUrls = resolved.map((r, i) =>
-          r.status === 'fulfilled' ? r.value : newImages[i],
-        );
-      }
-
       const existingImagesWithMetadata = await Promise.all(
         (currentPhotoValue.tempUrls || []).map(async (url) => ({
           imageUrl: url,
@@ -206,10 +189,17 @@ export function useRecordEditorPhotos({
 
       const newImagesWithMetadata = (
         await Promise.all(
-          dataUrls.map(async (url, i) => ({
-            imageUrl: newImages[i], // 미리보기용 URL (blob or data)
-            metadata: await extractExifFromDataUrl(url), // EXIF는 data URL 필요
-          })),
+          isDraft
+            // draft 모드: File 객체로 직접 EXIF 추출 (blob URL은 exifr 파싱 불가)
+            ? filesToRead.map(async (file, i) => ({
+                imageUrl: newImages[i],
+                metadata: await extractExifMetadata(file),
+              }))
+            // 일반 모드: data URL로 EXIF 추출
+            : dataUrls.map(async (url, i) => ({
+                imageUrl: newImages[i],
+                metadata: await extractExifFromDataUrl(url),
+              })),
         )
       ).filter((img) => img.metadata.hasMetadata);
 
@@ -230,20 +220,46 @@ export function useRecordEditorPhotos({
         appliedMetadata: prev?.appliedMetadata || {},
       }));
     } else {
-      let updatedPhotoValue: PhotoValue = {};
       if (draftId) {
-        // tempUrls는 로컬 미리보기용 fallback — WebSocket 전송 시에는 제거됨 (useRecordCollaboration.applyPatch)
-        updatedPhotoValue = {
+        // draft 모드: handleApplyMetadata와 동일하게 setBlocks + applyPatch + 드로어 직접 닫기
+        // handleDone → handleCloseDrawer 경로는 다른 collaborator의 patch와 버전 충돌 가능성 있음
+        const photosBlockId = activeDrawer?.id;
+        const nextValue: PhotoValue = {
           mediaIds: [...(existingPhotos?.value.mediaIds || []), ...uploadedIds],
+          // tempUrls: 로컬 미리보기용 fallback — WebSocket 전송 시에는 제거됨 (useRecordCollaboration.applyPatch)
           tempUrls: [...(existingPhotos?.value.tempUrls || []), ...newImages],
         };
+
+        setBlocks((prev) =>
+          prev.map((b) =>
+            b.id === photosBlockId && b.type === 'photos'
+              ? ({ ...b, value: nextValue } as RecordBlock)
+              : b,
+          ),
+        );
+
+        if (photosBlockId && applyPatch) {
+          applyPatch({
+            type: 'BLOCK_SET_VALUE',
+            blockId: photosBlockId,
+            value: nextValue,
+          });
+        }
+
+        if (photosBlockId && releaseLock) {
+          releaseLock(`block:${photosBlockId}`);
+        }
+
+        // handleApplyMetadata와 동일하게 드로어를 직접 닫아 handleCloseDrawer 경유를 막음
+        // handleCloseDrawer가 닫힐 때 PATCH_APPLY를 재전송하면 버전 충돌로 PATCH_REJECTED_STALE 발생
+        setActiveDrawer(null);
       } else {
-        updatedPhotoValue = {
+        const updatedPhotoValue: PhotoValue = {
           ...currentPhotoValue,
           tempUrls: [...(currentPhotoValue.tempUrls || []), ...newImages],
         };
+        handleDone(updatedPhotoValue, false);
       }
-      handleDone(updatedPhotoValue, false);
     }
 
     e.target.value = '';
