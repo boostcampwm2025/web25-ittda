@@ -50,6 +50,13 @@ public class MainActivity extends BridgeActivity {
         // WebView 자체 배경도 동일하게 설정 (WebView 로드 전 잠깐 노출되는 영역)
         getBridge().getWebView().setBackgroundColor(appBgColor);
 
+        // 인라인 스크립트가 getStatusBarHeightDp()를 호출할 때 올바른 값을 반환하도록
+        // JS bridge 등록 전에 Android 시스템 리소스에서 동기적으로 상태바 높이 초기화
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            statusBarHeightPx = getResources().getDimensionPixelSize(resourceId);
+        }
+
         addStatusBarCover(isDarkMode);
 
         WindowInsetsControllerCompat insetsController =
@@ -82,15 +89,19 @@ public class MainActivity extends BridgeActivity {
         // 상태바 실제 높이를 insets에서 가져와 적용
         ViewCompat.setOnApplyWindowInsetsListener(statusBarCoverView, (v, insets) -> {
             int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-            statusBarHeightPx = statusBarHeight;
             ViewGroup.LayoutParams lp = v.getLayoutParams();
             lp.height = statusBarHeight;
             v.setLayoutParams(lp);
-            // CSS custom property 업데이트: env(safe-area-inset-top)이 0인 경우 대비
-            float density = getResources().getDisplayMetrics().density;
-            float dp = statusBarHeight / density;
-            String js = "document.documentElement.style.setProperty('--cap-status-bar-height','" + dp + "px');";
-            getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(js, null));
+            // 0이면 CSS 변수를 0으로 덮어쓰지 않음:
+            // evaluateJavascript로 --cap-status-bar-height=0px을 세팅하면
+            // env(safe-area-inset-top) fallback이 0으로 override되어 헤더가 상태바 뒤로 들어가는 버그 방지
+            if (statusBarHeight > 0) {
+                statusBarHeightPx = statusBarHeight;
+                float density = getResources().getDisplayMetrics().density;
+                float dp = statusBarHeight / density;
+                String js = "document.documentElement.style.setProperty('--cap-status-bar-height','" + dp + "px');";
+                getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(js, null));
+            }
             return insets;
         });
     }
