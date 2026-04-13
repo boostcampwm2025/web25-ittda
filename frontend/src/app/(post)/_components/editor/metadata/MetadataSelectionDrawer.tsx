@@ -93,7 +93,7 @@ export default function MetadataSelectionDrawer({
           {imagesWithMetadata.length > 0 ? (
             <>
               {/* 이미지 선택 그리드 */}
-              <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide">
+              <div className="flex-1 overflow-y-auto px-1 scrollbar-hide">
                 <div className="grid grid-cols-3 md:grid-cols-4 gap-3 py-2">
                   {imagesWithMetadata.map((img, idx) => (
                     <div
