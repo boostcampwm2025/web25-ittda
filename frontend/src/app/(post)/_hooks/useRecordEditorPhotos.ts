@@ -100,10 +100,11 @@ export function useRecordEditorPhotos({
       mediaIds: [],
       tempUrls: [],
     };
-    // 10개인 상태에서 추가할 때
-    const currentCount =
-      (currentPhotoValue.mediaIds?.length || 0) +
-      (currentPhotoValue.tempUrls?.length || 0);
+    // draft 모드: mediaIds와 tempUrls는 같은 이미지를 가리키는 1:1 병렬 배열이므로
+    // 하나만 기준으로 센다. mediaIds가 있으면 그 길이, 없으면 tempUrls 길이.
+    const mediaIdsCount = currentPhotoValue.mediaIds?.length || 0;
+    const tempUrlsCount = currentPhotoValue.tempUrls?.length || 0;
+    const currentCount = mediaIdsCount > 0 ? mediaIdsCount : tempUrlsCount;
 
     const availableSlot = PHOTO_LIMIT - currentCount;
 
@@ -190,13 +191,13 @@ export function useRecordEditorPhotos({
       const newImagesWithMetadata = (
         await Promise.all(
           isDraft
-            // draft 모드: File 객체로 직접 EXIF 추출 (blob URL은 exifr 파싱 불가)
-            ? filesToRead.map(async (file, i) => ({
+            ? // draft 모드: File 객체로 직접 EXIF 추출 (blob URL은 exifr 파싱 불가)
+              filesToRead.map(async (file, i) => ({
                 imageUrl: newImages[i],
                 metadata: await extractExifMetadata(file),
               }))
-            // 일반 모드: data URL로 EXIF 추출
-            : dataUrls.map(async (url, i) => ({
+            : // 일반 모드: data URL로 EXIF 추출
+              dataUrls.map(async (url, i) => ({
                 imageUrl: newImages[i],
                 metadata: await extractExifFromDataUrl(url),
               })),
