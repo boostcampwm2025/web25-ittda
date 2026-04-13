@@ -25,6 +25,7 @@ import GroupInviteDrawer from './GroupInviteDrawer';
 import { cn } from '@/lib/utils';
 import { GroupMembersResponse } from '@/lib/types/groupResponse';
 import { groupMyRoleOptions } from '@/lib/api/group';
+import { toast } from 'sonner';
 
 interface GroupHeaderActionsProps {
   groupInfo: GroupMembersResponse;
@@ -46,6 +47,7 @@ export default function GroupHeaderActions({
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['share'] });
         router.push('/shared');
+        toast.success('그룹 탈퇴가 정상 처리되었습니다.');
       },
     },
   );
@@ -59,10 +61,7 @@ export default function GroupHeaderActions({
   const isViewer = roleData?.role === 'VIEWER';
 
   const handleLeaveGroup = () => {
-    const { userId } = useAuthStore.getState();
-    if (userId) {
-      leaveGroup({ userId: userId });
-    }
+    leaveGroup({});
   };
 
   return (
