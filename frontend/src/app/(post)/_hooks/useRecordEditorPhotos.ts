@@ -132,20 +132,37 @@ export function useRecordEditorPhotos({
     // 일반 모드: data URL 사용 (저장 시 pendingFilesRef로 File 매칭 필요)
     let dataUrls: string[] = []; // EXIF 추출용 data URL (draft 포함)
     try {
+      if (isDraft) {
+        // Android content:// URI 소진 문제 방지:
+        // getImageDimensions·XHR·exifr 등 여러 작업이 동일 File을 읽으면
+        // 이후 <img>가 blob URL에서 읽으려 할 때 content URI가 이미 닫혀 이미지가 깨짐.
+        // arrayBuffer()로 한 번에 메모리로 읽어 in-memory 복사본을 만든 뒤
+        // 모든 후속 작업(표시·업로드·EXIF)에 복사본을 사용.
+        const buffers = await Promise.all(
+          filesToRead.map((f) => f.arrayBuffer()),
+        );
+        filesToRead = filesToRead.map(
+          (file, i) =>
+            new File([buffers[i]], file.name, {
+              type: file.type || 'image/jpeg',
+            }),
+        );
+        newImages = buffers.map((buffer, i) => {
+          const blob = new Blob([buffer], {
+            type: filesToRead[i].type || 'image/jpeg',
+          });
+          const url = URL.createObjectURL(blob);
+          blobUrlsRef.current.push(url);
+          return url;
+        });
+        dataUrls = newImages;
+      }
+
       if (isDraft && uploadMultipleMedia) {
         uploadedIds = await uploadMultipleMedia(filesToRead);
       }
 
-      if (isDraft) {
-        // draft 모드: tempUrls = blob URL (미리보기) — HEIC 포함 모든 포맷 렌더링 가능
-        newImages = filesToRead.map((file) => {
-          const url = URL.createObjectURL(file);
-          blobUrlsRef.current.push(url);
-          return url;
-        });
-        // EXIF용 data URL은 별도 비필수 단계에서 추출 (실패해도 업로드에 영향 없음)
-        dataUrls = newImages; // 일단 blob URL로 채워둠 (아래 EXIF 단계에서 교체 시도)
-      } else {
+      if (!isDraft) {
         newImages = await Promise.all(
           filesToRead.map(
             (file) =>
