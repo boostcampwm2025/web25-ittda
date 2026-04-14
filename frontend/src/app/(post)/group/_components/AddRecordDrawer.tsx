@@ -38,7 +38,6 @@ export function AddRecordDrawer({
     const { data: refetchedData, isError, error } = await getNewPostDraft();
 
     if (isError) {
-      toast.error(getErrorMessage(error));
       Sentry.captureException(error, {
         level: 'error',
         tags: { context: 'group', operation: 'create-group-record' },
@@ -67,7 +66,7 @@ export function AddRecordDrawer({
           responseData: refetchedData,
         },
       });
-      console.warn('리다이렉트 URL이 없습니다.');
+      // console.warn('리다이렉트 URL이 없습니다.');
     }
 
     onOpenChange(false);

@@ -65,7 +65,12 @@ export default function GroupDraftFloatingButton({
   const canCreateDraft = !isViewer && createDraftCount < 5;
 
   const handleCreateDraft = async () => {
-    if (!groupId || !canCreateDraft) return;
+    if (!groupId) return;
+    if (createDraftCount >= 5) {
+      toast.warning('드래프트는 최대 5개까지만 만들 수 있습니다.');
+      return;
+    }
+    if (!canCreateDraft) return;
     try {
       const result = await getNewPostDraft();
       if (result.error) return toast.error(getErrorMessage(result.error));
@@ -76,7 +81,10 @@ export default function GroupDraftFloatingButton({
   };
 
   return (
-    <div className="fixed bottom-16 sm:bottom-24 left-0 right-0 max-w-4xl mx-auto px-4 py-3 pb-4 w-full flex justify-end pr-4 sm:pr-6 pointer-events-none" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
+    <div
+      className="fixed bottom-16 sm:bottom-24 left-0 right-0 max-w-4xl mx-auto px-4 py-3 pb-4 w-full flex justify-end pr-4 sm:pr-6 pointer-events-none"
+      style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+    >
       <div className="pointer-events-auto">
         <Popover>
           {/* 플로팅 버튼 */}
@@ -117,12 +125,12 @@ export default function GroupDraftFloatingButton({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCreateDraft}
-                    disabled={!canCreateDraft}
+                    disabled={isViewer}
                     className={cn(
                       'px-3 py-1.5 rounded-full transition-all active:scale-95 text-xs font-semibold',
                       canCreateDraft
                         ? 'bg-itta-black text-white hover:bg-itta-black/80'
-                        : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+                        : 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-40',
                     )}
                   >
                     새 드래프트
