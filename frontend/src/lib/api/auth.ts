@@ -136,8 +136,35 @@ export async function refreshAccessToken(): Promise<string | null> {
     // 게스트 사용자인지 확인
     const { userType } = useAuthStore.getState();
 
-    // 게스트 사용자는 refresh token이 없으므로 재발급 시도하지 않음
+    // 게스트 사용자는 refresh token이 없으므로 새 게스트 세션 발급
     if (userType === 'guest') {
+      try {
+        // 만료된 게스트 쿠키를 먼저 삭제해야 백엔드가 401을 반환하지 않음
+        deleteCookie(guestCookieKey);
+        deleteCookie(guestTokenKey);
+
+        const guestRes = await fetch('/api/auth/guest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (guestRes.ok) {
+          const data = await guestRes.json();
+          const authHeader =
+            guestRes.headers.get('Authorization') ||
+            guestRes.headers.get('authorization');
+          const accessToken = authHeader?.replace('Bearer ', '');
+          if (data.success && data.data && accessToken) {
+            useAuthStore.getState().setGuestInfo({
+              ...data.data,
+              guestAccessToken: accessToken,
+            });
+            tokenResult = accessToken;
+            return accessToken;
+          }
+        }
+      } catch {
+        // 새 게스트 세션 발급 실패 - null 반환 후 로그아웃 처리됨
+      }
       return null;
     }
 
