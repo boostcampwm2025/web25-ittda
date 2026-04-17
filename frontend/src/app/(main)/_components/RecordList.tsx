@@ -24,12 +24,14 @@ interface RecordListProps {
 interface RecordItemProps {
   record: RecordPreview;
   imageLayout: ImageLayout;
+  isFirst?: boolean;
   onClick: () => void;
 }
 
 const RecordItem = memo(function RecordItem({
   record,
   imageLayout,
+  isFirst,
   onClick,
 }: RecordItemProps) {
   const sortedRows = useMemo(() => {
@@ -143,6 +145,7 @@ const RecordItem = memo(function RecordItem({
                     key={`${block.id}-${rowNumber}-${block.layout.col}`}
                     block={block}
                     imageLayout={imageLayout}
+                    priorityImage={isFirst}
                   />
                 ))}
               </div>
@@ -163,7 +166,7 @@ const RecordItem = memo(function RecordItem({
                     )}
                   >
                     <div className="truncate whitespace-nowrap overflow-hidden">
-                      <BlockContent block={block} imageLayout={imageLayout} />
+                      <BlockContent block={block} imageLayout={imageLayout} priorityImage={isFirst} />
                     </div>
                   </div>
                 ))}
@@ -242,11 +245,12 @@ export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
       </div>
 
       {(records ?? []).length > 0 ? (
-        (records ?? []).map((record) => (
+        (records ?? []).map((record, index) => (
           <RecordItem
             key={record.postId}
             record={record}
             imageLayout={imageLayout}
+            isFirst={index === 0}
             onClick={() => router.push(`/record/${record.postId}`)}
           />
         ))

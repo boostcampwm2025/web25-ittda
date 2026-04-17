@@ -41,11 +41,13 @@ const MonthCard = memo(function MonthCard({
   onNavigate,
   onChangeCover,
   canChangeCover,
+  priorityLoad,
 }: {
   month: ConvertedMonthRecord;
   onNavigate: (monthId: string) => void;
   onChangeCover: (monthId: string) => void;
   canChangeCover: boolean;
+  priorityLoad?: boolean;
 }) {
   const handleClick = useCallback(() => {
     onNavigate(month.id);
@@ -65,6 +67,7 @@ const MonthCard = memo(function MonthCard({
       cover={month.cover}
       onClick={handleClick}
       onChangeCover={canChangeCover ? handleChangeCover : undefined}
+      priorityLoad={priorityLoad}
     />
   );
 });
@@ -192,13 +195,14 @@ const MonthRecords = memo(function MonthRecords({
   return (
     <>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 pb-bottom-nav">
-        {months.map((m) => (
+        {months.map((m, index) => (
           <MonthCard
             key={m.id}
             month={m}
             onNavigate={handleNavigate}
             onChangeCover={openGallery}
             canChangeCover={canChangeCover}
+            priorityLoad={index === 0}
           />
         ))}
       </div>

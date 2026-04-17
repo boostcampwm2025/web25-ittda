@@ -8,9 +8,14 @@ import AssetImage from '@/components/AssetImage';
 interface SearchItemProps {
   record: RecordSearchItem;
   onClick: (id: string) => void;
+  priorityLoad?: boolean;
 }
 
-const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
+const SearchItem: React.FC<SearchItemProps> = ({
+  record,
+  onClick,
+  priorityLoad,
+}) => {
   return (
     <button
       onClick={() => onClick(record.id)}
@@ -25,6 +30,7 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
             width={48}
             height={48}
             className="w-full h-full object-cover rounded-xl"
+            priorityLoad={priorityLoad}
           />
         </div>
       ) : (
@@ -43,17 +49,23 @@ const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
             {record.snippet}
           </p>
         )}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-itta-gray3 overflow-hidden">
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            <Calendar size={9} className="text-itta-point sm:hidden" />
-            <Calendar size={10} className="text-itta-point hidden sm:block" />
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-itta-gray3">
+          <div className="flex items-center gap-0.5 sm:gap-1 truncate">
+            <Calendar size={9} className="shrink-0 text-itta-point sm:hidden" />
+            <Calendar
+              size={10}
+              className="shrink-0 text-itta-point hidden sm:block"
+            />
             <span>{formatDateDot(new Date(record.date))}</span>
           </div>
 
           {record.address && (
             <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
               <MapPin size={9} className="shrink-0 text-itta-point sm:hidden" />
-              <MapPin size={10} className="shrink-0 text-itta-point hidden sm:block" />
+              <MapPin
+                size={10}
+                className="shrink-0 text-itta-point hidden sm:block"
+              />
               <span className="truncate">{record.address}</span>
             </div>
           )}

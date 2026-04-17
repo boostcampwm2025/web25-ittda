@@ -23,6 +23,7 @@ export interface RecordCardProps {
   height?: string;
   onClick?: () => void;
   onChangeCover?: (id: string) => void;
+  priorityLoad?: boolean;
 }
 
 export const RecordCard = memo(function RecordCard({
@@ -37,6 +38,7 @@ export const RecordCard = memo(function RecordCard({
   onChangeCover,
   createdAt,
   height,
+  priorityLoad,
 }: RecordCardProps) {
   const baseImage = randomBaseImage(id);
   return (
@@ -45,6 +47,7 @@ export const RecordCard = memo(function RecordCard({
       imageUrl={cover?.assetId || baseImage}
       imageAlt={name}
       onClick={onClick}
+      priorityLoad={priorityLoad}
     >
       {/* 커버 변경 버튼 */}
       {onChangeCover && (
@@ -107,6 +110,7 @@ export interface DateRecordCardProps {
   onClick?: () => void;
   routePath?: string;
   icon?: React.ReactNode;
+  priorityLoad?: boolean;
 }
 
 export const DateRecordCard = memo(function DateRecordCard({
@@ -118,6 +122,7 @@ export const DateRecordCard = memo(function DateRecordCard({
   onClick,
   routePath,
   icon,
+  priorityLoad,
 }: DateRecordCardProps) {
   const router = useRouter();
 
@@ -126,6 +131,7 @@ export const DateRecordCard = memo(function DateRecordCard({
       height="aspect-square"
       imageUrl={coverUrl}
       imageAlt={title}
+      priorityLoad={priorityLoad}
       onClick={() => {
         if (routePath) {
           router.push(routePath);
@@ -178,6 +184,7 @@ export interface SimpleRecordCardProps {
   badge?: string;
   onClick?: () => void;
   height?: string;
+  priorityLoad?: boolean;
 }
 
 export const SimpleRecordCard = memo(function SimpleRecordCard({
@@ -187,6 +194,7 @@ export const SimpleRecordCard = memo(function SimpleRecordCard({
   badge,
   onClick,
   height,
+  priorityLoad,
 }: SimpleRecordCardProps) {
   return (
     <PostCard
@@ -194,6 +202,7 @@ export const SimpleRecordCard = memo(function SimpleRecordCard({
       imageAlt={title}
       onClick={onClick}
       height={height}
+      priorityLoad={priorityLoad}
     >
       <PostCard.Overlay>
         <div className="flex items-center justify-between">

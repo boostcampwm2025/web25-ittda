@@ -9,6 +9,7 @@ import { pushBackHandler } from './AndroidBackHandler';
 
 interface ImageCarouselProps {
   images: string[];
+  priorityLoad?: boolean;
 }
 
 function ImageLightbox({
@@ -184,7 +185,7 @@ function ImageLightbox({
   return createPortal(content, document.body);
 }
 
-export default function ImageCarousel({ images }: ImageCarouselProps) {
+export default function ImageCarousel({ images, priorityLoad }: ImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isMoved, setIsMoved] = useState(false);
@@ -252,7 +253,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
 
   const handleImageClick = (e: React.MouseEvent) => {
     if (!isMoved) {
-      e.stopPropagation(); // 부모 카드 onClick(페이지 이동) 전파 차단
+      e.stopPropagation();
       setLightboxIndex(currentIndex);
     }
   };
@@ -278,6 +279,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
             unoptimized={true}
             sizes="(max-width: 768px) 100vw, 800px"
             className="select-none pointer-events-none w-full h-full object-cover rounded-sm"
+            priorityLoad={priorityLoad}
           />
         </div>
         {lightboxIndex !== null && (
@@ -327,6 +329,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
                   draggable={false}
                   unoptimized={true}
                   className="w-full h-full select-none pointer-events-none object-cover"
+                  priorityLoad={priorityLoad && index === 0}
                 />
               </div>
             ))}
