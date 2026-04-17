@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
 import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
+import { Group } from '../group/entity/group.entity';
 
 // Mypage Service에서 기능 구현
 @Injectable()
@@ -16,6 +17,8 @@ export class MyPageService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepo: Repository<RefreshToken>,
+    @InjectRepository(Group)
+    private readonly groupRepo: Repository<Group>,
   ) {}
 
   async findOne(userId: string): Promise<User> {
@@ -71,10 +74,31 @@ export class MyPageService {
   }
 
   /**
-   * 회원 탈퇴 (Hard Delete & Ownership Transfer)
+   * 회원 탈퇴 (Soft Delete & Ownership Transfer)
    * @param userId 탈퇴 대상 사용자 ID
    */
   async withdraw(userId: string): Promise<void> {
+    const group = await this.groupRepo.find({
+      where: { owner: { id: userId } },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    if (group && group.length > 0) {
+      let groupNames = group.map((g) => `"${g.name}"`).join(', ');
+      if (group.length === 1) {
+        groupNames = `그룹 "${group[0].name}"`;
+      } else {
+        groupNames = `그룹들 ${groupNames}`;
+      }
+
+      throw new BadRequestException(
+        `사용자가 소유한 ${groupNames}이 존재합니다. 그룹을 삭제하거나 소유권을 이전한 후 다시 시도해주세요.`,
+      );
+    }
+
     const result = await this.userRepo.softDelete({ id: userId });
 
     if (result.affected === 0) {
