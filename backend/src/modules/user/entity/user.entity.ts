@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
-  Unique,
+  Index,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -14,7 +14,10 @@ import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
 
 // User 엔티티 정의
 @Entity('users')
-@Unique(['provider', 'providerId']) // 동일 플랫폼 내 중복 가입 방지
+@Index('IDX_users_provider_provider_id_active', ['provider', 'providerId'], {
+  unique: true,
+  where: '"deleted_at" IS NULL',
+})
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
