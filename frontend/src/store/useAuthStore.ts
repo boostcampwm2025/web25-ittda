@@ -110,6 +110,6 @@ export const useAuthStore = create<State & Action>()(
         Cookies.remove(guestTokenKey);
       },
     }),
-    { name: 'auth-storage' },
+    { name: 'auth-storage', skipHydration: true },
   ),
 );
