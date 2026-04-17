@@ -5,10 +5,11 @@ import { MyPageService } from './mypage.service';
 import { User } from '../user/entity/user.entity';
 import { StatsModule } from '../stats/stats.module';
 import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
+import { Group } from '../group/entity/group.entity';
 
 // Mypage 모듈 정의
 @Module({
-  imports: [TypeOrmModule.forFeature([User, RefreshToken]), StatsModule],
+  imports: [TypeOrmModule.forFeature([User, RefreshToken, Group]), StatsModule],
   controllers: [MyPageController],
   providers: [MyPageService],
   exports: [MyPageService],
