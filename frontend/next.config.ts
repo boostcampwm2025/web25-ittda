@@ -1,5 +1,10 @@
+import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 // TODO: 나중에는 이미지 호스팅용 CDN 도메인으로 변경 필요
 const imageDomains = [
@@ -22,6 +27,28 @@ const backendHost =
     : 'http://localhost:4000';
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-popover',
+      'date-fns',
+    ],
+  },
+
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      // Node.js 전용 패키지가 클라이언트 번들에 포함되지 않도록 제거
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'import-in-the-middle': false,
+        'require-in-the-middle': false,
+      };
+    }
+    return config;
+  },
+
   async rewrites() {
     return [
       {
@@ -100,7 +127,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withBundleAnalyzer(withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
@@ -117,6 +144,13 @@ export default withSentryConfig(nextConfig, {
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
 
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+    excludeReplayWorker: true,
+  },
+
   // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
   // This can increase your server load as well as your hosting bill.
   // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
@@ -128,4 +162,4 @@ export default withSentryConfig(nextConfig, {
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: true,
-});
+}));

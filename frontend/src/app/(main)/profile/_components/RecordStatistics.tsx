@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import MonthlyUsageChart from './MonthlyUsageChart';
+import dynamic from 'next/dynamic';
+
+const MonthlyUsageChart = dynamic(() => import('./MonthlyUsageChart'), {
+  ssr: false,
+});
 import WritingRecordStatistics from './WritingRecordStatistics';
-import { cn } from '@/lib/utils';
 import PlaceDashboard from './PlaceDashboard';
 import EmotionDashboard from './EmotionDashboard';
 
