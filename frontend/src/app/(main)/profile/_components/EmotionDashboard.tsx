@@ -1,7 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import MonthlyPatternChart from '../../_components/MonthlyPatternChart';
+import dynamic from 'next/dynamic';
+
+const MonthlyPatternChart = dynamic(() => import('../../_components/MonthlyPatternChart'), { ssr: false });
 import { cn } from '@/lib/utils';
 import { Smile } from 'lucide-react';
 import { EMOTION_MAP } from '@/lib/constants/constants';
