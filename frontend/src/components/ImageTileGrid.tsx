@@ -4,9 +4,10 @@ import AssetImage from './AssetImage';
 
 interface ImageTileGridProps {
   images: string[];
+  priorityLoad?: boolean;
 }
 
-export default function ImageTileGrid({ images }: ImageTileGridProps) {
+export default function ImageTileGrid({ images, priorityLoad }: ImageTileGridProps) {
   if (images.length === 0) return null;
 
   // 1개: 큰 이미지 (원본 비율, 최대 높이 제한)
@@ -21,6 +22,7 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
             width={600}
             height={600}
             className="w-full h-full object-cover"
+            priorityLoad={priorityLoad}
           />
         </div>
       </div>
@@ -40,6 +42,7 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 alt={`이미지 ${index + 1}`}
                 fill
                 className="object-cover"
+                priorityLoad={priorityLoad && index === 0}
               />
             </div>
           ))}
@@ -60,6 +63,7 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
               alt="메인 이미지"
               fill
               className="object-cover"
+              priorityLoad={priorityLoad}
             />
           </div>
           {images.slice(1, 3).map((url, index) => (
@@ -91,6 +95,7 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 alt={`이미지 ${index + 1}`}
                 fill
                 className="object-cover"
+                priorityLoad={priorityLoad && index === 0}
               />
             </div>
           ))}
@@ -110,6 +115,7 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
             alt="메인 이미지"
             fill
             className="object-cover"
+            priorityLoad={priorityLoad}
           />
         </div>
         {images.slice(1, 5).map((url, index) => (

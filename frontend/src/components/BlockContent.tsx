@@ -15,9 +15,11 @@ type ImageLayout = 'carousel' | 'tile' | 'responsive';
 const BlockContent = memo(function BlockContent({
   block,
   imageLayout = 'carousel',
+  priorityImage,
 }: {
   block: Block;
   imageLayout?: ImageLayout;
+  priorityImage?: boolean;
 }) {
   if (!block.value) return null;
 
@@ -90,7 +92,7 @@ const BlockContent = memo(function BlockContent({
     case 'IMAGE':
       if ('mediaIds' in block.value || 'tempUrls' in block.value) {
         return (
-          <ImageBlock value={block.value as ImageValue} layout={imageLayout} />
+          <ImageBlock value={block.value as ImageValue} layout={imageLayout} priorityLoad={priorityImage} />
         );
       }
       return null;
@@ -201,9 +203,11 @@ export default BlockContent;
 const ImageBlock = memo(function ImageBlock({
   value,
   layout = 'carousel',
+  priorityLoad,
 }: {
   value: ImageValue;
   layout?: ImageLayout;
+  priorityLoad?: boolean;
 }) {
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -242,9 +246,9 @@ const ImageBlock = memo(function ImageBlock({
   return (
     <div className="relative w-full">
       {shouldShowTile ? (
-        <ImageTileGrid images={displayImages} />
+        <ImageTileGrid images={displayImages} priorityLoad={priorityLoad} />
       ) : (
-        <ImageCarousel images={displayImages} />
+        <ImageCarousel images={displayImages} priorityLoad={priorityLoad} />
       )}
     </div>
   );

@@ -161,6 +161,7 @@ export default function RecordMapDrawer({
                           onSelectPost(post.id);
                         }}
                         onNavigate={() => router.push(`/record/${post.id}`)}
+                        priorityLoad={idx === 0}
                       />
                     </div>
                   );

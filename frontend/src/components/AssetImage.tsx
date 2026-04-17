@@ -10,6 +10,7 @@ interface AssetImageProps extends Omit<ImageProps, 'src'> {
   url?: string; // 직접 solve 완료한 URL
   fallback?: React.ReactNode;
   wrapperClassName?: string; // 스켈레톤 wrapper에 적용할 클래스 (fill 사용 시 필요)
+  priorityLoad?: boolean; // priority(deprecated) 대신 사용
 }
 
 export default function AssetImage({
@@ -19,6 +20,7 @@ export default function AssetImage({
   className,
   wrapperClassName,
   fallback,
+  priorityLoad,
   ...props
 }: AssetImageProps) {
   const [hasError, setHasError] = useState(false);
@@ -62,6 +64,8 @@ export default function AssetImage({
           alt={alt}
           className={cn(className, !isLoaded && 'opacity-0')}
           unoptimized={isProxyUrl}
+          fetchPriority={priorityLoad ? 'high' : undefined}
+          loading={priorityLoad ? 'eager' : 'lazy'}
           onLoad={() => setIsLoaded(true)}
           onError={() => { setHasError(true); setIsLoaded(true); }}
           {...props}
@@ -81,6 +85,8 @@ export default function AssetImage({
         alt={alt}
         className={cn(className, !isLoaded && 'opacity-0')}
         unoptimized={isProxyUrl}
+        fetchPriority={priorityLoad ? 'high' : undefined}
+        loading={priorityLoad ? 'eager' : 'lazy'}
         onLoad={() => setIsLoaded(true)}
         onError={() => { setHasError(true); setIsLoaded(true); }}
         {...props}

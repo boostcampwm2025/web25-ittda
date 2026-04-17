@@ -14,8 +14,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const session = await auth();
-  const cookieStore = await cookies();
+  const [session, cookieStore] = await Promise.all([auth(), cookies()]);
   const guestToken = cookieStore.get('x-guest-access-token')?.value;
   const accessToken = session?.accessToken ?? guestToken;
 

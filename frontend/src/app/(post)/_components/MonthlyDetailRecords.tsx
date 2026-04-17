@@ -54,7 +54,7 @@ export default function MonthlyDetailRecords({
   return (
     <>
       <div className="grid grid-cols-2 gap-4 xs:grid-cols-3 md:grid-cols-4">
-        {sortedGroups.map((d) => (
+        {sortedGroups.map((d, index) => (
           <DateRecordCard
             key={d.date}
             date={d.date}
@@ -63,6 +63,7 @@ export default function MonthlyDetailRecords({
             count={d.count}
             coverUrl={d.coverUrl}
             routePath={`${routePath}/${d.date}`}
+            priorityLoad={index === 0}
           />
         ))}
 

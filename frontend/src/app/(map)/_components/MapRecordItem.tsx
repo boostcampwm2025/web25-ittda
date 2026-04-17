@@ -13,12 +13,14 @@ interface MapRecordItemProps {
   isHighlighted: boolean;
   onSelect: (e: React.MouseEvent) => void;
   onNavigate: () => void;
+  priorityLoad?: boolean;
 }
 export function MapRecordItem({
   post,
   isHighlighted,
   onSelect,
   onNavigate,
+  priorityLoad,
 }: MapRecordItemProps) {
   const [isError, setIsError] = useState(false);
 
@@ -44,6 +46,7 @@ export function MapRecordItem({
             onError={() => setIsError(true)}
             assetId={post.thumbnailMediaId ?? randomBaseImage(post.id)}
             alt={post.title}
+            priorityLoad={priorityLoad}
           />
         </div>
       )}

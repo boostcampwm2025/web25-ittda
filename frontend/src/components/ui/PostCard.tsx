@@ -12,6 +12,7 @@ export interface BaseCardProps {
   imageAlt?: string;
   className?: string;
   children: ReactNode;
+  priorityLoad?: boolean;
 }
 
 export interface CardOverlayProps {
@@ -53,6 +54,7 @@ export function PostCard({
   imageAlt = '',
   className = '',
   children,
+  priorityLoad,
 }: BaseCardProps) {
   return (
     <div className={cn('group relative', height)}>
@@ -75,6 +77,7 @@ export function PostCard({
               alt={imageAlt}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-105 dark:opacity-60 opacity-90"
+              priorityLoad={priorityLoad}
             />
           ) : (
             <div className={cn('flex items-center justify-center', className)}>

@@ -238,6 +238,7 @@ export default function SearchPage() {
                           snippet: record.snippet || '',
                         }}
                         onClick={(id) => router.push(`/record/${id}`)}
+                        priorityLoad={idx === 0}
                       />
                     </div>
                   );
