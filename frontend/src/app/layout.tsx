@@ -246,10 +246,7 @@ export default function RootLayout({
         className={`${notoSans.variable} antialiased relative`}
         suppressHydrationWarning
       >
-        <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`}
-          strategy="lazyOnload"
-        />
+        {/* Google Maps API는 APIProvider가 필요한 페이지에서만 로드 */}
         <KakaoScript />
         <AuthContext>
           <Providers>
