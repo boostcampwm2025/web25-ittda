@@ -110,6 +110,7 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                     width={30}
                     height={30}
                     className="w-full h-full object-cover rounded-full"
+                    wrapperClassName="w-full h-full"
                     assetId={
                       record.groupId
                         ? contributor.groupProfileImageId || '/profile_base.png'

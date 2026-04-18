@@ -168,6 +168,7 @@ const BlockItem = memo(function BlockItem({
                 height={24}
                 className="w-full h-full rounded-full object-cover"
                 title={owner.displayName}
+                wrapperClassName="w-full h-full"
               />
             ) : (
               <Image
@@ -273,7 +274,9 @@ export default function PostEditor({
     if (!isSaving) return;
     const timer = setTimeout(() => {
       setIsSaving(false);
-      toast.error('네트워크 지연 또는 기록 저장에 실패했습니다. 다시 시도해 주세요.');
+      toast.error(
+        '네트워크 지연 또는 기록 저장에 실패했습니다. 다시 시도해 주세요.',
+      );
     }, 10_000);
     return () => clearTimeout(timer);
   }, [isSaving]);

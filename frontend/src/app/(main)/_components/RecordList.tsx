@@ -150,6 +150,7 @@ const RecordItem = memo(function RecordItem({
                   className="w-full h-full object-cover rounded-full"
                   assetId={m.groupProfileImageId}
                   alt={`${m.groupNickname || m.nickname}의 프로필`}
+                  wrapperClassName="w-full h-full"
                 />
               ) : (
                 <Image
