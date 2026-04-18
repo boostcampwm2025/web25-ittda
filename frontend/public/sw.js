@@ -11,7 +11,6 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// fetch 핸들러가 있어야 Chrome이 PWA installable로 인정함
-self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
-});
+// fetch 핸들러 존재 자체가 PWA installable 기준을 충족
+// event.respondWith()를 호출하지 않으면 브라우저가 요청을 그대로 처리 (SW 개입 없음)
+self.addEventListener('fetch', () => {});
