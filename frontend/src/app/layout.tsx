@@ -216,12 +216,13 @@ export default function RootLayout({
                   } else {
                     document.documentElement.classList.remove('dark');
                   }
-                  // WebView 배경색을 즉시 설정: 스플래시 fadeOut 시 검은 화면 방지
-                  document.documentElement.style.backgroundColor = isDark ? '#121212' : '#ffffff';
-                  document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
                 // Capacitor 네이티브 앱 감지 → sticky 헤더 safe-area 오프셋용 클래스 부여
                 if (window.Capacitor?.isNativePlatform?.()) {
                   document.documentElement.classList.add('cap-native');
+                  // WebView 배경색을 즉시 설정: 스플래시 fadeOut 시 검은 화면 방지
+                  // 웹 브라우저에서는 CSS 클래스(dark:bg-[#121212])가 처리하므로 인라인 스타일 불필요
+                  document.documentElement.style.backgroundColor = isDark ? '#121212' : '#ffffff';
+                  document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
                 }
                 // Android 감지 → drawer overlay가 statusbar까지 CSS로 처리
                 if (window.Capacitor?.getPlatform?.() === 'android') {
