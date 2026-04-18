@@ -48,6 +48,7 @@ export default async function GroupHeader({
                   assetId={m.profileImageId}
                   alt="멤버의 프로필"
                   className="w-full h-full rounded-full object-cover"
+                  wrapperClassName="w-full h-full"
                 />
               ) : (
                 <Image
