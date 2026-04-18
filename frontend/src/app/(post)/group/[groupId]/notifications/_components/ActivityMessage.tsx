@@ -121,6 +121,28 @@ export function ActivityMessage({ activity }: { activity: GroupActivityItem }) {
           (으)로 변경되었습니다.
         </>
       );
+    case 'GROUP_COVER_UPDATE':
+      return (
+        <>
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 그룹 커버 사진을 변경했습니다.
+        </>
+      );
+    case 'GROUP_MONTH_COVER_UPDATE':
+      return (
+        <>
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 <TitleText text={title} /> 월 커버 사진을
+          변경했습니다.
+        </>
+      );
+    case 'GROUP_CREATE':
+      return (
+        <>
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 그룹을 만들었습니다.
+        </>
+      );
     default:
       return (
         <>
