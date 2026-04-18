@@ -85,6 +85,7 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
                   assetId={groupThumbnail.assetId}
                   alt="그룹 썸네일"
                   className="w-full h-full object-cover rounded-[32px]"
+                  wrapperClassName="w-full h-full"
                 />
               ) : (
                 <div className="flex items-center justify-center">
@@ -173,7 +174,8 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
                 height={48}
                 assetId={me.profileImage.assetId}
                 alt="유저 프로필"
-                className="object-cover rounded-full border bg-white shadow-sm shrink-0"
+                className="w-full h-full object-cover rounded-full"
+                wrapperClassName="w-12 h-12 shrink-0 rounded-full border bg-white shadow-sm"
               />
             ) : (
               <Image

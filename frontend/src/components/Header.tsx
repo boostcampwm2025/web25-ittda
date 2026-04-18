@@ -76,6 +76,7 @@ export default function Header() {
               className="w-full h-full object-cover rounded-full"
               assetId={userProfile.user.profileImageId}
               alt="유저 프로필"
+              wrapperClassName="w-full h-full"
             />
           ) : (
             <Image

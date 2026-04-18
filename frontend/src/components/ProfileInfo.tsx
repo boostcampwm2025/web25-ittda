@@ -91,6 +91,7 @@ export default function ProfileInfo({
                   height={128}
                   assetId={profileImage || '/profile_base.png'}
                   alt={`${nickname} 프로필`}
+                  wrapperClassName="w-full h-full"
                 />
               )}
             </div>

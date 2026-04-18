@@ -63,6 +63,7 @@ const MemberCard = memo(function MemberCard({
               assetId={member.profileImage.assetId}
               alt={`${member.nicknameInGroup} 멤버의 프로필`}
               className="w-full h-full rounded-full bg-white object-cover"
+              wrapperClassName="w-full h-full"
             />
           ) : (
             <Image
