@@ -28,6 +28,11 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
   // row 순서대로 정렬
   const sortedRows = Array.from(rowMap.entries()).sort(([a], [b]) => a - b);
 
+  // 첫 번째 IMAGE 블록 id (priority 힌트용)
+  const firstImageBlockId = sortedRows
+    .flatMap(([, blocks]) => blocks)
+    .find((b) => b.type === 'IMAGE')?.id;
+
   return (
     <div className="flex flex-col flex-1 -mt-6 transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <header className="-mx-4 sm:-mx-6 sticky top-0 z-50 backdrop-blur-md px-2 sm:px-4 py-2 sm:p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
@@ -64,7 +69,10 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                 <div key={rowNumber} className="w-full">
                   {sortedBlocks.map((block) => (
                     <div key={block.id}>
-                      <BlockContent block={block} />
+                      <BlockContent
+                        block={block}
+                        priorityImage={block.id === firstImageBlockId}
+                      />
                     </div>
                   ))}
                 </div>
@@ -85,7 +93,10 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                       )}
                     >
                       <div className="truncate whitespace-nowrap overflow-hidden">
-                        <BlockContent block={block} />
+                        <BlockContent
+                          block={block}
+                          priorityImage={block.id === firstImageBlockId}
+                        />
                       </div>
                     </div>
                   ))}
