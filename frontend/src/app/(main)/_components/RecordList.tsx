@@ -59,8 +59,8 @@ const RecordItem = memo(function RecordItem({
       onClick={onClick}
       className="rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border active:scale-[0.98] transition-all cursor-pointer overflow-hidden dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100"
     >
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <div className="min-w-0">
+      <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <h4 className="text-[14px] sm:text-[16px] font-bold truncate dark:text-white text-itta-black">
               {record.title}
@@ -90,6 +90,42 @@ const RecordItem = memo(function RecordItem({
             <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-gray-400 dark:text-gray-500">
               공동 수정 중...
             </p>
+          )}
+        </div>
+
+        <div className="flex -space-x-2 shrink-0">
+          {record.groupId &&
+            record.contributors.slice(0, 4).map((m) => (
+              <div
+                key={m.userId}
+                className="w-8 h-8 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white"
+              >
+                {m.groupProfileImageId ? (
+                  <AssetImage
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover rounded-full"
+                    assetId={m.groupProfileImageId}
+                    alt={`${m.groupNickname || m.nickname}의 프로필`}
+                    wrapperClassName="w-full h-full"
+                  />
+                ) : (
+                  <Image
+                    width={32}
+                    height={32}
+                    src={'/profile_base.png'}
+                    alt={`${m.groupNickname || m.nickname}의 프로필`}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                )}
+              </div>
+            ))}
+          {record.groupId && record.contributors.length > 4 && (
+            <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
+              <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">
+                +{record.contributors.length - 4}
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -135,41 +171,6 @@ const RecordItem = memo(function RecordItem({
             );
           }
         })}
-      </div>
-      <div className="flex justify-end items-center -space-x-2 shrink-0">
-        {record.groupId &&
-          record.contributors.slice(0, 5).map((m) => (
-            <div
-              key={m.userId}
-              className="w-8 h-8 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white"
-            >
-              {m.groupProfileImageId ? (
-                <AssetImage
-                  width={32}
-                  height={32}
-                  className="w-full h-full object-cover rounded-full"
-                  assetId={m.groupProfileImageId}
-                  alt={`${m.groupNickname || m.nickname}의 프로필`}
-                  wrapperClassName="w-full h-full"
-                />
-              ) : (
-                <Image
-                  width={32}
-                  height={32}
-                  src={'/profile_base.png'}
-                  alt={`${m.groupNickname || m.nickname}의 프로필`}
-                  className="w-full h-full rounded-full object-cover"
-                />
-              )}
-            </div>
-          ))}
-        {record.groupId && record.contributors.length > 5 && (
-          <div className="w-8 h-8 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
-            <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">
-              +{record.contributors.length - 5}
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );
