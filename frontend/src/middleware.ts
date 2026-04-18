@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
 // 인증 없이 접근 가능한 경로
-const PUBLIC_PATHS = ['/login', '/oauth/callback', '/invite', '/monitoring', '/share', '/admin'];
+const PUBLIC_PATHS = [
+  '/login',
+  '/oauth/callback',
+  '/invite',
+  '/monitoring',
+  '/share',
+  '/admin',
+];
 
 export default auth((req) => {
   const { nextUrl, auth: session, cookies } = req;
@@ -10,7 +17,8 @@ export default auth((req) => {
   // 서버 컴포넌트에서 현재 경로를 읽을 수 있도록 요청 헤더에 pathname 추가
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-pathname', nextUrl.pathname);
-  const next = () => NextResponse.next({ request: { headers: requestHeaders } });
+  const next = () =>
+    NextResponse.next({ request: { headers: requestHeaders } });
 
   const isSocialLoggedIn = !!session?.accessToken && !session.error;
   const isGuestLoggedIn =
@@ -51,6 +59,6 @@ export default auth((req) => {
 export const config = {
   matcher: [
     // 정적 파일, API, manifest 제외한 모든 경로
-    '/((?!_next/static|_next/image|monitoring|favicon.ico|mockServiceWorker\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$|api|manifest\\.webmanifest).*)',
+    '/((?!_next/static|_next/image|monitoring|favicon.ico|mockServiceWorker\\.js|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$|api|manifest\\.webmanifest).*)',
   ],
 };

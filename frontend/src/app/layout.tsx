@@ -32,7 +32,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: (() => {
-    const base = process.env.NEXT_PUBLIC_CLIENT_URL ?? 'https://ittda.vercel.app';
+    const base =
+      process.env.NEXT_PUBLIC_CLIENT_URL ?? 'https://ittda.vercel.app';
     return new URL(base.startsWith('http') ? base : `http://${base}`);
   })(),
   title: {
@@ -175,6 +176,20 @@ export default function RootLayout({
   return (
     <html lang="ko" className="scrollbar-hide" suppressHydrationWarning>
       <head>
+        {/* SSR 시점부터 manifest 링크가 <head>에 포함되도록 직접 선언
+            Next.js metadata의 manifest 필드는 클라이언트 hydration 이후 추가되어
+            새로고침 시 Chrome이 manifest를 감지하지 못하는 문제가 있음 */}
+        <link rel="manifest" href="/manifest.webmanifest" />
+        {/* 서비스 워커 등록 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(function() {});
+              }
+            `,
+          }}
+        />
         {/* 테마 깜빡임을 방지하기 위한 인라인 스크립트 */}
         <script
           dangerouslySetInnerHTML={{
@@ -247,7 +262,10 @@ export default function RootLayout({
               <NativeStatusBarSync />
               <NetworkGuard />
               <AndroidBackHandler />
-              <div data-app-root className="flex flex-col min-h-screen w-full mx-auto max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black">
+              <div
+                data-app-root
+                className="flex flex-col min-h-screen w-full mx-auto max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black"
+              >
                 {/* status bar 커버: position fixed + 인라인 zIndex로 스크롤과 무관하게 항상 가림 */}
                 <StatusBarCover />
                 {/* 레이아웃 흐름상 status bar 높이만큼 공간 확보 (iOS PWA용; native는 CSS로 숨김) */}
@@ -267,7 +285,7 @@ export default function RootLayout({
             </ThemeProvider>
           </Providers>
         </AuthContext>
-      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
       </body>
     </html>
   );
