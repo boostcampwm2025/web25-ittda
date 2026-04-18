@@ -127,6 +127,7 @@ export default function DailyDetailRecordItem({
                         width={32}
                         height={32}
                         className="w-full h-full object-cover rounded-full"
+                        wrapperClassName="w-full h-full"
                         assetId={m.groupProfileImageId}
                         alt={`${m.groupNickname || m.nickname}의 프로필`}
                       />
