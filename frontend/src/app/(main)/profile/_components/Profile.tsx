@@ -20,6 +20,7 @@ const Profile = memo(function Profile() {
             width={72}
             height={72}
             className="w-full h-full object-cover"
+            wrapperClassName="w-full h-full"
             assetId={userProfile.user.profileImageId}
             alt="유저 프로필"
           />

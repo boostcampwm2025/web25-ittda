@@ -71,7 +71,7 @@ export default function AssetImage({
   }
 
   return (
-    <div className={cn('relative overflow-hidden', wrapperClassName)}>
+    <div className={cn('relative overflow-hidden w-full h-full', wrapperClassName)}>
       {/* 로딩 중 스켈레톤 */}
       {!isLoaded && (
         <div className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-white/10" />

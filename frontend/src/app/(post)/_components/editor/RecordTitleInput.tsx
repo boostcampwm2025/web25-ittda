@@ -92,15 +92,16 @@ export default function RecordTitleInput({
     [draftId, isMyLock, sendTitlePatch],
   );
 
-  const { throttled: throttledApplyPatch, flush: flushTitlePatch } = useThrottle(
-    useCallback(
-      (newTitle: string) => {
-        queueTitlePatch(newTitle);
-      },
-      [queueTitlePatch], // React Compiler 대응: 모든 의존성 포함
-    ),
-    3000,
-  );
+  const { throttled: throttledApplyPatch, flush: flushTitlePatch } =
+    useThrottle(
+      useCallback(
+        (newTitle: string) => {
+          queueTitlePatch(newTitle);
+        },
+        [queueTitlePatch], // React Compiler 대응: 모든 의존성 포함
+      ),
+      3000,
+    );
 
   const handleChangeValue = (newVal: string) => {
     setTitle(newVal);
@@ -187,7 +188,11 @@ export default function RecordTitleInput({
     <div className="w-full flex flex-row gap-2 items-center group/title">
       {isLockedByOther && (
         <div
-          onClick={() => toast.error('현재 다른 사용자가 편집 중입니다.', { id: 'title-locked' })}
+          onClick={() =>
+            toast.error('현재 다른 사용자가 편집 중입니다.', {
+              id: 'title-locked',
+            })
+          }
           className="absolute inset-0 z-20"
         />
       )}
@@ -201,6 +206,7 @@ export default function RecordTitleInput({
               height={24}
               className="w-full h-full rounded-full object-cover"
               title={lockOwner.displayName}
+              wrapperClassName="w-full h-full"
             />
           ) : (
             <Image
