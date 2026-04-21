@@ -3,6 +3,7 @@ import { RecordBlock } from '@/lib/types/recordField';
 import { FieldType } from '@/lib/types/record';
 import { normalizeLayout } from '../_utils/recordLayoutHelper';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
+import { useHaptic } from '@/hooks/useHaptic';
 
 const LONG_PRESS_DURATION = 300; // ms — 이 시간 이상 누르고 있어야 드래그 시작
 const SCROLL_CANCEL_THRESHOLD = 6; // px — 롱프레스 대기 중 이 이상 움직이면 스크롤로 판단해 취소
@@ -14,6 +15,7 @@ export const useRecordEditorDnD = (
   applyPatch?: (patch: PatchApplyPayload) => void,
   draftId?: string,
 ) => {
+  const { trigger: triggerHaptic } = useHaptic();
   const [isDraggingId, setIsDraggingId] = useState<string | null>(null);
   const isDraggingIdRef = useRef<string | null>(null);
   const lastUpdateRef = useRef<number>(0);
@@ -73,6 +75,7 @@ export const useRecordEditorDnD = (
             pointerIdRef.current = e.pointerId;
             capturedElementRef.current = blockEl;
           }
+          triggerHaptic();
           isPointerDraggingRef.current = true;
           isDraggingIdRef.current = blockId;
           setIsDraggingId(blockId);
@@ -97,7 +100,7 @@ export const useRecordEditorDnD = (
         capture: true,
       });
     };
-  }, []);
+  }, [triggerHaptic]);
 
   // 전역 touchstart: textarea/input 블록 드래그 감지 (iOS pointercancel 우회)
   useEffect(() => {
@@ -118,6 +121,7 @@ export const useRecordEditorDnD = (
       const timer = setTimeout(() => {
         if (pendingTouchDragRef.current?.blockId === blockId) {
           // 롱프레스 완료 → 드래그 활성화
+          triggerHaptic();
           isPointerDraggingRef.current = true;
           isDraggingIdRef.current = blockId;
           setIsDraggingId(blockId);
@@ -143,7 +147,7 @@ export const useRecordEditorDnD = (
         capture: true,
       });
     };
-  }, []);
+  }, [triggerHaptic]);
 
   // 전역 pointermove + touchmove: threshold 감지 + drag-over 로직 통합
   useEffect(() => {
