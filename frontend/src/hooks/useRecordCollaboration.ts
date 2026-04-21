@@ -247,9 +247,11 @@ export function useRecordCollaboration(
       currentVersion?: number;
     }) => {
       if (id !== draftId) return;
-      setIsPublishing(false);
-      // DRAFT_PUBLISHED로 이미 기록 페이지로 이동 중이면 reload 금지
+      // 이미 기록 페이지로 이동 중이면 아무것도 하지 않음.
+      // setIsPublishing(false)를 호출하면 PostEditor의 draftTimeoutRef 효과가
+      // 트리거되어 "기록을 찾을 수 없습니다." 토스트 후 그룹 페이지로 이동하는 버그 발생.
       if (isNavigatingToRecordRef.current) return;
+      setIsPublishing(false);
       if (
         typeof currentVersion === 'number' &&
         currentVersion > versionRef.current
