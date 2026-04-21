@@ -151,7 +151,7 @@ const BlockItem = memo(function BlockItem({
       data-block-id={block.id}
       onPointerUp={handleDragEnd}
       onPointerCancel={handleDragEnd}
-      className={`cursor-grab relative group/field ${isDraggingId ? 'touch-none' : 'touch-auto'} ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
+      className={`cursor-grab relative group/field select-none ${isDraggingId ? 'touch-none' : 'touch-auto'} ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
     >
       <div
         className={`relative w-full flex flex-row gap-2 items-center ${isDraggingId ? 'touch-none' : 'touch-auto'} ${
