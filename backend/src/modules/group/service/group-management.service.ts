@@ -190,7 +190,10 @@ export class GroupManagementService {
         );
       }
 
-      const deleteResult = await groupMemberRepo.delete({ userId, groupId });
+      const deleteResult = await groupMemberRepo.softDelete({
+        userId,
+        groupId,
+      });
 
       if (deleteResult.affected === 0) {
         throw new BadRequestException('그룹 멤버가 아닙니다.');
