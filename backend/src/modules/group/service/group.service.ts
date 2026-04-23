@@ -160,7 +160,6 @@ export class GroupService {
   async updateGroup(userId: string, groupId: string, name: string) {
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
-      relations: ['owner'],
     });
 
     if (!group) {
