@@ -333,10 +333,10 @@ export class GroupManagementService {
     userId: string,
     groupId: string,
   ): Promise<GetGroupSettingsResponseDto> {
-    // 1. 그룹 정보 조회 (커버 이미지 및 owner 포함)
+    // 1. 그룹 정보 조회 (커버 이미지 포함)
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
-      relations: ['coverMedia', 'owner'],
+      relations: ['coverMedia'],
     });
 
     if (!group) throw new NotFoundException('존재하지 않는 그룹입니다.');
@@ -366,7 +366,6 @@ export class GroupManagementService {
       groupId: group.id,
       name: group.name,
       createdAt: group.createdAt,
-      ownerUserId: group.owner.id,
       cover: coverMedia
         ? {
             assetId: coverMedia.id,
