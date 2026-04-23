@@ -172,16 +172,27 @@ export class GroupManagementService {
   async leaveGroup(userId: string, groupId: string) {
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
-      relations: ['owner'],
     });
 
     if (!group) throw new NotFoundException('그룹이 존재하지 않습니다.');
 
-    // 방장은 못 나감 (삭제하거나 양도해야 함)
-    if (group.owner.id === userId) {
-      throw new BadRequestException(
-        '방장은 그룹을 나갈 수 없습니다. 그룹을 삭제하거나 권한을 양도하세요.',
-      );
+    const groupMember = await this.groupMemberRepo.findOne({
+      where: { groupId, userId },
+      select: { role: true },
+    });
+
+    if (!groupMember) {
+      throw new BadRequestException('그룹 멤버가 아닙니다.');
+    }
+    if (groupMember.role === GroupRoleEnum.ADMIN) {
+      const adminCount = await this.groupMemberRepo.count({
+        where: { groupId, role: GroupRoleEnum.ADMIN },
+      });
+      if (adminCount <= 1) {
+        throw new ForbiddenException(
+          '관리자는 그룹에서 나갈 수 없습니다. 그룹을 삭제하거나 다른 멤버에게 권한을 양도하세요.',
+        );
+      }
     }
 
     const deleteResult = await this.groupMemberRepo.delete({
