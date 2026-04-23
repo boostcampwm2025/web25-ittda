@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { GroupInvite } from '../entity/group_invite.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -66,7 +66,7 @@ export class GroupInviteService {
     }
 
     const memberCount = await this.groupMemberRepo.count({
-      where: { groupId: invite.groupId },
+      where: { groupId: invite.groupId, user: { deletedAt: IsNull() } },
     });
 
     return {
