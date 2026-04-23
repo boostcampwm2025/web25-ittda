@@ -170,45 +170,32 @@ export class GroupManagementService {
 
   /** 그룹 나가기 */
   async leaveGroup(userId: string, groupId: string) {
-    const group = await this.groupRepo.findOne({
-      where: { id: groupId },
-    });
+    await this.groupMemberRepo.manager.transaction(async (manager) => {
+      const groupMemberRepo = manager.getRepository(GroupMember);
 
-    if (!group) throw new NotFoundException('그룹이 존재하지 않습니다.');
-
-    const groupMember = await this.groupMemberRepo.findOne({
-      where: { groupId, userId },
-      select: { role: true },
-    });
-
-    if (!groupMember) {
-      throw new BadRequestException('그룹 멤버가 아닙니다.');
-    }
-
-    if (groupMember.role === GroupRoleEnum.ADMIN) {
-      const adminCount = await this.groupMemberRepo
+      const adminMembers = await groupMemberRepo
         .createQueryBuilder('gm')
         .innerJoin('gm.user', 'u')
         .where('gm.groupId = :groupId', { groupId })
         .andWhere('gm.role = :role', { role: GroupRoleEnum.ADMIN })
         .andWhere('u.deletedAt IS NULL')
-        .getCount();
+        .setLock('pessimistic_write', undefined, ['gm'])
+        .getMany();
 
-      if (adminCount <= 1) {
+      const isAdmin = adminMembers.some((m) => m.userId === userId);
+
+      if (isAdmin && adminMembers.length <= 1) {
         throw new ForbiddenException(
           '유일한 관리자는 그룹에서 나갈 수 없습니다. 그룹을 삭제하거나 다른 멤버에게 관리자 권한을 부여한 후 다시 시도해주세요.',
         );
       }
-    }
 
-    const deleteResult = await this.groupMemberRepo.delete({
-      group: { id: groupId },
-      user: { id: userId },
+      const deleteResult = await groupMemberRepo.delete({ userId, groupId });
+
+      if (deleteResult.affected === 0) {
+        throw new BadRequestException('그룹 멤버가 아닙니다.');
+      }
     });
-
-    if (deleteResult.affected === 0) {
-      throw new BadRequestException('그룹 멤버가 아닙니다.');
-    }
 
     await this.groupActivityService.recordActivity({
       groupId,
