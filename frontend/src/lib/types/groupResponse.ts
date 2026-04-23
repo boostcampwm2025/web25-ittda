@@ -36,7 +36,6 @@ export interface GroupDetail {
   groupId: string;
   name: string;
   createdAt: string;
-  ownerUserId: string;
   cover: GroupProfileCover | null;
 }
 
