@@ -59,6 +59,6 @@ export default auth((req) => {
 export const config = {
   matcher: [
     // 정적 파일, API, manifest 제외한 모든 경로
-    '/((?!_next/static|_next/image|monitoring|favicon.ico|mockServiceWorker\\.js|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$|api|manifest\\.webmanifest).*)',
+    '/((?!_next/static|_next/image|monitoring|favicon.ico|mockServiceWorker\\.js|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$|api|manifest\\.webmanifest|sitemap\\.xml|robots\\.txt).*)',
   ],
 };
