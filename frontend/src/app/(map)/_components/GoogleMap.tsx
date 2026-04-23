@@ -219,6 +219,7 @@ export default function GoogleMap({
           setMap={(map) => {
             mapRef.current = map;
           }}
+          onBoundsChange={onBoundsChange}
         />
         {searchedLocation && (
           <AdvancedMarker position={searchedLocation} zIndex={1000}>
@@ -230,10 +231,21 @@ export default function GoogleMap({
   );
 }
 
-function MapHandler({ setMap }: { setMap: (map: google.maps.Map) => void }) {
+function MapHandler({
+  setMap,
+  onBoundsChange,
+}: {
+  setMap: (map: google.maps.Map) => void;
+  onBoundsChange?: (bounds: google.maps.LatLngBounds | null) => void;
+}) {
   const map = useMap();
   useEffect(() => {
-    if (map) setMap(map);
-  }, [map, setMap]);
+    if (!map) return;
+    setMap(map);
+    const listener = google.maps.event.addListenerOnce(map, 'idle', () => {
+      onBoundsChange?.(map.getBounds() ?? null);
+    });
+    return () => google.maps.event.removeListener(listener);
+  }, [map, setMap, onBoundsChange]);
   return null;
 }

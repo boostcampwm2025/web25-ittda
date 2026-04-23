@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
 import type { Marker } from '@googlemaps/markerclusterer';
 import type { MapPostItem } from '@/lib/types/record';
@@ -22,7 +22,6 @@ export const PinMarker = ({
   setMarkerRef,
   isSelected = false,
 }: PinMarkerProps) => {
-  const [isError, setIsError] = useState(false);
   const handleClick = useCallback(
     () => requestAnimationFrame(() => onClick(post.id)),
     [onClick, post.id],
@@ -58,9 +57,13 @@ export const PinMarker = ({
             assetId={post.thumbnailMediaId ?? randomBaseImage(post.id)}
             alt={post.title}
             fill
-            sizes={isSelected ? '(max-width: 640px) 48px, 56px' : '(max-width: 640px) 40px, 44px'}
+            sizes={
+              isSelected
+                ? '(max-width: 640px) 48px, 56px'
+                : '(max-width: 640px) 40px, 44px'
+            }
             className="object-cover transform -rotate-45 scale-125"
-            onError={() => setIsError(true)}
+            loading="eager"
           />
         ) : (
           <MapIcon

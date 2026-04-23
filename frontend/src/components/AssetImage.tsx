@@ -21,10 +21,13 @@ export default function AssetImage({
   wrapperClassName,
   fallback,
   priorityLoad,
+  loading: loadingProp,
   ...props
 }: AssetImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  const loading = loadingProp ?? (priorityLoad ? 'eager' : 'lazy');
 
   const isLocalPath = assetId?.startsWith('/');
   const isAlreadyUrl =
@@ -65,9 +68,12 @@ export default function AssetImage({
           className={cn(className, !isLoaded && 'opacity-0')}
           unoptimized={isProxyUrl}
           fetchPriority={priorityLoad ? 'high' : undefined}
-          loading={priorityLoad ? 'eager' : 'lazy'}
+          loading={loading}
           onLoad={() => setIsLoaded(true)}
-          onError={() => { setHasError(true); setIsLoaded(true); }}
+          onError={() => {
+            setHasError(true);
+            setIsLoaded(true);
+          }}
           {...props}
         />
       </>
@@ -75,7 +81,9 @@ export default function AssetImage({
   }
 
   return (
-    <div className={cn('relative overflow-hidden w-full h-full', wrapperClassName)}>
+    <div
+      className={cn('relative overflow-hidden w-full h-full', wrapperClassName)}
+    >
       {/* 로딩 중 스켈레톤 */}
       {!isLoaded && (
         <div className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-white/10" />
@@ -86,9 +94,12 @@ export default function AssetImage({
         className={cn(className, !isLoaded && 'opacity-0')}
         unoptimized={isProxyUrl}
         fetchPriority={priorityLoad ? 'high' : undefined}
-        loading={priorityLoad ? 'eager' : 'lazy'}
+        loading={loading}
         onLoad={() => setIsLoaded(true)}
-        onError={() => { setHasError(true); setIsLoaded(true); }}
+        onError={() => {
+          setHasError(true);
+          setIsLoaded(true);
+        }}
         {...props}
       />
     </div>
