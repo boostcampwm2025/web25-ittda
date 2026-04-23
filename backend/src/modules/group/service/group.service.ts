@@ -133,18 +133,22 @@ export class GroupService {
     throw new ForbiddenException('그룹 멤버가 아닙니다.');
   }
 
-  /** 그룹 삭제 (방장만 가능) */
+  /** 그룹 삭제 (관리자만 가능) */
   async deleteGroup(userId: string, groupId: string): Promise<void> {
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
-      relations: ['owner'],
     });
 
     if (!group) {
       throw new NotFoundException('존재하지 않는 그룹입니다.');
     }
 
-    if (group.owner.id !== userId) {
+    const member = await this.groupMemberRepo.findOne({
+      where: { userId, groupId },
+      select: ['role'],
+    });
+
+    if (member?.role !== GroupRoleEnum.ADMIN) {
       throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
     }
 
