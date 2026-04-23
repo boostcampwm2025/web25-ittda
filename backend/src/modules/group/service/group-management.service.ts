@@ -8,7 +8,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -88,33 +88,38 @@ export class GroupManagementService {
     }
   }
 
-  /** 멤버 추방 (관리자/방장만 가능) */
+  /** 멤버 추방 (관리자만 가능) */
   async removeMember(
     requesterId: string,
     groupId: string,
     targetUserId: string,
   ) {
-    // 대상이 방장인지 확인 (방장은 추방 불가)
-    const group = await this.groupRepo.findOne({
-      where: { id: groupId },
-      relations: ['owner'],
-    });
-    if (!group) throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    await this.groupMemberRepo.manager.transaction(async (manager) => {
+      const groupMemberRepo = manager.getRepository(GroupMember);
 
-    if (group.owner.id === targetUserId) {
-      throw new ForbiddenException('방장은 추방할 수 없습니다.');
-    }
+      const groupMember = await groupMemberRepo
+        .createQueryBuilder('gm')
+        .where('gm.groupId = :groupId', { groupId })
+        .andWhere('gm.userId = :targetUserId', { targetUserId })
+        .andWhere('gm.deletedAt IS NULL')
+        .setLock('pessimistic_write')
+        .getOne();
 
-    // 본인 추방은 leaveGroup 사용
-    if (requesterId === targetUserId) {
-      throw new ForbiddenException(
-        '자기 자신을 추방할 수 없습니다. 나가기를 이용하세요.',
-      );
-    }
+      if (!groupMember)
+        throw new NotFoundException('그룹 멤버를 찾을 수 없습니다.');
 
-    await this.groupMemberRepo.delete({
-      group: { id: groupId },
-      user: { id: targetUserId },
+      if (groupMember.role === GroupRoleEnum.ADMIN) {
+        throw new ForbiddenException('관리자는 추방할 수 없습니다.');
+      }
+
+      // 본인 추방은 leaveGroup 사용
+      if (requesterId === targetUserId) {
+        throw new ForbiddenException(
+          '자기 자신을 추방할 수 없습니다. 나가기를 이용하세요.',
+        );
+      }
+
+      await groupMemberRepo.softDelete(groupMember.id);
     });
 
     await this.groupActivityService.recordActivity({
@@ -129,38 +134,38 @@ export class GroupManagementService {
   async updateMemberRole(
     requesterId: string,
     groupId: string,
-    userId: string,
+    targetId: string,
     role: GroupRoleEnum,
   ) {
-    // 1. 본인 여부 확인
-    if (requesterId === userId) {
+    if (requesterId === targetId) {
       throw new ForbiddenException('자신의 권한은 직접 수정할 수 없습니다.');
     }
 
     try {
-      const member = await this.groupMemberRepo.findOneOrFail({
-        where: {
-          group: { id: groupId },
-          user: { id: userId },
-        },
-      });
+      const updateResult = await this.updateMemberRoleWithLock(
+        groupId,
+        targetId,
+        role,
+      );
 
-      const beforeRole = member.role;
-      member.role = role;
-      const saved = await this.groupMemberRepo.save(member);
       await this.groupActivityService.recordActivity({
         groupId,
         type: GroupActivityType.MEMBER_ROLE_CHANGE,
         actorIds: [requesterId],
         meta: {
-          targetUserId: userId,
-          beforeRole,
+          targetUserId: targetId,
+          beforeRole: updateResult.beforeRole,
           afterRole: role,
         },
       });
-      return saved;
+      return updateResult.saved;
     } catch (error) {
-      if (error instanceof BadRequestException) throw error;
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
 
       throw new InternalServerErrorException(
         '권한 변경 중 오류가 발생했습니다.',
@@ -168,32 +173,94 @@ export class GroupManagementService {
     }
   }
 
+  private async updateMemberRoleWithLock(
+    groupId: string,
+    targetId: string,
+    role: GroupRoleEnum,
+  ): Promise<{ saved: GroupMember; beforeRole: GroupRoleEnum }> {
+    return this.groupMemberRepo.manager.transaction(async (manager) => {
+      const groupMemberRepo = manager.getRepository(GroupMember);
+
+      const members = await groupMemberRepo
+        .createQueryBuilder('gm')
+        .innerJoin('gm.user', 'u')
+        .where('gm.groupId = :groupId', { groupId })
+        .andWhere('gm.deletedAt IS NULL')
+        .andWhere('u.deletedAt IS NULL')
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where('gm.role = :adminRole', {
+              adminRole: GroupRoleEnum.ADMIN,
+            }).orWhere('gm.userId = :targetId', { targetId });
+          }),
+        )
+        .setLock('pessimistic_write', undefined, ['gm'])
+        .getMany();
+
+      const adminMembers = members.filter(
+        (m) => m.role === GroupRoleEnum.ADMIN,
+      );
+      const targetMember = members.find((m) => m.userId === targetId);
+
+      if (!targetMember) {
+        throw new BadRequestException('그룹 멤버가 아닙니다.');
+      }
+
+      if (
+        targetMember.role === GroupRoleEnum.ADMIN &&
+        role !== GroupRoleEnum.ADMIN &&
+        adminMembers.length <= 1
+      ) {
+        throw new ForbiddenException(
+          '유일한 관리자의 권한은 변경할 수 없습니다. 다른 멤버에게 관리자 권한을 부여한 후 다시 시도해주세요.',
+        );
+      }
+
+      const beforeRole = targetMember.role;
+      targetMember.role = role;
+      const saved = await groupMemberRepo.save(targetMember);
+
+      return { saved, beforeRole };
+    });
+  }
+
   /** 그룹 나가기 */
   async leaveGroup(userId: string, groupId: string) {
     await this.groupMemberRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
 
-      const adminMembers = await groupMemberRepo
+      const members = await groupMemberRepo
         .createQueryBuilder('gm')
         .innerJoin('gm.user', 'u')
         .where('gm.groupId = :groupId', { groupId })
-        .andWhere('gm.role = :role', { role: GroupRoleEnum.ADMIN })
+        .andWhere('gm.deletedAt IS NULL')
         .andWhere('u.deletedAt IS NULL')
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where('gm.role = :adminRole', {
+              adminRole: GroupRoleEnum.ADMIN,
+            }).orWhere('gm.userId = :userId', { userId });
+          }),
+        )
         .setLock('pessimistic_write', undefined, ['gm'])
         .getMany();
 
-      const isAdmin = adminMembers.some((m) => m.userId === userId);
+      const adminMembers = members.filter(
+        (m) => m.role === GroupRoleEnum.ADMIN,
+      );
+      const meMember = members.find((m) => m.userId === userId);
 
-      if (isAdmin && adminMembers.length <= 1) {
+      if (!meMember) {
+        throw new BadRequestException('그룹 멤버가 아닙니다.');
+      }
+
+      if (meMember.role === GroupRoleEnum.ADMIN && adminMembers.length <= 1) {
         throw new ForbiddenException(
           '유일한 관리자는 그룹에서 나갈 수 없습니다. 그룹을 삭제하거나 다른 멤버에게 관리자 권한을 부여한 후 다시 시도해주세요.',
         );
       }
 
-      const deleteResult = await groupMemberRepo.softDelete({
-        userId,
-        groupId,
-      });
+      const deleteResult = await groupMemberRepo.softDelete(meMember.id);
 
       if (deleteResult.affected === 0) {
         throw new BadRequestException('그룹 멤버가 아닙니다.');
@@ -445,7 +512,7 @@ export class GroupManagementService {
     const { nicknameInGroup, profileMediaId } = dto;
 
     // 1. 변경 사항이 하나도 없으면 오류 반환
-    if (!nicknameInGroup && !profileMediaId) {
+    if (nicknameInGroup === undefined && profileMediaId === undefined) {
       throw new BadRequestException('변경할 내용이 없습니다.');
     }
 
