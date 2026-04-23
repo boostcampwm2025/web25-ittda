@@ -184,13 +184,19 @@ export class GroupManagementService {
     if (!groupMember) {
       throw new BadRequestException('그룹 멤버가 아닙니다.');
     }
+
     if (groupMember.role === GroupRoleEnum.ADMIN) {
-      const adminCount = await this.groupMemberRepo.count({
-        where: { groupId, role: GroupRoleEnum.ADMIN },
-      });
+      const adminCount = await this.groupMemberRepo
+        .createQueryBuilder('gm')
+        .innerJoin('gm.user', 'u')
+        .where('gm.groupId = :groupId', { groupId })
+        .andWhere('gm.role = :role', { role: GroupRoleEnum.ADMIN })
+        .andWhere('u.deletedAt IS NULL')
+        .getCount();
+
       if (adminCount <= 1) {
         throw new ForbiddenException(
-          '관리자는 그룹에서 나갈 수 없습니다. 그룹을 삭제하거나 다른 멤버에게 권한을 양도하세요.',
+          '유일한 관리자는 그룹에서 나갈 수 없습니다. 그룹을 삭제하거나 다른 멤버에게 관리자 권한을 부여한 후 다시 시도해주세요.',
         );
       }
     }
