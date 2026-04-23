@@ -22,7 +22,7 @@ export default async function GroupHeader({
   }
 
   return (
-    <header className="sticky top-0 pt-4 z-50 w-full inset-x-0 pb-6 transition-all duration-300 dark:bg-[#121212] bg-white">
+    <header className="sticky top-0 z-50 w-full inset-x-0 pb-6 pt-4 transition-all duration-300 dark:bg-[#121212] bg-white">
       <GroupHeaderActions groupInfo={groupInfo} className={className} />
 
       <div className="flex items-end justify-between px-1">
