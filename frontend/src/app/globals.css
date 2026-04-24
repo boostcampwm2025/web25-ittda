@@ -35,16 +35,17 @@ html.cap-android [data-status-bar-cover] {
   height: var(--cap-status-bar-height, env(safe-area-inset-top));
 }
 
-/* sticky top-0 헤더: cap-native에서 top을 statusbar 높이로 고정
-   키보드 열릴 때도 뷰포트 기준 safe-area 아래에 달라붙어 statusbar 침범 방지 */
+/* sticky top-0 헤더: top을 0으로 두어 배경이 상태바 영역까지 채우고,
+   padding-top으로 내용물만 상태바 아래에 배치.
+   네이티브 statusBarCoverView가 위에 올려져 있어 같은 배경색이면 이음새 없이 보임 */
 html.cap-native .sticky.top-0 {
-  top: var(--cap-status-bar-height, env(safe-area-inset-top));
-  padding-top: 0.75rem;
+  top: 0;
+  padding-top: calc(var(--cap-status-bar-height, env(safe-area-inset-top)) + 0.75rem);
 }
 
 header.sticky.top-0 {
-  top: var(--cap-status-bar-height, env(safe-area-inset-top));
-  padding-top: 0.75rem;
+  top: 0;
+  padding-top: calc(var(--cap-status-bar-height, env(safe-area-inset-top)) + 0.75rem);
 }
 
 /* 검색 페이지 헤더 */
