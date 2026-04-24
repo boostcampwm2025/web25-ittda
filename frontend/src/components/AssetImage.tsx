@@ -11,6 +11,7 @@ interface AssetImageProps extends Omit<ImageProps, 'src'> {
   fallback?: React.ReactNode;
   wrapperClassName?: string; // 스켈레톤 wrapper에 적용할 클래스 (fill 사용 시 필요)
   priorityLoad?: boolean; // priority(deprecated) 대신 사용
+  noSkeleton?: boolean; // 스켈레톤/opacity 애니메이션 없이 바로 표시 (Google Maps 등 이벤트 전달이 불안정한 컨텍스트용)
 }
 
 export default function AssetImage({
@@ -21,6 +22,7 @@ export default function AssetImage({
   wrapperClassName,
   fallback,
   priorityLoad,
+  noSkeleton,
   loading: loadingProp,
   ...props
 }: AssetImageProps) {
@@ -59,13 +61,13 @@ export default function AssetImage({
   if (props.fill) {
     return (
       <>
-        {!isLoaded && (
+        {!noSkeleton && !isLoaded && (
           <div className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-white/10 z-10" />
         )}
         <Image
           src={imageSrc}
           alt={alt}
-          className={cn(className, !isLoaded && 'opacity-0')}
+          className={cn(className, !noSkeleton && !isLoaded && 'opacity-0')}
           unoptimized={isProxyUrl}
           fetchPriority={priorityLoad ? 'high' : undefined}
           loading={loading}
