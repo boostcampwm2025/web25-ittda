@@ -64,6 +64,7 @@ export const PinMarker = ({
             }
             className="object-cover transform -rotate-45 scale-125"
             loading="eager"
+            noSkeleton
           />
         ) : (
           <MapIcon
