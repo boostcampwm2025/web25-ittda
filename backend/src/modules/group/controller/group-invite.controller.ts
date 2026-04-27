@@ -30,11 +30,10 @@ import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.deco
   path: 'groups',
   version: '1',
 })
-@UseGuards(JwtAuthGuard)
 export class GroupInviteController {
   constructor(private readonly groupInviteService: GroupInviteService) {}
 
-  @UseGuards(GroupRoleGuard)
+  @UseGuards(JwtAuthGuard, GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Post(':groupId/invites')
   @ApiOperation({
@@ -67,6 +66,7 @@ export class GroupInviteController {
     return this.groupInviteService.getInvite(code);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('invites/:code/join')
   @ApiOperation({
     summary: '초대 코드로 그룹 가입',
@@ -81,7 +81,7 @@ export class GroupInviteController {
     return this.groupInviteService.joinGroupViaInvite(user.sub, code);
   }
 
-  @UseGuards(GroupRoleGuard)
+  @UseGuards(JwtAuthGuard, GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.ADMIN)
   @Delete(':groupId/invites/:inviteId')
   @ApiOperation({
