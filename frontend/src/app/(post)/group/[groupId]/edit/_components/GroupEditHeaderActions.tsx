@@ -15,7 +15,7 @@ export default function GroupEditHeaderActions({
       <h2 className="text-[13px] sm:text-sm font-bold dark:text-white text-itta-black">
         그룹 정보 수정
       </h2>
-      <div className="w-10" />
+      <div className="w-4" />
     </>
   );
 }
