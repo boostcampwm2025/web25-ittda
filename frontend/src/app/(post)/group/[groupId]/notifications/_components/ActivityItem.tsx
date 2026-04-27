@@ -29,6 +29,8 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
     // refId가 있으면 해당 기록으로 이동
     if (activity.refId) {
       if (
+        activity.type === 'POST_CREATE' ||
+        activity.type === 'POST_UPDATE' ||
         activity.type === 'POST_COLLAB_COMPLETE' ||
         activity.type === 'POST_EDIT_COMPLETE'
       ) {
@@ -41,7 +43,9 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
 
   const hasClickAction =
     activity.refId &&
-    (activity.type === 'POST_COLLAB_COMPLETE' ||
+    (activity.type === 'POST_CREATE' ||
+      activity.type === 'POST_UPDATE' ||
+      activity.type === 'POST_COLLAB_COMPLETE' ||
       activity.type === 'POST_EDIT_COMPLETE' ||
       activity.type === 'POST_COLLAB_START');
 
