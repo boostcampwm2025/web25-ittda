@@ -5,7 +5,7 @@ export default function GroupEditSkeleton() {
       <header className="sticky top-0 z-50 px-4 py-3 sm:p-6 flex items-center justify-between bg-white/95 dark:bg-[#121212]/95">
         <div className="h-5 w-5 bg-gray-200 dark:bg-gray-700 rounded" />
         <div className="h-3.5 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
-        <div className="h-3.5 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="h-3.5 w-4" />
       </header>
 
       {/* 컨텐츠 */}
