@@ -93,7 +93,7 @@ const MemberCard = memo(function MemberCard({
                 ? '관리자'
                 : member.role === 'VIEWER'
                   ? '뷰어'
-                  : '멤버'}
+                  : '편집자'}
             </span>
 
             {canManage && (
