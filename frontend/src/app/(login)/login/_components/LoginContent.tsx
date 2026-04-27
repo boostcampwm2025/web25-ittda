@@ -209,14 +209,16 @@ export default function LoginContent({
     const existingSessionId = getCookie(guestCookieKey) || guestSessionId;
     if (existingSessionId) {
       try {
-        const response = await post<GuestInfo>('/api/auth/guest/restore', {
-          sessionId: existingSessionId,
-        });
+        const response = await post<GuestInfo>(
+          '/api/auth/guest/restore',
+          { sessionId: existingSessionId },
+          { skipAuth: true },
+        );
         const authHeader =
           response.headers?.get('Authorization') ||
           response.headers?.get('authorization');
         const accessToken = authHeader?.replace('Bearer ', '');
-        if (response.data && accessToken) {
+        if (response.success && response.data && accessToken) {
           setGuestInfo({ ...response.data, guestAccessToken: accessToken });
 
           // 초대 코드가 있으면 그룹 자동 가입 시도
@@ -241,7 +243,8 @@ export default function LoginContent({
           window.location.href = redirectPath;
           return;
         }
-        // restore 실패 = 세션 만료 → 데이터 삭제됨
+        // restore 실패(세션 만료, 401 등) → 새 게스트 세션으로 진행
+        deleteCookie(guestCookieKey);
         toast.info(
           '이전 게스트 데이터가 만료되어 삭제되었어요.\n새 게스트 세션으로 시작할게요.',
           { duration: 5000 },
