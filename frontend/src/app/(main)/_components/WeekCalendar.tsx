@@ -12,7 +12,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function WeekCalendar() {
+export default function WeekCalendar({
+  basePath = '/',
+  monthBasePath = '/my',
+}: {
+  basePath?: string;
+  monthBasePath?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -127,7 +133,7 @@ export default function WeekCalendar() {
       new CustomEvent('itda:dateChange', { detail: dateStr }),
     );
     // URL 쿼리 파라미터로 날짜 설정
-    router.push(`/?date=${dateStr}`);
+    router.push(`${basePath}?date=${dateStr}`);
     calculateYearMonth(dateStr);
   };
 
@@ -137,7 +143,7 @@ export default function WeekCalendar() {
         <span
           className="flex items-center"
           onClick={() =>
-            router.push(`/my/month/${displayYearMonth.replace('.', '-')}`)
+            router.push(`${monthBasePath}/month/${displayYearMonth.replace('.', '-')}`)
           }
         >
           <span className="text-sm sm:text-base font-semibold dark:text-white text-itta-black">

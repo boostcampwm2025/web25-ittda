@@ -19,6 +19,7 @@ type ImageLayout = 'carousel' | 'tile' | 'responsive';
 
 interface RecordListProps {
   imageLayout?: ImageLayout;
+  groupId?: string;
 }
 
 interface RecordItemProps {
@@ -56,6 +57,7 @@ const RecordItem = memo(function RecordItem({
       );
   }, [record.blocks]);
 
+  console.log('record', record);
   return (
     <div
       onClick={onClick}
@@ -75,11 +77,13 @@ const RecordItem = memo(function RecordItem({
                 </div>
 
                 {/* 그룹명 전용 뱃지 (동그란 점 포함) */}
-                <div className="px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-                  <span className="truncate max-w-15 sm:max-w-17.5 inline-block align-bottom">
-                    {record.groupName}
-                  </span>
-                </div>
+                {record.groupName && (
+                  <div className="px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+                    <span className="truncate max-w-15 sm:max-w-17.5 inline-block align-bottom">
+                      {record.groupName}
+                    </span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 shrink-0">
@@ -166,7 +170,11 @@ const RecordItem = memo(function RecordItem({
                     )}
                   >
                     <div className="truncate whitespace-nowrap overflow-hidden">
-                      <BlockContent block={block} imageLayout={imageLayout} priorityImage={isFirst} />
+                      <BlockContent
+                        block={block}
+                        imageLayout={imageLayout}
+                        priorityImage={isFirst}
+                      />
                     </div>
                   </div>
                 ))}
@@ -179,7 +187,10 @@ const RecordItem = memo(function RecordItem({
   );
 });
 
-export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
+export default function RecordList({
+  imageLayout = 'tile',
+  groupId,
+}: RecordListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -209,7 +220,9 @@ export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
   const selectedDateStr = pendingDate ?? urlDateStr;
 
   const { data: records, isLoading } = useQuery(
-    recordPreviewListOptions(selectedDateStr),
+    groupId
+      ? recordPreviewListOptions(selectedDateStr, 'groups', groupId)
+      : recordPreviewListOptions(selectedDateStr),
   );
 
   const dayLabel =
@@ -251,7 +264,13 @@ export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
             record={record}
             imageLayout={imageLayout}
             isFirst={index === 0}
-            onClick={() => router.push(`/record/${record.postId}`)}
+            onClick={() =>
+              router.push(
+                groupId
+                  ? `/record/${record.postId}?scope=group&groupId=${groupId}`
+                  : `/record/${record.postId}`,
+              )
+            }
           />
         ))
       ) : (
@@ -267,14 +286,16 @@ export default function RecordList({ imageLayout = 'tile' }: RecordListProps) {
               이날의 첫 번째 추억을 남겨보세요
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => router.push(`/add?date=${selectedDateStr}`)}
-            className="mt-2 flex items-center gap-1 sm:gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold text-white bg-itta-black shadow-lg shadow-itta-black/20 hover:bg-itta-black/80 active:scale-95 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            기록 추가하기
-          </button>
+          {!groupId && (
+            <button
+              type="button"
+              onClick={() => router.push(`/add?date=${selectedDateStr}`)}
+              className="mt-2 flex items-center gap-1 sm:gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold text-white bg-itta-black shadow-lg shadow-itta-black/20 hover:bg-itta-black/80 active:scale-95 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              기록 추가하기
+            </button>
+          )}
         </div>
       )}
     </div>
