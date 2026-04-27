@@ -237,15 +237,20 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
       </div>
 
       <div className="space-y-2">
-        {members.map((member) => (
-          <MemberCard
-            key={member.userId}
-            member={member}
-            me={me}
-            onOpenRoleDrawer={openRoleDrawer}
-            onConfirmRemove={confirmRemoveMember}
-          />
-        ))}
+        {[...members]
+          .sort((a, b) => {
+            const order = { ADMIN: 0, EDITOR: 1, VIEWER: 2 };
+            return (order[a.role] ?? 1) - (order[b.role] ?? 1);
+          })
+          .map((member) => (
+            <MemberCard
+              key={member.userId}
+              member={member}
+              me={me}
+              onOpenRoleDrawer={openRoleDrawer}
+              onConfirmRemove={confirmRemoveMember}
+            />
+          ))}
 
         <Drawer
           onClose={resetDeleteMember}
