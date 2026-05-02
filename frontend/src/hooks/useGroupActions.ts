@@ -12,7 +12,7 @@ export const useDeleteGroup = (groupId: string, groupName: string) => {
   return useApiDelete<void, void>(`/api/groups/${groupId}`, {
     onSuccess: () => {
       toast.success(`${groupName}이 삭제되었습니다.`);
-      queryClient.invalidateQueries({ queryKey: ['share'] });
+      queryClient.invalidateQueries({ queryKey: ['shared'] });
 
       setTimeout(() => {
         router.push('/shared');
