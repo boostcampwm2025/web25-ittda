@@ -9,10 +9,12 @@ import { User } from '../user/entity/user.entity';
 import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
 import { Post } from '../post/entity/post.entity';
 import { PostScope } from '@/enums/post-scope.enum';
+import { TemplateScope } from '@/enums/template-scope.enum';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { pickNextGroupAdmin } from '../group/utils/group-role-priority';
 import { GroupService } from '../group/service/group.service';
+import { Template } from '../template/entity/template.entity';
 import {
   DraftInvalidationResult,
   PostDraftCleanupService,
@@ -170,6 +172,7 @@ export class MyPageService {
     await this.userRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
       const postRepo = manager.getRepository(Post);
+      const templateRepo = manager.getRepository(Template);
       const refreshTokenRepo = manager.getRepository(RefreshToken);
       const userRepo = manager.getRepository(User);
 
@@ -207,6 +210,10 @@ export class MyPageService {
       await postRepo.softDelete({
         ownerUserId: userId,
         scope: PostScope.PERSONAL,
+      });
+      await templateRepo.softDelete({
+        ownerUserId: userId,
+        scope: TemplateScope.ME,
       });
       await refreshTokenRepo.update({ userId }, { revoked: true });
       await userRepo.softDelete(userId);

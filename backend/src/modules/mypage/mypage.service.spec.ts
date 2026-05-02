@@ -8,8 +8,10 @@ import { GroupMember } from '../group/entity/group_member.entity';
 import { Post } from '../post/entity/post.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { PostScope } from '@/enums/post-scope.enum';
+import { TemplateScope } from '@/enums/template-scope.enum';
 import { GroupService } from '../group/service/group.service';
 import { PostDraftCleanupService } from '../post/post-draft-cleanup.service';
+import { Template } from '../template/entity/template.entity';
 
 type MembershipRecord = Pick<
   GroupMember,
@@ -40,6 +42,10 @@ type TxPostRepo = {
   softDelete: jest.Mock;
 };
 
+type TxTemplateRepo = {
+  softDelete: jest.Mock;
+};
+
 type TxRefreshTokenRepo = {
   update: jest.Mock;
 };
@@ -52,12 +58,14 @@ type TxUserRepo = {
 type TxEntity =
   | typeof GroupMember
   | typeof Post
+  | typeof Template
   | typeof RefreshToken
   | typeof User;
 
 type TxRepository =
   | TxGroupMemberRepo
   | TxPostRepo
+  | TxTemplateRepo
   | TxRefreshTokenRepo
   | TxUserRepo;
 
@@ -99,6 +107,7 @@ describe('MyPageService', () => {
   };
   let txGroupMemberRepo: TxGroupMemberRepo;
   let txPostRepo: TxPostRepo;
+  let txTemplateRepo: TxTemplateRepo;
   let txRefreshTokenRepo: TxRefreshTokenRepo;
   let txUserRepo: TxUserRepo;
   let transactionManager: MockTransactionManager;
@@ -121,6 +130,9 @@ describe('MyPageService', () => {
       update: jest.fn(),
       softDelete: jest.fn(),
     };
+    txTemplateRepo = {
+      softDelete: jest.fn(),
+    };
     txRefreshTokenRepo = {
       update: jest.fn(),
     };
@@ -136,6 +148,7 @@ describe('MyPageService', () => {
       getRepository: jest.fn((entity: TxEntity): TxRepository => {
         if (entity === GroupMember) return txGroupMemberRepo;
         if (entity === Post) return txPostRepo;
+        if (entity === Template) return txTemplateRepo;
         if (entity === RefreshToken) return txRefreshTokenRepo;
         if (entity === User) return txUserRepo;
         throw new Error(`Unexpected repository request: ${String(entity)}`);
@@ -256,6 +269,7 @@ describe('MyPageService', () => {
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 2 });
       txPostRepo.softDelete.mockResolvedValue({ affected: 3 });
+      txTemplateRepo.softDelete.mockResolvedValue({ affected: 2 });
       txRefreshTokenRepo.update.mockResolvedValue({ affected: 2 });
       txUserRepo.softDelete.mockResolvedValue({ affected: 1 });
 
@@ -299,6 +313,10 @@ describe('MyPageService', () => {
       expect(txPostRepo.softDelete).toHaveBeenCalledWith({
         ownerUserId: 'user-1',
         scope: PostScope.PERSONAL,
+      });
+      expect(txTemplateRepo.softDelete).toHaveBeenCalledWith({
+        ownerUserId: 'user-1',
+        scope: TemplateScope.ME,
       });
       expect(txRefreshTokenRepo.update).toHaveBeenCalledWith(
         { userId: 'user-1' },
@@ -375,6 +393,7 @@ describe('MyPageService', () => {
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 1 });
       txPostRepo.softDelete.mockResolvedValue({ affected: 2 });
+      txTemplateRepo.softDelete.mockResolvedValue({ affected: 1 });
       txRefreshTokenRepo.update.mockResolvedValue({ affected: 1 });
       txUserRepo.softDelete.mockResolvedValue({ affected: 1 });
 
@@ -386,6 +405,10 @@ describe('MyPageService', () => {
       expect(txPostRepo.softDelete).toHaveBeenCalledWith({
         ownerUserId: 'user-1',
         scope: PostScope.PERSONAL,
+      });
+      expect(txTemplateRepo.softDelete).toHaveBeenCalledWith({
+        ownerUserId: 'user-1',
+        scope: TemplateScope.ME,
       });
       expect(txUserRepo.softDelete).toHaveBeenCalledWith('user-1');
       expect(
@@ -413,6 +436,7 @@ describe('MyPageService', () => {
       expect(txGroupMemberRepo.createQueryBuilder).not.toHaveBeenCalled();
       expect(txPostRepo.update).not.toHaveBeenCalled();
       expect(txPostRepo.softDelete).not.toHaveBeenCalled();
+      expect(txTemplateRepo.softDelete).not.toHaveBeenCalled();
       expect(txRefreshTokenRepo.update).not.toHaveBeenCalled();
       expect(txUserRepo.softDelete).not.toHaveBeenCalled();
       expect(
