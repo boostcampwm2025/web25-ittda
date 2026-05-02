@@ -32,6 +32,10 @@ import {
 } from '../dto/get-group-cover-candidates.dto';
 import { GroupActivityService } from './group-activity.service';
 import { GroupService } from './group.service';
+import {
+  DraftInvalidationResult,
+  PostDraftCleanupService,
+} from '@/modules/post/post-draft-cleanup.service';
 
 import {
   resolveGroupNickname,
@@ -62,6 +66,7 @@ export class GroupManagementService {
     private readonly mediaAssetRepo: Repository<MediaAsset>,
     private readonly groupActivityService: GroupActivityService,
     private readonly groupService: GroupService,
+    private readonly postDraftCleanupService: PostDraftCleanupService,
   ) {}
 
   /** 멤버 초대 (ADMIN만 가능하도록 Controller/Guard에서 제한) */
@@ -94,6 +99,8 @@ export class GroupManagementService {
     groupId: string,
     targetUserId: string,
   ) {
+    let draftInvalidation: DraftInvalidationResult | null = null;
+
     await this.groupMemberRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
 
@@ -119,8 +126,22 @@ export class GroupManagementService {
         );
       }
 
+      draftInvalidation =
+        await this.postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager(
+          manager,
+          targetUserId,
+          groupId,
+          'GROUP_MEMBER_REMOVED',
+        );
+
       await groupMemberRepo.softDelete(groupMember.id);
     });
+
+    if (draftInvalidation) {
+      await this.postDraftCleanupService.notifyDraftInvalidations([
+        draftInvalidation,
+      ]);
+    }
 
     await this.groupActivityService.recordActivity({
       groupId,
@@ -147,6 +168,12 @@ export class GroupManagementService {
         targetId,
         role,
       );
+
+      if (updateResult.draftInvalidation) {
+        await this.postDraftCleanupService.notifyDraftInvalidations([
+          updateResult.draftInvalidation,
+        ]);
+      }
 
       await this.groupActivityService.recordActivity({
         groupId,
@@ -177,7 +204,11 @@ export class GroupManagementService {
     groupId: string,
     targetId: string,
     role: GroupRoleEnum,
-  ): Promise<{ saved: GroupMember; beforeRole: GroupRoleEnum }> {
+  ): Promise<{
+    saved: GroupMember;
+    beforeRole: GroupRoleEnum;
+    draftInvalidation: DraftInvalidationResult | null;
+  }> {
     return this.groupMemberRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
 
@@ -220,12 +251,24 @@ export class GroupManagementService {
       targetMember.role = role;
       const saved = await groupMemberRepo.save(targetMember);
 
-      return { saved, beforeRole };
+      const draftInvalidation =
+        beforeRole !== GroupRoleEnum.VIEWER && role === GroupRoleEnum.VIEWER
+          ? await this.postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager(
+              manager,
+              targetId,
+              groupId,
+              'PERMISSION_REVOKED',
+            )
+          : null;
+
+      return { saved, beforeRole, draftInvalidation };
     });
   }
 
   /** 그룹 나가기 */
   async leaveGroup(userId: string, groupId: string) {
+    let draftInvalidation: DraftInvalidationResult | null = null;
+
     await this.groupMemberRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
 
@@ -260,12 +303,26 @@ export class GroupManagementService {
         );
       }
 
+      draftInvalidation =
+        await this.postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager(
+          manager,
+          userId,
+          groupId,
+          'GROUP_LEFT',
+        );
+
       const deleteResult = await groupMemberRepo.softDelete(meMember.id);
 
       if (deleteResult.affected === 0) {
         throw new BadRequestException('그룹 멤버가 아닙니다.');
       }
     });
+
+    if (draftInvalidation) {
+      await this.postDraftCleanupService.notifyDraftInvalidations([
+        draftInvalidation,
+      ]);
+    }
 
     await this.groupActivityService.recordActivity({
       groupId,
