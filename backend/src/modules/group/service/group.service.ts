@@ -8,7 +8,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, Repository, DataSource } from 'typeorm';
+import { FindOneOptions, Repository, DataSource, EntityManager } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -135,7 +135,37 @@ export class GroupService {
 
   /** 그룹 삭제 (관리자만 가능) */
   async deleteGroup(userId: string, groupId: string): Promise<void> {
-    const group = await this.groupRepo.findOne({
+    await this.dataSource.transaction(async (manager) => {
+      const groupRepo = manager.getRepository(Group);
+      const groupMemberRepo = manager.getRepository(GroupMember);
+
+      const group = await groupRepo.findOne({
+        where: { id: groupId },
+      });
+
+      if (!group) {
+        throw new NotFoundException('존재하지 않는 그룹입니다.');
+      }
+
+      const member = await groupMemberRepo.findOne({
+        where: { userId, groupId },
+        select: ['role'],
+      });
+
+      if (member?.role !== GroupRoleEnum.ADMIN) {
+        throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
+      }
+
+      await this.deleteGroupWithManager(manager, groupId);
+    });
+  }
+
+  async deleteGroupWithManager(
+    manager: EntityManager,
+    groupId: string,
+  ): Promise<void> {
+    const groupRepo = manager.getRepository(Group);
+    const group = await groupRepo.findOne({
       where: { id: groupId },
     });
 
@@ -143,17 +173,8 @@ export class GroupService {
       throw new NotFoundException('존재하지 않는 그룹입니다.');
     }
 
-    const member = await this.groupMemberRepo.findOne({
-      where: { userId, groupId },
-      select: ['role'],
-    });
-
-    if (member?.role !== GroupRoleEnum.ADMIN) {
-      throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
-    }
-
     // TODO: 그룹 삭제 시 post_drafts는 CASCADE 대신 서비스 로직에서 정리(soft delete 고려).
-    await this.groupRepo.remove(group);
+    await groupRepo.remove(group);
   }
 
   /** 그룹 정보 수정 */

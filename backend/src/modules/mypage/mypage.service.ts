@@ -4,14 +4,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
 import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
-import { Group } from '../group/entity/group.entity';
 import { Post } from '../post/entity/post.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { pickNextGroupAdmin } from '../group/utils/group-role-priority';
+import { GroupService } from '../group/service/group.service';
 
 // Mypage Service에서 기능 구현
 @Injectable()
@@ -19,6 +19,7 @@ export class MyPageService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly groupService: GroupService,
   ) {}
 
   async findOne(userId: string): Promise<User> {
@@ -74,8 +75,8 @@ export class MyPageService {
   }
 
   private async handleWithdrawalMembership(
+    manager: EntityManager,
     groupMemberRepo: Repository<GroupMember>,
-    groupRepo: Repository<Group>,
     membership: GroupMember,
   ): Promise<void> {
     if (membership.role !== GroupRoleEnum.ADMIN) {
@@ -112,7 +113,10 @@ export class MyPageService {
     }
 
     if (remainingMembers.length === 0) {
-      await groupRepo.delete(membership.groupId);
+      await this.groupService.deleteGroupWithManager(
+        manager,
+        membership.groupId,
+      );
       return;
     }
 
@@ -135,7 +139,6 @@ export class MyPageService {
    */
   async withdraw(userId: string): Promise<void> {
     await this.userRepo.manager.transaction(async (manager) => {
-      const groupRepo = manager.getRepository(Group);
       const groupMemberRepo = manager.getRepository(GroupMember);
       const postRepo = manager.getRepository(Post);
       const refreshTokenRepo = manager.getRepository(RefreshToken);
@@ -162,8 +165,8 @@ export class MyPageService {
 
       for (const membership of memberships) {
         await this.handleWithdrawalMembership(
+          manager,
           groupMemberRepo,
-          groupRepo,
           membership,
         );
       }
