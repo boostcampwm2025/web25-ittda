@@ -7,6 +7,7 @@ import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Post } from '../post/entity/post.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
+import { PostScope } from '@/enums/post-scope.enum';
 import { GroupService } from '../group/service/group.service';
 import { PostDraftCleanupService } from '../post/post-draft-cleanup.service';
 
@@ -36,6 +37,7 @@ type TxGroupMemberRepo = {
 
 type TxPostRepo = {
   update: jest.Mock;
+  softDelete: jest.Mock;
 };
 
 type TxRefreshTokenRepo = {
@@ -117,6 +119,7 @@ describe('MyPageService', () => {
     };
     txPostRepo = {
       update: jest.fn(),
+      softDelete: jest.fn(),
     };
     txRefreshTokenRepo = {
       update: jest.fn(),
@@ -252,6 +255,7 @@ describe('MyPageService', () => {
       txGroupMemberRepo.save.mockResolvedValue(undefined);
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 2 });
+      txPostRepo.softDelete.mockResolvedValue({ affected: 3 });
       txRefreshTokenRepo.update.mockResolvedValue({ affected: 2 });
       txUserRepo.softDelete.mockResolvedValue({ affected: 1 });
 
@@ -292,6 +296,10 @@ describe('MyPageService', () => {
         { ownerUserId: 'user-1' },
         { shareToken: null },
       );
+      expect(txPostRepo.softDelete).toHaveBeenCalledWith({
+        ownerUserId: 'user-1',
+        scope: PostScope.PERSONAL,
+      });
       expect(txRefreshTokenRepo.update).toHaveBeenCalledWith(
         { userId: 'user-1' },
         { revoked: true },
@@ -366,6 +374,7 @@ describe('MyPageService', () => {
       );
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 1 });
+      txPostRepo.softDelete.mockResolvedValue({ affected: 2 });
       txRefreshTokenRepo.update.mockResolvedValue({ affected: 1 });
       txUserRepo.softDelete.mockResolvedValue({ affected: 1 });
 
@@ -374,6 +383,10 @@ describe('MyPageService', () => {
       expect(groupService.deleteGroupWithManager).not.toHaveBeenCalled();
       expect(txGroupMemberRepo.save).not.toHaveBeenCalled();
       expect(txGroupMemberRepo.softDelete).toHaveBeenCalledWith('gm-admin');
+      expect(txPostRepo.softDelete).toHaveBeenCalledWith({
+        ownerUserId: 'user-1',
+        scope: PostScope.PERSONAL,
+      });
       expect(txUserRepo.softDelete).toHaveBeenCalledWith('user-1');
       expect(
         postDraftCleanupService.notifyDraftInvalidations,
@@ -399,6 +412,7 @@ describe('MyPageService', () => {
 
       expect(txGroupMemberRepo.createQueryBuilder).not.toHaveBeenCalled();
       expect(txPostRepo.update).not.toHaveBeenCalled();
+      expect(txPostRepo.softDelete).not.toHaveBeenCalled();
       expect(txRefreshTokenRepo.update).not.toHaveBeenCalled();
       expect(txUserRepo.softDelete).not.toHaveBeenCalled();
       expect(

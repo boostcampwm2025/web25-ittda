@@ -8,6 +8,7 @@ import { EntityManager, Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
 import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
 import { Post } from '../post/entity/post.entity';
+import { PostScope } from '@/enums/post-scope.enum';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { pickNextGroupAdmin } from '../group/utils/group-role-priority';
@@ -203,6 +204,10 @@ export class MyPageService {
       }
 
       await postRepo.update({ ownerUserId: userId }, { shareToken: null });
+      await postRepo.softDelete({
+        ownerUserId: userId,
+        scope: PostScope.PERSONAL,
+      });
       await refreshTokenRepo.update({ userId }, { revoked: true });
       await userRepo.softDelete(userId);
     });
