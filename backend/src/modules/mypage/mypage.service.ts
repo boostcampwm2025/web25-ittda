@@ -15,6 +15,7 @@ import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { pickNextGroupAdmin } from '../group/utils/group-role-priority';
 import { GroupService } from '../group/service/group.service';
 import { Template } from '../template/entity/template.entity';
+import { UserMonthCover } from '../user/entity/user-month-cover.entity';
 import {
   DraftInvalidationResult,
   PostDraftCleanupService,
@@ -173,6 +174,7 @@ export class MyPageService {
       const groupMemberRepo = manager.getRepository(GroupMember);
       const postRepo = manager.getRepository(Post);
       const templateRepo = manager.getRepository(Template);
+      const userMonthCoverRepo = manager.getRepository(UserMonthCover);
       const refreshTokenRepo = manager.getRepository(RefreshToken);
       const userRepo = manager.getRepository(User);
 
@@ -215,6 +217,7 @@ export class MyPageService {
         ownerUserId: userId,
         scope: TemplateScope.ME,
       });
+      await userMonthCoverRepo.delete({ userId });
       await refreshTokenRepo.update({ userId }, { revoked: true });
       await userRepo.softDelete(userId);
     });
