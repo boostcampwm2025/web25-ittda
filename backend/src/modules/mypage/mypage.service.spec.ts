@@ -4,10 +4,10 @@ import type { Repository } from 'typeorm';
 import { MyPageService } from './mypage.service';
 import { User } from '../user/entity/user.entity';
 import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
-import { Group } from '../group/entity/group.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Post } from '../post/entity/post.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
+import { GroupService } from '../group/service/group.service';
 
 type MembershipRecord = Pick<
   GroupMember,
@@ -25,10 +25,6 @@ type GroupMemberQueryBuilder = {
   orderBy: jest.Mock;
   setLock: jest.Mock;
   getMany: jest.Mock;
-};
-
-type TxGroupRepo = {
-  delete: jest.Mock;
 };
 
 type TxGroupMemberRepo = {
@@ -51,14 +47,12 @@ type TxUserRepo = {
 };
 
 type TxEntity =
-  | typeof Group
   | typeof GroupMember
   | typeof Post
   | typeof RefreshToken
   | typeof User;
 
 type TxRepository =
-  | TxGroupRepo
   | TxGroupMemberRepo
   | TxPostRepo
   | TxRefreshTokenRepo
@@ -100,18 +94,17 @@ describe('MyPageService', () => {
     save: jest.Mock;
     manager: MockTransactionManager;
   };
-  let txGroupRepo: TxGroupRepo;
   let txGroupMemberRepo: TxGroupMemberRepo;
   let txPostRepo: TxPostRepo;
   let txRefreshTokenRepo: TxRefreshTokenRepo;
   let txUserRepo: TxUserRepo;
   let transactionManager: MockTransactionManager;
+  let groupService: {
+    deleteGroupWithManager: jest.Mock;
+  };
   let service: MyPageService;
 
   beforeEach(() => {
-    txGroupRepo = {
-      delete: jest.fn(),
-    };
     txGroupMemberRepo = {
       createQueryBuilder: jest.fn(),
       softDelete: jest.fn(),
@@ -133,7 +126,6 @@ describe('MyPageService', () => {
         callback(transactionManager),
       ),
       getRepository: jest.fn((entity: TxEntity): TxRepository => {
-        if (entity === Group) return txGroupRepo;
         if (entity === GroupMember) return txGroupMemberRepo;
         if (entity === Post) return txPostRepo;
         if (entity === RefreshToken) return txRefreshTokenRepo;
@@ -149,7 +141,14 @@ describe('MyPageService', () => {
       manager: transactionManager,
     };
 
-    service = new MyPageService(userRepo as unknown as Repository<User>);
+    groupService = {
+      deleteGroupWithManager: jest.fn(),
+    };
+
+    service = new MyPageService(
+      userRepo as unknown as Repository<User>,
+      groupService as unknown as GroupService,
+    );
   });
 
   describe('withdraw', () => {
@@ -221,7 +220,7 @@ describe('MyPageService', () => {
             },
           ]),
         );
-      txGroupRepo.delete.mockResolvedValue({ affected: 1 });
+      groupService.deleteGroupWithManager.mockResolvedValue(undefined);
       txGroupMemberRepo.save.mockResolvedValue(undefined);
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 2 });
@@ -231,7 +230,10 @@ describe('MyPageService', () => {
       await service.withdraw('user-1');
 
       expect(userRepo.manager.transaction).toHaveBeenCalledTimes(1);
-      expect(txGroupRepo.delete).toHaveBeenCalledWith('group-1');
+      expect(groupService.deleteGroupWithManager).toHaveBeenCalledWith(
+        transactionManager,
+        'group-1',
+      );
       expect(txGroupMemberRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'gm-editor',
@@ -296,7 +298,7 @@ describe('MyPageService', () => {
 
       await service.withdraw('user-1');
 
-      expect(txGroupRepo.delete).not.toHaveBeenCalled();
+      expect(groupService.deleteGroupWithManager).not.toHaveBeenCalled();
       expect(txGroupMemberRepo.save).not.toHaveBeenCalled();
       expect(txGroupMemberRepo.softDelete).toHaveBeenCalledWith('gm-admin');
       expect(txUserRepo.softDelete).toHaveBeenCalledWith('user-1');
