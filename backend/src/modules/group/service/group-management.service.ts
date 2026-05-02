@@ -20,6 +20,7 @@ import {
   PostMediaKind,
 } from '@/modules/post/entity/post-media.entity';
 import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
+import { MediaService } from '@/modules/media/media.service';
 import { UpdateGroupCoverResponseDto } from '../dto/update-group-cover.dto';
 import { GetGroupSettingsResponseDto } from '../dto/get-group-settings.dto';
 import { GetGroupMemberMeResponseDto } from '../dto/get-group-member-me.dto';
@@ -66,6 +67,7 @@ export class GroupManagementService {
     private readonly mediaAssetRepo: Repository<MediaAsset>,
     private readonly groupActivityService: GroupActivityService,
     private readonly groupService: GroupService,
+    private readonly mediaService: MediaService,
     private readonly postDraftCleanupService: PostDraftCleanupService,
   ) {}
 
@@ -137,10 +139,16 @@ export class GroupManagementService {
       await groupMemberRepo.softDelete(groupMember.id);
     });
 
-    if (draftInvalidation) {
+    const finalizedDraftInvalidation =
+      draftInvalidation as DraftInvalidationResult | null;
+
+    if (finalizedDraftInvalidation) {
       await this.postDraftCleanupService.notifyDraftInvalidations([
-        draftInvalidation,
+        finalizedDraftInvalidation,
       ]);
+      await this.mediaService.deleteMediaAssets(
+        finalizedDraftInvalidation.mediaDeletionPlans,
+      );
     }
 
     await this.groupActivityService.recordActivity({
@@ -173,6 +181,9 @@ export class GroupManagementService {
         await this.postDraftCleanupService.notifyDraftInvalidations([
           updateResult.draftInvalidation,
         ]);
+        await this.mediaService.deleteMediaAssets(
+          updateResult.draftInvalidation.mediaDeletionPlans,
+        );
       }
 
       await this.groupActivityService.recordActivity({
@@ -318,10 +329,16 @@ export class GroupManagementService {
       }
     });
 
-    if (draftInvalidation) {
+    const finalizedDraftInvalidation =
+      draftInvalidation as DraftInvalidationResult | null;
+
+    if (finalizedDraftInvalidation) {
       await this.postDraftCleanupService.notifyDraftInvalidations([
-        draftInvalidation,
+        finalizedDraftInvalidation,
       ]);
+      await this.mediaService.deleteMediaAssets(
+        finalizedDraftInvalidation.mediaDeletionPlans,
+      );
     }
 
     await this.groupActivityService.recordActivity({
