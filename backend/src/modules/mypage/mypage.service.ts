@@ -9,6 +9,9 @@ import { User } from '../user/entity/user.entity';
 import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
 import { Group } from '../group/entity/group.entity';
 import { Post } from '../post/entity/post.entity';
+import { GroupMember } from '../group/entity/group_member.entity';
+import { GroupRoleEnum } from '@/enums/group-role.enum';
+import { pickNextGroupAdmin } from '../group/utils/group-role-priority';
 
 // Mypage Service에서 기능 구현
 @Injectable()
@@ -16,10 +19,6 @@ export class MyPageService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(RefreshToken)
-    private readonly refreshTokenRepo: Repository<RefreshToken>,
-    @InjectRepository(Group)
-    private readonly groupRepo: Repository<Group>,
   ) {}
 
   async findOne(userId: string): Promise<User> {
@@ -81,43 +80,85 @@ export class MyPageService {
   async withdraw(userId: string): Promise<void> {
     await this.userRepo.manager.transaction(async (manager) => {
       const groupRepo = manager.getRepository(Group);
+      const groupMemberRepo = manager.getRepository(GroupMember);
       const postRepo = manager.getRepository(Post);
       const refreshTokenRepo = manager.getRepository(RefreshToken);
       const userRepo = manager.getRepository(User);
 
-      const ownedGroups = await groupRepo.find({
-        where: { owner: { id: userId } },
-        select: {
-          id: true,
-          name: true,
-        },
-      });
+      const user = await userRepo
+        .createQueryBuilder('u')
+        .where('u.id = :userId', { userId })
+        .setLock('pessimistic_write')
+        .getOne();
 
-      if (ownedGroups.length > 0) {
-        let groupNames = ownedGroups
-          .map((group) => `"${group.name}"`)
-          .join(', ');
-        if (ownedGroups.length === 1) {
-          groupNames = `그룹 "${ownedGroups[0].name}"`;
-        } else {
-          groupNames = `그룹들 ${groupNames}`;
-        }
-
-        throw new BadRequestException(
-          `사용자가 소유한 ${groupNames}이 존재합니다. 그룹을 삭제하거나 소유권을 이전한 후 다시 시도해주세요.`,
-        );
-      }
-
-      await postRepo.update({ ownerUserId: userId }, { shareToken: null });
-      await refreshTokenRepo.update({ userId }, { revoked: true });
-
-      const result = await userRepo.softDelete({ id: userId });
-
-      if (result.affected === 0) {
+      if (!user) {
         throw new BadRequestException(
           '존재하지 않는 사용자이거나 이미 탈퇴 처리되었습니다.',
         );
       }
+
+      const memberships = await groupMemberRepo
+        .createQueryBuilder('gm')
+        .where('gm.userId = :userId', { userId })
+        .orderBy('gm.groupId', 'ASC')
+        .setLock('pessimistic_write', undefined, ['gm'])
+        .getMany();
+
+      for (const membership of memberships) {
+        if (membership.role !== GroupRoleEnum.ADMIN) {
+          await groupMemberRepo.softDelete(membership.id);
+          continue;
+        }
+
+        const groupMembers = await groupMemberRepo
+          .createQueryBuilder('gm')
+          .where('gm.groupId = :groupId', { groupId: membership.groupId })
+          .orderBy('gm.joinedAt', 'ASC')
+          .setLock('pessimistic_write', undefined, ['gm'])
+          .getMany();
+
+        const me = groupMembers.find(
+          (groupMember) => groupMember.id === membership.id,
+        );
+
+        if (!me) {
+          throw new BadRequestException('그룹 멤버가 아닙니다.');
+        }
+
+        const remainingMembers = groupMembers.filter(
+          (groupMember) => groupMember.id !== me.id,
+        );
+
+        const remainingAdmins = remainingMembers.filter(
+          (groupMember) => groupMember.role === GroupRoleEnum.ADMIN,
+        );
+
+        if (remainingAdmins.length > 0) {
+          await groupMemberRepo.softDelete(me.id);
+          continue;
+        }
+
+        if (remainingMembers.length === 0) {
+          await groupRepo.delete(membership.groupId);
+          continue;
+        }
+
+        const nextAdmin = pickNextGroupAdmin(remainingMembers);
+
+        if (!nextAdmin) {
+          throw new BadRequestException(
+            '관리자 권한을 양도할 그룹 멤버를 찾을 수 없습니다.',
+          );
+        }
+
+        nextAdmin.role = GroupRoleEnum.ADMIN;
+        await groupMemberRepo.save(nextAdmin);
+        await groupMemberRepo.softDelete(me.id);
+      }
+
+      await postRepo.update({ ownerUserId: userId }, { shareToken: null });
+      await refreshTokenRepo.update({ userId }, { revoked: true });
+      await userRepo.softDelete(userId);
     });
   }
 }
