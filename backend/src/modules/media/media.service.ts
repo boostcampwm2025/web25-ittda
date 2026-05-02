@@ -25,7 +25,10 @@ import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
+import { Group } from '@/modules/group/entity/group.entity';
+import { GroupMonthCover } from '@/modules/group/entity/group-month-cover.entity';
 import { User } from '@/modules/user/entity/user.entity';
+import { UserMonthCover } from '@/modules/user/entity/user-month-cover.entity';
 import type { PresignFileRequestDto } from './dto/presign-media.dto';
 
 @Injectable()
@@ -46,6 +49,7 @@ export class MediaService {
     'image/heif',
   ]);
   private readonly pendingRetentionMs = 7 * 24 * 60 * 60 * 1000;
+  private readonly orphanReadyRetentionMs = 24 * 60 * 60 * 1000;
 
   constructor(
     private readonly configService: ConfigService,
@@ -63,8 +67,14 @@ export class MediaService {
     private readonly postContributorRepository: Repository<PostContributor>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
+    @InjectRepository(GroupMonthCover)
+    private readonly groupMonthCoverRepository: Repository<GroupMonthCover>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserMonthCover)
+    private readonly userMonthCoverRepository: Repository<UserMonthCover>,
   ) {
     const endpoint = this.configService.get<string>('S3_ENDPOINT');
     const publicEndpoint =
@@ -581,6 +591,131 @@ export class MediaService {
     );
 
     await this.mediaAssetRepository.delete(expired.map((asset) => asset.id));
+  }
+
+  // 매일 오전 4시에 READY 상태 orphan 미디어 자산 정리
+  @Cron('0 4 * * *')
+  async cleanupOrphanReadyAssets() {
+    if (!this.s3ConfigValid) {
+      this.logger.warn(
+        'orphan media cleanup skipped because S3 configuration is invalid.',
+      );
+      return;
+    }
+
+    const cutoff = new Date(Date.now() - this.orphanReadyRetentionMs);
+    const candidates = await this.mediaAssetRepository.find({
+      where: {
+        status: MediaAssetStatus.READY,
+        uploadedAt: LessThan(cutoff),
+      },
+      select: {
+        id: true,
+        storageKey: true,
+      },
+    });
+
+    if (candidates.length === 0) return;
+
+    const candidateIds = candidates.map((asset) => asset.id);
+    const referencedMediaIds =
+      await this.collectReferencedMediaIds(candidateIds);
+    const orphanAssets = candidates.filter(
+      (asset) => !referencedMediaIds.has(asset.id),
+    );
+
+    if (orphanAssets.length === 0) return;
+
+    const deletedAssetIds: string[] = [];
+
+    for (const asset of orphanAssets) {
+      try {
+        await this.s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: asset.storageKey,
+          }),
+        );
+        deletedAssetIds.push(asset.id);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(
+          `Failed to delete orphan media from storage (mediaId=${asset.id}): ${message}`,
+        );
+      }
+    }
+
+    if (deletedAssetIds.length === 0) return;
+
+    await this.mediaAssetRepository.delete(deletedAssetIds);
+  }
+
+  private async collectReferencedMediaIds(
+    mediaIds: string[],
+  ): Promise<Set<string>> {
+    if (mediaIds.length === 0) return new Set<string>();
+
+    const [
+      postMediaLinks,
+      draftMediaLinks,
+      users,
+      groupMembers,
+      groups,
+      userMonthCovers,
+      groupMonthCovers,
+    ] = await Promise.all([
+      this.postMediaRepository.find({
+        where: { mediaId: In(mediaIds) },
+        select: { mediaId: true },
+      }),
+      this.postDraftMediaRepository.find({
+        where: { mediaId: In(mediaIds) },
+        select: { mediaId: true },
+      }),
+      this.userRepository.find({
+        where: { profileImageId: In(mediaIds) },
+        select: { profileImageId: true },
+      }),
+      this.groupMemberRepository.find({
+        where: { profileMediaId: In(mediaIds) },
+        select: { profileMediaId: true },
+      }),
+      this.groupRepository.find({
+        where: { coverMediaId: In(mediaIds) },
+        select: { coverMediaId: true },
+      }),
+      this.userMonthCoverRepository.find({
+        where: { coverAssetId: In(mediaIds) },
+        select: { coverAssetId: true },
+      }),
+      this.groupMonthCoverRepository.find({
+        where: { coverAssetId: In(mediaIds) },
+        select: { coverAssetId: true },
+      }),
+    ]);
+
+    const referenced = new Set<string>();
+
+    postMediaLinks.forEach((link) => referenced.add(link.mediaId));
+    draftMediaLinks.forEach((link) => referenced.add(link.mediaId));
+    users.forEach((user) => {
+      if (user.profileImageId) referenced.add(user.profileImageId);
+    });
+    groupMembers.forEach((member) => {
+      if (member.profileMediaId) referenced.add(member.profileMediaId);
+    });
+    groups.forEach((group) => {
+      if (group.coverMediaId) referenced.add(group.coverMediaId);
+    });
+    userMonthCovers.forEach((cover) => {
+      if (cover.coverAssetId) referenced.add(cover.coverAssetId);
+    });
+    groupMonthCovers.forEach((cover) => {
+      if (cover.coverAssetId) referenced.add(cover.coverAssetId);
+    });
+
+    return referenced;
   }
 
   private buildStorageKey(ownerUserId: string, mediaId: string) {
