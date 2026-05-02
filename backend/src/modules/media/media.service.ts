@@ -718,7 +718,7 @@ export class MediaService {
   }
 
   // 매일 오전 3시에 보류 중인 미디어 자산 정리
-  @Cron('0 3 * * *')
+  @Cron('0 3 * * 1')
   async cleanupPendingAssets() {
     const cutoff = new Date(Date.now() - this.pendingRetentionMs);
     const expired = await this.mediaAssetRepository.find({
