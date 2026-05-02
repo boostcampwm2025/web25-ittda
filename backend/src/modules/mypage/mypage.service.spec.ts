@@ -12,6 +12,7 @@ import { TemplateScope } from '@/enums/template-scope.enum';
 import { GroupService } from '../group/service/group.service';
 import { PostDraftCleanupService } from '../post/post-draft-cleanup.service';
 import { Template } from '../template/entity/template.entity';
+import { UserMonthCover } from '../user/entity/user-month-cover.entity';
 
 type MembershipRecord = Pick<
   GroupMember,
@@ -46,6 +47,10 @@ type TxTemplateRepo = {
   softDelete: jest.Mock;
 };
 
+type TxUserMonthCoverRepo = {
+  delete: jest.Mock;
+};
+
 type TxRefreshTokenRepo = {
   update: jest.Mock;
 };
@@ -59,6 +64,7 @@ type TxEntity =
   | typeof GroupMember
   | typeof Post
   | typeof Template
+  | typeof UserMonthCover
   | typeof RefreshToken
   | typeof User;
 
@@ -66,6 +72,7 @@ type TxRepository =
   | TxGroupMemberRepo
   | TxPostRepo
   | TxTemplateRepo
+  | TxUserMonthCoverRepo
   | TxRefreshTokenRepo
   | TxUserRepo;
 
@@ -108,6 +115,7 @@ describe('MyPageService', () => {
   let txGroupMemberRepo: TxGroupMemberRepo;
   let txPostRepo: TxPostRepo;
   let txTemplateRepo: TxTemplateRepo;
+  let txUserMonthCoverRepo: TxUserMonthCoverRepo;
   let txRefreshTokenRepo: TxRefreshTokenRepo;
   let txUserRepo: TxUserRepo;
   let transactionManager: MockTransactionManager;
@@ -133,6 +141,9 @@ describe('MyPageService', () => {
     txTemplateRepo = {
       softDelete: jest.fn(),
     };
+    txUserMonthCoverRepo = {
+      delete: jest.fn(),
+    };
     txRefreshTokenRepo = {
       update: jest.fn(),
     };
@@ -149,6 +160,7 @@ describe('MyPageService', () => {
         if (entity === GroupMember) return txGroupMemberRepo;
         if (entity === Post) return txPostRepo;
         if (entity === Template) return txTemplateRepo;
+        if (entity === UserMonthCover) return txUserMonthCoverRepo;
         if (entity === RefreshToken) return txRefreshTokenRepo;
         if (entity === User) return txUserRepo;
         throw new Error(`Unexpected repository request: ${String(entity)}`);
@@ -270,6 +282,7 @@ describe('MyPageService', () => {
       txPostRepo.update.mockResolvedValue({ affected: 2 });
       txPostRepo.softDelete.mockResolvedValue({ affected: 3 });
       txTemplateRepo.softDelete.mockResolvedValue({ affected: 2 });
+      txUserMonthCoverRepo.delete.mockResolvedValue({ affected: 2 });
       txRefreshTokenRepo.update.mockResolvedValue({ affected: 2 });
       txUserRepo.softDelete.mockResolvedValue({ affected: 1 });
 
@@ -317,6 +330,9 @@ describe('MyPageService', () => {
       expect(txTemplateRepo.softDelete).toHaveBeenCalledWith({
         ownerUserId: 'user-1',
         scope: TemplateScope.ME,
+      });
+      expect(txUserMonthCoverRepo.delete).toHaveBeenCalledWith({
+        userId: 'user-1',
       });
       expect(txRefreshTokenRepo.update).toHaveBeenCalledWith(
         { userId: 'user-1' },
@@ -394,6 +410,7 @@ describe('MyPageService', () => {
       txPostRepo.update.mockResolvedValue({ affected: 1 });
       txPostRepo.softDelete.mockResolvedValue({ affected: 2 });
       txTemplateRepo.softDelete.mockResolvedValue({ affected: 1 });
+      txUserMonthCoverRepo.delete.mockResolvedValue({ affected: 1 });
       txRefreshTokenRepo.update.mockResolvedValue({ affected: 1 });
       txUserRepo.softDelete.mockResolvedValue({ affected: 1 });
 
@@ -409,6 +426,9 @@ describe('MyPageService', () => {
       expect(txTemplateRepo.softDelete).toHaveBeenCalledWith({
         ownerUserId: 'user-1',
         scope: TemplateScope.ME,
+      });
+      expect(txUserMonthCoverRepo.delete).toHaveBeenCalledWith({
+        userId: 'user-1',
       });
       expect(txUserRepo.softDelete).toHaveBeenCalledWith('user-1');
       expect(
@@ -437,6 +457,7 @@ describe('MyPageService', () => {
       expect(txPostRepo.update).not.toHaveBeenCalled();
       expect(txPostRepo.softDelete).not.toHaveBeenCalled();
       expect(txTemplateRepo.softDelete).not.toHaveBeenCalled();
+      expect(txUserMonthCoverRepo.delete).not.toHaveBeenCalled();
       expect(txRefreshTokenRepo.update).not.toHaveBeenCalled();
       expect(txUserRepo.softDelete).not.toHaveBeenCalled();
       expect(
