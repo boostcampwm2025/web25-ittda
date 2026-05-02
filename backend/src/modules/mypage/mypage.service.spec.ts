@@ -13,10 +13,11 @@ import { GroupService } from '../group/service/group.service';
 import { PostDraftCleanupService } from '../post/post-draft-cleanup.service';
 import { Template } from '../template/entity/template.entity';
 import { UserMonthCover } from '../user/entity/user-month-cover.entity';
+import { MediaService } from '../media/media.service';
 
 type MembershipRecord = Pick<
   GroupMember,
-  'id' | 'groupId' | 'userId' | 'role' | 'joinedAt'
+  'id' | 'groupId' | 'userId' | 'role' | 'joinedAt' | 'profileMediaId'
 >;
 
 type UserQueryBuilder = {
@@ -39,6 +40,7 @@ type TxGroupMemberRepo = {
 };
 
 type TxPostRepo = {
+  find: jest.Mock;
   update: jest.Mock;
   softDelete: jest.Mock;
 };
@@ -122,6 +124,12 @@ describe('MyPageService', () => {
   let groupService: {
     deleteGroupWithManager: jest.Mock;
   };
+  let mediaService: {
+    collectPostMediaIdsWithManager: jest.Mock;
+    collectUserMonthCoverMediaIdsWithManager: jest.Mock;
+    deleteOrphanMediaCandidatesWithManager: jest.Mock;
+    deleteMediaAssets: jest.Mock;
+  };
   let postDraftCleanupService: {
     invalidateOwnedDraftsInGroupWithManager: jest.Mock;
     notifyDraftInvalidations: jest.Mock;
@@ -135,6 +143,7 @@ describe('MyPageService', () => {
       save: jest.fn(),
     };
     txPostRepo = {
+      find: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
     };
@@ -177,6 +186,12 @@ describe('MyPageService', () => {
     groupService = {
       deleteGroupWithManager: jest.fn(),
     };
+    mediaService = {
+      collectPostMediaIdsWithManager: jest.fn(),
+      collectUserMonthCoverMediaIdsWithManager: jest.fn(),
+      deleteOrphanMediaCandidatesWithManager: jest.fn(),
+      deleteMediaAssets: jest.fn(),
+    };
     postDraftCleanupService = {
       invalidateOwnedDraftsInGroupWithManager: jest.fn(),
       notifyDraftInvalidations: jest.fn(),
@@ -185,6 +200,7 @@ describe('MyPageService', () => {
     service = new MyPageService(
       userRepo as unknown as Repository<User>,
       groupService as unknown as GroupService,
+      mediaService as unknown as MediaService,
       postDraftCleanupService as unknown as PostDraftCleanupService,
     );
   });
@@ -205,6 +221,7 @@ describe('MyPageService', () => {
               userId: 'user-1',
               role: GroupRoleEnum.ADMIN,
               joinedAt,
+              profileMediaId: null,
             },
             {
               id: 'gm-admin-transfer',
@@ -212,6 +229,7 @@ describe('MyPageService', () => {
               userId: 'user-1',
               role: GroupRoleEnum.ADMIN,
               joinedAt,
+              profileMediaId: 'profile-group-2',
             },
             {
               id: 'gm-viewer',
@@ -219,6 +237,7 @@ describe('MyPageService', () => {
               userId: 'user-1',
               role: GroupRoleEnum.VIEWER,
               joinedAt,
+              profileMediaId: 'profile-group-3',
             },
           ]),
         )
@@ -230,6 +249,7 @@ describe('MyPageService', () => {
               userId: 'user-1',
               role: GroupRoleEnum.ADMIN,
               joinedAt,
+              profileMediaId: null,
             },
           ]),
         )
@@ -241,6 +261,7 @@ describe('MyPageService', () => {
               userId: 'user-1',
               role: GroupRoleEnum.ADMIN,
               joinedAt: new Date('2026-05-01T00:00:00.000Z'),
+              profileMediaId: 'profile-group-2',
             },
             {
               id: 'gm-editor',
@@ -258,25 +279,43 @@ describe('MyPageService', () => {
             },
           ]),
         );
+      txPostRepo.find.mockResolvedValue([{ id: 'personal-post-1' }]);
+      mediaService.collectPostMediaIdsWithManager.mockResolvedValue([
+        'personal-media-1',
+      ]);
+      mediaService.collectUserMonthCoverMediaIdsWithManager.mockResolvedValue([
+        'month-cover-1',
+      ]);
       groupService.deleteGroupWithManager.mockResolvedValue({
         draftIds: ['draft-group-1'],
         groupIds: ['group-1'],
         reason: 'GROUP_DELETED',
+        mediaDeletionPlans: [{ id: 'group-1-media', storageKey: 'group/1' }],
       });
       postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager
         .mockResolvedValueOnce({
           draftIds: ['draft-group-2'],
           groupIds: ['group-2'],
           reason: 'OWNER_WITHDRAWN',
+          mediaDeletionPlans: [{ id: 'draft-2-media', storageKey: 'draft/2' }],
         })
         .mockResolvedValueOnce({
           draftIds: [],
           groupIds: [],
           reason: 'OWNER_WITHDRAWN',
+          mediaDeletionPlans: [],
         });
+      mediaService.deleteOrphanMediaCandidatesWithManager
+        .mockResolvedValueOnce([{ id: 'profile-group-2', storageKey: 'gm/2' }])
+        .mockResolvedValueOnce([{ id: 'profile-group-3', storageKey: 'gm/3' }])
+        .mockResolvedValueOnce([
+          { id: 'personal-media-1', storageKey: 'post/1' },
+          { id: 'month-cover-1', storageKey: 'cover/1' },
+        ]);
       postDraftCleanupService.notifyDraftInvalidations.mockResolvedValue(
         undefined,
       );
+      mediaService.deleteMediaAssets.mockResolvedValue(undefined);
       txGroupMemberRepo.save.mockResolvedValue(undefined);
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 2 });
@@ -289,6 +328,10 @@ describe('MyPageService', () => {
       await service.withdraw('user-1');
 
       expect(userRepo.manager.transaction).toHaveBeenCalledTimes(1);
+      expect(txPostRepo.find).toHaveBeenCalledWith({
+        where: { ownerUserId: 'user-1', scope: PostScope.PERSONAL },
+        select: { id: true },
+      });
       expect(groupService.deleteGroupWithManager).toHaveBeenCalledWith(
         transactionManager,
         'group-1',
@@ -346,17 +389,28 @@ describe('MyPageService', () => {
           draftIds: ['draft-group-1'],
           groupIds: ['group-1'],
           reason: 'GROUP_DELETED',
+          mediaDeletionPlans: [{ id: 'group-1-media', storageKey: 'group/1' }],
         },
         {
           draftIds: ['draft-group-2'],
           groupIds: ['group-2'],
           reason: 'OWNER_WITHDRAWN',
+          mediaDeletionPlans: [{ id: 'draft-2-media', storageKey: 'draft/2' }],
         },
         {
           draftIds: [],
           groupIds: [],
           reason: 'OWNER_WITHDRAWN',
+          mediaDeletionPlans: [],
         },
+      ]);
+      expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
+        { id: 'group-1-media', storageKey: 'group/1' },
+        { id: 'draft-2-media', storageKey: 'draft/2' },
+        { id: 'profile-group-2', storageKey: 'gm/2' },
+        { id: 'profile-group-3', storageKey: 'gm/3' },
+        { id: 'personal-media-1', storageKey: 'post/1' },
+        { id: 'month-cover-1', storageKey: 'cover/1' },
       ]);
     });
 
@@ -375,6 +429,7 @@ describe('MyPageService', () => {
               userId: 'user-1',
               role: GroupRoleEnum.ADMIN,
               joinedAt,
+              profileMediaId: 'profile-group-1',
             },
           ]),
         )
@@ -386,6 +441,7 @@ describe('MyPageService', () => {
               userId: 'user-1',
               role: GroupRoleEnum.ADMIN,
               joinedAt,
+              profileMediaId: 'profile-group-1',
             },
             {
               id: 'gm-admin-2',
@@ -396,16 +452,28 @@ describe('MyPageService', () => {
             },
           ]),
         );
+      txPostRepo.find.mockResolvedValue([]);
+      mediaService.collectPostMediaIdsWithManager.mockResolvedValue([]);
+      mediaService.collectUserMonthCoverMediaIdsWithManager.mockResolvedValue(
+        [],
+      );
       postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager.mockResolvedValue(
         {
           draftIds: ['draft-group-1'],
           groupIds: ['group-1'],
           reason: 'OWNER_WITHDRAWN',
+          mediaDeletionPlans: [
+            { id: 'draft-group-1-media', storageKey: 'd/1' },
+          ],
         },
       );
+      mediaService.deleteOrphanMediaCandidatesWithManager
+        .mockResolvedValueOnce([{ id: 'profile-group-1', storageKey: 'gm/1' }])
+        .mockResolvedValueOnce([]);
       postDraftCleanupService.notifyDraftInvalidations.mockResolvedValue(
         undefined,
       );
+      mediaService.deleteMediaAssets.mockResolvedValue(undefined);
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 1 });
       txPostRepo.softDelete.mockResolvedValue({ affected: 2 });
@@ -438,7 +506,14 @@ describe('MyPageService', () => {
           draftIds: ['draft-group-1'],
           groupIds: ['group-1'],
           reason: 'OWNER_WITHDRAWN',
+          mediaDeletionPlans: [
+            { id: 'draft-group-1-media', storageKey: 'd/1' },
+          ],
         },
+      ]);
+      expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
+        { id: 'draft-group-1-media', storageKey: 'd/1' },
+        { id: 'profile-group-1', storageKey: 'gm/1' },
       ]);
     });
 
@@ -455,6 +530,7 @@ describe('MyPageService', () => {
 
       expect(txGroupMemberRepo.createQueryBuilder).not.toHaveBeenCalled();
       expect(txPostRepo.update).not.toHaveBeenCalled();
+      expect(txPostRepo.find).not.toHaveBeenCalled();
       expect(txPostRepo.softDelete).not.toHaveBeenCalled();
       expect(txTemplateRepo.softDelete).not.toHaveBeenCalled();
       expect(txUserMonthCoverRepo.delete).not.toHaveBeenCalled();
@@ -463,6 +539,7 @@ describe('MyPageService', () => {
       expect(
         postDraftCleanupService.notifyDraftInvalidations,
       ).not.toHaveBeenCalled();
+      expect(mediaService.deleteMediaAssets).not.toHaveBeenCalled();
     });
   });
 });

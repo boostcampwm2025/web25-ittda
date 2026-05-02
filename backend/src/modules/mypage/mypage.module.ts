@@ -7,6 +7,7 @@ import { StatsModule } from '../stats/stats.module';
 import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
 import { GroupModule } from '../group/group.module';
 import { PostModule } from '../post/post.module';
+import { MediaModule } from '../media/media.module';
 
 // Mypage 모듈 정의
 @Module({
@@ -15,6 +16,7 @@ import { PostModule } from '../post/post.module';
     StatsModule,
     GroupModule,
     PostModule,
+    MediaModule,
   ],
   controllers: [MyPageController],
   providers: [MyPageService],

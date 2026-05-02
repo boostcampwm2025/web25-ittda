@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, LessThan, Repository } from 'typeorm';
+import { EntityManager, In, LessThan, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import {
   HeadObjectCommand,
@@ -30,6 +30,8 @@ import { GroupMonthCover } from '@/modules/group/entity/group-month-cover.entity
 import { User } from '@/modules/user/entity/user.entity';
 import { UserMonthCover } from '@/modules/user/entity/user-month-cover.entity';
 import type { PresignFileRequestDto } from './dto/presign-media.dto';
+
+export type MediaAssetDeletionPlan = Pick<MediaAsset, 'id' | 'storageKey'>;
 
 @Injectable()
 export class MediaService {
@@ -356,6 +358,157 @@ export class MediaService {
         err instanceof Error ? err.stack : String(err),
       );
       throw new InternalServerErrorException('조회 URL 생성 실패');
+    }
+  }
+
+  async collectPostMediaIdsWithManager(
+    manager: EntityManager,
+    postIds: string[],
+  ): Promise<string[]> {
+    if (postIds.length === 0) return [];
+
+    const postMediaRows = await manager.getRepository(PostMedia).find({
+      where: { postId: In(postIds) },
+      select: { mediaId: true },
+    });
+
+    return Array.from(
+      new Set(postMediaRows.map((row) => row.mediaId).filter(Boolean)),
+    );
+  }
+
+  async collectDraftMediaIdsWithManager(
+    manager: EntityManager,
+    draftIds: string[],
+  ): Promise<string[]> {
+    if (draftIds.length === 0) return [];
+
+    const draftMediaRows = await manager.getRepository(PostDraftMedia).find({
+      where: { draftId: In(draftIds) },
+      select: { mediaId: true },
+    });
+
+    return Array.from(
+      new Set(draftMediaRows.map((row) => row.mediaId).filter(Boolean)),
+    );
+  }
+
+  async collectUserMonthCoverMediaIdsWithManager(
+    manager: EntityManager,
+    userId: string,
+  ): Promise<string[]> {
+    const coverRows = await manager.getRepository(UserMonthCover).find({
+      where: { userId },
+      select: { coverAssetId: true },
+    });
+
+    return Array.from(
+      new Set(coverRows.map((row) => row.coverAssetId).filter(Boolean)),
+    ) as string[];
+  }
+
+  async collectGroupScopedMediaIdsWithManager(
+    manager: EntityManager,
+    groupId: string,
+  ): Promise<string[]> {
+    const [group, groupMembers, groupMonthCovers] = await Promise.all([
+      manager.getRepository(Group).findOne({
+        where: { id: groupId },
+        select: { coverMediaId: true },
+      }),
+      manager.getRepository(GroupMember).find({
+        where: { groupId },
+        select: { profileMediaId: true },
+      }),
+      manager.getRepository(GroupMonthCover).find({
+        where: { groupId },
+        select: { coverAssetId: true },
+      }),
+    ]);
+
+    return Array.from(
+      new Set(
+        [
+          group?.coverMediaId ?? null,
+          ...groupMembers.map((member) => member.profileMediaId ?? null),
+          ...groupMonthCovers.map((cover) => cover.coverAssetId ?? null),
+        ].filter(Boolean),
+      ),
+    ) as string[];
+  }
+
+  async deleteOrphanMediaCandidatesWithManager(
+    manager: EntityManager,
+    mediaIds: string[],
+    options: {
+      ignorePostIds?: string[];
+    } = {},
+  ): Promise<MediaAssetDeletionPlan[]> {
+    if (!this.s3ConfigValid || mediaIds.length === 0) {
+      return [];
+    }
+
+    const uniqueMediaIds = Array.from(new Set(mediaIds));
+    const mediaAssetRepo = manager.getRepository(MediaAsset);
+
+    const readyAssets = await mediaAssetRepo.find({
+      where: {
+        id: In(uniqueMediaIds),
+        status: MediaAssetStatus.READY,
+      },
+      select: { id: true, storageKey: true },
+    });
+
+    if (readyAssets.length === 0) {
+      return [];
+    }
+
+    const readyAssetIds = readyAssets.map((asset) => asset.id);
+    const referencedMediaIds = await this.collectActiveReferencedMediaIds(
+      manager,
+      readyAssetIds,
+      options,
+    );
+    const orphanAssets = readyAssets.filter(
+      (asset) => !referencedMediaIds.has(asset.id),
+    );
+
+    if (orphanAssets.length === 0) {
+      return [];
+    }
+
+    await mediaAssetRepo.delete(orphanAssets.map((asset) => asset.id));
+
+    return orphanAssets.map((asset) => ({
+      id: asset.id,
+      storageKey: asset.storageKey,
+    }));
+  }
+
+  async deleteMediaAssets(plans: MediaAssetDeletionPlan[]): Promise<void> {
+    if (!this.s3ConfigValid || plans.length === 0) {
+      return;
+    }
+
+    const uniquePlans = Array.from(
+      new Map(plans.map((plan) => [plan.id, plan])).values(),
+    );
+
+    for (const plan of uniquePlans) {
+      try {
+        await this.s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: plan.storageKey,
+          }),
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'unknown error';
+        this.logger.warn(
+          `Failed to delete media from storage (mediaId=${plan.id}): ${message}`,
+        );
+      }
     }
   }
 
@@ -712,6 +865,92 @@ export class MediaService {
       if (cover.coverAssetId) referenced.add(cover.coverAssetId);
     });
     groupMonthCovers.forEach((cover) => {
+      if (cover.coverAssetId) referenced.add(cover.coverAssetId);
+    });
+
+    return referenced;
+  }
+
+  private async collectActiveReferencedMediaIds(
+    manager: EntityManager,
+    mediaIds: string[],
+    options: {
+      ignorePostIds?: string[];
+    } = {},
+  ): Promise<Set<string>> {
+    const ignorePostIds = options.ignorePostIds ?? [];
+
+    const postMediaRefQb = manager
+      .getRepository(PostMedia)
+      .createQueryBuilder('pm')
+      .innerJoin(Post, 'p', 'p.id = pm.postId')
+      .select('pm.mediaId', 'mediaId')
+      .where('pm.mediaId IN (:...mediaIds)', { mediaIds })
+      .andWhere('p.deletedAt IS NULL');
+
+    if (ignorePostIds.length > 0) {
+      postMediaRefQb.andWhere('p.id NOT IN (:...ignorePostIds)', {
+        ignorePostIds,
+      });
+    }
+
+    const [
+      postMediaRefs,
+      draftMediaRefs,
+      users,
+      members,
+      groups,
+      userCovers,
+      groupCovers,
+    ] = await Promise.all([
+      postMediaRefQb.getRawMany<{ mediaId: string }>(),
+      manager
+        .getRepository(PostDraftMedia)
+        .createQueryBuilder('pdm')
+        .innerJoin(PostDraft, 'pd', 'pd.id = pdm.draftId')
+        .select('pdm.mediaId', 'mediaId')
+        .where('pdm.mediaId IN (:...mediaIds)', { mediaIds })
+        .andWhere('pd.isActive = true')
+        .getRawMany<{ mediaId: string }>(),
+      manager.getRepository(User).find({
+        where: { profileImageId: In(mediaIds) },
+        select: { profileImageId: true },
+      }),
+      manager.getRepository(GroupMember).find({
+        where: { profileMediaId: In(mediaIds) },
+        select: { profileMediaId: true },
+      }),
+      manager.getRepository(Group).find({
+        where: { coverMediaId: In(mediaIds) },
+        select: { coverMediaId: true },
+      }),
+      manager.getRepository(UserMonthCover).find({
+        where: { coverAssetId: In(mediaIds) },
+        select: { coverAssetId: true },
+      }),
+      manager.getRepository(GroupMonthCover).find({
+        where: { coverAssetId: In(mediaIds) },
+        select: { coverAssetId: true },
+      }),
+    ]);
+
+    const referenced = new Set<string>();
+
+    postMediaRefs.forEach((row) => referenced.add(row.mediaId));
+    draftMediaRefs.forEach((row) => referenced.add(row.mediaId));
+    users.forEach((user) => {
+      if (user.profileImageId) referenced.add(user.profileImageId);
+    });
+    members.forEach((member) => {
+      if (member.profileMediaId) referenced.add(member.profileMediaId);
+    });
+    groups.forEach((group) => {
+      if (group.coverMediaId) referenced.add(group.coverMediaId);
+    });
+    userCovers.forEach((cover) => {
+      if (cover.coverAssetId) referenced.add(cover.coverAssetId);
+    });
+    groupCovers.forEach((cover) => {
       if (cover.coverAssetId) referenced.add(cover.coverAssetId);
     });
 

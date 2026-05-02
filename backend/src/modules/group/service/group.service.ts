@@ -22,6 +22,7 @@ import {
 import { PostScope } from '@/enums/post-scope.enum';
 import { GetGroupsResponseDto, GroupItemDto } from '../dto/get-groups.dto';
 import { GroupActivityService } from './group-activity.service';
+import { MediaService } from '@/modules/media/media.service';
 import {
   DraftInvalidationResult,
   PostDraftCleanupService,
@@ -53,6 +54,7 @@ export class GroupService {
 
     private readonly dataSource: DataSource,
     private readonly groupActivityService: GroupActivityService,
+    private readonly mediaService: MediaService,
     private readonly postDraftCleanupService: PostDraftCleanupService,
   ) {}
 
@@ -166,10 +168,16 @@ export class GroupService {
       draftInvalidation = await this.deleteGroupWithManager(manager, groupId);
     });
 
-    if (draftInvalidation) {
+    const finalizedDraftInvalidation =
+      draftInvalidation as DraftInvalidationResult | null;
+
+    if (finalizedDraftInvalidation) {
       await this.postDraftCleanupService.notifyDraftInvalidations([
-        draftInvalidation,
+        finalizedDraftInvalidation,
       ]);
+      await this.mediaService.deleteMediaAssets(
+        finalizedDraftInvalidation.mediaDeletionPlans,
+      );
     }
   }
 
@@ -178,6 +186,7 @@ export class GroupService {
     groupId: string,
   ): Promise<DraftInvalidationResult> {
     const groupRepo = manager.getRepository(Group);
+    const postRepo = manager.getRepository(Post);
     const group = await groupRepo.findOne({
       where: { id: groupId },
     });
@@ -185,6 +194,16 @@ export class GroupService {
     if (!group) {
       throw new NotFoundException('존재하지 않는 그룹입니다.');
     }
+
+    const groupPosts = await postRepo.find({
+      where: { groupId },
+      select: { id: true },
+    });
+    const groupPostIds = groupPosts.map((post) => post.id);
+    const [postMediaIds, groupScopedMediaIds] = await Promise.all([
+      this.mediaService.collectPostMediaIdsWithManager(manager, groupPostIds),
+      this.mediaService.collectGroupScopedMediaIdsWithManager(manager, groupId),
+    ]);
 
     const draftInvalidation =
       await this.postDraftCleanupService.invalidateGroupDraftsWithManager(
@@ -195,7 +214,20 @@ export class GroupService {
 
     // TODO: 그룹 삭제 시 post_drafts는 CASCADE 대신 서비스 로직에서 정리(soft delete 고려).
     await groupRepo.remove(group);
-    return draftInvalidation;
+
+    const mediaDeletionPlans =
+      await this.mediaService.deleteOrphanMediaCandidatesWithManager(manager, [
+        ...postMediaIds,
+        ...groupScopedMediaIds,
+      ]);
+
+    return {
+      ...draftInvalidation,
+      mediaDeletionPlans: [
+        ...draftInvalidation.mediaDeletionPlans,
+        ...mediaDeletionPlans,
+      ],
+    };
   }
 
   /** 그룹 정보 수정 */
