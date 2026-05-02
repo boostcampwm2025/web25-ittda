@@ -73,6 +73,62 @@ export class MyPageService {
     return this.findOne(userId);
   }
 
+  private async handleWithdrawalMembership(
+    groupMemberRepo: Repository<GroupMember>,
+    groupRepo: Repository<Group>,
+    membership: GroupMember,
+  ): Promise<void> {
+    if (membership.role !== GroupRoleEnum.ADMIN) {
+      await groupMemberRepo.softDelete(membership.id);
+      return;
+    }
+
+    const groupMembers = await groupMemberRepo
+      .createQueryBuilder('gm')
+      .where('gm.groupId = :groupId', { groupId: membership.groupId })
+      .orderBy('gm.joinedAt', 'ASC')
+      .setLock('pessimistic_write', undefined, ['gm'])
+      .getMany();
+
+    const me = groupMembers.find(
+      (groupMember) => groupMember.id === membership.id,
+    );
+
+    if (!me) {
+      throw new BadRequestException('그룹 멤버가 아닙니다.');
+    }
+
+    const remainingMembers = groupMembers.filter(
+      (groupMember) => groupMember.id !== me.id,
+    );
+
+    const remainingAdmins = remainingMembers.filter(
+      (groupMember) => groupMember.role === GroupRoleEnum.ADMIN,
+    );
+
+    if (remainingAdmins.length > 0) {
+      await groupMemberRepo.softDelete(me.id);
+      return;
+    }
+
+    if (remainingMembers.length === 0) {
+      await groupRepo.delete(membership.groupId);
+      return;
+    }
+
+    const nextAdmin = pickNextGroupAdmin(remainingMembers);
+
+    if (!nextAdmin) {
+      throw new BadRequestException(
+        '관리자 권한을 양도할 그룹 멤버를 찾을 수 없습니다.',
+      );
+    }
+
+    nextAdmin.role = GroupRoleEnum.ADMIN;
+    await groupMemberRepo.save(nextAdmin);
+    await groupMemberRepo.softDelete(me.id);
+  }
+
   /**
    * 회원 탈퇴
    * @param userId 탈퇴 대상 사용자 ID
@@ -105,55 +161,11 @@ export class MyPageService {
         .getMany();
 
       for (const membership of memberships) {
-        if (membership.role !== GroupRoleEnum.ADMIN) {
-          await groupMemberRepo.softDelete(membership.id);
-          continue;
-        }
-
-        const groupMembers = await groupMemberRepo
-          .createQueryBuilder('gm')
-          .where('gm.groupId = :groupId', { groupId: membership.groupId })
-          .orderBy('gm.joinedAt', 'ASC')
-          .setLock('pessimistic_write', undefined, ['gm'])
-          .getMany();
-
-        const me = groupMembers.find(
-          (groupMember) => groupMember.id === membership.id,
+        await this.handleWithdrawalMembership(
+          groupMemberRepo,
+          groupRepo,
+          membership,
         );
-
-        if (!me) {
-          throw new BadRequestException('그룹 멤버가 아닙니다.');
-        }
-
-        const remainingMembers = groupMembers.filter(
-          (groupMember) => groupMember.id !== me.id,
-        );
-
-        const remainingAdmins = remainingMembers.filter(
-          (groupMember) => groupMember.role === GroupRoleEnum.ADMIN,
-        );
-
-        if (remainingAdmins.length > 0) {
-          await groupMemberRepo.softDelete(me.id);
-          continue;
-        }
-
-        if (remainingMembers.length === 0) {
-          await groupRepo.delete(membership.groupId);
-          continue;
-        }
-
-        const nextAdmin = pickNextGroupAdmin(remainingMembers);
-
-        if (!nextAdmin) {
-          throw new BadRequestException(
-            '관리자 권한을 양도할 그룹 멤버를 찾을 수 없습니다.',
-          );
-        }
-
-        nextAdmin.role = GroupRoleEnum.ADMIN;
-        await groupMemberRepo.save(nextAdmin);
-        await groupMemberRepo.softDelete(me.id);
       }
 
       await postRepo.update({ ownerUserId: userId }, { shareToken: null });
