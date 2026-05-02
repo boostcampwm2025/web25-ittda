@@ -8,6 +8,7 @@ import { GroupMember } from '../group/entity/group_member.entity';
 import { Post } from '../post/entity/post.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { GroupService } from '../group/service/group.service';
+import { PostDraftCleanupService } from '../post/post-draft-cleanup.service';
 
 type MembershipRecord = Pick<
   GroupMember,
@@ -102,6 +103,10 @@ describe('MyPageService', () => {
   let groupService: {
     deleteGroupWithManager: jest.Mock;
   };
+  let postDraftCleanupService: {
+    invalidateOwnedDraftsInGroupWithManager: jest.Mock;
+    notifyDraftInvalidations: jest.Mock;
+  };
   let service: MyPageService;
 
   beforeEach(() => {
@@ -144,10 +149,15 @@ describe('MyPageService', () => {
     groupService = {
       deleteGroupWithManager: jest.fn(),
     };
+    postDraftCleanupService = {
+      invalidateOwnedDraftsInGroupWithManager: jest.fn(),
+      notifyDraftInvalidations: jest.fn(),
+    };
 
     service = new MyPageService(
       userRepo as unknown as Repository<User>,
       groupService as unknown as GroupService,
+      postDraftCleanupService as unknown as PostDraftCleanupService,
     );
   });
 
@@ -220,7 +230,25 @@ describe('MyPageService', () => {
             },
           ]),
         );
-      groupService.deleteGroupWithManager.mockResolvedValue(undefined);
+      groupService.deleteGroupWithManager.mockResolvedValue({
+        draftIds: ['draft-group-1'],
+        groupIds: ['group-1'],
+        reason: 'GROUP_DELETED',
+      });
+      postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager
+        .mockResolvedValueOnce({
+          draftIds: ['draft-group-2'],
+          groupIds: ['group-2'],
+          reason: 'OWNER_WITHDRAWN',
+        })
+        .mockResolvedValueOnce({
+          draftIds: [],
+          groupIds: [],
+          reason: 'OWNER_WITHDRAWN',
+        });
+      postDraftCleanupService.notifyDraftInvalidations.mockResolvedValue(
+        undefined,
+      );
       txGroupMemberRepo.save.mockResolvedValue(undefined);
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 2 });
@@ -233,6 +261,22 @@ describe('MyPageService', () => {
       expect(groupService.deleteGroupWithManager).toHaveBeenCalledWith(
         transactionManager,
         'group-1',
+      );
+      expect(
+        postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager,
+      ).toHaveBeenCalledWith(
+        transactionManager,
+        'user-1',
+        'group-2',
+        'OWNER_WITHDRAWN',
+      );
+      expect(
+        postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager,
+      ).toHaveBeenCalledWith(
+        transactionManager,
+        'user-1',
+        'group-3',
+        'OWNER_WITHDRAWN',
       );
       expect(txGroupMemberRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -253,6 +297,25 @@ describe('MyPageService', () => {
         { revoked: true },
       );
       expect(txUserRepo.softDelete).toHaveBeenCalledWith('user-1');
+      expect(
+        postDraftCleanupService.notifyDraftInvalidations,
+      ).toHaveBeenCalledWith([
+        {
+          draftIds: ['draft-group-1'],
+          groupIds: ['group-1'],
+          reason: 'GROUP_DELETED',
+        },
+        {
+          draftIds: ['draft-group-2'],
+          groupIds: ['group-2'],
+          reason: 'OWNER_WITHDRAWN',
+        },
+        {
+          draftIds: [],
+          groupIds: [],
+          reason: 'OWNER_WITHDRAWN',
+        },
+      ]);
     });
 
     it('soft deletes the admin membership when another admin already exists', async () => {
@@ -291,6 +354,16 @@ describe('MyPageService', () => {
             },
           ]),
         );
+      postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager.mockResolvedValue(
+        {
+          draftIds: ['draft-group-1'],
+          groupIds: ['group-1'],
+          reason: 'OWNER_WITHDRAWN',
+        },
+      );
+      postDraftCleanupService.notifyDraftInvalidations.mockResolvedValue(
+        undefined,
+      );
       txGroupMemberRepo.softDelete.mockResolvedValue({ affected: 1 });
       txPostRepo.update.mockResolvedValue({ affected: 1 });
       txRefreshTokenRepo.update.mockResolvedValue({ affected: 1 });
@@ -302,6 +375,15 @@ describe('MyPageService', () => {
       expect(txGroupMemberRepo.save).not.toHaveBeenCalled();
       expect(txGroupMemberRepo.softDelete).toHaveBeenCalledWith('gm-admin');
       expect(txUserRepo.softDelete).toHaveBeenCalledWith('user-1');
+      expect(
+        postDraftCleanupService.notifyDraftInvalidations,
+      ).toHaveBeenCalledWith([
+        {
+          draftIds: ['draft-group-1'],
+          groupIds: ['group-1'],
+          reason: 'OWNER_WITHDRAWN',
+        },
+      ]);
     });
 
     it('throws when the user is already deleted or missing', async () => {
@@ -319,6 +401,9 @@ describe('MyPageService', () => {
       expect(txPostRepo.update).not.toHaveBeenCalled();
       expect(txRefreshTokenRepo.update).not.toHaveBeenCalled();
       expect(txUserRepo.softDelete).not.toHaveBeenCalled();
+      expect(
+        postDraftCleanupService.notifyDraftInvalidations,
+      ).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Group } from './entity/group.entity';
@@ -28,6 +28,7 @@ import { GroupActivityLog } from './entity/group-activity-log.entity';
 import { GroupActivityActor } from './entity/group-activity-actor.entity';
 
 import { AuthModule } from '../auth/auth.module';
+import { PostModule } from '../post/post.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { AuthModule } from '../auth/auth.module';
       GroupActivityActor,
     ]),
     AuthModule,
+    forwardRef(() => PostModule),
   ],
   providers: [
     GroupService,

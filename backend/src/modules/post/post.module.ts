@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PostController } from './post.controller';
 import { PostDraftController } from './post-draft.controller';
@@ -11,6 +11,7 @@ import { DraftStateService } from './collab/draft-state.service';
 import { PostService } from './post.service';
 import { PostPublishService } from './post-publish.service';
 import { PatchStreamService } from './collab/patch-stream.service';
+import { PostDraftCleanupService } from './post-draft-cleanup.service';
 
 import { Post } from './entity/post.entity';
 import { PostBlock } from './entity/post-block.entity';
@@ -39,7 +40,7 @@ import { MediaModule } from '../media/media.module';
       GroupMember,
     ]),
     AuthModule,
-    GroupModule,
+    forwardRef(() => GroupModule),
     MediaModule,
   ],
   controllers: [PostController, PostDraftController, PostShareController],
@@ -52,6 +53,8 @@ import { MediaModule } from '../media/media.module';
     DraftStateService,
     PostPublishService,
     PatchStreamService,
+    PostDraftCleanupService,
   ],
+  exports: [PostDraftCleanupService],
 })
 export class PostModule {}

@@ -22,6 +22,10 @@ import {
 import { PostScope } from '@/enums/post-scope.enum';
 import { GetGroupsResponseDto, GroupItemDto } from '../dto/get-groups.dto';
 import { GroupActivityService } from './group-activity.service';
+import {
+  DraftInvalidationResult,
+  PostDraftCleanupService,
+} from '@/modules/post/post-draft-cleanup.service';
 
 import { resolveGroupNickname } from '../utils/group-nickname';
 
@@ -49,6 +53,7 @@ export class GroupService {
 
     private readonly dataSource: DataSource,
     private readonly groupActivityService: GroupActivityService,
+    private readonly postDraftCleanupService: PostDraftCleanupService,
   ) {}
 
   /** 그룹 생성 + ADMIN 등록 (트랜잭션 적용) */
@@ -135,6 +140,8 @@ export class GroupService {
 
   /** 그룹 삭제 (관리자만 가능) */
   async deleteGroup(userId: string, groupId: string): Promise<void> {
+    let draftInvalidation: DraftInvalidationResult | null = null;
+
     await this.dataSource.transaction(async (manager) => {
       const groupRepo = manager.getRepository(Group);
       const groupMemberRepo = manager.getRepository(GroupMember);
@@ -156,14 +163,20 @@ export class GroupService {
         throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
       }
 
-      await this.deleteGroupWithManager(manager, groupId);
+      draftInvalidation = await this.deleteGroupWithManager(manager, groupId);
     });
+
+    if (draftInvalidation) {
+      await this.postDraftCleanupService.notifyDraftInvalidations([
+        draftInvalidation,
+      ]);
+    }
   }
 
   async deleteGroupWithManager(
     manager: EntityManager,
     groupId: string,
-  ): Promise<void> {
+  ): Promise<DraftInvalidationResult> {
     const groupRepo = manager.getRepository(Group);
     const group = await groupRepo.findOne({
       where: { id: groupId },
@@ -173,8 +186,16 @@ export class GroupService {
       throw new NotFoundException('존재하지 않는 그룹입니다.');
     }
 
+    const draftInvalidation =
+      await this.postDraftCleanupService.invalidateGroupDraftsWithManager(
+        manager,
+        groupId,
+        'GROUP_DELETED',
+      );
+
     // TODO: 그룹 삭제 시 post_drafts는 CASCADE 대신 서비스 로직에서 정리(soft delete 고려).
     await groupRepo.remove(group);
+    return draftInvalidation;
   }
 
   /** 그룹 정보 수정 */

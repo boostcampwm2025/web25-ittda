@@ -154,6 +154,19 @@ export class LockService {
     this.releaseLocksForSession(draftId, sessionId, onRelease);
   }
 
+  clearDraft(draftId: string) {
+    const locks = this.locksByDraft.get(draftId);
+    if (!locks) return [];
+
+    const lockKeys = Array.from(locks.keys());
+    locks.forEach((entry) => {
+      this.clearLockTimeout(entry);
+      this.removeSessionLock(entry.ownerSessionId, entry.lockKey);
+    });
+    this.locksByDraft.delete(draftId);
+    return lockKeys;
+  }
+
   private getOrCreateDraftLocks(draftId: string) {
     const existing = this.locksByDraft.get(draftId);
     if (existing) return existing;

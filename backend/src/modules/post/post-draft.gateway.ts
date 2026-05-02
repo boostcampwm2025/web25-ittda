@@ -98,7 +98,7 @@ export class PostDraftGateway
       clearInterval(this.groupDraftRefreshTimer);
     }
     this.groupDraftRefreshTimer = setInterval(() => {
-      void this.broadcastGroupDraftSnapshots();
+      void this.broadcastSubscribedGroupDraftSnapshots();
     }, PostDraftGateway.GROUP_DRAFT_REFRESH_MS);
   }
 
@@ -431,6 +431,23 @@ export class PostDraftGateway
     });
   }
 
+  invalidateDrafts(draftIds: string[], reason: string) {
+    const uniqueDraftIds = Array.from(new Set(draftIds));
+
+    uniqueDraftIds.forEach((draftId) => {
+      this.lockService.clearDraft(draftId);
+      this.presenceService.clearDraft(draftId);
+      this.broadcastDraftInvalidated(draftId, reason);
+    });
+  }
+
+  async refreshGroupDraftSnapshots(groupIds: string[]) {
+    const uniqueGroupIds = Array.from(new Set(groupIds));
+    await Promise.all(
+      uniqueGroupIds.map((groupId) => this.emitGroupDraftSnapshot(groupId)),
+    );
+  }
+
   private getDraftRoom(draftId: string) {
     return `draft:${draftId}`;
   }
@@ -491,11 +508,9 @@ export class PostDraftGateway
     this.groupDraftSubscribers.set(groupId, new Set([socketId]));
   }
 
-  private async broadcastGroupDraftSnapshots() {
+  private async broadcastSubscribedGroupDraftSnapshots() {
     const groupIds = Array.from(this.groupDraftSubscribers.keys());
-    await Promise.all(
-      groupIds.map((groupId) => this.emitGroupDraftSnapshot(groupId)),
-    );
+    await this.refreshGroupDraftSnapshots(groupIds);
   }
 
   private async emitGroupDraftSnapshot(groupId: string, socket?: Socket) {

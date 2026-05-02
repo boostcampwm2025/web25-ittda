@@ -12,6 +12,10 @@ import { GroupMember } from '../group/entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { pickNextGroupAdmin } from '../group/utils/group-role-priority';
 import { GroupService } from '../group/service/group.service';
+import {
+  DraftInvalidationResult,
+  PostDraftCleanupService,
+} from '../post/post-draft-cleanup.service';
 
 // Mypage Service에서 기능 구현
 @Injectable()
@@ -20,6 +24,7 @@ export class MyPageService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly groupService: GroupService,
+    private readonly postDraftCleanupService: PostDraftCleanupService,
   ) {}
 
   async findOne(userId: string): Promise<User> {
@@ -78,10 +83,17 @@ export class MyPageService {
     manager: EntityManager,
     groupMemberRepo: Repository<GroupMember>,
     membership: GroupMember,
-  ): Promise<void> {
+  ): Promise<DraftInvalidationResult | null> {
     if (membership.role !== GroupRoleEnum.ADMIN) {
+      const draftInvalidation =
+        await this.postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager(
+          manager,
+          membership.userId,
+          membership.groupId,
+          'OWNER_WITHDRAWN',
+        );
       await groupMemberRepo.softDelete(membership.id);
-      return;
+      return draftInvalidation;
     }
 
     const groupMembers = await groupMemberRepo
@@ -108,16 +120,22 @@ export class MyPageService {
     );
 
     if (remainingAdmins.length > 0) {
+      const draftInvalidation =
+        await this.postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager(
+          manager,
+          membership.userId,
+          membership.groupId,
+          'OWNER_WITHDRAWN',
+        );
       await groupMemberRepo.softDelete(me.id);
-      return;
+      return draftInvalidation;
     }
 
     if (remainingMembers.length === 0) {
-      await this.groupService.deleteGroupWithManager(
+      return this.groupService.deleteGroupWithManager(
         manager,
         membership.groupId,
       );
-      return;
     }
 
     const nextAdmin = pickNextGroupAdmin(remainingMembers);
@@ -130,7 +148,15 @@ export class MyPageService {
 
     nextAdmin.role = GroupRoleEnum.ADMIN;
     await groupMemberRepo.save(nextAdmin);
+    const draftInvalidation =
+      await this.postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager(
+        manager,
+        membership.userId,
+        membership.groupId,
+        'OWNER_WITHDRAWN',
+      );
     await groupMemberRepo.softDelete(me.id);
+    return draftInvalidation;
   }
 
   /**
@@ -138,6 +164,8 @@ export class MyPageService {
    * @param userId 탈퇴 대상 사용자 ID
    */
   async withdraw(userId: string): Promise<void> {
+    const draftInvalidations: DraftInvalidationResult[] = [];
+
     await this.userRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
       const postRepo = manager.getRepository(Post);
@@ -164,16 +192,23 @@ export class MyPageService {
         .getMany();
 
       for (const membership of memberships) {
-        await this.handleWithdrawalMembership(
+        const draftInvalidation = await this.handleWithdrawalMembership(
           manager,
           groupMemberRepo,
           membership,
         );
+        if (draftInvalidation) {
+          draftInvalidations.push(draftInvalidation);
+        }
       }
 
       await postRepo.update({ ownerUserId: userId }, { shareToken: null });
       await refreshTokenRepo.update({ userId }, { revoked: true });
       await userRepo.softDelete(userId);
     });
+
+    await this.postDraftCleanupService.notifyDraftInvalidations(
+      draftInvalidations,
+    );
   }
 }
