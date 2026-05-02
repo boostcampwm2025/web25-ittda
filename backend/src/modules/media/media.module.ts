@@ -11,6 +11,9 @@ import { Post } from '@/modules/post/entity/post.entity';
 import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/entity/user.entity';
+import { UserMonthCover } from '@/modules/user/entity/user-month-cover.entity';
+import { Group } from '@/modules/group/entity/group.entity';
+import { GroupMonthCover } from '@/modules/group/entity/group-month-cover.entity';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { User } from '@/modules/user/entity/user.entity';
       PostContributor,
       GroupMember,
       User,
+      UserMonthCover,
+      Group,
+      GroupMonthCover,
     ]),
   ],
   controllers: [MediaController],
