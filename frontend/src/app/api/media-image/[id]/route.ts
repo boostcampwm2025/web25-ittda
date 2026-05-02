@@ -1,12 +1,10 @@
 import { auth } from '@/auth';
+import { getBackendOrigin } from '@/lib/config/backend';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import sharp from 'sharp';
 
-const backendUrl =
-  process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
-    : 'http://localhost:4000';
+const backendUrl = getBackendOrigin();
 
 export async function GET(
   request: Request,
@@ -56,7 +54,9 @@ export async function GET(
   const originalBuffer = Buffer.from(await imageRes.arrayBuffer());
 
   // WebP로 변환
-  const webpBuffer = await sharp(originalBuffer).webp({ quality: 85 }).toBuffer();
+  const webpBuffer = await sharp(originalBuffer)
+    .webp({ quality: 85 })
+    .toBuffer();
 
   return new NextResponse(new Uint8Array(webpBuffer), {
     headers: {

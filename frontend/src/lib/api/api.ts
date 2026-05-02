@@ -2,6 +2,7 @@ import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, handleLogout } from './auth';
 import * as Sentry from '@sentry/nextjs';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getBackendApiBaseUrl } from '@/lib/config/backend';
 
 /**
  * API Base URL 결정
@@ -19,14 +20,8 @@ function getApiBaseUrl() {
   }
 
   // 서버 환경 - 백엔드 절대 URL
-  const backendUrl =
-    process.env.NODE_ENV === 'production'
-      ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
-      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1';
-  return backendUrl;
+  return getBackendApiBaseUrl();
 }
-
-const API_BASE_URL = getApiBaseUrl();
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
@@ -308,8 +303,7 @@ export async function fetchApi<T>(
   let fullUrl = `${currentBaseUrl}${finalEndpoint}`;
   // 서버 환경인데 여전히 상대경로라면 강제로 도메인을 붙여줌 (방어 코드)
   if (typeof window === 'undefined' && !fullUrl.startsWith('http')) {
-    const fallback =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1';
+    const fallback = getBackendApiBaseUrl();
     fullUrl = `${fallback}${finalEndpoint.replace(/^\/api/, '')}`;
   }
 

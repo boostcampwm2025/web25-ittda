@@ -1,12 +1,10 @@
 import { auth } from '@/auth';
 import { cookies } from 'next/headers';
 import PWAInstallBannerClient from './PWAInstallBannerClient';
+import { getBackendOrigin } from '@/lib/config/backend';
 import { getCookieFromString } from '@/lib/utils/cookie';
 
-const backendUrl =
-  process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
-    : 'http://localhost:4000';
+const backendUrl = getBackendOrigin();
 
 async function shouldShowBanner(): Promise<boolean> {
   const session = await auth();

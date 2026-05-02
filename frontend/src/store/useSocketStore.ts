@@ -5,6 +5,7 @@ import { SocketExceptionResponse } from '@/lib/types/recordCollaboration';
 import { toast } from 'sonner';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { getBackendOrigin } from '@/lib/config/backend';
 
 interface SocketStore {
   socket: Socket | null;
@@ -44,7 +45,7 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
 
       return;
     }
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || '', {
+    const socket = io(getBackendOrigin(), {
       transports: ['websocket'],
       withCredentials: true,
       auth: {
