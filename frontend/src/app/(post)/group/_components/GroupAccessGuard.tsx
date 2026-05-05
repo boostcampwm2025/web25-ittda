@@ -3,9 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { groupMyRoleOptions } from '@/lib/api/group';
 import { useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { getErrorMessage } from '@/lib/utils/errorHandler';
+import { getErrorMessage, ApiError } from '@/lib/utils/errorHandler';
 
 interface GroupAccessGuardProps {
   groupId: string;
@@ -21,6 +22,11 @@ export default function GroupAccessGuard({
 
   useEffect(() => {
     if (isError) {
+      const apiError = error as ApiError;
+      if (apiError?.code === 'NOT_FOUND') {
+        notFound();
+        return;
+      }
       toast.error(getErrorMessage(error));
       router.replace('/');
     }
