@@ -1,0 +1,36 @@
+name: Sync and Deploy to Personal Staging
+
+on:
+  push:
+    branches:
+      - dev # Organization의 dev 브랜치에 push(merge)될 때 실행
+
+jobs:
+  build-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 소스 코드 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 2. build.sh 실행 권한 부여 및 실행
+      - name: Execute build script
+        run: |
+          chmod +x ./build.sh
+          ./build.sh
+
+      # 3. 개인 레포지토리로 빌드 결과물 푸시
+      - name: Pushes to personal repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.AUTO_ACTIONS }}
+        with:
+          # 원본 빌드 결과물 폴더 (build.sh에서 최종적으로 파일들을 모아둔 폴더명)
+          source-directory: 'output'
+          # 목적지 개인 레포지토리 주소
+          destination-github-username: 'H-sooyeon'
+          destination-repository-name: 'team-ittda'
+          user-email: ${{ secrets.EMAIL }}
+          target-branch: 'staging'
