@@ -18,13 +18,7 @@ interface GroupEditData {
 
 type GroupEditContextType = GroupEditData & {
   setGroupName: (name: string) => void;
-  setGroupThumbnail: ({
-    assetId,
-    postId,
-  }: {
-    assetId: string;
-    postId: string;
-  }) => void;
+  setGroupThumbnail: (thumbnail: { assetId: string; postId: string } | null) => void;
   setMembers: (
     members: GroupMember[] | ((prev: GroupMember[]) => GroupMember[]),
   ) => void;
