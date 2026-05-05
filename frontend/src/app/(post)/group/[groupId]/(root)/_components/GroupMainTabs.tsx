@@ -8,6 +8,9 @@ import MonthRecords from '@/app/(post)/_components/MonthRecords';
 import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
 import ErrorFallback from '@/components/ErrorFallback';
 import MonthRecordsSkeleton from '@/app/(post)/_components/MonthRecordsSkeleton';
+import { Suspense } from 'react';
+import HomePageSkeleton from '@/app/(main)/_components/HomePageSkeleton';
+import WeekCalendarSkeleton from '@/app/(main)/_components/WeekCalendarSkeleton';
 
 interface GroupMainTabsProps {
   groupId: string;
@@ -57,11 +60,15 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
         </ErrorHandlingWrapper>
       ) : (
         <div className="min-h-0 flex-1 flex flex-col gap-4 pb-bottom-nav">
-          <WeekCalendar
-            basePath={`/group/${groupId}`}
-            monthBasePath={`/group/${groupId}`}
-          />
-          <RecordList groupId={groupId} imageLayout="responsive" />
+          <Suspense fallback={<WeekCalendarSkeleton />}>
+            <WeekCalendar
+              basePath={`/group/${groupId}`}
+              monthBasePath={`/group/${groupId}`}
+            />
+          </Suspense>
+          <Suspense fallback={<HomePageSkeleton />}>
+            <RecordList groupId={groupId} imageLayout="responsive" />
+          </Suspense>
         </div>
       )}
     </div>
