@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { getCachedGroupDetail } from '@/lib/api/group';
+import { getCachedGroupDetail, getCachedGroupMyProfile } from '@/lib/api/group';
 import { get } from '@/lib/api/api';
 import { SingleResolveResponse } from '@/hooks/useMediaResolve';
 import { randomBaseImage } from '@/lib/image';
-import GroupAccessGuard from '../_components/GroupAccessGuard';
+import { redirect, notFound } from 'next/navigation';
 
 interface GroupLayoutProps {
   children: React.ReactNode;
@@ -29,7 +29,6 @@ export async function generateMetadata({
       coverAssetId?.startsWith('http://') ||
       coverAssetId?.startsWith('https://');
 
-    //url이 없고 로컬 경로나 URL이 아닐 때만 assetId로 solve 호출하기
     const response = await get<SingleResolveResponse>(
       `/api/media/${coverAssetId}/url`,
     );
@@ -61,8 +60,7 @@ export async function generateMetadata({
         ],
       },
     };
-  } catch (error) {
-    // 에러 발생 시 기본 메타데이터 반환
+  } catch {
     return {
       title: '그룹 기록함 - 잇다',
       description: '함께 만드는 추억, 잇다',
@@ -75,5 +73,18 @@ export default async function GroupLayout({
   params,
 }: GroupLayoutProps) {
   const { groupId } = await params;
-  return <GroupAccessGuard groupId={groupId}>{children}</GroupAccessGuard>;
+
+  try {
+    await getCachedGroupMyProfile(groupId);
+  } catch (error: unknown) {
+    const code =
+      error && typeof error === 'object' && 'code' in error
+        ? (error as { code: string }).code
+        : undefined;
+
+    if (code === 'NOT_FOUND') notFound();
+    redirect('/shared');
+  }
+
+  return <>{children}</>;
 }

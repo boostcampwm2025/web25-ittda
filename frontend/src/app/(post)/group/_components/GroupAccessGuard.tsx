@@ -25,10 +25,9 @@ export default function GroupAccessGuard({
       const apiError = error as ApiError;
       if (apiError?.code === 'NOT_FOUND') {
         notFound();
-        return;
       }
       toast.error(getErrorMessage(error));
-      router.replace('/');
+      router.replace('/shared');
     }
   }, [isError, error, router]);
 
