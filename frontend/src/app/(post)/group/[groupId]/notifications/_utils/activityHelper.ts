@@ -11,6 +11,7 @@ import {
   Settings,
   Image as ImageIcon,
   FileText,
+  Pencil,
 } from 'lucide-react';
 import { GroupActivityItem } from '@/lib/types/group';
 
@@ -73,6 +74,11 @@ export const getActivityTypeTheme = (type: string) => {
       icon: RefreshCw,
       bgColor: 'bg-purple-100 dark:bg-purple-900/60',
       iconColor: 'text-purple-600 dark:text-purple-400',
+    },
+    MEMBER_NICKNAME_CHANGE: {
+      icon: Pencil,
+      bgColor: 'bg-teal-100 dark:bg-teal-900/60',
+      iconColor: 'text-teal-600 dark:text-teal-400',
     },
     GROUP_NAME_UPDATE: {
       icon: Settings,

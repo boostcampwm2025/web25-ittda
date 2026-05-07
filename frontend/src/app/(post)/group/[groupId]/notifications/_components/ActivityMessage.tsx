@@ -114,6 +114,18 @@ export function ActivityMessage({ activity }: { activity: GroupActivityItem }) {
           {actor.suffix}의 역할이 변경되었습니다.
         </>
       );
+    case 'MEMBER_NICKNAME_CHANGE':
+      return (
+        <>
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 닉네임을&nbsp;
+          <span className="line-through text-gray-400 text-sm">
+            {meta.beforeNickname}
+          </span>
+          &nbsp; → <TitleText text={meta.afterNickname} />
+          (으)로 변경했습니다.
+        </>
+      );
     case 'GROUP_NAME_UPDATE':
       return (
         <>
