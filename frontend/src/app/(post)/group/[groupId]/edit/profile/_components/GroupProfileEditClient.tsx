@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { revalidateGroupProfile } from '../../actions';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { useRouter } from 'next/navigation';
 
 interface GroupProfileEditClientProps {
   groupId: string;
@@ -27,6 +28,7 @@ export default function GroupProfileEditClient({
   );
   const { data: groupData } = useSuspenseQuery(groupDetailOptions(groupId));
 
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
 
@@ -53,6 +55,7 @@ export default function GroupProfileEditClient({
       await revalidateGroupProfile(groupId);
 
       toast.success('프로필 정보가 수정되었습니다.');
+      router.back();
     } catch (error) {
       Sentry.captureException(error, {
         level: 'error',
