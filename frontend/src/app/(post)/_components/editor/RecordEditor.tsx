@@ -253,6 +253,7 @@ export default function PostEditor({
     setBlocks,
     setTitle,
     initialPost?.version, // 초기 버전 주입
+    groupId,
   );
   const { execute } = useCreateRecord(groupId, postId, {
     onError: () => {

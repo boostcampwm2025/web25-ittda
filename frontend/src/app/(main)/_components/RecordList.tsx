@@ -263,13 +263,14 @@ export default function RecordList({
             record={record}
             imageLayout={imageLayout}
             isFirst={index === 0}
-            onClick={() =>
+            onClick={() => {
+              const recordGroupId = groupId ?? (record.scope === 'GROUP' ? record.groupId : undefined);
               router.push(
-                groupId
-                  ? `/record/${record.postId}?scope=group&groupId=${groupId}`
+                recordGroupId
+                  ? `/record/${record.postId}?scope=group&groupId=${recordGroupId}`
                   : `/record/${record.postId}`,
-              )
-            }
+              );
+            }}
           />
         ))
       ) : (

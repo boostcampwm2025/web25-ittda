@@ -15,6 +15,7 @@ export function useRecordCollaboration(
   setBlocks: React.Dispatch<React.SetStateAction<RecordBlock[]>>,
   setTitle: (val: string) => void,
   initialVersion: number = 0,
+  groupId?: string,
 ) {
   const { socket, sessionId: mySessionId } = useSocketStore();
   // mySessionId를 ref로도 유지 — PATCH_COMMITTED 핸들러가 effect 클로저에 캡처된 값이 아닌
@@ -222,7 +223,10 @@ export function useRecordCollaboration(
       // 이미 HTTP 응답으로 이동 중이면(저장자) 중복 네비게이션 방지
       if (!isNavigatingToRecordRef.current) {
         isNavigatingToRecordRef.current = true;
-        router.replace(`/record/${postId}`);
+        const url = groupId
+          ? `/record/${postId}?scope=group&groupId=${groupId}`
+          : `/record/${postId}`;
+        router.replace(url);
       }
 
       setTimeout(() => {

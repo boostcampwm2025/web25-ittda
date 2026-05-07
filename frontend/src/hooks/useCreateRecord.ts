@@ -123,7 +123,9 @@ export const useCreateRecord = (
 
   async function handleSuccess(res: ApiResponse<RecordDetail>) {
     if (res.success && res.data?.id) {
-      const recordUrl = `/record/${res.data?.id}`;
+      const recordUrl = groupId
+        ? `/record/${res.data.id}?scope=group&groupId=${groupId}`
+        : `/record/${res.data.id}`;
 
       if (groupId) {
         // Router Cache 무효화: router.replace 이전에 완료해야
