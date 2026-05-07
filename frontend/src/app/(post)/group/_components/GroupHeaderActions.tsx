@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/drawer';
 import { Popover } from '@/components/ui/popover';
 import { useApiDelete } from '@/hooks/useApi';
-import { useAuthStore } from '@/store/useAuthStore';
 import {
   PopoverClose,
   PopoverContent,
@@ -65,9 +64,12 @@ export default function GroupHeaderActions({
   };
 
   return (
-    <div className="flex items-center justify-between mb-4 sm:mb-6">
+    <div className="flex items-center gap-2 mb-3">
       <Back fallback="/shared" />
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <span className="flex-1 min-w-0 text-base font-bold truncate dark:text-white text-itta-black">
+        {groupInfo.groupName}
+      </span>
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {!isViewer && <GroupInviteDrawer groupId={groupId || 'gruop'} />}
 
         <DateSelectorDrawer

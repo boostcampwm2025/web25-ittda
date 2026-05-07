@@ -11,6 +11,10 @@ import MonthRecordsSkeleton from '@/app/(post)/_components/MonthRecordsSkeleton'
 import { Suspense } from 'react';
 import HomePageSkeleton from '@/app/(main)/_components/HomePageSkeleton';
 import WeekCalendarSkeleton from '@/app/(main)/_components/WeekCalendarSkeleton';
+import { useQuery } from '@tanstack/react-query';
+import { groupCurrentMembersOption } from '@/lib/api/group';
+import AssetImage from '@/components/AssetImage';
+import Image from 'next/image';
 
 interface GroupMainTabsProps {
   groupId: string;
@@ -21,31 +25,71 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
   const searchParams = useSearchParams();
   const isArchive = searchParams.get('tab') === 'archive';
 
+  const { data: membersData } = useQuery(groupCurrentMembersOption(groupId));
+  const members = membersData?.members ?? [];
+
   return (
-    <div className="h-full flex flex-col gap-4">
-      <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-white/5">
-        <button
-          onClick={() => router.push(`/group/${groupId}`)}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-bold transition-all ${
-            !isArchive
-              ? 'bg-white dark:bg-[#1E1E1E] text-itta-black dark:text-white shadow-sm'
-              : 'text-gray-400 dark:text-gray-500'
-          }`}
-        >
-          <Newspaper className="w-3.5 h-3.5" />
-          피드
-        </button>
-        <button
-          onClick={() => router.push(`/group/${groupId}?tab=archive`)}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-bold transition-all ${
-            isArchive
-              ? 'bg-white dark:bg-[#1E1E1E] text-itta-black dark:text-white shadow-sm'
-              : 'text-gray-400 dark:text-gray-500'
-          }`}
-        >
-          <LayoutGrid className="w-3.5 h-3.5" />
-          보관함
-        </button>
+    <div className="h-full flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex -space-x-2">
+          {members.slice(0, 4).map((m) => (
+            <div
+              key={m.memberId}
+              className="w-7 h-7 bg-white rounded-full overflow-hidden border-2 shadow-sm dark:border-[#121212] border-white"
+            >
+              {m.profileImageId ? (
+                <AssetImage
+                  width={28}
+                  height={28}
+                  assetId={m.profileImageId}
+                  alt="멤버의 프로필"
+                  className="w-full h-full rounded-full object-cover"
+                  wrapperClassName="w-full h-full"
+                />
+              ) : (
+                <Image
+                  width={28}
+                  height={28}
+                  src="/profile_base.png"
+                  alt="멤버의 프로필"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              )}
+            </div>
+          ))}
+          {members.length > 4 && (
+            <div className="w-7 h-7 rounded-full border-2 shadow-sm bg-gray-100 dark:bg-gray-800 dark:border-[#121212] border-white flex items-center justify-center">
+              <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300">
+                +{members.length - 4}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-0.5 p-0.5 rounded-lg bg-gray-100 dark:bg-white/5">
+          <button
+            onClick={() => router.replace(`/group/${groupId}`)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${
+              !isArchive
+                ? 'bg-white dark:bg-[#1E1E1E] text-itta-black dark:text-white shadow-sm'
+                : 'text-gray-400 dark:text-gray-500'
+            }`}
+          >
+            <Newspaper className="w-3 h-3" />
+            피드
+          </button>
+          <button
+            onClick={() => router.replace(`/group/${groupId}?tab=archive`)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${
+              isArchive
+                ? 'bg-white dark:bg-[#1E1E1E] text-itta-black dark:text-white shadow-sm'
+                : 'text-gray-400 dark:text-gray-500'
+            }`}
+          >
+            <LayoutGrid className="w-3 h-3" />
+            보관함
+          </button>
+        </div>
       </div>
 
       {isArchive ? (
@@ -60,12 +104,14 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
         </ErrorHandlingWrapper>
       ) : (
         <div className="min-h-0 flex-1 flex flex-col gap-4 pb-bottom-nav">
-          <Suspense fallback={<WeekCalendarSkeleton />}>
-            <WeekCalendar
-              basePath={`/group/${groupId}`}
-              monthBasePath={`/group/${groupId}`}
-            />
-          </Suspense>
+          <div className="-mx-4 sm:-mx-6">
+            <Suspense fallback={<WeekCalendarSkeleton />}>
+              <WeekCalendar
+                basePath={`/group/${groupId}`}
+                monthBasePath={`/group/${groupId}`}
+              />
+            </Suspense>
+          </div>
           <Suspense fallback={<HomePageSkeleton />}>
             <RecordList groupId={groupId} imageLayout="responsive" />
           </Suspense>
