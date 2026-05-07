@@ -1,5 +1,5 @@
-import GroupEditClient from './_components/GroupEditClient';
-import GroupEditSkeleton from './_components/GroupEditSkeleton';
+import GroupMembersClient from './_components/GroupMembersClient';
+import GroupMembersSkeleton from './_components/GroupMembersSkeleton';
 import {
   dehydrate,
   HydrationBoundary,
@@ -11,11 +11,11 @@ import { createMockGroupSettings } from '@/lib/mocks/mock';
 import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
 import ErrorFallback from '@/components/ErrorFallback';
 
-interface GroupEditPageProps {
+export default async function GroupMembersPage({
+  params,
+}: {
   params: Promise<{ groupId: string }>;
-}
-
-export default async function GroupEditPage({ params }: GroupEditPageProps) {
+}) {
   const { groupId } = await params;
   const queryClient = new QueryClient();
 
@@ -24,7 +24,7 @@ export default async function GroupEditPage({ params }: GroupEditPageProps) {
       const groupProfile = await getCachedGroupDetail(groupId);
 
       if (groupProfile.me.role !== 'ADMIN') {
-        redirect(`/group/${groupId}/edit/profile`);
+        redirect(`/group/${groupId}/edit`);
       }
 
       queryClient.setQueryData(groupDetailOptions(groupId).queryKey, groupProfile);
@@ -35,7 +35,7 @@ export default async function GroupEditPage({ params }: GroupEditPageProps) {
           : undefined;
 
       if (code === 'NOT_FOUND') redirect('/shared');
-      if (code === 'FORBIDDEN') redirect(`/group/${groupId}/edit/profile`);
+      if (code === 'FORBIDDEN') redirect(`/group/${groupId}`);
       throw error;
     }
   } else {
@@ -49,9 +49,9 @@ export default async function GroupEditPage({ params }: GroupEditPageProps) {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <ErrorHandlingWrapper
         fallbackComponent={ErrorFallback}
-        suspenseFallback={<GroupEditSkeleton />}
+        suspenseFallback={<GroupMembersSkeleton />}
       >
-        <GroupEditClient groupId={groupId} />
+        <GroupMembersClient groupId={groupId} />
       </ErrorHandlingWrapper>
     </HydrationBoundary>
   );
