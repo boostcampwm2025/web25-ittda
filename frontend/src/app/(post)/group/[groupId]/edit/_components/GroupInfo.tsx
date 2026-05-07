@@ -1,18 +1,8 @@
 'use client';
 
 import { Group } from '@/lib/types/group';
-import {
-  Camera,
-  Check,
-  ChevronRight,
-  ImageIcon,
-  Loader2,
-  Pencil,
-  X,
-} from 'lucide-react';
-import Image from 'next/image';
+import { Camera, Check, ImageIcon, Loader2, Pencil, X } from 'lucide-react';
 import { useGroupEdit } from './GroupEditContext';
-import { useRouter } from 'next/navigation';
 import {
   Drawer,
   DrawerClose,
@@ -22,7 +12,10 @@ import {
 } from '@/components/ui/drawer';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import AssetImage from '@/components/AssetImage';
-import { GroupEditResponse, GroupProfileCoverResponse } from '@/lib/types/groupResponse';
+import {
+  GroupEditResponse,
+  GroupProfileCoverResponse,
+} from '@/lib/types/groupResponse';
 import { memo, useCallback, useState } from 'react';
 import { useIMEInput } from '@/hooks/useIMEInput';
 import { useApiPatch } from '@/hooks/useApi';
@@ -40,7 +33,6 @@ type GroupInfoProps = Pick<Group, 'groupThumnail'> & {
 const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
   const { groupName, setGroupName, groupThumbnail, setGroupThumbnail } =
     useGroupEdit();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [isNameEditing, setIsNameEditing] = useState(false);
   const [isNameSaving, setIsNameSaving] = useState(false);
@@ -126,10 +118,7 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
 
   const groupNameImeProps = useIMEInput(setGroupName);
 
-  const handleNavigateToProfile = useCallback(() => {
-    router.push(`/group/${groupId}/edit/profile`);
-  }, [router, groupId]);
-
+  const isAdmin = me.role === 'ADMIN';
   const groupNameError = isNameEditing ? getGroupNameError() : null;
 
   return (
@@ -137,10 +126,8 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
       <div className="flex flex-col items-center mb-6">
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
           <div
-            onClick={() =>
-              me.role !== 'VIEWER' && !isCoverSaving && setIsDrawerOpen(true)
-            }
-            className={`relative ${me.role !== 'VIEWER' ? 'cursor-pointer' : ''}`}
+            onClick={() => isAdmin && !isCoverSaving && setIsDrawerOpen(true)}
+            className={`relative ${isAdmin ? 'cursor-pointer' : ''}`}
           >
             <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-[32px] flex items-center justify-center border-4 shadow-sm overflow-hidden dark:bg-[#1E1E1E] dark:border-[#121212] bg-gray-50 border-white">
               {groupThumbnail?.assetId ? (
@@ -158,7 +145,7 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
                 </div>
               )}
             </div>
-            {me.role !== 'VIEWER' && (
+            {isAdmin && (
               <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-itta-black text-white rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
                 {isCoverSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -200,7 +187,7 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
           <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
             그룹 이름
           </label>
-          {me.role !== 'VIEWER' &&
+          {isAdmin &&
             (isNameEditing ? (
               <div className="flex items-center gap-3">
                 <button
@@ -242,7 +229,7 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
         <div className="relative">
           <input
             type="text"
-            disabled={!isNameEditing || isNameSaving || me.role === 'VIEWER'}
+            disabled={!isNameEditing || isNameSaving}
             value={groupName}
             placeholder="그룹명을 작성해주세요."
             {...groupNameImeProps}
@@ -271,46 +258,6 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
           </p>
         )}
       </div>
-
-      <section className="space-y-4">
-        <label className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest px-1">
-          나의 그룹 프로필
-        </label>
-        <button
-          onClick={handleNavigateToProfile}
-          className="cursor-pointer mt-4 w-full flex items-center justify-between px-3 py-4 sm:p-4 rounded-3xl border transition-all active:scale-[0.98] dark:bg-[#10B981]/5 dark:border-[#10B981]/10 dark:hover:bg-[#10B981]/10 bg-[#10B981]/5 border-[#10B981]/10 hover:bg-[#10B981]/10"
-        >
-          <div className="flex items-center rounded-full gap-4 overflow-hidden">
-            {me.profileImage?.assetId ? (
-              <AssetImage
-                width={48}
-                height={48}
-                assetId={me.profileImage.assetId}
-                alt="유저 프로필"
-                className="w-full h-full object-cover rounded-full"
-                wrapperClassName="w-12 h-12 shrink-0 rounded-full border bg-white shadow-sm"
-              />
-            ) : (
-              <Image
-                width={48}
-                height={48}
-                src={'/profile_base.png'}
-                alt="프로필"
-                className="rounded-full border bg-white shadow-sm shrink-0 object-cover"
-              />
-            )}
-            <div className="text-left">
-              <p className="text-sm font-bold dark:text-white text-itta-black">
-                {me.nicknameInGroup}
-              </p>
-              <p className="text-[11px] pr-1 text-[#10B981] font-medium">
-                이 그룹 전용 프로필 설정하기
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-[#10B981]/50" />
-        </button>
-      </section>
     </section>
   );
 });

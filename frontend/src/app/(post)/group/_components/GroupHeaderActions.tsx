@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from '@radix-ui/react-popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { LogOut, MoreVertical, Settings, AlertCircle } from 'lucide-react';
+import { LogOut, MoreVertical, Settings, AlertCircle, Users, UserCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
@@ -58,6 +58,7 @@ export default function GroupHeaderActions({
   });
 
   const isViewer = roleData?.role === 'VIEWER';
+  const isAdmin = roleData?.role === 'ADMIN';
 
   const handleLeaveGroup = () => {
     leaveGroup({});
@@ -90,13 +91,31 @@ export default function GroupHeaderActions({
             sideOffset={8}
             className="z-20 min-w-45 rounded-2xl shadow-2xl border p-2 animate-in fade-in zoom-in-95 duration-200 dark:bg-[#1E1E1E] dark:border-white/10 bg-white border-gray-100"
           >
+            {isAdmin && (
+              <button
+                onClick={() => router.push(`/group/${groupId}/edit`)}
+                className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 text-gray-600 hover:bg-gray-50 dark:hover:bg-white/5"
+              >
+                <Settings className="w-4 h-4" />
+                그룹 정보 수정
+              </button>
+            )}
             <button
-              onClick={() => router.push(`/group/${groupId}/edit`)}
+              onClick={() => router.push(`/group/${groupId}/edit/profile`)}
               className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 text-gray-600 hover:bg-gray-50 dark:hover:bg-white/5"
             >
-              <Settings className="w-4 h-4" />
-              그룹 정보 수정
+              <UserCircle className="w-4 h-4" />
+              나의 그룹 프로필
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => router.push(`/group/${groupId}/edit/members`)}
+                className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 text-gray-600 hover:bg-gray-50 dark:hover:bg-white/5"
+              >
+                <Users className="w-4 h-4" />
+                멤버 관리
+              </button>
+            )}
             <PopoverClose
               onClick={() => {
                 setShowLeaveGroup(true);
