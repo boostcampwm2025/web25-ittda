@@ -57,7 +57,6 @@ const RecordItem = memo(function RecordItem({
       );
   }, [record.blocks]);
 
-  console.log('record', record);
   return (
     <div
       onClick={onClick}

@@ -43,7 +43,6 @@ export default function TagDrawer({
         const data = await getCachedUserTagSummary();
 
         if (data && data.frequentTags) {
-          console.log('data', data);
           const tagNames = data.frequentTags.map((item: Tag) => item.tag);
           setSuggestedTags(tagNames);
         }
