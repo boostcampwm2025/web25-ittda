@@ -1,8 +1,10 @@
 import PostEditor from '@/app/(post)/_components/editor/RecordEditor';
 import { groupDraftOptions } from '@/lib/api/groupRecord';
+import { getCachedGroupMyProfile } from '@/lib/api/group';
 import { RecordBlock } from '@/lib/types/record';
 import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
 import { QueryClient } from '@tanstack/react-query';
+import { redirect } from 'next/navigation';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 
@@ -21,6 +23,12 @@ export default async function PostDraftPage({
   const { groupId, draftId } = await params;
   const { mode: queryMode, postId } = await searchParams;
   const mode = (queryMode as 'add' | 'edit') || 'add';
+
+  try {
+    await getCachedGroupMyProfile(groupId);
+  } catch {
+    redirect('/shared');
+  }
 
   const queryClient = new QueryClient();
   let initialPost = undefined;
