@@ -3,6 +3,8 @@ import PostEditor from '../_components/editor/RecordEditor';
 import { QueryClient } from '@tanstack/react-query';
 import { RecordBlock } from '@/lib/types/record';
 import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
+import { getCachedGroupMyProfile } from '@/lib/api/group';
+import { redirect } from 'next/navigation';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 
@@ -21,6 +23,14 @@ export default async function AddPostPage({ searchParams }: AddPostPageProps) {
   let initialPost = undefined;
 
   const mode = (queryMode as 'add' | 'edit') || 'add';
+
+  if (groupId) {
+    try {
+      await getCachedGroupMyProfile(groupId);
+    } catch {
+      redirect('/shared');
+    }
+  }
 
   try {
     if (mode === 'edit' && postId) {
