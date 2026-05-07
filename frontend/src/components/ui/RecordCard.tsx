@@ -63,8 +63,9 @@ export const RecordCard = memo(function RecordCard({
       {/* 카드 콘텐츠 */}
       <PostCard.Overlay>
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <PostCard.Title className="flex justify-start items-center gap-1.5">
-            {name} {hasNotification && <PostCard.Notification />}
+          <PostCard.Title className="flex justify-start items-center gap-1.5 min-w-0 flex-1">
+            <span className="truncate min-w-0">{name}</span>
+            {hasNotification && <PostCard.Notification />}
           </PostCard.Title>
 
           <PostCard.Badge>{count}</PostCard.Badge>
