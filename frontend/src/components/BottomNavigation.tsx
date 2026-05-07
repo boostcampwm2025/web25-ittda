@@ -122,7 +122,7 @@ export default function BottomNavigation() {
               icon={<MessageSquare />}
               active={pathname === `/group/${effectiveGroupId}/notifications`}
               onClick={() =>
-                router.replace(`/group/${effectiveGroupId}/notifications`)
+                router.push(`/group/${effectiveGroupId}/notifications`)
               }
               isGroup
             />
