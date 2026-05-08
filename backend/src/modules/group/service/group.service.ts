@@ -59,26 +59,25 @@ export class GroupService {
   ) {}
 
   /** 그룹 생성 + ADMIN 등록 (트랜잭션 적용) */
-  async createGroup(ownerId: string, name: string): Promise<Group> {
+  async createGroup(userId: string, name: string): Promise<Group> {
     const savedGroup = await this.dataSource.transaction(async (manager) => {
       try {
         const group = manager.create(Group, {
           name,
-          owner: { id: ownerId } as User,
         });
         const savedGroup = await manager.save(group);
 
-        const owner = await manager.findOneOrFail(User, {
-          where: { id: ownerId },
+        const user = await manager.findOneOrFail(User, {
+          where: { id: userId },
         });
 
-        const ownerMember = manager.create(GroupMember, {
+        const firstMember = manager.create(GroupMember, {
           group: savedGroup,
-          user: { id: ownerId } as User,
+          user: { id: userId } as User,
           role: GroupRoleEnum.ADMIN,
-          nicknameInGroup: resolveGroupNickname(owner.nickname),
+          nicknameInGroup: resolveGroupNickname(user.nickname),
         });
-        await manager.save(ownerMember);
+        await manager.save(firstMember);
 
         return savedGroup;
       } catch (error) {
@@ -92,7 +91,7 @@ export class GroupService {
         const message =
           error instanceof Error ? error.message : 'unknown error';
         this.logger.error(
-          `Failed to create group (ownerId=${ownerId}): ${message}`,
+          `Failed to create group (userId=${userId}): ${message}`,
           error instanceof Error ? error.stack : undefined,
         );
         throw new InternalServerErrorException(
@@ -103,7 +102,7 @@ export class GroupService {
     await this.groupActivityService.recordActivity({
       groupId: savedGroup.id,
       type: GroupActivityType.GROUP_CREATE,
-      actorIds: [ownerId],
+      actorIds: [userId],
       meta: { name },
     });
     return savedGroup;
