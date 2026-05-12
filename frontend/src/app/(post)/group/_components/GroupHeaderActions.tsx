@@ -17,7 +17,14 @@ import {
   PopoverTrigger,
 } from '@radix-ui/react-popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { LogOut, MoreVertical, Settings, AlertCircle, Users, UserCircle } from 'lucide-react';
+import {
+  LogOut,
+  MoreVertical,
+  Settings,
+  AlertCircle,
+  Users,
+  UserCircle,
+} from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
@@ -44,7 +51,7 @@ export default function GroupHeaderActions({
     `/api/groups/${groupId}/members/me`,
     {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['share'] });
+        queryClient.invalidateQueries({ queryKey: ['shared'] });
         router.push('/shared');
         toast.success('그룹 탈퇴가 정상 처리되었습니다.');
       },
