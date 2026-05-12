@@ -54,8 +54,8 @@ const GroupInfo = memo(function GroupInfo({ groupId, me }: GroupInfoProps) {
 
   const getGroupNameError = () => {
     if (groupName.length < 2) return '그룹 이름은 최소 2자 이상이어야 합니다.';
-    if (groupName.length > 10)
-      return '그룹 이름은 최대 10자까지 입력 가능합니다.';
+    if (groupName.length > 30)
+      return '그룹 이름은 최대 30자까지 입력 가능합니다.';
     const incompleteHangulRegex = /[ㄱ-ㅎㅏ-ㅣ]/;
     if (incompleteHangulRegex.test(groupName))
       return '완성된 한글을 입력해주세요';

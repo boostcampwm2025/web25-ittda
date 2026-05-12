@@ -1,10 +1,10 @@
 import { IsString, Length, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateGroupDto {
+export class CreateGroupDto {
   @ApiProperty({
-    description: '새로운 그룹 이름 (2~30자, 특수문자 제외)',
-    example: '새로운그룹명',
+    description: '그룹 이름 (2~30자, 특수문자 제외)',
+    example: '우리들의 여름 추억',
   })
   @IsString()
   @Length(2, 30, { message: '그룹 이름은 2자 이상 30자 이하이어야 합니다.' })
