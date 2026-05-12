@@ -189,3 +189,53 @@ await page.waitForResponse('**/api/records');
 2. **복잡한 비즈니스 훅** — `useGroupActions`, `useRecordCollaboration`
 3. **핵심 사용자 흐름** — 기록 생성/조회, 그룹 초대 (Playwright)
 4. **엣지 케이스** — 권한 없는 접근, 네트워크 오류 처리
+
+---
+
+## 7. 실전 교훈
+
+### 7-1. fake timer + React state는 `act`를 반드시 분리
+
+`vi.useFakeTimers()`와 `rerender`를 같은 `act` 블록에 넣으면 타이머 실행 후 React state flush 순서가 꼬여 값이 반영되지 않는다.
+
+```typescript
+// ❌ 같은 act 안에서 rerender + advanceTimersByTime
+act(() => {
+  rerender({ value: '변경' });
+  vi.advanceTimersByTime(500);
+});
+expect(result.current).toBe('변경'); // 실패 — 값이 '초기' 그대로
+
+// ✅ act를 분리
+act(() => { rerender({ value: '변경' }); });
+act(() => { vi.advanceTimersByTime(500); }); // 타이머 실행 후 React state flush
+expect(result.current).toBe('변경'); // 통과
+```
+
+### 7-2. DOM ref에 의존하는 훅은 `renderHook` 대신 `render` 사용
+
+`useEffect(fn, [])` 내부에서 `ref.current`를 읽는 훅은 `renderHook`으로 테스트하면 ref가 항상 `null`이다. `renderHook`은 실제 DOM 요소를 렌더링하지 않기 때문이다.
+
+```typescript
+// ❌ renderHook — useEffect 시점에 containerRef.current가 null
+const { result } = renderHook(() => useScrollDirection());
+result.current.containerRef.current = container; // 이미 effect가 종료된 후라 이벤트 리스너가 붙지 않음
+
+// ✅ render로 실제 DOM에 ref 연결 — effect 실행 전에 ref가 채워짐
+function TestComponent() {
+  const { containerRef, isVisible } = useScrollDirection<HTMLDivElement>();
+  return <div ref={containerRef} data-visible={String(isVisible)} />;
+}
+render(<TestComponent />);
+```
+
+### 7-3. JSX를 포함하는 테스트 파일은 `.tsx` 확장자
+
+`.ts` 파일에 JSX를 작성하면 esbuild transform 오류가 발생한다.
+
+```
+// ❌ useScrollDirection.test.ts  → "Expected '>' but found 'data'" 오류
+// ✅ useScrollDirection.test.tsx → 정상 변환
+```
+
+JSX가 없는 순수 로직 테스트는 `.test.ts`, 컴포넌트나 JSX를 포함하면 `.test.tsx`로 작성한다.
