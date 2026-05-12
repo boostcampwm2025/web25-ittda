@@ -42,7 +42,7 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
         <RecordDetailHeaderActions record={record} />
       </header>
 
-      <main className="grow flex flex-col max-w-4xl mx-auto w-full">
+      <main className="flex flex-col max-w-4xl mx-auto w-full">
         <div className="mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
             {record.title}
@@ -54,7 +54,7 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
           )}
         </div>
 
-        <div className="grow space-y-3">
+        <div className="space-y-3">
           {sortedRows.map(([rowNumber, blocks]) => {
             // 각 row의 블록을 col 순서대로 정렬
             const sortedBlocks = blocks.sort(
