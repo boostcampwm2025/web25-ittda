@@ -85,7 +85,7 @@ export default function SharedHeaderActions() {
   };
 
   const getGroupNameError = () => {
-    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]{2,10}$/;
+    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]{2,30}$/;
 
     if (!newGroupName.trim()) {
       return '그룹 이름을 입력해주세요.';
@@ -97,7 +97,7 @@ export default function SharedHeaderActions() {
     }
 
     if (!groupNameRegex.test(newGroupName)) {
-      return '이름은 2~10자의 한글, 영문, 숫자, 공백만 가능합니다.';
+      return '이름은 2~30자의 한글, 영문, 숫자, 공백만 가능합니다.';
     }
 
     return null;

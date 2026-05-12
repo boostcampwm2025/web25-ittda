@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../../auth/jwt/jwt.guard';
 import { GroupRoleGuard } from '../guards/group-roles.guard';
 import { GroupRoles } from '../guards/group-roles.decorator';
 import { UpdateGroupDto } from '../dto/update-group.dto';
+import { CreateGroupDto } from '../dto/create-group.dto';
 import { GetGroupsResponseDto } from '../dto/get-groups.dto';
 import { User } from '@/common/decorators/user.decorator';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -21,7 +22,6 @@ import {
   ApiTags,
   ApiOperation,
   ApiParam,
-  ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
@@ -54,16 +54,9 @@ export class GroupController {
     summary: '그룹 생성',
     description: '로그인한 사용자가 새로운 그룹을 생성합니다.',
   })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: { name: { type: 'string', example: '새로운 그룹' } },
-    },
-  })
   @ApiWrappedOkResponse({ type: Object })
-  createGroup(@User() user: MyJwtPayload, @Body('name') groupName: string) {
-    const ownerId = user.sub;
-    return this.groupService.createGroup(ownerId, groupName);
+  createGroup(@User() user: MyJwtPayload, @Body() dto: CreateGroupDto) {
+    return this.groupService.createGroup(user.sub, dto.name);
   }
 
   @UseGuards(GroupRoleGuard)
