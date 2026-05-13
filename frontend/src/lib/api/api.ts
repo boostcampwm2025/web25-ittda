@@ -3,6 +3,10 @@ import { getAccessToken, refreshAccessToken, handleLogout } from './auth';
 import * as Sentry from '@sentry/nextjs';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getBackendApiBaseUrl } from '@/lib/config/backend';
+import {
+  isRefreshableAuthError,
+  isTerminalAuthError,
+} from '../utils/errorHandler';
 
 /**
  * API Base URL 결정
@@ -94,11 +98,13 @@ async function fetchWithRetry<T>(
     }
 
     const data = await response.json();
+    const errorCode = data?.error?.code as string | undefined;
 
     // 토큰 만료 에러 처리 (인터셉터 역할)
     if (
       !data.success &&
-      data.error?.code === 'UNAUTHORIZED' &&
+      response.status === 401 &&
+      isRefreshableAuthError(errorCode) &&
       !skipAuth &&
       !url.includes('/auth/refresh') // 재발급 API 자체의 실패는 제외
     ) {
@@ -176,6 +182,31 @@ async function fetchWithRetry<T>(
         skipAuth,
         timeout,
       );
+    }
+
+    if (
+      !data.success &&
+      response.status === 401 &&
+      isTerminalAuthError(errorCode) &&
+      !skipAuth
+    ) {
+      if (typeof window === 'undefined') {
+        const { redirect } = await import('next/navigation');
+        redirect('/login?reason=invalid-session');
+        return;
+      }
+
+      await handleLogout();
+
+      return {
+        success: false,
+        data: null,
+        error: {
+          code: errorCode ?? 'UNAUTHORIZED',
+          message: data.error?.message ?? '인증이 필요합니다.',
+          details: data.error?.details ?? {},
+        },
+      };
     }
 
     return {
@@ -296,9 +327,7 @@ export async function fetchApi<T>(
   const currentBaseUrl = getApiBaseUrl();
   // 서버 환경에서는 /api 접두사 제거 (base URL에 이미 /v1 포함)
   const finalEndpoint =
-    typeof window === 'undefined'
-      ? endpoint.replace(/^\/api/, '')
-      : endpoint;
+    typeof window === 'undefined' ? endpoint.replace(/^\/api/, '') : endpoint;
 
   let fullUrl = `${currentBaseUrl}${finalEndpoint}`;
   // 서버 환경인데 여전히 상대경로라면 강제로 도메인을 붙여줌 (방어 코드)
