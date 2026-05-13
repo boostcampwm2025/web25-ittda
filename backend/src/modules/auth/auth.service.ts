@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { randomUUID } from 'crypto';
@@ -10,6 +6,10 @@ import { GuestMigrationService } from '../guest/guest-migration.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from './refresh_token/refresh_token.entity';
+import {
+  AUTH_ERROR_CODES,
+  AuthUnauthorizedException,
+} from '@/common/exceptions/auth-unauthorized.exception';
 
 import type { OAuthUserType } from './auth.type';
 
@@ -89,7 +89,10 @@ export class AuthService {
     const payload = this.codeMap.get(code);
 
     if (!payload) {
-      throw new UnauthorizedException('Invalid or expired code');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.INVALID_AUTH_CODE,
+        'Invalid or expired code',
+      );
     }
 
     // 일회성 보장
@@ -111,7 +114,10 @@ export class AuthService {
     });
 
     if (!saved) {
-      throw new UnauthorizedException('Refresh token not found');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_NOT_FOUND,
+        'Refresh token not found',
+      );
     }
 
     // revoked 체크: 슬라이딩으로 rotation이 발생했을 때 동시 요청 처리용 grace period
@@ -136,11 +142,17 @@ export class AuthService {
           return { accessToken, refreshToken: latestToken.token };
         }
       }
-      throw new UnauthorizedException('Refresh token reuse detected');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_REUSE_DETECTED,
+        'Refresh token reuse detected',
+      );
     }
 
     if (saved.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token expired');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_EXPIRED,
+        'Refresh token expired',
+      );
     }
 
     // 만료까지 7일 미만 → 슬라이딩: refresh token도 함께 재발급
@@ -196,7 +208,8 @@ export class AuthService {
 
     // 3. 이미 로그아웃된 상태 (토큰이 없음) 처리
     if (!refreshToken) {
-      throw new UnauthorizedException(
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.SESSION_INVALID,
         '이미 로그아웃되었거나 유효하지 않은 세션입니다.',
       );
     }

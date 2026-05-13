@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
@@ -21,6 +17,10 @@ import {
   DraftInvalidationResult,
   PostDraftCleanupService,
 } from '../post/post-draft-cleanup.service';
+import {
+  AUTH_ERROR_CODES,
+  AuthUnauthorizedException,
+} from '@/common/exceptions/auth-unauthorized.exception';
 
 type WithdrawalMembershipCleanupResult = {
   draftInvalidation: DraftInvalidationResult | null;
@@ -41,7 +41,10 @@ export class MyPageService {
   async findOne(userId: string): Promise<User> {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) {
-      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.USER_NOT_FOUND,
+        '사용자를 찾을 수 없습니다.',
+      );
     }
     return user;
   }
