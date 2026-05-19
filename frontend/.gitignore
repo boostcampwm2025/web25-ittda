@@ -54,4 +54,6 @@ storybook-static
 .env.sentry-build-plugin
 
 # lighthouse
-.lighthouseci/
+.lighthouseci/e2e/.auth/
+playwright-report/
+test-results/
