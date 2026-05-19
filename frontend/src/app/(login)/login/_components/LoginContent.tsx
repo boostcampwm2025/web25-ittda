@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useApiPost } from '@/hooks/useApi';
 import { GuestInfo } from '@/lib/types/profile';
 import { getRedirectUri } from '@/lib/utils/getRedirectUri';
@@ -59,6 +59,7 @@ export default function LoginContent({
 
   const { setGuestInfo, isLoggedIn, guestSessionId } = useAuthStore();
   const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
+  const [isLoading, setIsLoading] = useState(false);
   const { mutate: guestLogin, isPending } = useApiPost<GuestInfo>(
     '/api/auth/guest',
     {
@@ -142,6 +143,7 @@ export default function LoginContent({
         }
       },
       onError: (error) => {
+        setIsLoading(false);
         Sentry.captureException(error, {
           level: 'error',
           tags: {
@@ -206,6 +208,7 @@ export default function LoginContent({
   }, [router]);
 
   const handleLoginGuest = async () => {
+    setIsLoading(true);
     const existingSessionId = getCookie(guestCookieKey) || guestSessionId;
     if (existingSessionId) {
       try {
@@ -251,6 +254,7 @@ export default function LoginContent({
         );
       } catch {
         // 네트워크 오류 등 restore 자체가 실패한 경우
+        setIsLoading(false);
         toast.error('네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
         return;
       }
@@ -396,10 +400,10 @@ export default function LoginContent({
 
         <button
           onClick={handleLoginGuest}
-          disabled={isPending}
+          disabled={isLoading || isPending}
           className="text-[13px] font-medium transition-all hover:opacity-60 active:scale-95 dark:text-gray-300 text-gray-500 disabled:opacity-30"
         >
-          {isPending ? '로그인 중...' : '가입 없이 시작하기'}
+          {isLoading || isPending ? '로그인 중...' : '가입 없이 시작하기'}
         </button>
 
         <Link
