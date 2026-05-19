@@ -26,6 +26,7 @@
     "lint:fix:all": "pnpm -r lint",
     "test:fe": "pnpm --filter frontend test",
     "test:fe:e2e": "pnpm --filter frontend test:e2e",
+    "test:fe:e2e:ui": "pnpm --filter frontend test:e2e:ui",
     "test:fe:e2e:view": "pnpm --filter frontend test:e2e:view",
     "show-report:fe": "pnpm --filter frontend show-report",
     "test:be": "pnpm --filter backend test",
