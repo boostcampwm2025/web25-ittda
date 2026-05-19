@@ -24,6 +24,7 @@ test.describe('기록 공유', () => {
 
   test('공유 버튼으로 drawer를 열고 공유 URL로 인증 없이 기록 전체 내용을 확인할 수 있다(작성자 섹션 제외)', async ({ page, browser }) => {
     await page.goto(`/record/${postId}`);
+    await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     await expect(page.getByRole('heading', { name: RECORD_TITLE })).toBeVisible({ timeout: 15000 });
 
     // MoreHorizontal 메뉴 버튼 클릭 → Popover 열기
