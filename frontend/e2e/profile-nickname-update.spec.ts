@@ -60,13 +60,13 @@ test.describe('닉네임 변경 후 기록 상세 반영', () => {
     });
     expect(patchRes.ok()).toBeTruthy();
 
-    // 기록 상세 페이지로 이동
+    // 기록 상세 페이지로 이동 — networkidle 후 상호작용해야 Fast Refresh 재렌더링과 충돌하지 않음
     await page.goto(`/record/${postId}`);
+    await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 
-    // 작성자 섹션이 안정화된 뒤 스크롤
+    // 작성자 섹션 확인
     const authorHeading = page.getByRole('heading', { name: '작성자' });
     await expect(authorHeading).toBeVisible({ timeout: 10000 });
-    await authorHeading.scrollIntoViewIfNeeded();
 
     // 변경된 닉네임이 작성자 섹션에 표시되어야 함
     await expect(page.locator('span.font-medium', { hasText: NEW_NICKNAME })).toBeVisible({

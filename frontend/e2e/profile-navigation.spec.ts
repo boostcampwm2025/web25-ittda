@@ -81,8 +81,10 @@ test.describe('마이페이지 태그·감정 탐색', () => {
     await expect(page.getByRole('button', { name: '모두 보기' }).first()).toBeVisible({
       timeout: 10000,
     });
-    await page.getByRole('button', { name: '모두 보기' }).first().click();
-    await expect(page).toHaveURL('/profile/all-tags', { timeout: 10000 });
+    await Promise.all([
+      page.waitForURL('/profile/all-tags', { timeout: 10000 }),
+      page.getByRole('button', { name: '모두 보기' }).first().click(),
+    ]);
 
     // TagList에서 특정 태그 클릭 → /search?tags=TAG
     const tagItem = page.getByText(TAG).first();
