@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   // dev 서버는 RSC 컴파일 부하가 크므로 로컬에서도 워커 수를 제한
   workers: process.env.CI ? 1 : 2,
   // dev 서버 RSC 렌더링 지연을 허용하기 위해 타임아웃 60초

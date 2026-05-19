@@ -39,10 +39,13 @@ test.describe('개인 기록 조회', () => {
 
   test('월 카드를 클릭하면 월별 상세 페이지로 이동한다', async ({ page }) => {
     await page.goto('/my');
+    await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     const monthCard = page.getByRole('button').filter({ hasText: /\d{4}년 \d{1,2}월/ }).first();
     await expect(monthCard).toBeVisible({ timeout: 8000 });
-    await monthCard.click();
-    await expect(page).toHaveURL(/\/my\/month\/.+/, { timeout: 10000 });
+    await Promise.all([
+      page.waitForURL(/\/my\/month\/.+/, { timeout: 10000 }),
+      monthCard.click(),
+    ]);
   });
 
   test('월별 상세에서 날짜를 클릭하면 날짜 상세 페이지로 이동한다', async ({ page }) => {

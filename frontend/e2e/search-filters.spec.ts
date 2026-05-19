@@ -87,8 +87,10 @@ test.describe('검색 필터', () => {
     await tagInput.fill(TAG);
     await page.keyboard.press('Enter');
 
-    await page.getByText('완료').click();
-    await expect(page).toHaveURL(/tags=/, { timeout: 8000 });
+    await Promise.all([
+      page.waitForURL(/tags=/, { timeout: 8000 }),
+      page.getByText('완료').click(),
+    ]);
 
     // MAIN: 해당 태그 포함 → 결과에 포함
     await expect(page.getByText(RECORD_TITLE).first()).toBeVisible({ timeout: 10000 });
