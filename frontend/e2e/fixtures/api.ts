@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, Browser, BrowserContext } from '@playwright/test';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -125,6 +125,73 @@ export async function createTestGroup(
   if (!inviteBody.success) throw new Error(`초대 코드 생성 실패: ${JSON.stringify(inviteBody.error)}`);
 
   return { id: groupId, inviteCode: inviteBody.data.code };
+}
+
+/**
+ * 새 게스트 계정을 생성하고 auth setup과 동일하게 쿠키 + localStorage를 세팅한 BrowserContext를 반환한다.
+ */
+export async function createGuestSession(browser: Browser): Promise<BrowserContext> {
+  const ctx = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  const page = await ctx.newPage();
+
+  const res = await page.request.post('/api/auth/guest');
+  const body = await res.json();
+  const authHeader = res.headers()['authorization'] ?? '';
+  const token = authHeader.replace('Bearer ', '');
+  const sessionId = body?.data?.guestSessionId ?? '';
+
+  if (!body.success || !token || !sessionId) throw new Error('게스트 세션 생성 실패');
+
+  // 쿠키 설정 (auth.setup.ts와 동일)
+  await ctx.addCookies([
+    { name: 'x-guest-session-id', value: sessionId, domain: 'localhost', path: '/' },
+    { name: 'x-guest-access-token', value: token, domain: 'localhost', path: '/' },
+  ]);
+
+  // localStorage에 auth-storage 주입 (Zustand persist 스토어가 이 값을 읽음)
+  await page.goto('/login');
+  await page.evaluate(
+    ({ sessionId, token }) => {
+      const authState = {
+        state: {
+          userType: 'guest',
+          userId: null,
+          guestSessionId: sessionId,
+          guestAccessToken: token,
+          guestSessionExpiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          isLoggedIn: true,
+        },
+        version: 0,
+      };
+      localStorage.setItem('auth-storage', JSON.stringify(authState));
+    },
+    { sessionId, token },
+  );
+
+  await page.close();
+  return ctx;
+}
+
+/**
+ * 초대 코드로 그룹에 참여한다.
+ */
+export async function joinTestGroup(page: Page, inviteCode: string): Promise<void> {
+  const headers = await getAuthHeaders(page);
+  const res = await page.request.post(`/api/groups/invites/${inviteCode}/join`, { headers, data: {} });
+  const body = await res.json();
+  if (!body.success) throw new Error(`그룹 참여 실패: ${JSON.stringify(body.error)}`);
+}
+
+/**
+ * 공동 기록 draft를 생성하고 draftId를 반환한다.
+ */
+export async function createTestDraft(page: Page, groupId: string): Promise<string> {
+  const headers = await getAuthHeaders(page);
+  const res = await page.request.get(`/api/groups/${groupId}/posts/new`, { headers });
+  const body = await res.json();
+  if (!body.success) throw new Error(`드래프트 생성 실패: ${JSON.stringify(body.error)}`);
+  const redirectUrl: string = body.data.redirectUrl;
+  return redirectUrl.split('/').pop() ?? '';
 }
 
 /**
