@@ -5,6 +5,7 @@ import { guestCookieKey, guestTokenKey, useAuthStore } from '@/store/useAuthStor
 import type { Session } from 'next-auth';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '../utils/logger';
+import { getBackendApiBaseUrl } from '@/lib/config/backend';
 
 const INSTANCE_ID =
   typeof window !== 'undefined'
@@ -224,7 +225,7 @@ export async function refreshServerAccessToken(token: any) {
   serverRefreshPromise = (async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/refresh`,
+        `${getBackendApiBaseUrl()}/auth/refresh`,
         {
           method: 'POST',
           headers: {

@@ -21,10 +21,18 @@ const imageDomains = [
 ];
 
 // 환경에 따라 백엔드 주소 분기
-const backendHost =
+const trimTrailingSlash = (url: string) => url.replace(/\/+$/, '');
+
+const developmentBackendHost =
+  process.env.NEXT_PUBLIC_BACKEND_TARGET === 'local'
+    ? 'http://localhost:4000'
+    : process.env.NEXT_PUBLIC_DEVELOPMENT_API_URL || 'http://localhost:4000';
+
+const backendHost = trimTrailingSlash(
   process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
-    : 'http://localhost:4000';
+    ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL || 'http://localhost:4000'
+    : developmentBackendHost,
+);
 
 const nextConfig: NextConfig = {
   experimental: {

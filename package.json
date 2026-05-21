@@ -6,6 +6,8 @@
     "prepare": "husky || true",
     "install:all": "pnpm -r install && pnpm prepare",
     "dev:fe": "pnpm --filter frontend dev",
+    "dev:fe:local": "pnpm --filter frontend dev:backend:local",
+    "dev:fe:dev": "pnpm --filter frontend dev:backend:dev",
     "build:fe": "pnpm --filter frontend build",
     "preview:fe": "pnpm --filter frontend preview",
     "infra:up": "docker compose -f docker-compose.dev.yml up -d",

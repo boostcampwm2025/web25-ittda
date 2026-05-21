@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { getBackendOrigin } from '@/lib/config/backend';
 import {
   Lock,
   Plus,
@@ -51,7 +52,7 @@ const EMPTY_FORM: FormState = {
 };
 
 const SESSION_KEY = 'admin-key';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+const API_BASE = getBackendOrigin();
 
 function isValidUrl(url: string): boolean {
   try {

@@ -1,3 +1,5 @@
+import { getBackendApiBaseUrl } from '@/lib/config/backend';
+
 type GetRedirectUriArg = {
   provider: 'kakao' | 'google';
   callback?: string;
@@ -13,7 +15,7 @@ export const getRedirectUri = ({
   mobile = false,
   android = false,
 }: GetRedirectUriArg) => {
-  const baseUrl = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/v1/auth/${provider}`;
+  const baseUrl = `${getBackendApiBaseUrl()}/auth/${provider}`;
 
   const params = new URLSearchParams();
   if (callback) {

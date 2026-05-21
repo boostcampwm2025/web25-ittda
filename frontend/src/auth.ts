@@ -2,6 +2,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { refreshServerAccessToken } from './lib/api/auth';
+import { getBackendApiBaseUrl } from './lib/config/backend';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -10,7 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         // credentials로 전달받은 code를 백엔드에 전달
         const exchangeRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/exchange`,
+          `${getBackendApiBaseUrl()}/auth/exchange`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

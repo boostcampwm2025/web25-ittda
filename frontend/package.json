@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:backend:local": "NEXT_PUBLIC_BACKEND_TARGET=local next dev",
+    "dev:backend:dev": "NEXT_PUBLIC_BACKEND_TARGET=dev next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
