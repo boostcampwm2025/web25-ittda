@@ -25,6 +25,12 @@ const meta = {
   component: GroupMemberManagement,
   parameters: {
     layout: 'padded',
+    docs: {
+      description: {
+        component:
+          '그룹 설정 페이지의 멤버 목록과 역할 관리 컴포넌트입니다. 그룹 멤버를 아바타/닉네임/역할과 함께 목록으로 표시하며, 관리자는 멤버 추방 버튼을 통해 멤버를 내보낼 수 있습니다. 멤버 추방 시 DELETE API를 호출합니다.',
+      },
+    },
     msw: {
       handlers: [
         http.delete('/api/:groupId/members/:memberId', () => {
@@ -139,35 +145,36 @@ export const ManyMembers: Story = {
   },
 };
 
-export const DarkMode: Story = {
+export const Interactive: Story = {
   args: {
     members: mockMembers,
     groupId: 'group-1',
-    className: 'dark',
-  },
-  parameters: {
-    backgrounds: { default: 'dark' },
-    docs: {
-      description: {
-        story: '다크 모드',
-      },
-    },
   },
   decorators: [
     (Story) => (
       <QueryClientProvider client={queryClient}>
-        <div className="dark">
-          <GroupEditProvider
-            initialName="우리 가족"
-            initialThumbnail=""
-            initialMembers={mockMembers}
-          >
-            <div className="max-w-md mx-auto p-4 bg-[#121212]">
-              <Story />
-            </div>
-          </GroupEditProvider>
-        </div>
+        <GroupEditProvider
+          initialName="우리 가족"
+          initialThumbnail=""
+          initialMembers={mockMembers}
+        >
+          <div className="max-w-md mx-auto p-4">
+            <Story />
+          </div>
+        </GroupEditProvider>
       </QueryClientProvider>
     ),
   ],
+  parameters: {
+    docs: {
+      description: {
+        story: `
+- **추방 버튼 클릭**: 해당 멤버에게 추방 확인 드로어 표시
+- **추방 확인**: "추방하기" 버튼 클릭 시 DELETE API 호출 후 목록에서 제거
+- **관리자(admin)**: 추방 버튼이 비활성화되어 자신을 추방할 수 없음
+        `,
+      },
+    },
+  },
 };
+

@@ -12,6 +12,12 @@ const meta = {
   component: GroupProfileEditClient,
   parameters: {
     layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          '그룹 내 내 프로필(닉네임/이미지) 편집 페이지 컴포넌트입니다. 그룹 전용 닉네임과 프로필 이미지를 변경할 수 있으며, 닉네임 유효성 검사(2~10자)를 포함합니다. groupId와 groupProfile prop을 통해 초기 데이터를 받습니다.',
+      },
+    },
     nextjs: {
       appDirectory: true,
       navigation: {
@@ -97,26 +103,22 @@ export const LongNickname: Story = {
   },
 };
 
-export const DarkMode: Story = {
+export const Interactive: Story = {
   args: {
     groupId: 'group-1',
     groupProfile: mockGroupProfile,
   },
   parameters: {
-    backgrounds: { default: 'dark' },
     docs: {
       description: {
-        story: '다크 모드',
+        story: `
+- **프로필 이미지 클릭**: 이미지 파일 선택 피커가 열리며, 선택 즉시 미리보기 업데이트
+- **닉네임 입력**: 실시간 입력, 2자 미만 또는 10자 초과 시 에러 메시지 표시
+- **저장 버튼**: 유효성 통과 시 활성화, 클릭 시 변경 사항을 서버에 저장
+- **뒤로가기**: 저장하지 않고 이전 페이지로 이동
+        `,
       },
     },
   },
-  decorators: [
-    (Story) => (
-      <div className="dark">
-        <div className="max-w-md mx-auto bg-[#121212]">
-          <Story />
-        </div>
-      </div>
-    ),
-  ],
 };
+

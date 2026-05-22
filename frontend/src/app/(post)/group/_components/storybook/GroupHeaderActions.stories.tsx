@@ -29,6 +29,12 @@ const meta = {
   component: GroupHeader,
   parameters: {
     layout: 'padded',
+    docs: {
+      description: {
+        component:
+          '그룹 홈 헤더의 멤버 아바타와 설정 버튼 컴포넌트입니다. 그룹 이름, 참여 멤버 아바타(최대 표시 후 +N 처리), 그룹 설정 페이지 이동 버튼을 포함합니다. MSW를 통해 그룹 정보를 목킹하며 groupId 기반으로 데이터를 가져옵니다.',
+      },
+    },
     msw: {
       handlers: [
         // 호출되는 API 주소에 따라 다른 데이터를 반환하도록 설정
@@ -112,24 +118,18 @@ export const ManyMembers: Story = {
   },
 };
 
-export const DarkMode: Story = {
-  args: {
-    className: 'dark',
-  },
+export const Interactive: Story = {
   parameters: {
-    layout: 'padded',
-    backgrounds: { default: 'dark' },
     docs: {
       description: {
-        story: '다크 모드',
+        story: `
+- **멤버 아바타 클릭**: 멤버 목록 상세 또는 프로필 페이지로 이동
+- **멤버 +N 표시**: 최대 노출 수 초과 시 나머지 멤버 수를 +N으로 축약 표시
+- **설정 버튼 클릭**: 그룹 설정 페이지로 이동
+- **그룹 이름 말줄임**: 이름이 길면 말줄임 처리(LongGroupName 스토리 참고)
+        `,
       },
     },
   },
-  render: (args) => (
-    <div className="dark bg-[#121212]">
-      <div className="mx-auto">
-        <GroupHeader {...args} />
-      </div>
-    </div>
-  ),
 };
+
