@@ -53,6 +53,7 @@ export const useCreateRecord = (
       queryClient.invalidateQueries({ queryKey: ['records'] }),
       queryClient.invalidateQueries({ queryKey: ['profile'] }),
       queryClient.invalidateQueries({ queryKey: ['summary'] }),
+      queryClient.invalidateQueries({ queryKey: ['map', 'records'] }),
     ];
 
     if (groupId) {
@@ -144,6 +145,7 @@ export const useCreateRecord = (
             queryKey: ['group', groupId, 'records'],
           }),
           queryClient.invalidateQueries({ queryKey: ['shared'] }),
+          queryClient.invalidateQueries({ queryKey: ['map', 'records'] }),
           refreshSharedData(),
           refreshRecordData(),
           refreshHomeData(),
