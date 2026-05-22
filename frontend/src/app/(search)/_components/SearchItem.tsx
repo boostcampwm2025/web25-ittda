@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Calendar, ImageIcon, MapPin } from 'lucide-react';
+import { ChevronRight, Clock, MapPin } from 'lucide-react';
 import { RecordSearchItem } from '@/lib/types/record';
-import { formatDateDot } from '@/lib/date';
+import { formatDotDateString } from '@/lib/date';
 import AssetImage from '@/components/AssetImage';
+
 interface SearchItemProps {
   record: RecordSearchItem;
   onClick: (id: string) => void;
@@ -19,58 +20,51 @@ const SearchItem: React.FC<SearchItemProps> = ({
   return (
     <button
       onClick={() => onClick(record.id)}
-      className="w-full flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl border text-left shadow-sm active:scale-[0.98] group bg-white border-gray-100/50 dark:bg-[#1E1E1E] dark:border-white/5"
+      className="w-full py-4 border-b text-left transition-colors duration-150 dark:border-white/5 border-gray-100 active:bg-gray-50/50 dark:active:bg-white/3"
     >
+      {/* 텍스트 영역 */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-[15px] sm:text-base truncate dark:text-white text-itta-black">
+            {record.title}
+          </h4>
+
+          <div className="flex justify-between items-center gap-2 mt-1 flex-wrap">
+            {record.address && (
+              <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                <MapPin className="w-3 h-3 text-[#10B981] shrink-0" />
+                <span className="truncate max-w-40">{record.address}</span>
+              </span>
+            )}
+            <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+              <Clock className="w-3 h-3 text-[#10B981] shrink-0" />
+              {formatDotDateString(record.date)}
+            </span>
+          </div>
+
+          {record.snippet && (
+            <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-1.5 line-clamp-2 leading-relaxed">
+              {record.snippet}
+            </p>
+          )}
+        </div>
+
+        <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+      </div>
+
       {/* 썸네일 이미지 */}
-      {record.thumbnailMediaId ? (
-        <div className="flex justify-center items-center relative w-10 sm:w-12 h-10 sm:h-12 rounded-xl overflow-hidden shrink-0 bg-gray-50 dark:bg-white/5">
+      {record.thumbnailMediaId && (
+        <div className="mt-3 rounded-xl overflow-hidden h-36 sm:h-40">
           <AssetImage
+            width={600}
+            height={160}
+            className="w-full h-full object-cover"
             assetId={record.thumbnailMediaId}
             alt={record.title}
-            width={48}
-            height={48}
-            className="w-full h-full object-cover rounded-xl"
             priorityLoad={priorityLoad}
           />
         </div>
-      ) : (
-        <div className="flex items-center justify-center w-10 sm:w-12 h-10 sm:h-12">
-          <ImageIcon className="w-5 sm:w-6 h-5 sm:h-6 text-gray-400" />
-        </div>
       )}
-
-      {/* 텍스트 콘텐츠 */}
-      <div className="flex-1 min-w-0">
-        <h4 className="text-[13px] sm:text-sm font-bold truncate mb-1 sm:mb-1.5 text-itta-black dark:text-white transition-colors">
-          {record.title}
-        </h4>
-        {record.snippet && (
-          <p className="text-[11px] sm:text-xs text-itta-gray mb-0.5 sm:mb-1 truncate">
-            {record.snippet}
-          </p>
-        )}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-itta-gray3">
-          <div className="flex items-center gap-0.5 sm:gap-1 truncate">
-            <Calendar size={9} className="shrink-0 text-itta-point sm:hidden" />
-            <Calendar
-              size={10}
-              className="shrink-0 text-itta-point hidden sm:block"
-            />
-            <span>{formatDateDot(new Date(record.date))}</span>
-          </div>
-
-          {record.address && (
-            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-              <MapPin size={9} className="shrink-0 text-itta-point sm:hidden" />
-              <MapPin
-                size={10}
-                className="shrink-0 text-itta-point hidden sm:block"
-              />
-              <span className="truncate">{record.address}</span>
-            </div>
-          )}
-        </div>
-      </div>
     </button>
   );
 };
