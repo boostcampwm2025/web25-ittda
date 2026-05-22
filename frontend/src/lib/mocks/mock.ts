@@ -176,6 +176,7 @@ export const createMockRecordPreviews = (date: string): RecordPreview[] => [
       },
     ],
     groupId: 'group-123',
+    groupName: '고3 전우들',
     title: '홍대 버스킹 구경',
     eventAt: `${date}T19:00:00Z`,
     createdAt: `${date}T21:00:00Z`,

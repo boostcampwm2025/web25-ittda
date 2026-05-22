@@ -264,7 +264,9 @@ export default function RecordList({
             imageLayout={imageLayout}
             isFirst={index === 0}
             onClick={() => {
-              const recordGroupId = groupId ?? (record.scope === 'GROUP' ? record.groupId : undefined);
+              const recordGroupId =
+                groupId ??
+                (record.scope === 'GROUP' ? record.groupId : undefined);
               router.push(
                 recordGroupId
                   ? `/record/${record.postId}?scope=group&groupId=${recordGroupId}`

@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { memo, useCallback, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
@@ -75,11 +76,13 @@ export const MonthCard = memo(function MonthCard({
 interface MonthRecordsProps {
   cardRoute: string;
   groupId?: string;
+  drawerClassName?: string;
 }
 
 const MonthRecords = memo(function MonthRecords({
   groupId,
   cardRoute,
+  drawerClassName,
 }: MonthRecordsProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -209,7 +212,7 @@ const MonthRecords = memo(function MonthRecords({
 
       {/* 커버 변경 Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="w-full px-6 sm:px-8 pt-4 pb-8 sm:pb-10">
+        <DrawerContent className={cn('w-full px-6 sm:px-8 pt-4 pb-8 sm:pb-10', drawerClassName)}>
           <DrawerHeader>
             <div className="pt-4 flex justify-between items-center mb-4 sm:mb-6">
               <DrawerTitle className="flex flex-col justify-center items-start pl-0">
