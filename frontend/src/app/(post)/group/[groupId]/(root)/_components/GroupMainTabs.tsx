@@ -29,7 +29,7 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
   const members = membersData?.members ?? [];
 
   return (
-    <div className="h-full flex flex-col gap-3">
+    <div className="h-full flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex -space-x-2">
           {members.slice(0, 4).map((m) => (
@@ -93,15 +93,17 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
       </div>
 
       {isArchive ? (
-        <ErrorHandlingWrapper
-          fallbackComponent={ErrorFallback}
-          suspenseFallback={<MonthRecordsSkeleton />}
-        >
-          <MonthRecords
-            groupId={groupId}
-            cardRoute={`/group/${groupId}/month`}
-          />
-        </ErrorHandlingWrapper>
+        <div className="pt-3">
+          <ErrorHandlingWrapper
+            fallbackComponent={ErrorFallback}
+            suspenseFallback={<MonthRecordsSkeleton />}
+          >
+            <MonthRecords
+              groupId={groupId}
+              cardRoute={`/group/${groupId}/month`}
+            />
+          </ErrorHandlingWrapper>
+        </div>
       ) : (
         <div className="min-h-0 flex-1 flex flex-col gap-4 pb-bottom-nav">
           <div className="-mx-4 sm:-mx-6">
