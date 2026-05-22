@@ -24,18 +24,29 @@ export default async function GroupYearPage({ params }: GroupYearPageProps) {
       createMockGroupMonthlyRecords(),
     );
   } else {
-    await queryClient.prefetchQuery(groupMonthlyRecordListOptions(groupId, year));
+    await queryClient.prefetchQuery(
+      groupMonthlyRecordListOptions(groupId, year),
+    );
   }
 
   return (
     <>
+      <div className="flex items-baseline gap-2">
+        <span className="text-sm sm:text-base font-bold dark:text-white text-[#222]">
+          {year}년
+        </span>
+        <span className="text-xs text-gray-400">월별 기록이에요</span>
+      </div>
       {groupId && (
         <HydrationBoundary state={dehydrate(queryClient)}>
           <ErrorHandlingWrapper
             fallbackComponent={ErrorFallback}
             suspenseFallback={<MonthRecordsSkeleton />}
           >
-            <MonthRecords groupId={groupId} cardRoute={`/group/${groupId}/month`} />
+            <MonthRecords
+              groupId={groupId}
+              cardRoute={`/group/${groupId}/month`}
+            />
           </ErrorHandlingWrapper>
         </HydrationBoundary>
       )}

@@ -94,6 +94,14 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
 
       {isArchive ? (
         <div className="pt-3">
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="text-sm sm:text-base font-bold dark:text-white text-[#222]">
+              {new Date().getFullYear()}년
+            </span>
+            <span className="text-xs text-gray-400">
+              이번 해의 월별 기록이에요
+            </span>
+          </div>
           <ErrorHandlingWrapper
             fallbackComponent={ErrorFallback}
             suspenseFallback={<MonthRecordsSkeleton />}

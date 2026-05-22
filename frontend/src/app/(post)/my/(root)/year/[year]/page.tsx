@@ -21,19 +21,30 @@ export default async function MyYearRecordsPage({
   const queryClient = new QueryClient();
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
-    queryClient.setQueryData(['my', 'records', 'month', year], createMockMonthlyRecord());
+    queryClient.setQueryData(
+      ['my', 'records', 'month', year],
+      createMockMonthlyRecord(),
+    );
   } else {
     await queryClient.prefetchQuery(myMonthlyRecordListOptions(year));
   }
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <ErrorHandlingWrapper
-        fallbackComponent={ErrorFallback}
-        suspenseFallback={<MonthRecordsSkeleton />}
-      >
-        <MonthRecords cardRoute={'/my/month'} />
-      </ErrorHandlingWrapper>
-    </HydrationBoundary>
+    <>
+      <div className="flex items-baseline gap-2">
+        <span className="text-sm sm:text-base font-bold dark:text-white text-[#222]">
+          {year}년
+        </span>
+        <span className="text-xs text-gray-400">월별 기록이에요</span>
+      </div>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <ErrorHandlingWrapper
+          fallbackComponent={ErrorFallback}
+          suspenseFallback={<MonthRecordsSkeleton />}
+        >
+          <MonthRecords cardRoute={'/my/month'} />
+        </ErrorHandlingWrapper>
+      </HydrationBoundary>
+    </>
   );
 }
