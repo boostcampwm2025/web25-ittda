@@ -102,8 +102,11 @@ export class MapPostItemDto {
   @ApiProperty({ description: '제목' })
   title: string;
 
-  @ApiPropertyOptional({ description: '썸네일 미디어 ID' })
-  thumbnailMediaId?: string | null;
+  @ApiProperty({
+    type: [String],
+    description: '미리보기 이미지 ID 목록 (최대 5개)',
+  })
+  previewMediaIds: string[];
 
   @ApiProperty({ description: '생성일/이벤트일' })
   createdAt: Date;

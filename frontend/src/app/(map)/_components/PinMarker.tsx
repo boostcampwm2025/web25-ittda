@@ -34,7 +34,7 @@ export const PinMarker = ({
     [setMarkerRef, post.id],
   );
 
-  const hasThumbnail = post.thumbnailMediaId !== null;
+  const hasThumbnail = (post.previewMediaIds?.length ?? 0) > 0;
 
   return (
     <AdvancedMarker
@@ -54,7 +54,7 @@ export const PinMarker = ({
       >
         {hasThumbnail ? (
           <AssetImage
-            assetId={post.thumbnailMediaId ?? randomBaseImage(post.id)}
+            assetId={post.previewMediaIds?.[0] ?? randomBaseImage(post.id)}
             alt={post.title}
             fill
             sizes={

@@ -406,7 +406,8 @@ export const handlers = [
 
     const items = filterByBbox(DB, { minLat, minLng, maxLat, maxLng })
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-      .slice(0, limit);
+      .slice(0, limit)
+      .map((item) => ({ ...item, previewMediaIds: [] }));
 
     return HttpResponse.json(
       {

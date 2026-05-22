@@ -139,7 +139,7 @@ export default function RecordMapDrawer({
       <div className="relative flex-1 overflow-hidden">
         <div
           ref={scrollContainerRef}
-          className="absolute inset-0 px-4 sm:px-8 pt-3 sm:pt-4 pb-16 overflow-y-auto scrollbar-hide"
+          className="absolute inset-0 px-6 sm:px-8 pb-16 overflow-y-auto scrollbar-hide"
           style={{ touchAction: 'pan-y' }}
         >
           <div className="space-y-3 sm:space-y-4 pb-10">
