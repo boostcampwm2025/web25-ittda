@@ -98,7 +98,7 @@ export class MapService {
     const items = posts.slice(0, limit);
 
     const postIds = items.map((post) => post.id);
-    const thumbnailMap = new Map<string, string | null>();
+    const previewMediaMap = new Map<string, string[]>();
     if (postIds.length > 0) {
       const imageBlocks = await this.postBlockRepository.find({
         where: {
@@ -112,16 +112,17 @@ export class MapService {
         },
       });
       imageBlocks.forEach((block) => {
-        if (thumbnailMap.has(block.postId)) return;
         const val = block.value as BlockValueMap[typeof PostBlockType.IMAGE];
-        const mediaId = val.mediaIds?.[0] ?? null;
-        thumbnailMap.set(block.postId, mediaId);
+        const mediaIds = val.mediaIds ?? [];
+        const existing = previewMediaMap.get(block.postId) ?? [];
+        const merged = [...existing, ...mediaIds].slice(0, 5);
+        previewMediaMap.set(block.postId, merged);
       });
     }
 
     const resultItems: MapPostItemDto[] = await Promise.all(
       items.map(async (post) => {
-        const thumbnailMediaId = thumbnailMap.get(post.id) ?? null;
+        const previewMediaIds = previewMediaMap.get(post.id) ?? [];
 
         // Find location block for placeName/address
         const locationBlock = await this.postRepository.manager.findOne(
@@ -145,7 +146,7 @@ export class MapService {
           lat: (post.location as Point).coordinates[1],
           lng: (post.location as Point).coordinates[0],
           title: post.title,
-          thumbnailMediaId,
+          previewMediaIds,
           createdAt: post.eventAt || post.createdAt,
           tags: post.tags || [],
           emotion: post.emotion ?? [],

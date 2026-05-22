@@ -239,7 +239,7 @@ export interface MapPostItem {
   lat: number;
   lng: number;
   title: string;
-  thumbnailMediaId: string;
+  previewMediaIds: string[];
   createdAt: string;
   tags: string[];
   placeName: string | null;

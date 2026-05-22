@@ -2,11 +2,10 @@
 
 import AssetImage from '@/components/AssetImage';
 import { formatDotDateString } from '@/lib/date';
-import { randomBaseImage } from '@/lib/image';
 import { MapPostItem } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Clock, MapPin } from 'lucide-react';
-import React, { useState } from 'react';
+import React from 'react';
 
 interface MapRecordItemProps {
   post: MapPostItem;
@@ -15,6 +14,7 @@ interface MapRecordItemProps {
   onNavigate: () => void;
   priorityLoad?: boolean;
 }
+
 export function MapRecordItem({
   post,
   isHighlighted,
@@ -22,79 +22,109 @@ export function MapRecordItem({
   onNavigate,
   priorityLoad,
 }: MapRecordItemProps) {
-  const [isError, setIsError] = useState(false);
-
   return (
     <div
-      key={post.id}
       data-post-id={post.id}
       onClick={onSelect}
       className={cn(
-        'flex items-center gap-2 sm:gap-3 py-3 sm:py-4 px-2.5 sm:px-3 rounded-2xl sm:rounded-3xl border transition-all duration-300 group cursor-pointer active:scale-[0.97]',
+        'py-4 border-b transition-colors duration-150 cursor-pointer',
         isHighlighted
-          ? 'border-[#10B981] bg-[#10B981]/5 shadow-md scale-[1.02] ring-1 ring-[#10B981]/30'
-          : 'dark:border-white/5 border-gray-100 bg-white dark:bg-white/2 shadow-sm hover:border-[#10B981]/30',
-        !post.thumbnailMediaId && 'px-3 sm:px-5',
+          ? 'dark:border-[#10B981]/20 border-[#10B981]/20'
+          : 'dark:border-white/5 border-gray-100',
       )}
     >
-      {post.thumbnailMediaId && (
-        <div className="border-2 shadow-sm bg-white dark:border-[#121212] border-white w-14 sm:w-16 h-14 sm:h-16 rounded-xl sm:rounded-2xl overflow-hidden shrink-0">
-          <AssetImage
-            width={64}
-            height={64}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            onError={() => setIsError(true)}
-            assetId={post.thumbnailMediaId ?? randomBaseImage(post.id)}
-            alt={post.title}
-            priorityLoad={priorityLoad}
-          />
-        </div>
-      )}
+      {/* 텍스트 영역 */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <h4
+            className={cn(
+              'font-bold text-[15px] sm:text-base truncate transition-colors',
+              isHighlighted
+                ? 'text-[#10B981]'
+                : 'dark:text-white text-itta-black',
+            )}
+          >
+            {post.title}
+          </h4>
 
-      <div className="flex-1 min-w-0 space-y-1 sm:space-y-1.5">
-        <h4
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {post.placeName && (
+              <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                <MapPin className="w-3 h-3 text-[#10B981] shrink-0" />
+                <span className="truncate max-w-40">{post.placeName}</span>
+              </span>
+            )}
+            <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+              <Clock className="w-3 h-3 text-[#10B981] shrink-0" />
+              {formatDotDateString(post.createdAt)}
+            </span>
+          </div>
+
+          {post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {post.tags.slice(0, 4).map((tag: string) => (
+                <span
+                  key={tag}
+                  className="text-[10px] font-medium px-2 py-0.5 rounded-full dark:bg-white/5 bg-gray-100 dark:text-gray-300 text-gray-600"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate();
+          }}
           className={cn(
-            'font-bold truncate text-[13px] sm:text-sm transition-colors',
-            isHighlighted ? 'text-[#10B981]' : 'dark:text-white',
+            'shrink-0 mt-0.5 p-1.5 rounded-lg transition-colors active:scale-95',
+            isHighlighted
+              ? 'text-[#10B981]'
+              : 'text-gray-400 dark:text-gray-500 hover:text-[#10B981] dark:hover:text-[#10B981]',
           )}
         >
-          {post.title}
-        </h4>
-        <p className="text-[10px] sm:text-[11px] text-itta-gray3 flex items-center gap-1 sm:gap-1.5 font-medium min-w-0">
-          <MapPin className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-itta-point shrink-0" />
-          <span className="truncate">{post.placeName}</span>
-        </p>
-        <p className="text-[10px] sm:text-[11px] text-itta-gray3 flex items-center gap-1 sm:gap-1.5 font-medium">
-          <Clock className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-itta-point" />
-          {formatDotDateString(post.createdAt)}
-        </p>
-        <div className="flex flex-wrap gap-1">
-          {post.tags.slice(0, 2).map((tag: string) => (
-            <span
-              key={tag}
-              className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md dark:bg-white/5 bg-[#F9F9F9]"
-            >
-              <span className="text-[#10B981] font-bold">#</span>
-              <span className="dark:text-gray-400 text-gray-600">{tag}</span>
-            </span>
-          ))}
-        </div>
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onNavigate();
-        }}
-        className={cn(
-          'flex items-center p-2 sm:p-3 rounded-full text-xs font-bold transition-all active:scale-95',
-          isHighlighted
-            ? 'bg-[#10B981] text-white shadow-md'
-            : 'dark:bg-white/5 dark:text-gray-300 bg-gray-100 text-gray-600 hover:bg-[#10B981]/10',
-        )}
-      >
-        <ChevronRight size={12} className="sm:hidden" />
-        <ChevronRight size={14} className="hidden sm:block" />
-      </button>
+
+      {/* 이미지 스트립 (하단) */}
+      {(post.previewMediaIds?.length ?? 0) > 0 && (
+        <div className="mt-3">
+          {post.previewMediaIds?.length === 1 ? (
+            <div className="rounded-xl overflow-hidden h-36 sm:h-40">
+              <AssetImage
+                width={600}
+                height={160}
+                className="w-full h-full object-cover"
+                assetId={post.previewMediaIds[0]}
+                alt={post.title}
+                priorityLoad={priorityLoad}
+              />
+            </div>
+          ) : (
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+              {post.previewMediaIds.map((id, idx) => (
+                <div
+                  key={id}
+                  className="shrink-0 rounded-xl overflow-hidden h-28 sm:h-32 w-28 sm:w-32"
+                >
+                  <AssetImage
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
+                    assetId={id}
+                    alt={`${post.title} ${idx + 1}`}
+                    priorityLoad={priorityLoad && idx === 0}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
