@@ -35,3 +35,18 @@ pnpm test:be:e2e     # 백엔드 E2E 테스트
 - `waitForTimeout` 금지 — `expect(...).toBeVisible()` 또는 `waitForResponse` 사용
 - 외부 의존성(`Date`, API)은 반드시 mock 격리
 - `it` 설명은 한국어로, 비즈니스 언어 사용
+
+---
+
+# 프론트엔드 Storybook 가이드라인
+
+자세한 내용은 [STORYBOOK.md](./STORYBOOK.md) 참고.
+
+## 요약
+
+- 스토리 파일 위치: `src/**/storybook/*.stories.tsx`
+- 모든 스토리에 `docs.description.component`(컴포넌트 용도·동작)와 `docs.description.story`(스토리 상태 설명) 작성
+- `experimentalRSC: true` 사용 금지 — Controls(args) 변경이 화면에 반영되지 않음
+- Controls로 prop을 제어하는 스토리는 `render: (args) => <Component prop={args.prop} />`로 args를 직접 전달
+- QueryClient는 모듈 레벨에서 한 번만 생성 (decorator 안에서 생성 금지)
+- mock 데이터는 `@/lib/mocks/mock.ts`에서 가져온다 (`handlers.ts` 직접 import 금지)
