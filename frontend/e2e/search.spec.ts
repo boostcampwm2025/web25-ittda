@@ -61,4 +61,28 @@ test.describe('검색', () => {
     await input.clear();
     await expect(page.locator('body')).toBeVisible();
   });
+
+  test('존재하지 않는 검색어로 검색하면 빈 상태 메시지가 표시된다', async ({ page }) => {
+    await page.goto('/search');
+    const input = page.locator('input').first();
+
+    await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes('/api/search') && res.request().method() === 'POST',
+        { timeout: 10000 },
+      ),
+      input.fill('E2E절대존재하지않는검색어xyzxyz'),
+    ]);
+
+    // 결과가 없으면 빈 상태 UI가 표시된다
+    await expect(
+      page.getByText(/검색 결과가 없|기록이 없|결과가 없/),
+    ).toBeVisible({ timeout: 8000 });
+  });
+
+  test('URL 쿼리 파라미터 q로 진입하면 검색어가 입력창에 복원된다', async ({ page }) => {
+    await page.goto('/search?q=E2E검색');
+    const input = page.locator('input').first();
+    await expect(input).toHaveValue('E2E검색', { timeout: 5000 });
+  });
 });
