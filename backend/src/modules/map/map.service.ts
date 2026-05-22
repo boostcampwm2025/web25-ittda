@@ -6,6 +6,7 @@ import { Post } from '@/modules/post/entity/post.entity';
 import { PostBlock } from '@/modules/post/entity/post-block.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
+import { DateTime } from 'luxon';
 import {
   MapPostsQueryDto,
   PaginatedMapPostsResponseDto,
@@ -70,10 +71,14 @@ export class MapService {
 
     // Filters
     if (from) {
-      query.andWhere('post.eventAt >= :from', { from });
+      query.andWhere('post.eventAt >= :from', {
+        from: this.normalizeDateBoundary(from, 'start'),
+      });
     }
     if (to) {
-      query.andWhere('post.eventAt <= :to', { to });
+      query.andWhere('post.eventAt <= :to', {
+        to: this.normalizeDateBoundary(to, 'end'),
+      });
     }
     if (tags) {
       const tagList = tags.split(',').map((t) => t.trim());
@@ -194,5 +199,13 @@ export class MapService {
   private encodeCursor(eventAt: Date, id: string): string {
     const value = `${eventAt.toISOString()}|${id}`;
     return Buffer.from(value).toString('base64');
+  }
+
+  // 날짜만 있는 문자열(YYYY-MM-DD)을 하루의 시작/끝 시각으로 정규화
+  // search.service.ts의 normalizeDateOnlyBoundary와 동일한 방식
+  private normalizeDateBoundary(value: string, boundary: 'start' | 'end'): string {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const dt = DateTime.fromISO(value, { zone: 'Asia/Seoul' });
+    return (boundary === 'start' ? dt.startOf('day') : dt.endOf('day')).toISO() ?? value;
   }
 }
