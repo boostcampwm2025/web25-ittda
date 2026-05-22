@@ -58,7 +58,7 @@ export default function TagSearchDrawer({
     <Drawer open={true} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="h-[85%] dark:bg-[#1E1E1E]">
         <div className="w-full flex flex-col h-full overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-6 sm:px-8 pt-4 flex flex-col gap-3 sm:gap-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 sm:px-8 pt-4 flex flex-col gap-3 sm:gap-4">
             <DrawerHeader className="px-0 relative">
               <div className="flex flex-col text-left">
                 <span className="text-[10px] sm:text-[11px] font-black text-itta-point uppercase tracking-[0.2em] sm:tracking-widest mb-1">
