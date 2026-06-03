@@ -83,6 +83,7 @@ export default function ProfileInfo({
                   src={imagePreviewUrl}
                   alt={`${nickname} 프로필`}
                   className="w-full h-full object-cover"
+                  style={{ imageOrientation: 'from-image' }}
                 />
               ) : (
                 <AssetImage
