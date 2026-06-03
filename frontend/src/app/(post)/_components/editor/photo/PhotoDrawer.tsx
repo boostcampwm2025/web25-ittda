@@ -47,7 +47,8 @@ export default function PhotoDrawer({
   );
 
   // 총 사진 수: mediaIds 기준 (로딩 중에도 개수 유지)
-  const totalCount = mediaIds.length > 0 ? mediaIds.length : (photos.tempUrls?.length || 0);
+  const totalCount =
+    mediaIds.length > 0 ? mediaIds.length : photos.tempUrls?.length || 0;
 
   // 각 슬롯의 URL(null이면 로딩 스켈레톤): tempUrl 우선, 없으면 resolved URL
   const photoSlots =
@@ -116,6 +117,7 @@ export default function PhotoDrawer({
                         alt={`첨부사진 ${idx + 1}`}
                         className="w-full h-full object-cover rounded-2xl"
                         unoptimized={true}
+                        style={{ imageOrientation: 'from-image' }}
                       />
                     ) : (
                       // URL 아직 로딩 중 — 스켈레톤

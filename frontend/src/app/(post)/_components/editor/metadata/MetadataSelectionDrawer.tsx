@@ -113,6 +113,7 @@ export default function MetadataSelectionDrawer({
                         alt={`사진 ${idx + 1}`}
                         className="w-full h-full object-cover rounded-2xl"
                         unoptimized
+                        style={{ imageOrientation: 'from-image' }}
                       />
                       {selectedIndex === idx && (
                         <div className="absolute inset-0 bg-[#10B981]/20 flex items-center justify-center">

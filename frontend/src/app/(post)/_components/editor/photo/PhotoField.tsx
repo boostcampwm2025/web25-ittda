@@ -22,14 +22,18 @@ export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
   const MAX_VISIBLE = 3;
 
   const mediaIds = photos.mediaIds || [];
-  const { data: resolvedData, isLoading } = useMediaResolveMulti(mediaIds, draftId);
+  const { data: resolvedData, isLoading } = useMediaResolveMulti(
+    mediaIds,
+    draftId,
+  );
 
   const urlMap = new Map(
     resolvedData?.items.map((item) => [item.mediaId, item.url]),
   );
 
   // mediaId 개수 기준으로 총 사진 수 계산 (로딩 중에도 개수 유지)
-  const totalCount = mediaIds.length > 0 ? mediaIds.length : (photos.tempUrls?.length || 0);
+  const totalCount =
+    mediaIds.length > 0 ? mediaIds.length : photos.tempUrls?.length || 0;
   const hasMore = totalCount > MAX_VISIBLE;
 
   // URL 결정: tempUrl 우선, 없으면 resolved URL, 둘 다 없으면 null(스켈레톤)
@@ -76,6 +80,7 @@ export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
                 className="w-full h-full object-cover"
                 alt={`첨부 사진 ${idx + 1}`}
                 unoptimized={true}
+                style={{ imageOrientation: 'from-image' }}
               />
             ) : (
               // URL 아직 로딩 중 — 스켈레톤
