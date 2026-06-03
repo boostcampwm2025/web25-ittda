@@ -224,8 +224,8 @@ export default function PostEditor({
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const [blocks, setBlocks] = useState<RecordBlock[]>([]);
 
-  // 개인 신규 기록에서만 localStorage 자동저장 활성화
-  const isPersonalNew = mode === 'add' && !groupId && !draftId;
+  // 신규 기록(개인/그룹 개인 모두)에서 localStorage 자동저장 활성화
+  const isPersonalNew = mode === 'add' && !draftId;
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   const [isEditorReady, setIsEditorReady] = useState(false);
   // 초기화 직후 상태 참조 — 사용자 변경 여부 판별용 (reference 비교)
@@ -380,6 +380,8 @@ export default function PostEditor({
   // 자동저장: 마지막 변경 3초 후 localStorage(텍스트) + IndexedDB(사진) 저장
   useEffect(() => {
     if (!isPersonalNew || !initializedStateRef.current) return;
+    // 저장 진행 중에는 타이머를 취소해 race condition 방지
+    if (isSaving || isPublishing) return;
     if (
       title === initializedStateRef.current.title &&
       blocks === initializedStateRef.current.blocks
@@ -412,7 +414,15 @@ export default function PostEditor({
     }, 3_000);
 
     return () => clearTimeout(timer);
-  }, [title, blocks, isPersonalNew, saveDraft, pendingFilesRef]);
+  }, [
+    title,
+    blocks,
+    isPersonalNew,
+    isSaving,
+    isPublishing,
+    saveDraft,
+    pendingFilesRef,
+  ]);
 
   // 에디터 준비 완료 시 stale 정리 + 임시 기록 복원 토스트 표시
   useEffect(() => {

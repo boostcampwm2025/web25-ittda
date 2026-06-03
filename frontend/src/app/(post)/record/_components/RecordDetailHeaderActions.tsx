@@ -83,7 +83,6 @@ export default function RecordDetailHeaderActions({
     textBlock && 'text' in textBlock.value ? textBlock.value.text : '';
   const image = record.blocks.find((block) => block.type === 'IMAGE')
     ?.value as ImageValue;
-  // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
     requestAnimationFrame(() => {
       setCurrentUrl(`${window.location.origin}/record/${record.id}`);

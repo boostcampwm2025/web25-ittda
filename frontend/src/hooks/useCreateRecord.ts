@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/store/useAuthStore';
 import { useApiPatch, useApiPost } from './useApi';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RecordDetail } from '@/lib/types/recordResponse';
 import { CreateRecordRequest } from '@/lib/types/record';
@@ -45,6 +46,20 @@ export const useCreateRecord = (
   const router = useRouter();
   const queryClient = useQueryClient();
   const { userId } = useAuthStore();
+  const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
+  const isNavigatingRef = useRef(false);
+
+  useEffect(() => {
+    if (!pendingNavUrl || isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
+    router.replace(pendingNavUrl);
+
+    requestAnimationFrame(() => {
+      setPendingNavUrl(null);
+      isNavigatingRef.current = false;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingNavUrl]);
 
   const invalidateQuery = async (groupId?: string) => {
     await refreshRecordAndHomeData();
@@ -153,23 +168,23 @@ export const useCreateRecord = (
           refreshHomeData(),
         ]);
 
-        router.replace(recordUrl);
+        // React lifecycle 안에서 replace해야 history entry가 제대로 교체됨
+        setPendingNavUrl(recordUrl);
         return;
       }
 
-      // 서버 액션(invalidateQuery 내 revalidatePath)을 router.replace 이전에 완료
-      // startTransition 중인 navigation과 revalidatePath 응답이 겹치면
-      // history 교체가 깨지는 race condition이 발생함 (그룹 경로와 동일한 패턴)
-      await Promise.all([
+      // 개인 기록은 소프트 네비게이션 유지
+      // 백그라운드에서 캐시 무효화
+      Promise.all([
         queryClient.invalidateQueries({ queryKey: ['me'] }),
         queryClient.invalidateQueries({ queryKey: ['summary'] }),
         queryClient.invalidateQueries({ queryKey: ['pattern'] }),
         queryClient.refetchQueries({ queryKey: ['search', 'tags'] }),
-        invalidateQuery(),
       ]);
+      invalidateQuery();
 
-      // 개인 기록은 소프트 네비게이션 유지
-      router.replace(recordUrl);
+      // React lifecycle 안에서 replace해야 history entry가 제대로 교체됨
+      setPendingNavUrl(recordUrl);
 
       setTimeout(() => {
         toast.success('기록이 성공적으로 저장되었습니다.');
