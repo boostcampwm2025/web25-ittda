@@ -20,7 +20,7 @@ export default function StatusBarCover() {
       )}
       style={{
         height: 'env(safe-area-inset-top)',
-        zIndex: 49,
+        zIndex: 51,
       }}
     />
   );

@@ -75,11 +75,35 @@ function DrawerContent({
   children,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
+  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
+
+  React.useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handler = () => {
+      const kh = window.innerHeight - vv.height - vv.offsetTop;
+      setKeyboardHeight(Math.max(0, kh));
+    };
+
+    vv.addEventListener('resize', handler);
+    vv.addEventListener('scroll', handler);
+    return () => {
+      vv.removeEventListener('resize', handler);
+      vv.removeEventListener('scroll', handler);
+    };
+  }, []);
+
   return (
     <DrawerPortal data-slot="drawer-portal">
       <DrawerOverlay />
       <DrawerPrimitive.Content
         data-slot="drawer-content"
+        style={
+          keyboardHeight > 0
+            ? { maxHeight: `calc(100dvh - ${keyboardHeight}px - 24px)` }
+            : undefined
+        }
         className={cn(
           'dark:bg-[#1E1E1E] bg-white max-w-4xl mx-auto',
           'group/drawer-content bg-background fixed z-50 flex h-auto flex-col',
