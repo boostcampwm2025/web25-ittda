@@ -80,7 +80,14 @@ export function PostCard({
               priorityLoad={priorityLoad}
             />
           ) : (
-            <div className={cn('flex items-center justify-center', className)}>
+            <div
+              className="absolute inset-0 bg-gray-100 dark:bg-[#252525] flex items-center justify-center"
+              style={{
+                backgroundImage:
+                  'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                backgroundSize: '18px 18px',
+              }}
+            >
               <ImageIcon className="w-6 h-6 text-gray-400" />
             </div>
           )}
