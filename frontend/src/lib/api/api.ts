@@ -294,10 +294,10 @@ export async function fetchApi<T>(
   } = options;
 
   const currentBaseUrl = getApiBaseUrl();
-  // 서버 환경에서는 /api -> /v1로 변환 (rewrites 규칙 반영)
+  // 서버 환경에서는 /api 접두사 제거 (base URL에 이미 /v1 포함)
   const finalEndpoint =
     typeof window === 'undefined'
-      ? endpoint.replace(/^\/api/, '/v1')
+      ? endpoint.replace(/^\/api/, '')
       : endpoint;
 
   let fullUrl = `${currentBaseUrl}${finalEndpoint}`;
