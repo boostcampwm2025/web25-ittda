@@ -52,7 +52,7 @@ export interface DayRecord {
   dayName: string;
   title: string;
   count: number;
-  coverUrl: string;
+  coverUrl: string | null;
 }
 
 export interface Tag {

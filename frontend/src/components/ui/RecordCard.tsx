@@ -4,7 +4,6 @@ import { Clock, MapPin } from 'lucide-react';
 import { PostCard } from './PostCard';
 import { useRouter } from 'next/navigation';
 import { GroupCover } from '@/lib/types/group';
-import { randomBaseImage } from '@/lib/image';
 import { memo } from 'react';
 
 /**
@@ -40,11 +39,10 @@ export const RecordCard = memo(function RecordCard({
   height,
   priorityLoad,
 }: RecordCardProps) {
-  const baseImage = randomBaseImage(id);
   return (
     <PostCard
       height={height}
-      imageUrl={cover?.assetId || baseImage}
+      imageUrl={cover?.assetId || null}
       imageAlt={name}
       onClick={onClick}
       priorityLoad={priorityLoad}
