@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Back from '@/components/Back';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { PresenceMember } from '@/hooks/useDraftPresence';
 
 import {
@@ -17,14 +19,35 @@ interface RecordEditorHeaderProps {
   onSave: () => void;
   onBack?: () => void;
   members?: PresenceMember[];
+  draftSavedAt?: Date | null;
 }
+
+type DraftBadgeState = 'visible' | 'fading' | null;
 
 export default function RecordEditorHeader({
   mode,
   onSave,
   members,
+  draftSavedAt,
 }: RecordEditorHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [draftBadge, setDraftBadge] = useState<DraftBadgeState>(null);
+
+  useEffect(() => {
+    if (!draftSavedAt) return;
+
+    requestAnimationFrame(() => {
+      setDraftBadge('visible');
+    });
+
+    const fadeTimer = setTimeout(() => setDraftBadge('fading'), 2500);
+    const removeTimer = setTimeout(() => setDraftBadge(null), 3000);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, [draftSavedAt]);
   const memberList = members ?? [];
   const hasMembers = memberList.length > 0;
   const titleText = mode === 'edit' ? '기록 수정' : '기록 작성';
@@ -140,6 +163,17 @@ export default function RecordEditorHeader({
           </div>
         )}
 
+        {draftBadge && (
+          <span
+            className={cn(
+              'flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0 transition-opacity duration-500',
+              draftBadge === 'visible' ? 'opacity-100' : 'opacity-0',
+            )}
+          >
+            <Check className="w-3 h-3" />
+            저장됨
+          </span>
+        )}
         <button
           onClick={onSave}
           className="px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold active:scale-95 transition-all shadow-sm bg-itta-black text-white shrink-0 dark:bg-white dark:text-black"

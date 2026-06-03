@@ -57,6 +57,14 @@ import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import { useRecordEditorPhotos } from '../../_hooks/useRecordEditorPhotos';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocalDraft, PERSONAL_DRAFT_KEY } from '@/hooks/useLocalDraft';
+import {
+  saveDraftPhotos,
+  loadDraftPhotos,
+  clearDraftPhotos,
+  cleanupStaleDraftPhotos,
+  fileToDataUrl,
+} from '@/lib/utils/draftPhotoStorage';
 import { refreshGroupData } from '@/lib/actions/revalidate';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
@@ -216,6 +224,23 @@ export default function PostEditor({
   const [title, setTitle] = useState(initialPost?.title ?? '');
   const [blocks, setBlocks] = useState<RecordBlock[]>([]);
 
+  // 개인 신규 기록에서만 localStorage 자동저장 활성화
+  const isPersonalNew = mode === 'add' && !groupId && !draftId;
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const [isEditorReady, setIsEditorReady] = useState(false);
+  // 초기화 직후 상태 참조 — 사용자 변경 여부 판별용 (reference 비교)
+  const initializedStateRef = useRef<{
+    title: string;
+    blocks: RecordBlock[];
+  } | null>(null);
+  const { saveDraft, loadDraft, clearDraft } =
+    useLocalDraft(PERSONAL_DRAFT_KEY);
+
+  const clearDraftAndPhotos = useCallback(() => {
+    clearDraft();
+    clearDraftPhotos(PERSONAL_DRAFT_KEY).catch(() => {});
+  }, [clearDraft]);
+
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
 
@@ -261,6 +286,7 @@ export default function PostEditor({
       setIsSaving(false);
       resetNavigatingToRecord();
     },
+    onSuccess: isPersonalNew ? clearDraftAndPhotos : undefined,
   });
 
   // 네비게이션이 실패하거나 느린 경우 로딩 화면이 무한히 뜨는 것을 방지하는 안전망
@@ -341,11 +367,123 @@ export default function PostEditor({
   usePostEditorInitializer({
     initialPost: resolvedInitialPost,
     initialDate,
-    onInitialized: ({ title, blocks }) => {
-      setTitle(title);
-      setBlocks(blocks);
+    onInitialized: ({ title: initTitle, blocks: initBlocks }) => {
+      setTitle(initTitle);
+      setBlocks(initBlocks);
+      if (isPersonalNew) {
+        initializedStateRef.current = { title: initTitle, blocks: initBlocks };
+        setIsEditorReady(true);
+      }
     },
   });
+
+  // 자동저장: 마지막 변경 3초 후 localStorage(텍스트) + IndexedDB(사진) 저장
+  useEffect(() => {
+    if (!isPersonalNew || !initializedStateRef.current) return;
+    if (
+      title === initializedStateRef.current.title &&
+      blocks === initializedStateRef.current.blocks
+    )
+      return;
+
+    const timer = setTimeout(() => {
+      saveDraft(title, blocks);
+
+      // 미업로드 사진(tempUrls)을 File 객체와 매핑하여 IndexedDB에 저장
+      const photoData: Array<{
+        blockId: string;
+        originalUrl: string;
+        file: File;
+      }> = [];
+      for (const block of blocks) {
+        if (block.type !== 'photos') continue;
+        for (const url of (block.value as { tempUrls?: string[] }).tempUrls ??
+          []) {
+          const file = pendingFilesRef.current.get(url);
+          if (file)
+            photoData.push({ blockId: block.id, originalUrl: url, file });
+        }
+      }
+      if (photoData.length > 0) {
+        saveDraftPhotos(PERSONAL_DRAFT_KEY, photoData).catch(() => {});
+      }
+
+      setDraftSavedAt(new Date());
+    }, 3_000);
+
+    return () => clearTimeout(timer);
+  }, [title, blocks, isPersonalNew, saveDraft, pendingFilesRef]);
+
+  // 에디터 준비 완료 시 stale 정리 + 임시 기록 복원 토스트 표시
+  useEffect(() => {
+    if (!isEditorReady) return;
+
+    // 만료된 사진 데이터 정리 (7일 초과)
+    cleanupStaleDraftPhotos().catch(() => {});
+
+    const draft = loadDraft();
+    if (!draft) return;
+
+    const savedDate = new Date(draft.savedAt);
+    const minutes = Math.floor((Date.now() - savedDate.getTime()) / 60_000);
+    const timeLabel = minutes < 1 ? '방금' : `${minutes}분 전`;
+
+    toast(`${timeLabel} 작성하던 기록이 있어요`, {
+      description: draft.title ? `"${draft.title}"` : '제목 없음',
+      action: {
+        label: '이어서 작성',
+        onClick: async () => {
+          // IndexedDB에서 사진 복원
+          const photos = await loadDraftPhotos(PERSONAL_DRAFT_KEY).catch(
+            () => null,
+          );
+
+          let restoredBlocks = draft.blocks;
+
+          if (photos && photos.length > 0) {
+            // File → data URL 변환 (display용)
+            const urlMap = new Map<string, string>();
+            await Promise.all(
+              photos.map(async ({ originalUrl, file }) => {
+                const dataUrl = await fileToDataUrl(file).catch(() => null);
+                if (dataUrl) {
+                  urlMap.set(originalUrl, dataUrl);
+                  pendingFilesRef.current.set(dataUrl, file as File);
+                }
+              }),
+            );
+
+            // 블록의 빈 tempUrls를 복원된 URL로 채움
+            restoredBlocks = draft.blocks.map((block) => {
+              if (block.type !== 'photos') return block;
+              const blockPhotos = photos
+                .filter((p) => p.blockId === block.id)
+                .map((p) => urlMap.get(p.originalUrl))
+                .filter(Boolean) as string[];
+              return {
+                ...block,
+                value: { ...block.value, tempUrls: blockPhotos },
+              };
+            });
+          }
+
+          setTitle(draft.title);
+          setBlocks(restoredBlocks);
+          initializedStateRef.current = {
+            title: draft.title,
+            blocks: restoredBlocks,
+          };
+        },
+      },
+      cancel: {
+        label: '새로 시작',
+        onClick: clearDraftAndPhotos,
+      },
+      duration: Infinity,
+    });
+    // isEditorReady가 true로 바뀌는 순간 한 번만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditorReady]);
 
   // draftId가 있지만 initialPost가 없는 경우 처리
   // (발행 직후 또는 잘못된 draft ID)
@@ -921,7 +1059,12 @@ export default function PostEditor({
   return (
     <div className="w-full flex flex-col h-full bg-white dark:bg-[#121212]">
       {(isPublishing || isSaving) && <AuthLoadingScreen type="publish" />}
-      <RecordEditorHeader mode={mode} onSave={handleSave} members={members} />
+      <RecordEditorHeader
+        mode={mode}
+        onSave={handleSave}
+        members={members}
+        draftSavedAt={isPersonalNew ? draftSavedAt : null}
+      />
       <div className="mx-3 sm:mx-6 mt-2 sm:mt-3 flex flex-row gap-1.5 sm:gap-2">
         {group?.group.name ? (
           <div className="px-2 sm:px-3 w-fit items-center rounded-full py-0.5 sm:py-1 text-[11px] sm:text-[13px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
