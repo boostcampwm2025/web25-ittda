@@ -4,7 +4,6 @@ import './globals.css';
 import MswLoader from '@/components/MswLoader';
 import Providers from './providers';
 import BottomNavigation from '@/components/BottomNavigation';
-import Script from 'next/script';
 import ConditionalHeader from '@/components/ConditionalHeader';
 import { ThemeProvider } from 'next-themes';
 import ThemeColorSetter from '@/components/ThemeColorSetter';
@@ -28,6 +27,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: 'cover',
+  interactiveWidget: 'resizes-visual',
 };
 
 export const metadata: Metadata = {
