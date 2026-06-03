@@ -53,8 +53,9 @@ export async function GET(
 
   const originalBuffer = Buffer.from(await imageRes.arrayBuffer());
 
-  // WebP로 변환
+  // WebP로 변환 (.rotate()로 EXIF 회전 적용 후 스트립)
   const webpBuffer = await sharp(originalBuffer)
+    .rotate()
     .webp({ quality: 85 })
     .toBuffer();
 
