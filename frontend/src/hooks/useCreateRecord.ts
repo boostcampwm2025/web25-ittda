@@ -157,17 +157,20 @@ export const useCreateRecord = (
         return;
       }
 
-      // 개인 기록은 소프트 네비게이션 유지
-      router.replace(recordUrl);
-
-      // 백그라운드에서 캐시 무효화
-      Promise.all([
+      // 서버 액션(invalidateQuery 내 revalidatePath)을 router.replace 이전에 완료
+      // startTransition 중인 navigation과 revalidatePath 응답이 겹치면
+      // history 교체가 깨지는 race condition이 발생함 (그룹 경로와 동일한 패턴)
+      await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['me'] }),
         queryClient.invalidateQueries({ queryKey: ['summary'] }),
         queryClient.invalidateQueries({ queryKey: ['pattern'] }),
         queryClient.refetchQueries({ queryKey: ['search', 'tags'] }),
+        invalidateQuery(),
       ]);
-      invalidateQuery();
+
+      // 개인 기록은 소프트 네비게이션 유지
+      router.replace(recordUrl);
+
       setTimeout(() => {
         toast.success('기록이 성공적으로 저장되었습니다.');
       }, 1000);
