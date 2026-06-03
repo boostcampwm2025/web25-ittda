@@ -39,6 +39,7 @@ export const useCreateRecord = (
   postId?: string,
   options?: {
     onError?: (error: Error) => void;
+    onSuccess?: () => void;
   },
 ) => {
   const router = useRouter();
@@ -124,6 +125,7 @@ export const useCreateRecord = (
 
   async function handleSuccess(res: ApiResponse<RecordDetail>) {
     if (res.success && res.data?.id) {
+      options?.onSuccess?.();
       const recordUrl = groupId
         ? `/record/${res.data.id}?scope=group&groupId=${groupId}`
         : `/record/${res.data.id}`;
