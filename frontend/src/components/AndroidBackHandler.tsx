@@ -25,9 +25,25 @@ export function pushBackHandler(handler: BackHandler): () => void {
 
 export default function AndroidBackHandler() {
   useEffect(() => {
-    const platform = (
-      window as unknown as { Capacitor?: { getPlatform?: () => string } }
-    ).Capacitor?.getPlatform?.();
+    const w = window as unknown as {
+      Capacitor?: {
+        getPlatform?: () => string;
+        isNativePlatform?: () => boolean;
+      };
+    };
+    const platform = w.Capacitor?.getPlatform?.();
+
+    // Web/PWA: 브라우저 뒤로가기(popstate)로 drawer 닫기
+    if (!w.Capacitor?.isNativePlatform?.()) {
+      const handlePopState = () => {
+        if (backHandlerStack.length > 0) {
+          backHandlerStack[backHandlerStack.length - 1]();
+        }
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+
     if (platform !== 'android') return;
 
     let backPressedOnce = false;
