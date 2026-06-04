@@ -21,6 +21,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             if ((error as ApiError)?.code === 'TIMEOUT') {
               toast.error('요청 시간이 초과되었습니다.', {
                 description: '네트워크 연결을 확인하고 다시 시도해 주세요.',
+                duration: 8000,
+                action: {
+                  label: '다시 시도',
+                  onClick: () => {
+                    (query as unknown as { fetch: () => void }).fetch();
+                  },
+                },
               });
               return;
             }
@@ -29,11 +36,22 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           },
         }),
         mutationCache: new MutationCache({
-          onError: (error, _variables, _context, mutation) => {
+          onError: (error, variables, _context, mutation) => {
             if (mutation.meta?.silent) return;
             if ((error as ApiError)?.code === 'TIMEOUT') {
               toast.error('요청 시간이 초과되었습니다.', {
                 description: '네트워크 연결을 확인하고 다시 시도해 주세요.',
+                duration: 8000,
+                action: {
+                  label: '다시 시도',
+                  onClick: () => {
+                    (
+                      mutation as unknown as {
+                        execute: (v: unknown) => void;
+                      }
+                    ).execute(variables);
+                  },
+                },
               });
               return;
             }
