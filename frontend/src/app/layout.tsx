@@ -15,6 +15,7 @@ import StatusBarCover from '@/components/StatusBarCover';
 import NativeStatusBarSync from '@/components/NativeStatusBarSync';
 import NetworkGuard from '@/components/NetworkGuard';
 import AndroidBackHandler from '@/components/AndroidBackHandler';
+import ServiceGuard from '@/components/ServiceGuard';
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 const notoSans = Noto_Sans_KR({
@@ -259,6 +260,7 @@ export default function RootLayout({
               <ThemeColorSetter />
               <NativeStatusBarSync />
               <NetworkGuard />
+              <ServiceGuard />
               <AndroidBackHandler />
               <div
                 data-app-root

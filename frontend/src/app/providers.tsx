@@ -29,7 +29,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           },
         }),
         mutationCache: new MutationCache({
-          onError: (error, variables, context, mutation) => {
+          onError: (error, _variables, _context, mutation) => {
             if (mutation.meta?.silent) return;
             if ((error as ApiError)?.code === 'TIMEOUT') {
               toast.error('요청 시간이 초과되었습니다.', {
