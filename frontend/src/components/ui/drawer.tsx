@@ -139,7 +139,11 @@ function DrawerContent({
         // setTimeout(300ms) 대신 RAF를 써야 육안으로 보이는 깜빡임이 없음.
         rafId = requestAnimationFrame(() => {
           const elNow = contentRef.current;
-          if (elNow) elNow.style.height = '';
+          if (!elNow) return;
+          elNow.style.height = '';
+          // vaul이 handler를 skip한 경우(포커스가 input이 아닐 때)
+          // style.bottom이 keyboard 높이로 남아 drawer가 화면 밖으로 튀어나가므로 초기화.
+          elNow.style.bottom = '';
         });
       }
     };
