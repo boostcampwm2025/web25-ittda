@@ -65,7 +65,6 @@ import {
   cleanupStaleDraftPhotos,
   fileToDataUrl,
 } from '@/lib/utils/draftPhotoStorage';
-import { refreshGroupData } from '@/lib/actions/revalidate';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
 import LocationDrawer from '@/components/map/LocationDrawer';
@@ -728,11 +727,6 @@ export default function PostEditor({
     setIsSaving(true);
 
     try {
-      if (groupId) {
-        await refreshGroupData(groupId);
-        queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-      }
-
       // 개인용 게시글 이미지 -> id 변환 로직
       const finalizedBlocks = await Promise.all(
         filteredBlocks.map(async (block) => {

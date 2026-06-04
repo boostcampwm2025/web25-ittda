@@ -7,14 +7,6 @@ import { CreateRecordRequest } from '@/lib/types/record';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiResponse } from '@/lib/types/response';
-import {
-  refreshGroupData,
-  refreshHomeData,
-  refreshRecordAndHomeData,
-  refreshRecordData,
-  refreshRecordGroupAndSharedData,
-  refreshSharedData,
-} from '@/lib/actions/revalidate';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { handlePublishError } from '@/lib/utils/error/publishHandler';
 
@@ -52,39 +44,41 @@ export const useCreateRecord = (
   useEffect(() => {
     if (!pendingNavUrl || isNavigatingRef.current) return;
     isNavigatingRef.current = true;
-    router.replace(pendingNavUrl);
 
-    requestAnimationFrame(() => {
-      setPendingNavUrl(null);
-      isNavigatingRef.current = false;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const url = pendingNavUrl;
+
+    // vaul Drawer가 open 시 history.pushState({__drawerId}, ''), close 시
+    // replaceState({__drawerClosed: true}) 를 호출해 history 항목이 남는다.
+    // router.replace 전에 이 항목들을 모두 제거해야 /add 가 history에 남지 않는다.
+    const clearDrawerHistoryAndNavigate = () => {
+      const state = history.state as Record<string, unknown> | null;
+      if (state?.__drawerId || state?.__drawerClosed) {
+        const handlePop = () => {
+          window.removeEventListener('popstate', handlePop);
+          clearDrawerHistoryAndNavigate();
+        };
+        window.addEventListener('popstate', handlePop);
+        history.go(-1);
+      } else {
+        setPendingNavUrl(null);
+        isNavigatingRef.current = false;
+        router.replace(url);
+      }
+    };
+
+    clearDrawerHistoryAndNavigate();
   }, [pendingNavUrl]);
 
-  const invalidateQuery = async (groupId?: string) => {
-    await refreshRecordAndHomeData();
-
-    const invalidations = [
+  const invalidateQuery = async () => {
+    // revalidatePath 서버 액션 제외: 네비게이션 도중 응답이 도착하면
+    // Next.js App Router가 진행 중인 네비게이션을 취소해 /add로 되돌아가는 버그 발생.
+    await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['my', 'records'] }),
       queryClient.invalidateQueries({ queryKey: ['records'] }),
       queryClient.invalidateQueries({ queryKey: ['profile'] }),
       queryClient.invalidateQueries({ queryKey: ['summary'] }),
       queryClient.invalidateQueries({ queryKey: ['map', 'records'] }),
-    ];
-
-    if (groupId) {
-      invalidations.push(
-        queryClient.invalidateQueries({
-          queryKey: ['group', groupId, 'records'],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ['shared'],
-        }),
-        refreshRecordGroupAndSharedData(groupId),
-      );
-    }
-
-    await Promise.all(invalidations);
+    ]);
   };
 
   // 일반 게시글 생성
@@ -146,13 +140,8 @@ export const useCreateRecord = (
         : `/record/${res.data.id}`;
 
       if (groupId) {
-        // Router Cache 무효화: router.replace 이전에 완료해야
-        // 서버 액션 응답이 클라이언트에 도달해 Router Cache가 실제로 비워짐.
-        // 이전 코드처럼 fire-and-forget으로 두면 revalidatePath가 늦게 실행돼
-        // 사용자가 그룹 페이지로 돌아올 때 여전히 캐시된 old payload가 사용됨.
-        await refreshGroupData(groupId);
-
-        // 나머지 무효화는 네비게이션 이후 백그라운드에서 처리
+        // revalidatePath 서버 액션 전부 제외: 네비게이션 도중 응답이 도착하면
+        // Next.js App Router가 진행 중인 네비게이션을 취소해 /add로 되돌아가는 버그 발생.
         Promise.all([
           queryClient.invalidateQueries({ queryKey: ['me'] }),
           queryClient.invalidateQueries({ queryKey: ['summary'] }),
@@ -163,9 +152,6 @@ export const useCreateRecord = (
           }),
           queryClient.invalidateQueries({ queryKey: ['shared'] }),
           queryClient.invalidateQueries({ queryKey: ['map', 'records'] }),
-          refreshSharedData(),
-          refreshRecordData(),
-          refreshHomeData(),
         ]);
 
         // React lifecycle 안에서 replace해야 history entry가 제대로 교체됨
