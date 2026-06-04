@@ -133,7 +133,7 @@ export default function WeekCalendar({
       new CustomEvent('itda:dateChange', { detail: dateStr }),
     );
     // URL 쿼리 파라미터로 날짜 설정
-    router.push(`${basePath}?date=${dateStr}`);
+    router.replace(`${basePath}?date=${dateStr}`);
     calculateYearMonth(dateStr);
   };
 
