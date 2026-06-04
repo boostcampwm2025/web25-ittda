@@ -267,7 +267,7 @@
         <tbody>
           <tr>
             <td>쿠키 (Cookie)</td>
-            <td>로그인 상태 유지(JWT 토큰), 세션 관리</td>
+            <td>로그인 상태 유지 및 세션 관리</td>
           </tr>
           <tr>
             <td>접속 IP 주소</td>
@@ -331,10 +331,6 @@
             <td>이용자 삭제 요청 또는 회원 탈퇴 시까지</td>
           </tr>
           <tr>
-            <td>리프레시 토큰</td>
-            <td>발급일로부터 14일</td>
-          </tr>
-          <tr>
             <td>게스트 세션</td>
             <td>세션 만료 시까지 (수일 이내)</td>
           </tr>
@@ -368,11 +364,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>네이버 클라우드 플랫폼</td>
-            <td>사진 및 미디어 파일 저장·관리</td>
-            <td>위탁 계약 기간</td>
-          </tr>
           <tr>
             <td>Google</td>
             <td>OAuth 인증 서비스</td>
@@ -421,11 +412,11 @@
           </tr>
           <tr>
             <td>접근 제어</td>
-            <td>JWT 기반 인증 및 권한 관리</td>
+            <td>인증 기반 접근 제어 및 권한 관리</td>
           </tr>
           <tr>
-            <td>토큰 보안</td>
-            <td>HttpOnly 쿠키 저장, 토큰 갱신(Rotation) 적용</td>
+            <td>로그인 세션 보안</td>
+            <td>안전한 쿠키 저장 방식 적용 및 세션 관리</td>
           </tr>
           <tr>
             <td>접근 권한 최소화</td>
@@ -438,11 +429,11 @@
       <h2>8. 쿠키(Cookie) 정책</h2>
       <p>서비스는 로그인 상태 유지를 위해 쿠키를 사용합니다.</p>
       <ul>
-        <li><strong>사용 쿠키</strong>: JWT 액세스 토큰, 리프레시 토큰</li>
+        <li><strong>사용 목적</strong>: 로그인 상태 유지 및 세션 관리</li>
+        <li><strong>저장 방식</strong>: 보안이 강화된 쿠키 저장 방식 적용</li>
         <li>
-          <strong>저장 방식</strong>: HttpOnly 쿠키 (JavaScript로 접근 불가)
+          <strong>만료</strong>: 일정 기간 경과 또는 로그아웃 시 자동 만료
         </li>
-        <li><strong>만료</strong>: 액세스 토큰 15분, 리프레시 토큰 14일</li>
       </ul>
       <p>
         브라우저 설정에서 쿠키를 거부할 수 있으나, 이 경우 로그인이 필요한
