@@ -45,8 +45,8 @@ export function AddRecordDrawer({
     }
 
     if (refetchedData?.redirectUrl) {
-      router.push(refetchedData.redirectUrl);
       onOpenChange(false);
+      router.replace(refetchedData.redirectUrl);
     } else {
       // 리다이렉트 URL 누락은 백엔드 응답 문제일 가능성
       const error = new Error(
@@ -70,8 +70,8 @@ export function AddRecordDrawer({
   };
 
   const handleIndividualRecord = () => {
-    router.push(`/add?groupId=${groupId}`);
     onOpenChange(false);
+    router.replace(`/add?groupId=${groupId}`);
   };
 
   return (
