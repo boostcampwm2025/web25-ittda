@@ -38,7 +38,7 @@ const MemberCard = memo(function MemberCard({
   member: GroupMember;
   me: GroupEditResponse['me'];
   onOpenRoleDrawer: (member: GroupMember) => void;
-  onConfirmRemove: (userId: string, name: string) => void;
+  onConfirmRemove: (userId: string, name: string, nicknameInGroup: string) => void;
 }) {
   const canManage = me.userId !== member.userId && me.role === 'ADMIN';
 
@@ -49,11 +49,11 @@ const MemberCard = memo(function MemberCard({
   }, [canManage, onOpenRoleDrawer, member]);
 
   const handleRemoveClick = useCallback(() => {
-    onConfirmRemove(member.userId, member.name);
-  }, [onConfirmRemove, member.userId, member.name]);
+    onConfirmRemove(member.userId, member.name, member.nicknameInGroup || '');
+  }, [onConfirmRemove, member.userId, member.name, member.nicknameInGroup]);
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-2xl border transition-colors dark:bg-white/5 dark:border-white/5 bg-gray-50 border-black/2">
+    <div data-testid="member-card" className="flex items-center justify-between p-3 rounded-2xl border transition-colors dark:bg-white/5 dark:border-white/5 bg-gray-50 border-black/2">
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="w-10 h-10 rounded-full border">
           {member.profileImage?.assetId ? (
@@ -106,6 +106,7 @@ const MemberCard = memo(function MemberCard({
       {canManage && (
         <button
           onClick={handleRemoveClick}
+          aria-label={`${member.nicknameInGroup || member.name} 내보내기`}
           className="cursor-pointer p-2 rounded-xl transition-colors dark:hover:bg-red-500/10 dark:text-gray-500 hover:bg-red-50 text-gray-400"
         >
           <UserMinus className="w-4 h-4 hover:text-red-500" />
@@ -166,6 +167,7 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
   const [deleteMember, setDeleteMember] = useState<{
     userId: string;
     name: string;
+    nicknameInGroup: string;
   } | null>(null);
   const [editingMember, setEditingMember] = useState<GroupMember | null>(null);
   const [tempRole, setTempRole] = useState<GroupRoleType | null>(null);
@@ -176,10 +178,10 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
   >(
     ({ userId }) => `/api/groups/${groupId}/members/${userId}`,
     {
-      onSuccess: (_data, variables) => {
-        toast.success(`${variables.name}을 내보냈습니다.`);
+      onSuccess: () => {
+        toast.success(`${deleteMember?.nicknameInGroup || deleteMember?.name}을 내보냈습니다.`);
         setMembers((prev) =>
-          prev.filter((m) => m.userId !== variables.userId),
+          prev.filter((m) => m.userId !== deleteMember?.userId),
         );
         setDeleteMember(null);
       },
@@ -206,9 +208,9 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
     },
   );
 
-  const confirmRemoveMember = useCallback((userId: string, name: string) => {
+  const confirmRemoveMember = useCallback((userId: string, name: string, nicknameInGroup: string) => {
     setShowDeleteDrawer(true);
-    setDeleteMember({ userId, name });
+    setDeleteMember({ userId, name, nicknameInGroup });
   }, []);
 
   const handleRemoveMember = useCallback(() => {
@@ -275,7 +277,7 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
                 </div>
                 <div className="space-y-1">
                   <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-                    {`정말 '${deleteMember?.name}'님을 그룹에서 내보내시겠습니까?`}
+                    {`정말 '${deleteMember?.nicknameInGroup || deleteMember?.name}'님을 그룹에서 내보내시겠습니까?`}
                   </DrawerTitle>
                 </div>
               </div>
@@ -307,7 +309,7 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
                     Set Permissions
                   </span>
                   <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-                    {editingMember?.name}님의 권한 변경
+                    {editingMember?.nicknameInGroup || editingMember?.name}님의 권한 변경
                   </DrawerTitle>
                 </div>
                 <DrawerClose className="p-2 text-gray-400">
