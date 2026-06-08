@@ -34,13 +34,13 @@ test.describe('그룹 홈 탭 및 popover 메뉴', () => {
     await page.goto(`/group/${groupId}`);
     await expect(page.getByRole('button', { name: '피드' })).toBeVisible({ timeout: 8000 });
 
-    // 보관함 탭 전환 (router.replace 비동기 처리를 위해 waitForURL 사용)
+    // 보관함 탭 전환 (router.replace는 history.replaceState라 waitForURL 대신 waitForFunction으로 URL 직접 polling)
     await page.getByRole('button', { name: '보관함' }).click();
-    await page.waitForURL(/tab=archive/, { timeout: 8000 });
+    await page.waitForFunction(() => window.location.search.includes('tab=archive'), { timeout: 8000 });
 
     // 피드 탭 복귀
     await page.getByRole('button', { name: '피드' }).click();
-    await expect(page).not.toHaveURL(/tab=archive/, { timeout: 5000 });
+    await page.waitForFunction(() => !window.location.search.includes('tab=archive'), { timeout: 8000 });
   });
 
   test('Admin은 Popover에서 그룹 정보 수정, 멤버 관리, 나의 그룹 프로필, 그룹 나가기 버튼이 모두 표시된다', async ({ page }) => {

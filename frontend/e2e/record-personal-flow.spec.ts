@@ -95,8 +95,8 @@ test.describe('개인 기록 작성 → 상세 확인 → 홈 확인', () => {
     await expect(page).toHaveURL(/\/my\/month\/.+/, { timeout: 10000 });
 
     // 오늘 날짜 카드 클릭 → 일별 상세
-    // DateRecordCard: span에 일(day) 숫자가 표시됨
-    const todayDay = new Date().getDate().toString();
+    // DateRecordCard는 date.split('-')[2]로 렌더링 → "08" 형태(두 자리)
+    const todayDay = String(new Date().getDate()).padStart(2, '0');
     const dateCard = page.getByRole('button').filter({
       has: page.locator('span').filter({ hasText: new RegExp(`^${todayDay}$`) }),
     }).first();
@@ -115,7 +115,8 @@ test.describe('개인 기록 작성 → 상세 확인 → 홈 확인', () => {
     await page.goto(`/my/month/${CURRENT_YEAR}-${CURRENT_MONTH}`);
 
     // 오늘 날짜 카드 클릭 → 일별 상세
-    const todayDay = new Date().getDate().toString();
+    // DateRecordCard는 date.split('-')[2]로 렌더링 → "08" 형태(두 자리)
+    const todayDay = String(new Date().getDate()).padStart(2, '0');
     const dateCard = page.getByRole('button').filter({
       has: page.locator('span').filter({ hasText: new RegExp(`^${todayDay}$`) }),
     }).first();
