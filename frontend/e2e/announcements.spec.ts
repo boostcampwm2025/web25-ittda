@@ -11,7 +11,7 @@ test.describe('공지사항', () => {
 
   test('헤더에 "공지사항" 제목이 표시된다', async ({ page }) => {
     await page.goto('/announcements');
-    await expect(page.getByRole('heading', { name: '공지사항' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '공지사항', exact: true })).toBeVisible();
   });
 
   test('공지사항이 없을 때 안내 메시지가 표시된다', async ({ page }) => {
@@ -50,11 +50,11 @@ test.describe('공지사항', () => {
     }
 
     const firstCard = page.locator('main > div').first();
-    // 제목 — h3 태그
-    await expect(firstCard.locator('h3')).toBeVisible({ timeout: 8000 });
-    await expect(firstCard.locator('h3')).not.toBeEmpty();
-    // 날짜 — formatKoreanDate가 '년' 포함
-    await expect(firstCard.getByText(/\d{4}년/)).toBeVisible();
+    // 제목 — h3 태그 (카드가 여러 개일 수 있으므로 .first() 사용)
+    await expect(firstCard.locator('h3').first()).toBeVisible({ timeout: 8000 });
+    await expect(firstCard.locator('h3').first()).not.toBeEmpty();
+    // 날짜 — formatKoreanDate가 '년' 포함 (카드가 여러 개일 수 있으므로 .first() 사용)
+    await expect(firstCard.getByText(/\d{4}년/).first()).toBeVisible();
   });
 
   test('진행 중인 공지에는 "진행 중" 배지가 표시된다', async ({ page }) => {
