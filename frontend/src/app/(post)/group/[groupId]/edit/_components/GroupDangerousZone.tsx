@@ -37,7 +37,7 @@ export default function GroupDangerousZone({
     <section className="pt-6">
       <Drawer>
         <DrawerTrigger
-          disabled={me.role === 'VIEWER'}
+          disabled={me.role !== 'ADMIN'}
           className="cursor-pointer w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed text-xs font-bold transition-all active:scale-95 dark:border-red-500/20 dark:text-red-500/60 dark:hover:bg-red-500/5 border-red-200 text-red-400 hover:bg-red-50"
         >
           <Trash2 className="w-4 h-4" />

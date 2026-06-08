@@ -124,7 +124,7 @@ export default function GroupInviteDrawer({ groupId }: GroupInviteDrawerProps) {
         onOpenChange={setIsOpen}
         shouldScaleBackground={false}
       >
-        <DrawerTrigger className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-all active:scale-95 dark:bg-white/5 dark:text-[#10B981] bg-gray-50 text-[#10B981]">
+        <DrawerTrigger aria-label="멤버 초대" className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-all active:scale-95 dark:bg-white/5 dark:text-[#10B981] bg-gray-50 text-[#10B981]">
           <UserPlus className="w-5 h-5" />
         </DrawerTrigger>
 
