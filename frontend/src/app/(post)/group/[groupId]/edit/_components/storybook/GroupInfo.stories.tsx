@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import GroupInfo from '../GroupInfo';
 import { GroupEditProvider } from '../GroupEditContext';
-import { Member } from '@/lib/types/group';
 import { GroupMember } from '@/lib/types/groupResponse';
 
 // 커버 이미지 클릭 시 GalleryDrawer가 열리고 내부에서 useInfiniteQuery를 사용하므로
@@ -12,9 +11,9 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, staleTime: Infinity } },
 });
 
-const mockMembers: Member[] = [
-  { id: 1, name: '도비', avatar: '/profile-ex.jpeg', role: 'admin' },
-  { id: 2, name: '하니', avatar: '/profile-ex.jpeg', role: 'member' },
+const mockMembers: GroupMember[] = [
+  { userId: 'user-1', name: '도비', profileImage: null, role: 'ADMIN', nicknameInGroup: '도비', joinedAt: '2024-01-01T00:00:00Z' },
+  { userId: 'user-2', name: '하니', profileImage: null, role: 'EDITOR', nicknameInGroup: '하니', joinedAt: '2024-01-01T00:00:00Z' },
 ];
 
 const meAdmin: GroupMember = {
@@ -35,7 +34,7 @@ const meViewer: GroupMember = {
 function Wrapper({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <GroupEditProvider initialName={name} initialThumbnail="" initialMembers={mockMembers}>
+      <GroupEditProvider initialName={name} initialThumbnail={{ assetId: '', postId: '' }} initialMembers={mockMembers}>
         <div className="max-w-2xl mx-auto p-4 bg-[#F9F9F9] dark:bg-[#121212]">
           {children}
         </div>
@@ -81,7 +80,7 @@ export const Default: Story = {
         story: `
 그룹 정보 수정 — 기본 상태 (ADMIN 권한)
 - **커버 이미지 클릭**: 이미지 선택 드로어가 열려 커버 변경 가능
-- **그룹명 입력**: 실시간 입력, 빈 값 또는 2자 미만이면 저장 버튼 비활성화
+- **그룹명 편집 버튼 클릭**: 입력 필드 활성화, 빈 값 또는 2자 미만이면 저장 버튼 비활성화
 - **저장 버튼**: 변경 사항을 서버에 저장
         `,
       },
@@ -133,3 +132,24 @@ export const EmptyGroupName: Story = {
   },
 };
 
+export const ViewerRole: Story = {
+  args: {
+    groupId: 'group-1',
+    groupThumnail: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
+    me: meViewer,
+  },
+  decorators: [
+    (Story) => (
+      <Wrapper name="우리 가족">
+        <Story />
+      </Wrapper>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story: 'VIEWER 권한 — 커버 이미지 클릭 불가, 그룹명 편집 버튼 비표시',
+      },
+    },
+  },
+};
