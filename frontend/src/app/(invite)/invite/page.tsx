@@ -32,6 +32,9 @@ export default function InvitePage() {
     isLoading,
     isError: isInviteError,
   } = useGetInviteInfo(inviteCode || '');
+
+  // 초대 코드가 없거나 유효하지 않으면 에러 상태로 처리
+  const isInvalidInvite = !inviteCode || isInviteError;
   const { data: profile } = useQuery({
     ...userProfileOptions(),
     enabled: isLoggedIn && userType === 'social',
@@ -159,7 +162,7 @@ export default function InvitePage() {
               <div className="h-5 w-40 rounded-full bg-gray-100 dark:bg-white/10 animate-pulse" />
               <div className="h-4 w-48 rounded bg-gray-100 dark:bg-white/10 animate-pulse" />
             </>
-          ) : isInviteError ? (
+          ) : isInvalidInvite ? (
             <div className="flex flex-col items-center gap-2">
               <p className="text-base font-semibold text-gray-400 dark:text-gray-500">
                 유효하지 않은 초대 링크
@@ -209,7 +212,7 @@ export default function InvitePage() {
 
           <button
             onClick={() => handleAccept(false)}
-            disabled={isInviteError}
+            disabled={isInvalidInvite}
             className="w-full h-12 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md disabled:opacity-40 disabled:cursor-not-allowed mt-1"
           >
             <Check className="w-4 h-4" />
