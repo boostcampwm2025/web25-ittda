@@ -204,3 +204,79 @@ export async function deleteTestGroup(
   const headers = await getAuthHeaders(page);
   await page.request.delete(`/api/groups/${groupId}`, { headers });
 }
+
+/**
+ * 그룹에서 나간다 (DELETE /api/groups/{groupId}/members/me).
+ */
+export async function leaveTestGroup(page: Page, groupId: string): Promise<void> {
+  const headers = await getAuthHeaders(page);
+  const res = await page.request.delete(`/api/groups/${groupId}/members/me`, { headers });
+  const body = await res.json();
+  if (!body.success) throw new Error(`그룹 나가기 실패: ${JSON.stringify(body.error)}`);
+}
+
+/**
+ * 그룹 내 닉네임을 설정한다 (PATCH /api/groups/{groupId}/members/me).
+ */
+export async function updateGroupMemberProfile(
+  page: Page,
+  groupId: string,
+  nickname: string,
+): Promise<void> {
+  const headers = await getAuthHeaders(page);
+  const res = await page.request.patch(`/api/groups/${groupId}/members/me`, {
+    headers,
+    data: { nicknameInGroup: nickname },
+  });
+  const body = await res.json();
+  if (!body.success) throw new Error(`그룹 프로필 변경 실패: ${JSON.stringify(body.error)}`);
+}
+
+/**
+ * 특정 멤버의 역할을 변경한다 (PATCH /api/groups/{groupId}/members/{userId}/role).
+ */
+export async function changeMemberRole(
+  page: Page,
+  groupId: string,
+  userId: string,
+  role: 'ADMIN' | 'EDITOR' | 'VIEWER',
+): Promise<void> {
+  const headers = await getAuthHeaders(page);
+  const res = await page.request.patch(`/api/groups/${groupId}/members/${userId}/role`, {
+    headers,
+    data: { role },
+  });
+  const body = await res.json();
+  if (!body.success) throw new Error(`역할 변경 실패: ${JSON.stringify(body.error)}`);
+}
+
+export interface GroupMemberInfo {
+  userId: string;
+  role: string;
+  name: string;
+  nicknameInGroup: string;
+}
+
+/**
+ * 그룹 설정(멤버 목록 포함)을 조회한다 (GET /api/groups/{groupId}/settings).
+ */
+export async function getGroupSettings(
+  page: Page,
+  groupId: string,
+): Promise<{ members: GroupMemberInfo[] }> {
+  const headers = await getAuthHeaders(page);
+  const res = await page.request.get(`/api/groups/${groupId}/settings`, { headers });
+  const body = await res.json();
+  if (!body.success) throw new Error(`그룹 설정 조회 실패: ${JSON.stringify(body.error)}`);
+  return body.data;
+}
+
+/**
+ * 현재 계정을 탈퇴 처리한다 (DELETE /api/me).
+ */
+export async function withdrawTestUser(page: Page): Promise<void> {
+  const headers = await getAuthHeaders(page);
+  const res = await page.request.delete('/api/me', { headers });
+  const body = await res.json();
+  if (!body.success) throw new Error(`회원 탈퇴 실패: ${JSON.stringify(body.error)}`);
+}
