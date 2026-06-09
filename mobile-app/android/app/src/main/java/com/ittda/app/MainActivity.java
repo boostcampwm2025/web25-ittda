@@ -1,13 +1,20 @@
 package com.ittda.app;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
 import androidx.core.view.ViewCompat;
@@ -17,6 +24,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.splashscreen.SplashScreen;
 
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebChromeClient;
 
 public class MainActivity extends BridgeActivity {
 
@@ -66,6 +74,70 @@ public class MainActivity extends BridgeActivity {
 
         // WebView 로드 전에 브릿지 등록 (onStart보다 이른 시점 → 타이밍 문제 해소)
         getBridge().getWebView().addJavascriptInterface(new StatusBarBridge(), "AndroidBridge");
+
+        setupKakaoShare();
+    }
+
+    private void setupKakaoShare() {
+        WebView webView = getBridge().getWebView();
+        // window.open() 팝업 허용 (기본값 false → Kakao SDK가 null을 받아 조용히 실패하는 원인)
+        webView.getSettings().setSupportMultipleWindows(true);
+
+        webView.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog,
+                                          boolean isUserGesture, android.os.Message resultMsg) {
+                WebView popup = new WebView(MainActivity.this);
+                popup.getSettings().setJavaScriptEnabled(true);
+
+                popup.setWebChromeClient(new WebChromeClient() {
+                    @Override
+                    public void onCloseWindow(WebView window) {
+                        window.destroy();
+                    }
+                });
+
+                popup.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
+                        String url = req.getUrl().toString();
+
+                        // KakaoTalk 앱 실행 deep link: Intent.parseUri로 정확히 처리
+                        if (url.startsWith("intent://") || url.startsWith("kakaolink://")
+                                || url.startsWith("kakaotalk://")) {
+                            try {
+                                Intent intent = url.startsWith("intent://")
+                                        ? Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
+                                        : new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                            } catch (ActivityNotFoundException e) {
+                                // KakaoTalk 미설치 — 무시
+                            } catch (Exception ignored) {}
+                            popup.destroy();
+                            return true;
+                        }
+
+                        // 카카오 도메인(sharer.kakao.com 등)은 팝업 WebView에서 정상 로드
+                        if (url.contains("kakao.com")) {
+                            return false;
+                        }
+
+                        // Facebook·Twitter 등 비카카오 URL → 시스템 브라우저로 열고 팝업 정리
+                        try {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                        } catch (Exception ignored) {}
+                        popup.destroy();
+                        return true;
+                    }
+                });
+
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(popup);
+                resultMsg.sendToTarget();
+                return true;
+            }
+        });
     }
 
     // 상태바 높이 (px): insets 콜백에서 설정, JS bridge에서 읽음
