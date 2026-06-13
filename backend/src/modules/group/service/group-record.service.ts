@@ -13,7 +13,10 @@ import { GroupMonthCover } from '../entity/group-month-cover.entity';
 import { Post } from '../../post/entity/post.entity';
 import { PostBlock } from '../../post/entity/post-block.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
-import { GroupMonthRecordResponseDto } from '../dto/group-month-record.response.dto';
+import {
+  GroupMonthRecordResponseDto,
+  PaginatedGroupMonthRecordResponseDto,
+} from '../dto/group-month-record.response.dto';
 import { GroupArchiveSortEnum } from '../dto/get-group-monthly-archive.query.dto';
 import { GroupDayRecordResponseDto } from '../dto/group-day-record.response.dto';
 import {
@@ -27,6 +30,7 @@ import {
 } from '../dto/group-cover-candidates.response.dto';
 import { GroupActivityService } from './group-activity.service';
 import { GroupActivityType } from '@/enums/group-activity-type.enum';
+import { paginateMonthKeys } from '@/common/utils/month-cursor';
 
 @Injectable()
 export class GroupRecordService {
@@ -166,7 +170,73 @@ export class GroupRecordService {
     year: number,
     sort: GroupArchiveSortEnum = GroupArchiveSortEnum.LATEST,
   ): Promise<GroupMonthRecordResponseDto[]> {
-    // 1. 그룹 존재 확인
+    await this.ensureGroupExists(groupId);
+    this.cleanupStaleGroupMonthCovers(groupId);
+    const posts = await this.getMonthlyArchivePosts(groupId, year);
+
+    if (posts.length === 0) {
+      return [];
+    }
+
+    const postsByMonth = this.groupPostsByMonth(posts);
+    const monthKeys = this.sortMonthKeys(
+      Array.from(postsByMonth.keys()),
+      postsByMonth,
+      sort,
+    );
+
+    return this.buildMonthlyArchiveRecords(groupId, postsByMonth, monthKeys);
+  }
+
+  async getMonthlyArchiveInfinite(
+    groupId: string,
+    sort: GroupArchiveSortEnum = GroupArchiveSortEnum.LATEST,
+    cursor?: string,
+    limit: number = 12,
+  ): Promise<PaginatedGroupMonthRecordResponseDto> {
+    await this.ensureGroupExists(groupId);
+    this.cleanupStaleGroupMonthCovers(groupId);
+    const posts = await this.getMonthlyArchivePosts(groupId);
+
+    if (posts.length === 0) {
+      return {
+        items: [],
+        nextCursor: null,
+      };
+    }
+
+    const postsByMonth = this.groupPostsByMonth(posts);
+    const sortedMonthKeys = this.sortMonthKeys(
+      Array.from(postsByMonth.keys()),
+      postsByMonth,
+      sort,
+    );
+    const { items: pagedMonthKeys, nextCursor } = paginateMonthKeys(
+      sortedMonthKeys,
+      cursor,
+      limit,
+    );
+
+    if (pagedMonthKeys.length === 0) {
+      return {
+        items: [],
+        nextCursor: null,
+      };
+    }
+
+    const items = await this.buildMonthlyArchiveRecords(
+      groupId,
+      postsByMonth,
+      pagedMonthKeys,
+    );
+
+    return {
+      items,
+      nextCursor,
+    };
+  }
+
+  private async ensureGroupExists(groupId: string) {
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
     });
@@ -174,9 +244,9 @@ export class GroupRecordService {
     if (!group) {
       throw new NotFoundException('그룹을 찾을 수 없습니다.');
     }
+  }
 
-    // 2. 해당 그룹의 모든 게시글 요약 정보 조회
-    // (메모리 집계 방식 - 데이터가 아주 많으면 최적화 필요)
+  private async getMonthlyArchivePosts(groupId: string, year?: number) {
     const qb = this.postRepo.createQueryBuilder('p');
     qb.select(['p.id', 'p.eventAt', 'p.title', 'p.groupId'])
       .where('p.groupId = :groupId', { groupId })
@@ -192,48 +262,54 @@ export class GroupRecordService {
       qb.andWhere('p.eventAt >= :start AND p.eventAt <= :end', { start, end });
     }
 
-    const posts = await qb.orderBy('p.eventAt', 'DESC').getMany();
+    return qb.orderBy('p.eventAt', 'DESC').getMany();
+  }
 
-    if (posts.length === 0) {
-      return [];
-    }
-
-    // 3. 월별 그룹핑
+  private groupPostsByMonth(posts: Post[]) {
     const postsByMonth = new Map<string, Post[]>();
-    for (const p of posts) {
-      if (!p.eventAt) continue;
-      const key = DateTime.fromJSDate(p.eventAt)
+
+    for (const post of posts) {
+      if (!post.eventAt) continue;
+      const monthKey = DateTime.fromJSDate(post.eventAt)
         .setZone('Asia/Seoul')
         .toFormat('yyyy-MM');
-      const list = postsByMonth.get(key) ?? [];
-      list.push(p);
-      postsByMonth.set(key, list);
+      const list = postsByMonth.get(monthKey) ?? [];
+      list.push(post);
+      postsByMonth.set(monthKey, list);
     }
 
-    const monthKeys = Array.from(postsByMonth.keys());
+    return postsByMonth;
+  }
 
-    // 4. 정렬
+  private sortMonthKeys(
+    monthKeys: string[],
+    postsByMonth: Map<string, Post[]>,
+    sort: GroupArchiveSortEnum,
+  ) {
     if (sort === GroupArchiveSortEnum.OLDEST) {
-      monthKeys.sort((a, b) => a.localeCompare(b));
-    } else if (sort === GroupArchiveSortEnum.MOST_RECORDS) {
-      monthKeys.sort((a, b) => {
+      return monthKeys.sort((a, b) => a.localeCompare(b));
+    }
+
+    if (sort === GroupArchiveSortEnum.MOST_RECORDS) {
+      return monthKeys.sort((a, b) => {
         const countA = postsByMonth.get(a)!.length;
         const countB = postsByMonth.get(b)!.length;
         if (countB !== countA) return countB - countA;
-        return b.localeCompare(a); // 같은 개수면 최신순
+        return b.localeCompare(a);
       });
-    } else {
-      // LATEST
-      monthKeys.sort((a, b) => b.localeCompare(a));
     }
 
-    const slicedKeys = monthKeys;
+    return monthKeys.sort((a, b) => b.localeCompare(a));
+  }
 
-    if (slicedKeys.length === 0) {
-      return [];
-    }
-
-    // 6. 필요한 데이터 일괄 조회 (커버, 대표 게시글 블록)
+  private async buildMonthlyArchiveRecords(
+    groupId: string,
+    postsByMonth: Map<string, Post[]>,
+    monthKeys: string[],
+  ): Promise<GroupMonthRecordResponseDto[]> {
+    const requestedPosts = monthKeys.flatMap((monthKey) => {
+      return postsByMonth.get(monthKey) ?? [];
+    });
     const customCovers = await this.groupMonthCoverRepo.find({
       where: { groupId },
     });
@@ -249,13 +325,13 @@ export class GroupRecordService {
       });
     }
 
-    const representativePostIds = slicedKeys.map(
-      (k) => postsByMonth.get(k)![0].id,
+    const representativePostIds = monthKeys.map(
+      (key) => postsByMonth.get(key)![0].id,
     );
 
     const imageBlocks = await this.postBlockRepo.find({
       where: {
-        postId: In(posts.map((p) => p.id)),
+        postId: In(requestedPosts.map((p) => p.id)),
         type: PostBlockType.IMAGE,
       },
       order: {
@@ -293,9 +369,8 @@ export class GroupRecordService {
       locationBlocksByPostId.set(b.postId, list);
     }
 
-    // 7. 결과 구성
     const items: GroupMonthRecordResponseDto[] = [];
-    for (const mKey of slicedKeys) {
+    for (const mKey of monthKeys) {
       const monthPosts = postsByMonth.get(mKey)!;
       const latestPost = monthPosts[0];
 
