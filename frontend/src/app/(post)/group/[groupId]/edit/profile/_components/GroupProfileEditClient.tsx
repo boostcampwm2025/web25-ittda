@@ -40,7 +40,7 @@ export default function GroupProfileEditClient({
       let finalMediaId = groupData.me?.profileImage?.assetId ?? undefined;
 
       if (data.image) {
-        finalMediaId = (await uploadMultipleMedia([data.image]))[0];
+        finalMediaId = (await uploadMultipleMedia([data.image])).successIds[0];
       }
 
       await updateProfile({

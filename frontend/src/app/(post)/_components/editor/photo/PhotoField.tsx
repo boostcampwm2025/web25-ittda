@@ -22,6 +22,7 @@ export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
   const MAX_VISIBLE = 3;
 
   const mediaIds = photos.mediaIds || [];
+  const tempUrls = photos.tempUrls || [];
   const { data: resolvedData, isLoading } = useMediaResolveMulti(
     mediaIds,
     draftId,
@@ -32,18 +33,24 @@ export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
   );
 
   // mediaId 개수 기준으로 총 사진 수 계산 (로딩 중에도 개수 유지)
-  const totalCount =
-    mediaIds.length > 0 ? mediaIds.length : photos.tempUrls?.length || 0;
+  const totalCount = mediaIds.length > 0 ? mediaIds.length : tempUrls.length;
   const hasMore = totalCount > MAX_VISIBLE;
+
+  // tempUrls는 mediaIds 뒤쪽(tail)에 추가된 새 사진의 미리보기와 대응된다.
+  // (기록 수정 등 기존 mediaIds에는 대응하는 tempUrl이 없을 수 있음)
+  const tempUrlOffset = mediaIds.length - tempUrls.length;
 
   // URL 결정: tempUrl 우선, 없으면 resolved URL, 둘 다 없으면 null(스켈레톤)
   const photoSlots =
     mediaIds.length > 0
       ? mediaIds.slice(0, MAX_VISIBLE).map((id, i) => ({
           key: id,
-          url: photos.tempUrls?.[i] || urlMap.get(id) || null,
+          url:
+            (i >= tempUrlOffset ? tempUrls[i - tempUrlOffset] : undefined) ||
+            urlMap.get(id) ||
+            null,
         }))
-      : (photos.tempUrls || []).slice(0, MAX_VISIBLE).map((url, i) => ({
+      : tempUrls.slice(0, MAX_VISIBLE).map((url, i) => ({
           key: `temp-${i}`,
           url,
         }));

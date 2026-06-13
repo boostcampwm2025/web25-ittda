@@ -338,6 +338,8 @@ export default function PostEditor({
   const {
     pendingMetadata,
     pendingFilesRef,
+    isProcessingPhotos,
+    pendingPreviewUrls,
     handlePhotoUpload,
     handleApplyMetadata,
     handleSkipMetadata,
@@ -352,6 +354,7 @@ export default function PostEditor({
     uploadMultipleMedia,
     applyPatch,
     releaseLock,
+    removeBlock,
   });
 
   const { gridRef, isDraggingId, handleGridDragOver, handleDragEnd } =
@@ -746,9 +749,9 @@ export default function PostEditor({
             });
 
             if (filesToUpload.length > 0) {
-              const newMediaIds = await uploadMultipleMedia(filesToUpload);
+              const { successIds } = await uploadMultipleMedia(filesToUpload);
               const updatedValue = {
-                mediaIds: [...(block.value.mediaIds || []), ...newMediaIds],
+                mediaIds: [...(block.value.mediaIds || []), ...successIds],
                 tempUrls: [], // 업로드 완료 후 비움
               };
 
@@ -985,11 +988,17 @@ export default function PostEditor({
 
               let nextValue;
               if (mediaIds.length > 0) {
-                // draft 모드: mediaIds와 tempUrls가 인덱스 대응 — 같이 제거
+                // tempUrls는 mediaIds 뒤쪽(tail)에 추가된 새 사진의 미리보기와 대응됨
+                // (기록 수정 등 기존 mediaIds에는 대응하는 tempUrl이 없을 수 있음)
+                const tempUrlOffset = mediaIds.length - tempUrls.length;
+                const tempIdx = idx - tempUrlOffset;
                 nextValue = {
                   ...photoValue,
                   mediaIds: mediaIds.filter((_, i) => i !== idx),
-                  tempUrls: tempUrls.filter((_, i) => i !== idx),
+                  tempUrls:
+                    tempIdx >= 0
+                      ? tempUrls.filter((_, i) => i !== tempIdx)
+                      : tempUrls,
                 };
               } else {
                 // 일반 모드: tempUrls만
@@ -1013,6 +1022,8 @@ export default function PostEditor({
               handleCloseDrawer(id);
             }}
             draftId={draftId}
+            isUploading={isProcessingPhotos}
+            pendingPreviewUrls={pendingPreviewUrls}
           />
         );
       case 'emotion':
