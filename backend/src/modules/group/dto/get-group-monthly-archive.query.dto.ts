@@ -1,5 +1,13 @@
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min, IsEnum, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  Max,
+  Min,
+  IsString,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum GroupArchiveSortEnum {
@@ -23,6 +31,17 @@ export class GetGroupMonthlyArchiveQueryDto {
   @Max(3000)
   @IsOptional()
   year?: number;
+
+  @ApiProperty({
+    description: '연도 구분 없이 전체 월을 커서 기반으로 조회할지 여부',
+    example: true,
+    required: false,
+    default: false,
+  })
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  @IsOptional()
+  allYears?: boolean;
 
   @ApiProperty({
     description:
@@ -51,7 +70,7 @@ export class GetGroupMonthlyArchiveQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(60)
   @IsOptional()
   limit?: number = 12;
 }
