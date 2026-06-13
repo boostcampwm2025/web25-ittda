@@ -13,6 +13,8 @@ import { PostContributor } from '../post/entity/post-contributor.entity';
 import { PostScope } from '@/enums/post-scope.enum';
 import { UserMonthCover } from './entity/user-month-cover.entity';
 import { DayRecordResponseDto } from './dto/day-record.response.dto';
+import { PaginatedMonthRecordResponseDto } from './dto/month-record.response.dto';
+import { paginateMonthKeys } from '@/common/utils/month-cursor';
 
 import type { OAuthUserType } from '@/modules/auth/auth.type';
 
@@ -75,67 +77,118 @@ export class UserService {
     year: number,
   ): Promise<MonthRecordResponseDto[]> {
     this.cleanupStaleUserMonthCovers(userId);
-    // 1. 조회 기간 설정 (YYYY-01-01 ~ YYYY-12-31)
-    // 타임존은 일단 KST/UTC 이슈 없이 "해당 연도에 포함된" 모든 글을 가져온 뒤 JS에서 월별로 그룹핑하는 전략
-    // (DB Timezone issue를 피하기 위해 넉넉하게 가져와서 application level grouping)
-    const startDate = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
-      'year',
-    );
-    const endDate = startDate.endOf('year');
-
-    const from = startDate.toJSDate();
-    const to = endDate.toJSDate();
-
-    // 2. 해당 유저의 PERSONAL 포스트 조회 (내 글만)
-    const postsQb = this.postRepo.createQueryBuilder('p');
-    postsQb.select(['p.id', 'p.eventAt', 'p.title']);
-
-    postsQb.where('p.ownerUserId = :userId', { userId });
-    postsQb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
-
-    postsQb.andWhere('p.eventAt >= :from AND p.eventAt <= :to', { from, to });
-    postsQb.andWhere('p.deletedAt IS NULL');
-    postsQb.orderBy('p.eventAt', 'DESC'); // 최신순 정렬
-    postsQb.cache(true);
-
-    const posts = await postsQb.getMany();
+    const posts = await this.getMonthlyArchivePosts(userId, year);
 
     if (posts.length === 0) {
       return [];
     }
 
-    // 3. 월별 그룹핑
-    // Key: "YYYY-MM", Value: Post[]
+    const postsByMonth = this.groupPostsByMonth(posts);
+    const monthKeys = Array.from(postsByMonth.keys()).sort().reverse();
+
+    return this.buildMonthlyArchiveRecords(userId, postsByMonth, monthKeys);
+  }
+
+  async getMonthlyArchiveInfinite(
+    userId: string,
+    cursor?: string,
+    limit: number = 12,
+  ): Promise<PaginatedMonthRecordResponseDto> {
+    this.cleanupStaleUserMonthCovers(userId);
+    const posts = await this.getMonthlyArchivePosts(userId);
+
+    if (posts.length === 0) {
+      return {
+        items: [],
+        nextCursor: null,
+      };
+    }
+
+    const postsByMonth = this.groupPostsByMonth(posts);
+    const monthKeys = Array.from(postsByMonth.keys()).sort().reverse();
+    const { items: pagedMonthKeys, nextCursor } = paginateMonthKeys(
+      monthKeys,
+      cursor,
+      limit,
+    );
+
+    if (pagedMonthKeys.length === 0) {
+      return {
+        items: [],
+        nextCursor: null,
+      };
+    }
+
+    const items = await this.buildMonthlyArchiveRecords(
+      userId,
+      postsByMonth,
+      pagedMonthKeys,
+    );
+
+    return {
+      items,
+      nextCursor,
+    };
+  }
+
+  private async getMonthlyArchivePosts(userId: string, year?: number) {
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.select(['p.id', 'p.eventAt', 'p.title']);
+
+    postsQb.where('p.ownerUserId = :userId', { userId });
+    postsQb.andWhere('p.scope = :scope', { scope: PostScope.PERSONAL });
+    postsQb.andWhere('p.deletedAt IS NULL');
+
+    if (year) {
+      const startDate = DateTime.fromObject({ year, month: 1, day: 1 }).startOf(
+        'year',
+      );
+      const endDate = startDate.endOf('year');
+
+      postsQb.andWhere('p.eventAt >= :from AND p.eventAt <= :to', {
+        from: startDate.toJSDate(),
+        to: endDate.toJSDate(),
+      });
+    }
+
+    postsQb.orderBy('p.eventAt', 'DESC');
+    postsQb.cache(true);
+
+    return postsQb.getMany();
+  }
+
+  private groupPostsByMonth(posts: Post[]) {
     const postsByMonth = new Map<string, Post[]>();
 
-    for (const p of posts) {
-      if (!p.eventAt) continue;
-      // eventAt은 UTC로 저장됨. 클라이언트 뷰 기준(User TZ)이 중요하지만,
-      // 일단 간단히 KST(+9) 기준 or 그냥 UTC 기준으로 월을 자른다.
-      // 여기서는 요구사항에 맞춰 "YYYY-MM" 문자열 생성이 필요.
-      // Luxon을 사용하여 포맷팅 (default zone or system zone?)
-      // User의 Timezone을 알 수 없으므로, 일단 Asia/Seoul 기준으로 Grouping 하거나 UTC 등 합의 필요.
-      // 코드 맥락상 Default TZ를 따르거나 함. 여기서는 KST(Asia/Seoul) 가정.
-      const dt = DateTime.fromJSDate(p.eventAt).setZone('Asia/Seoul');
-      const monthKey = dt.toFormat('yyyy-MM');
-
+    for (const post of posts) {
+      if (!post.eventAt) continue;
+      const monthKey = DateTime.fromJSDate(post.eventAt)
+        .setZone('Asia/Seoul')
+        .toFormat('yyyy-MM');
       const list = postsByMonth.get(monthKey) ?? [];
-      list.push(p);
+      list.push(post);
       postsByMonth.set(monthKey, list);
     }
 
-    // 3.5 커버 이미지 매핑 조회 (UserMonthCover)
-    const customCovers = await this.userMonthCoverRepo.find({
-      where: { userId, year },
+    return postsByMonth;
+  }
+
+  private async buildMonthlyArchiveRecords(
+    userId: string,
+    postsByMonth: Map<string, Post[]>,
+    monthKeys: string[],
+  ): Promise<MonthRecordResponseDto[]> {
+    const requestedMonths = new Set(monthKeys);
+    const requestedPosts = monthKeys.flatMap((monthKey) => {
+      return postsByMonth.get(monthKey) ?? [];
     });
 
-    // 4. 각 월별 "대표(최신) 포스트 ID" 추출
-    const monthKeys = Array.from(postsByMonth.keys()).sort().reverse(); // 최신 달부터
-    const representativePostIds: string[] = [];
-    const representativePostMap = new Map<string, Post>(); // postId -> Post(latest)
+    const customCovers = await this.userMonthCoverRepo.find({
+      where: { userId },
+    });
 
-    // 결과 조립용 Map
-    // MonthKey -> PartialResult
+    const representativePostIds: string[] = [];
+
     const resultFromMonth = new Map<
       string,
       {
@@ -146,7 +199,6 @@ export class UserService {
 
     for (const mKey of monthKeys) {
       const monthPosts = postsByMonth.get(mKey)!;
-      // 이미 쿼리에서 eventAt DESC 정렬했으므로 첫번째가 최신
       const latestPost = monthPosts[0];
 
       resultFromMonth.set(mKey, {
@@ -155,12 +207,11 @@ export class UserService {
       });
 
       representativePostIds.push(latestPost.id);
-      representativePostMap.set(latestPost.id, latestPost);
     }
 
     const imageBlocks = await this.postBlockRepo.find({
       where: {
-        postId: In(posts.map((p) => p.id)),
+        postId: In(requestedPosts.map((p) => p.id)),
         type: PostBlockType.IMAGE,
       },
       order: {
@@ -199,6 +250,7 @@ export class UserService {
     for (const c of customCovers) {
       if (!c.coverAssetId) continue;
       const key = `${c.year}-${c.month.toString().padStart(2, '0')}`;
+      if (!requestedMonths.has(key)) continue;
       const validSet = validMediaIdsByMonth.get(key);
       if (!validSet || !validSet.has(c.coverAssetId)) {
         invalidCoverIds.push(c.id);

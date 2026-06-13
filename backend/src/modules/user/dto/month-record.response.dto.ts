@@ -30,3 +30,14 @@ export class MonthRecordResponseDto {
   @Expose()
   latestLocation: string | null;
 }
+
+export class PaginatedMonthRecordResponseDto {
+  @ApiProperty({ type: [MonthRecordResponseDto] })
+  items: MonthRecordResponseDto[];
+
+  @ApiProperty({
+    description: '다음 페이지 커서 (없으면 null)',
+    nullable: true,
+  })
+  nextCursor: string | null;
+}

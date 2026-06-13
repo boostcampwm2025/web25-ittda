@@ -21,7 +21,10 @@ import { User } from '@/common/decorators/user.decorator';
 
 import { GetMonthlyArchiveQueryDto } from './dto/get-monthly-archive.query.dto';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
-import { MonthRecordResponseDto } from './dto/month-record.response.dto';
+import {
+  MonthRecordResponseDto,
+  PaginatedMonthRecordResponseDto,
+} from './dto/month-record.response.dto';
 import { UpdateMonthCoverBodyDto } from './dto/update-month-cover.body.dto';
 import { GetDailyArchiveQueryDto } from './dto/get-daily-archive.query.dto';
 import { DayRecordResponseDto } from './dto/day-record.response.dto';
@@ -48,19 +51,31 @@ export class UserController {
     summary: '사용자 월별 아카이브 조회',
     description: '로그인한 사용자의 월별 기록 요약 목록을 조회합니다.',
   })
-  @ApiWrappedOkResponse({ type: MonthRecordResponseDto, isArray: true })
+  @ApiWrappedOkResponse({ type: Object })
   async getMonthlyArchive(
     @User() user: MyJwtPayload,
     @Query() query: GetMonthlyArchiveQueryDto,
-  ): Promise<{ data: MonthRecordResponseDto[] }> {
+  ): Promise<{
+    data: MonthRecordResponseDto[] | PaginatedMonthRecordResponseDto;
+  }> {
     const userId = user?.sub;
     if (!userId) {
       throw new UnauthorizedException('Access token is required.');
     }
 
+    if (query.allYears) {
+      const data = await this.userService.getMonthlyArchiveInfinite(
+        userId,
+        query.cursor,
+        query.limit,
+      );
+
+      return { data };
+    }
+
     const data = await this.userService.getMonthlyArchive(
       userId,
-      query.year ?? new Date().getFullYear(), // 기본값: 올해
+      query.year ?? new Date().getFullYear(),
     );
 
     return { data };
