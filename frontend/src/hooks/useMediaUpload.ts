@@ -30,15 +30,24 @@ export interface UploadedMedia {
   uploadUrl: string; // presigned PUT URL (업로드 직후 임시 표시용)
 }
 
+export interface UploadMultipleResult {
+  successIds: string[];
+  // files 배열 기준, 업로드 또는 완료 확정에 실패한 인덱스 (오름차순)
+  failedIndices: number[];
+}
+
 export const useMediaUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   /**
-   * 여러 파일 업로드 후 mediaId 배열 반환
-   * draft 모드에서는 uploadUrl도 함께 반환하여 PATCH_COMMITTED 전 임시 미리보기에 활용
+   * 여러 파일 업로드 후 성공한 mediaId와 실패한 파일의 인덱스를 반환
+   * 일부만 실패한 경우 성공한 파일만 successIds에 담고 failedIndices로 실패 위치를 알려준다.
+   * 전부 실패하면 에러를 throw한다.
    */
-  const uploadMultipleMedia = async (files: File[]): Promise<string[]> => {
-    if (files.length === 0) return [];
+  const uploadMultipleMedia = async (
+    files: File[],
+  ): Promise<UploadMultipleResult> => {
+    if (files.length === 0) return { successIds: [], failedIndices: [] };
     setIsUploading(true);
 
     try {
@@ -60,7 +69,7 @@ export const useMediaUpload = () => {
         })),
       );
 
-      await Promise.all(
+      const uploadResults = await Promise.allSettled(
         presignItems.map((item, index) =>
           uploadFileToStorage(
             item.uploadUrl,
@@ -70,10 +79,49 @@ export const useMediaUpload = () => {
         ),
       );
 
-      const mediaIds = presignItems.map((item) => item.mediaId);
-      const successIds = await postMediaComplete(mediaIds);
+      const succeededIndices: number[] = [];
+      const failedIndices: number[] = [];
+      uploadResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          succeededIndices.push(index);
+        } else {
+          failedIndices.push(index);
+          Sentry.captureException(result.reason, {
+            tags: { context: 'media', operation: 'upload-single' },
+            extra: {
+              fileName: files[index].name,
+              fileType: files[index].type,
+            },
+          });
+          logger.error('이미지 업로드 실패', result.reason);
+        }
+      });
 
-      return successIds;
+      if (succeededIndices.length === 0) {
+        throw new Error('모든 이미지 업로드에 실패했습니다.');
+      }
+
+      const succeededMediaIds = succeededIndices.map(
+        (index) => presignItems[index].mediaId,
+      );
+      const completedIds = await postMediaComplete(succeededMediaIds);
+
+      if (completedIds.length === 0) {
+        throw new Error('모든 이미지 업로드에 실패했습니다.');
+      }
+
+      const completedSet = new Set(completedIds);
+      const successIds: string[] = [];
+      succeededIndices.forEach((index) => {
+        const mediaId = presignItems[index].mediaId;
+        if (completedSet.has(mediaId)) {
+          successIds.push(mediaId);
+        } else {
+          failedIndices.push(index);
+        }
+      });
+
+      return { successIds, failedIndices: failedIndices.sort((a, b) => a - b) };
     } catch (error) {
       if ((error as ApiError)?.code === 'TIMEOUT') {
         toast.error('이미지 업로드 시간이 초과되었습니다.', {

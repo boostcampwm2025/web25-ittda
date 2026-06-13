@@ -28,7 +28,7 @@ export default function ProfileEditClient() {
       let finalMediaId = profile?.user.profileImageId;
 
       if (data.image) {
-        finalMediaId = (await uploadMultipleMedia([data.image]))[0];
+        finalMediaId = (await uploadMultipleMedia([data.image])).successIds[0];
       }
 
       const response = await updateUserProfile({

@@ -11,11 +11,15 @@ import {
   ExifMetadata,
 } from '@/lib/utils/exifExtractor';
 
-import { normalizeLayout } from '../_utils/recordLayoutHelper';
+import {
+  isRecordBlockEmpty,
+  normalizeLayout,
+} from '../_utils/recordLayoutHelper';
 import { MULTI_INSTANCE_LIMITS } from '@/lib/constants/record';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
+import { UploadMultipleResult } from '@/hooks/useMediaUpload';
 
 interface ImageWithMetadata {
   imageUrl: string;
@@ -46,9 +50,10 @@ interface RecordEditorPhotos {
   >;
   handleDone: (val: BlockValue, shouldClose?: boolean) => void;
   draftId?: string;
-  uploadMultipleMedia?: (files: File[]) => Promise<string[]>;
+  uploadMultipleMedia?: (files: File[]) => Promise<UploadMultipleResult>;
   applyPatch?: (patch: PatchApplyPayload | PatchApplyPayload[]) => void;
   releaseLock?: (lockKey: string) => void;
+  removeBlock?: (id: string) => void;
 }
 const PHOTO_LIMIT = MULTI_INSTANCE_LIMITS['photos'] || 5;
 export function useRecordEditorPhotos({
@@ -61,6 +66,7 @@ export function useRecordEditorPhotos({
   uploadMultipleMedia,
   applyPatch,
   releaseLock,
+  removeBlock,
 }: RecordEditorPhotos) {
   // draft 모드에서 생성한 blob URL 목록 — 언마운트 시 revoke
   const blobUrlsRef = useRef<string[]>([]);
@@ -85,6 +91,15 @@ export function useRecordEditorPhotos({
       };
     };
   } | null>(null);
+
+  // 사진 업로드 ~ EXIF 추출 ~ 블록/메타데이터 반영까지 전체 처리 중 여부.
+  // 이 동안 PhotoDrawer를 닫지 못하게 막아야 activeDrawer가 바뀌어
+  // 업로드 결과가 다른 블록에 잘못 반영되거나 유실되는 문제를 방지할 수 있다.
+  const [isProcessingPhotos, setIsProcessingPhotos] = useState(false);
+
+  // 서버 업로드가 끝나기 전, 본인 화면에 먼저 보여줄 미리보기 URL (blob/data URL).
+  // 블록에 반영(3단계) 또는 처리 종료 시 비워진다.
+  const [pendingPreviewUrls, setPendingPreviewUrls] = useState<string[]>([]);
 
   /**
    * 사진 업로드
@@ -127,160 +142,213 @@ export function useRecordEditorPhotos({
     let uploadedIds: string[] = [];
     let newImages: string[] = [];
 
-    // 1단계: 이미지 업로드 + 미리보기 URL 생성 (핵심 단계 — 실패 시 toast)
-    // draft 모드: blob URL 사용 (HEIC 등 WebView에서 data URL 렌더링 불가 문제 방지)
-    // 일반 모드: data URL 사용 (저장 시 pendingFilesRef로 File 매칭 필요)
-    let dataUrls: string[] = []; // EXIF 추출용 data URL (draft 포함)
+    setIsProcessingPhotos(true);
     try {
-      if (isDraft) {
-        // Android content:// URI 소진 문제 방지:
-        // getImageDimensions·XHR·exifr 등 여러 작업이 동일 File을 읽으면
-        // 이후 <img>가 blob URL에서 읽으려 할 때 content URI가 이미 닫혀 이미지가 깨짐.
-        // arrayBuffer()로 한 번에 메모리로 읽어 in-memory 복사본을 만든 뒤
-        // 모든 후속 작업(표시·업로드·EXIF)에 복사본을 사용.
-        const buffers = await Promise.all(
-          filesToRead.map((f) => f.arrayBuffer()),
-        );
-        filesToRead = filesToRead.map(
-          (file, i) =>
-            new File([buffers[i]], file.name, {
-              type: file.type || 'image/jpeg',
-            }),
-        );
-        newImages = buffers.map((buffer, i) => {
-          const blob = new Blob([buffer], {
-            type: filesToRead[i].type || 'image/jpeg',
-          });
-          const url = URL.createObjectURL(blob);
-          blobUrlsRef.current.push(url);
-          return url;
-        });
-        dataUrls = newImages;
-      }
-
-      if (isDraft && uploadMultipleMedia) {
-        uploadedIds = await uploadMultipleMedia(filesToRead);
-      }
-
-      if (!isDraft) {
-        newImages = await Promise.all(
-          filesToRead.map(
-            (file) =>
-              new Promise<string>((res, rej) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                  const url = ev.target?.result as string;
-                  pendingFilesRef.current.set(url, file);
-                  res(url);
-                };
-                reader.onerror = rej;
-                reader.readAsDataURL(file);
+      // 1단계: 이미지 업로드 + 미리보기 URL 생성 (핵심 단계 — 실패 시 toast)
+      // draft 모드: blob URL 사용 (HEIC 등 WebView에서 data URL 렌더링 불가 문제 방지)
+      // 일반 모드: data URL 사용 (저장 시 pendingFilesRef로 File 매칭 필요)
+      let dataUrls: string[] = []; // EXIF 추출용 data URL (draft 포함)
+      try {
+        if (isDraft) {
+          // Android content:// URI 소진 문제 방지:
+          // getImageDimensions·XHR·exifr 등 여러 작업이 동일 File을 읽으면
+          // 이후 <img>가 blob URL에서 읽으려 할 때 content URI가 이미 닫혀 이미지가 깨짐.
+          // arrayBuffer()로 한 번에 메모리로 읽어 in-memory 복사본을 만든 뒤
+          // 모든 후속 작업(표시·업로드·EXIF)에 복사본을 사용.
+          const buffers = await Promise.all(
+            filesToRead.map((f) => f.arrayBuffer()),
+          );
+          filesToRead = filesToRead.map(
+            (file, i) =>
+              new File([buffers[i]], file.name, {
+                type: file.type || 'image/jpeg',
               }),
-          ),
-        );
-        dataUrls = newImages;
-      }
-    } catch (err) {
-      Sentry.captureException(err, {
-        level: 'error',
-        tags: { context: 'post-editor', operation: 'image-upload' },
-        extra: { isDraft },
-      });
-      logger.error('이미지 업로드에 실패', err);
-      toast.error('이미지 업로드에 실패했습니다.');
-      e.target.value = '';
-      return;
-    }
-
-    // 2단계: EXIF 메타데이터 추출 (실패해도 이미지 추가는 계속 진행)
-    let allImagesWithMetadata: {
-      imageUrl: string;
-      metadata: ExifMetadata;
-    }[] = [];
-    try {
-      const existingImagesWithMetadata = await Promise.all(
-        (currentPhotoValue.tempUrls || []).map(async (url) => ({
-          imageUrl: url,
-          metadata: await extractExifFromDataUrl(url),
-        })),
-      );
-
-      const newImagesWithMetadata = (
-        await Promise.all(
-          isDraft
-            ? // draft 모드: File 객체로 직접 EXIF 추출 (blob URL은 exifr 파싱 불가)
-              filesToRead.map(async (file, i) => ({
-                imageUrl: newImages[i],
-                metadata: await extractExifMetadata(file),
-              }))
-            : // 일반 모드: data URL로 EXIF 추출
-              dataUrls.map(async (url, i) => ({
-                imageUrl: newImages[i],
-                metadata: await extractExifFromDataUrl(url),
-              })),
-        )
-      ).filter((img) => img.metadata.hasMetadata);
-
-      allImagesWithMetadata = [
-        ...existingImagesWithMetadata.filter((img) => img.metadata.hasMetadata),
-        ...newImagesWithMetadata,
-      ];
-    } catch {
-      // EXIF 추출 실패는 무시 — 이미지 추가는 정상 진행
-    }
-
-    // 3단계: 메타데이터 있으면 drawer, 없으면 바로 추가
-    if (allImagesWithMetadata.length > 0) {
-      setPendingMetadata((prev) => ({
-        images: allImagesWithMetadata,
-        newImageUrls: newImages,
-        uploadedIds: uploadedIds.length > 0 ? uploadedIds : undefined,
-        appliedMetadata: prev?.appliedMetadata || {},
-      }));
-    } else {
-      if (draftId) {
-        // draft 모드: handleApplyMetadata와 동일하게 setBlocks + applyPatch + 드로어 직접 닫기
-        // handleDone → handleCloseDrawer 경로는 다른 collaborator의 patch와 버전 충돌 가능성 있음
-        const photosBlockId = activeDrawer?.id;
-        const nextValue: PhotoValue = {
-          mediaIds: [...(existingPhotos?.value.mediaIds || []), ...uploadedIds],
-          // tempUrls: 로컬 미리보기용 fallback — WebSocket 전송 시에는 제거됨 (useRecordCollaboration.applyPatch)
-          tempUrls: [...(existingPhotos?.value.tempUrls || []), ...newImages],
-        };
-
-        setBlocks((prev) =>
-          prev.map((b) =>
-            b.id === photosBlockId && b.type === 'photos'
-              ? ({ ...b, value: nextValue } as RecordBlock)
-              : b,
-          ),
-        );
-
-        if (photosBlockId && applyPatch) {
-          applyPatch({
-            type: 'BLOCK_SET_VALUE',
-            blockId: photosBlockId,
-            value: nextValue,
+          );
+          newImages = buffers.map((buffer, i) => {
+            const blob = new Blob([buffer], {
+              type: filesToRead[i].type || 'image/jpeg',
+            });
+            const url = URL.createObjectURL(blob);
+            blobUrlsRef.current.push(url);
+            return url;
           });
+          dataUrls = newImages;
+          // 업로드 완료 전 자기 자신에게 먼저 미리보기 표시
+          setPendingPreviewUrls(newImages);
         }
 
-        if (photosBlockId && releaseLock) {
-          releaseLock(`block:${photosBlockId}`);
+        if (isDraft && uploadMultipleMedia) {
+          const uploadResult = await uploadMultipleMedia(filesToRead);
+          uploadedIds = uploadResult.successIds;
+
+          if (uploadResult.failedIndices.length > 0) {
+            const failedSet = new Set(uploadResult.failedIndices);
+
+            // 업로드 실패한 이미지는 blob URL을 해제하고
+            // 결과/미리보기/EXIF 추출 대상에서 제외한다.
+            newImages.forEach((url, i) => {
+              if (failedSet.has(i)) {
+                URL.revokeObjectURL(url);
+                blobUrlsRef.current = blobUrlsRef.current.filter(
+                  (u) => u !== url,
+                );
+              }
+            });
+            filesToRead = filesToRead.filter((_, i) => !failedSet.has(i));
+            newImages = newImages.filter((_, i) => !failedSet.has(i));
+            dataUrls = dataUrls.filter((_, i) => !failedSet.has(i));
+            setPendingPreviewUrls(newImages);
+
+            toast.warning(
+              `${uploadResult.failedIndices.length}장의 이미지 업로드에 실패해 제외되었습니다.`,
+            );
+          }
         }
 
-        // handleApplyMetadata와 동일하게 드로어를 직접 닫아 handleCloseDrawer 경유를 막음
-        // handleCloseDrawer가 닫힐 때 PATCH_APPLY를 재전송하면 버전 충돌로 PATCH_REJECTED_STALE 발생
-        setActiveDrawer(null);
-      } else {
-        const updatedPhotoValue: PhotoValue = {
-          ...currentPhotoValue,
-          tempUrls: [...(currentPhotoValue.tempUrls || []), ...newImages],
-        };
-        handleDone(updatedPhotoValue, false);
+        if (!isDraft) {
+          newImages = await Promise.all(
+            filesToRead.map(
+              (file) =>
+                new Promise<string>((res, rej) => {
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    const url = ev.target?.result as string;
+                    pendingFilesRef.current.set(url, file);
+                    res(url);
+                  };
+                  reader.onerror = rej;
+                  reader.readAsDataURL(file);
+                }),
+            ),
+          );
+          dataUrls = newImages;
+          setPendingPreviewUrls(newImages);
+        }
+      } catch (err) {
+        // 업로드 실패로 사용되지 않게 된 blob URL 정리 (draft 모드)
+        newImages.forEach((url) => {
+          if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+        });
+        blobUrlsRef.current = blobUrlsRef.current.filter(
+          (u) => !newImages.includes(u),
+        );
+
+        Sentry.captureException(err, {
+          level: 'error',
+          tags: { context: 'post-editor', operation: 'image-upload' },
+          extra: { isDraft },
+        });
+        logger.error('이미지 업로드에 실패', err);
+        toast.error('이미지 업로드에 실패했습니다.');
+
+        // 새로 생성된 빈 사진 블록이라면(기존 이미지 없음) 블록 자체를 제거
+        const photosBlockId = activeDrawer?.id;
+        if (
+          photosBlockId &&
+          removeBlock &&
+          isRecordBlockEmpty(currentPhotoValue)
+        ) {
+          removeBlock(photosBlockId);
+          setActiveDrawer(null);
+        }
+
+        e.target.value = '';
+        return;
       }
-    }
 
-    e.target.value = '';
+      // 2단계: EXIF 메타데이터 추출 (실패해도 이미지 추가는 계속 진행)
+      let allImagesWithMetadata: {
+        imageUrl: string;
+        metadata: ExifMetadata;
+      }[] = [];
+      try {
+        const existingImagesWithMetadata = await Promise.all(
+          (currentPhotoValue.tempUrls || []).map(async (url) => ({
+            imageUrl: url,
+            metadata: await extractExifFromDataUrl(url),
+          })),
+        );
+
+        const newImagesWithMetadata = (
+          await Promise.all(
+            isDraft
+              ? // draft 모드: File 객체로 직접 EXIF 추출 (blob URL은 exifr 파싱 불가)
+                filesToRead.map(async (file, i) => ({
+                  imageUrl: newImages[i],
+                  metadata: await extractExifMetadata(file),
+                }))
+              : // 일반 모드: data URL로 EXIF 추출
+                dataUrls.map(async (url, i) => ({
+                  imageUrl: newImages[i],
+                  metadata: await extractExifFromDataUrl(url),
+                })),
+          )
+        ).filter((img) => img.metadata.hasMetadata);
+
+        allImagesWithMetadata = [
+          ...existingImagesWithMetadata.filter((img) => img.metadata.hasMetadata),
+          ...newImagesWithMetadata,
+        ];
+      } catch {
+        // EXIF 추출 실패는 무시 — 이미지 추가는 정상 진행
+      }
+
+      // 3단계: 메타데이터 있으면 drawer, 없으면 바로 추가
+      if (allImagesWithMetadata.length > 0) {
+        setPendingMetadata((prev) => ({
+          images: allImagesWithMetadata,
+          newImageUrls: newImages,
+          uploadedIds: uploadedIds.length > 0 ? uploadedIds : undefined,
+          appliedMetadata: prev?.appliedMetadata || {},
+        }));
+      } else {
+        if (draftId) {
+          // draft 모드: handleApplyMetadata와 동일하게 setBlocks + applyPatch + 드로어 직접 닫기
+          // handleDone → handleCloseDrawer 경로는 다른 collaborator의 patch와 버전 충돌 가능성 있음
+          const photosBlockId = activeDrawer?.id;
+          const nextValue: PhotoValue = {
+            mediaIds: [...(existingPhotos?.value.mediaIds || []), ...uploadedIds],
+            // tempUrls: 로컬 미리보기용 fallback — WebSocket 전송 시에는 제거됨 (useRecordCollaboration.applyPatch)
+            tempUrls: [...(existingPhotos?.value.tempUrls || []), ...newImages],
+          };
+
+          setBlocks((prev) =>
+            prev.map((b) =>
+              b.id === photosBlockId && b.type === 'photos'
+                ? ({ ...b, value: nextValue } as RecordBlock)
+                : b,
+            ),
+          );
+
+          if (photosBlockId && applyPatch) {
+            applyPatch({
+              type: 'BLOCK_SET_VALUE',
+              blockId: photosBlockId,
+              value: nextValue,
+            });
+          }
+
+          if (photosBlockId && releaseLock) {
+            releaseLock(`block:${photosBlockId}`);
+          }
+
+          // handleApplyMetadata와 동일하게 드로어를 직접 닫아 handleCloseDrawer 경유를 막음
+          // handleCloseDrawer가 닫힐 때 PATCH_APPLY를 재전송하면 버전 충돌로 PATCH_REJECTED_STALE 발생
+          setActiveDrawer(null);
+        } else {
+          const updatedPhotoValue: PhotoValue = {
+            ...currentPhotoValue,
+            tempUrls: [...(currentPhotoValue.tempUrls || []), ...newImages],
+          };
+          handleDone(updatedPhotoValue, false);
+        }
+      }
+
+      e.target.value = '';
+    } finally {
+      setIsProcessingPhotos(false);
+      setPendingPreviewUrls([]);
+    }
   };
 
   /**
@@ -637,6 +705,8 @@ export function useRecordEditorPhotos({
   return {
     pendingMetadata,
     pendingFilesRef,
+    isProcessingPhotos,
+    pendingPreviewUrls,
     handlePhotoUpload,
     handleApplyMetadata,
     handleSkipMetadata,
