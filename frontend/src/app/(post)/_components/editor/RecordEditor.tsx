@@ -57,7 +57,7 @@ import AuthLoadingScreen from '@/components/AuthLoadingScreen';
 import { useRecordEditorPhotos } from '../../_hooks/useRecordEditorPhotos';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalDraft, PERSONAL_DRAFT_KEY } from '@/hooks/useLocalDraft';
+import { useLocalDraft, getDraftKey } from '@/hooks/useLocalDraft';
 import {
   saveDraftPhotos,
   loadDraftPhotos,
@@ -232,13 +232,14 @@ export default function PostEditor({
     title: string;
     blocks: RecordBlock[];
   } | null>(null);
-  const { saveDraft, loadDraft, clearDraft } =
-    useLocalDraft(PERSONAL_DRAFT_KEY);
+  // 개인 글과 그룹별 글의 임시저장을 분리하기 위한 키
+  const draftStorageKey = getDraftKey(groupId);
+  const { saveDraft, loadDraft, clearDraft } = useLocalDraft(draftStorageKey);
 
   const clearDraftAndPhotos = useCallback(() => {
     clearDraft();
-    clearDraftPhotos(PERSONAL_DRAFT_KEY).catch(() => {});
-  }, [clearDraft]);
+    clearDraftPhotos(draftStorageKey).catch(() => {});
+  }, [clearDraft, draftStorageKey]);
 
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
@@ -409,7 +410,7 @@ export default function PostEditor({
         }
       }
       if (photoData.length > 0) {
-        saveDraftPhotos(PERSONAL_DRAFT_KEY, photoData).catch(() => {});
+        saveDraftPhotos(draftStorageKey, photoData).catch(() => {});
       }
 
       setDraftSavedAt(new Date());
@@ -423,6 +424,7 @@ export default function PostEditor({
     isSaving,
     isPublishing,
     saveDraft,
+    draftStorageKey,
     pendingFilesRef,
   ]);
 
@@ -446,7 +448,7 @@ export default function PostEditor({
         label: '이어서 작성',
         onClick: async () => {
           // IndexedDB에서 사진 복원
-          const photos = await loadDraftPhotos(PERSONAL_DRAFT_KEY).catch(
+          const photos = await loadDraftPhotos(draftStorageKey).catch(
             () => null,
           );
 

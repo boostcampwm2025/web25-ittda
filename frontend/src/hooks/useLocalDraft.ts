@@ -3,6 +3,12 @@ import { RecordBlock } from '@/lib/types/record';
 
 export const PERSONAL_DRAFT_KEY = 'personal-record-draft';
 
+// 개인 글은 공통 키, 그룹 내 개인 글은 그룹별로 별도 키를 사용해 서로 다른 글의
+// 임시저장이 섞여 노출되지 않도록 한다.
+export function getDraftKey(groupId?: string): string {
+  return groupId ? `group-${groupId}-record-draft` : PERSONAL_DRAFT_KEY;
+}
+
 export interface DraftData {
   title: string;
   blocks: RecordBlock[];
