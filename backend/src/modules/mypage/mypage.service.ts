@@ -182,7 +182,22 @@ export class MyPageService {
       };
     }
 
-    const nextAdmin = pickNextGroupAdmin(remainingMembers);
+    const adminTransferCandidates = remainingMembers.filter(
+      (groupMember) => groupMember.role !== GroupRoleEnum.VIEWER,
+    );
+
+    if (adminTransferCandidates.length === 0) {
+      const draftInvalidation = await this.groupService.deleteGroupWithManager(
+        manager,
+        membership.groupId,
+      );
+      return {
+        draftInvalidation,
+        mediaDeletionPlans: draftInvalidation.mediaDeletionPlans,
+      };
+    }
+
+    const nextAdmin = pickNextGroupAdmin(adminTransferCandidates);
 
     if (!nextAdmin) {
       throw new BadRequestException(
