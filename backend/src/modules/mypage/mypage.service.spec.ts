@@ -59,6 +59,7 @@ type TxRefreshTokenRepo = {
 
 type TxUserRepo = {
   createQueryBuilder: jest.Mock;
+  update: jest.Mock;
   softDelete: jest.Mock;
 };
 
@@ -158,6 +159,7 @@ describe('MyPageService', () => {
     };
     txUserRepo = {
       createQueryBuilder: jest.fn(),
+      update: jest.fn(),
       softDelete: jest.fn(),
     };
 
@@ -203,6 +205,117 @@ describe('MyPageService', () => {
       mediaService as unknown as MediaService,
       postDraftCleanupService as unknown as PostDraftCleanupService,
     );
+  });
+
+  describe('updateProfile', () => {
+    it('deletes the previous personal profile image when replaced', async () => {
+      txUserRepo.createQueryBuilder.mockReturnValue(
+        createUserQueryBuilder({
+          id: 'user-1',
+          nickname: '길동이',
+          profileImageId: 'old-profile',
+        }),
+      );
+      txUserRepo.update.mockResolvedValue({ affected: 1 });
+      userRepo.findOneBy.mockResolvedValue({
+        id: 'user-1',
+        nickname: '길동이',
+        profileImageId: 'new-profile',
+      });
+      mediaService.deleteOrphanMediaCandidatesWithManager.mockResolvedValue([
+        { id: 'old-profile', storageKey: 'profile/old' },
+      ]);
+      mediaService.deleteMediaAssets.mockResolvedValue(undefined);
+
+      const updated = await service.updateProfile(
+        'user-1',
+        undefined,
+        'new-profile',
+      );
+
+      expect(txUserRepo.update).toHaveBeenCalledWith('user-1', {
+        profileImageId: 'new-profile',
+      });
+      expect(
+        mediaService.deleteOrphanMediaCandidatesWithManager,
+      ).toHaveBeenCalledWith(transactionManager, ['old-profile']);
+      expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
+        { id: 'old-profile', storageKey: 'profile/old' },
+      ]);
+      expect(updated).toEqual({
+        id: 'user-1',
+        nickname: '길동이',
+        profileImageId: 'new-profile',
+      });
+    });
+
+    it('deletes the previous personal profile image when cleared', async () => {
+      txUserRepo.createQueryBuilder.mockReturnValue(
+        createUserQueryBuilder({
+          id: 'user-1',
+          nickname: '길동이',
+          profileImageId: 'old-profile',
+        }),
+      );
+      txUserRepo.update.mockResolvedValue({ affected: 1 });
+      userRepo.findOneBy.mockResolvedValue({
+        id: 'user-1',
+        nickname: '길동이',
+        profileImageId: null,
+      });
+      mediaService.deleteOrphanMediaCandidatesWithManager.mockResolvedValue([
+        { id: 'old-profile', storageKey: 'profile/old' },
+      ]);
+      mediaService.deleteMediaAssets.mockResolvedValue(undefined);
+
+      const updated = await service.updateProfile('user-1', undefined, null);
+
+      expect(txUserRepo.update).toHaveBeenCalledWith('user-1', {
+        profileImageId: null,
+      });
+      expect(
+        mediaService.deleteOrphanMediaCandidatesWithManager,
+      ).toHaveBeenCalledWith(transactionManager, ['old-profile']);
+      expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
+        { id: 'old-profile', storageKey: 'profile/old' },
+      ]);
+      expect(updated).toEqual({
+        id: 'user-1',
+        nickname: '길동이',
+        profileImageId: null,
+      });
+    });
+
+    it('does not clean up profile media when only the nickname changes', async () => {
+      txUserRepo.createQueryBuilder.mockReturnValue(
+        createUserQueryBuilder({
+          id: 'user-1',
+          nickname: '길동이',
+          profileImageId: 'current-profile',
+        }),
+      );
+      txUserRepo.update.mockResolvedValue({ affected: 1 });
+      userRepo.findOneBy.mockResolvedValue({
+        id: 'user-1',
+        nickname: '고길동',
+        profileImageId: 'current-profile',
+      });
+
+      const updated = await service.updateProfile('user-1', '고길동');
+
+      expect(txUserRepo.update).toHaveBeenCalledWith('user-1', {
+        nickname: '고길동',
+      });
+      expect(
+        mediaService.deleteOrphanMediaCandidatesWithManager,
+      ).not.toHaveBeenCalled();
+      expect(mediaService.deleteMediaAssets).not.toHaveBeenCalled();
+      expect(updated).toEqual({
+        id: 'user-1',
+        nickname: '고길동',
+        profileImageId: 'current-profile',
+      });
+    });
   });
 
   describe('withdraw', () => {
