@@ -517,6 +517,97 @@ describe('MyPageService', () => {
       ]);
     });
 
+    it('deletes the group instead of promoting a viewer when only viewers remain', async () => {
+      const joinedAt = new Date('2026-05-02T00:00:00.000Z');
+
+      txUserRepo.createQueryBuilder.mockReturnValue(
+        createUserQueryBuilder({ id: 'user-1' }),
+      );
+      txGroupMemberRepo.createQueryBuilder
+        .mockReturnValueOnce(
+          createMembershipQueryBuilder([
+            {
+              id: 'gm-admin',
+              groupId: 'group-1',
+              userId: 'user-1',
+              role: GroupRoleEnum.ADMIN,
+              joinedAt,
+              profileMediaId: 'profile-group-1',
+            },
+          ]),
+        )
+        .mockReturnValueOnce(
+          createMembershipQueryBuilder([
+            {
+              id: 'gm-admin',
+              groupId: 'group-1',
+              userId: 'user-1',
+              role: GroupRoleEnum.ADMIN,
+              joinedAt,
+              profileMediaId: 'profile-group-1',
+            },
+            {
+              id: 'gm-viewer',
+              groupId: 'group-1',
+              userId: 'user-2',
+              role: GroupRoleEnum.VIEWER,
+              joinedAt: new Date('2026-04-01T00:00:00.000Z'),
+              profileMediaId: null,
+            },
+          ]),
+        );
+      txPostRepo.find.mockResolvedValue([]);
+      mediaService.collectPostMediaIdsWithManager.mockResolvedValue([]);
+      mediaService.collectUserMonthCoverMediaIdsWithManager.mockResolvedValue(
+        [],
+      );
+      groupService.deleteGroupWithManager.mockResolvedValue({
+        draftIds: ['draft-group-1'],
+        groupIds: ['group-1'],
+        reason: 'GROUP_DELETED',
+        mediaDeletionPlans: [{ id: 'group-1-media', storageKey: 'group/1' }],
+      });
+      mediaService.deleteOrphanMediaCandidatesWithManager.mockResolvedValueOnce(
+        [],
+      );
+      postDraftCleanupService.notifyDraftInvalidations.mockResolvedValue(
+        undefined,
+      );
+      mediaService.deleteMediaAssets.mockResolvedValue(undefined);
+      txPostRepo.update.mockResolvedValue({ affected: 1 });
+      txPostRepo.softDelete.mockResolvedValue({ affected: 1 });
+      txTemplateRepo.softDelete.mockResolvedValue({ affected: 1 });
+      txUserMonthCoverRepo.delete.mockResolvedValue({ affected: 1 });
+      txRefreshTokenRepo.update.mockResolvedValue({ affected: 1 });
+      txUserRepo.softDelete.mockResolvedValue({ affected: 1 });
+
+      await service.withdraw('user-1');
+
+      expect(groupService.deleteGroupWithManager).toHaveBeenCalledWith(
+        transactionManager,
+        'group-1',
+      );
+      expect(txGroupMemberRepo.save).not.toHaveBeenCalled();
+      expect(txGroupMemberRepo.softDelete).not.toHaveBeenCalled();
+      expect(
+        postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager,
+      ).not.toHaveBeenCalled();
+      expect(txUserRepo.softDelete).toHaveBeenCalledWith('user-1');
+      expect(
+        postDraftCleanupService.notifyDraftInvalidations,
+      ).toHaveBeenCalledWith([
+        {
+          draftIds: ['draft-group-1'],
+          groupIds: ['group-1'],
+          reason: 'GROUP_DELETED',
+          mediaDeletionPlans: [{ id: 'group-1-media', storageKey: 'group/1' }],
+        },
+      ]);
+      expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
+        { id: 'group-1-media', storageKey: 'group/1' },
+      ]);
+    });
+
     it('throws when the user is already deleted or missing', async () => {
       txUserRepo.createQueryBuilder.mockReturnValue(
         createUserQueryBuilder(null),
