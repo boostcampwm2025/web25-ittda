@@ -63,7 +63,7 @@ export class MyPageService {
   async updateProfile(
     userId: string,
     nickname?: string,
-    profileImageId?: string,
+    profileImageId?: string | null,
   ): Promise<User> {
     // 1. 닉네임 변경 시 유효성 검사
     if (nickname) {
@@ -79,14 +79,52 @@ export class MyPageService {
       }
     }
 
-    // 2. 부분 업데이트 수행
-    const updateData: Partial<User> = {
-      ...(nickname && { nickname }),
-      ...(profileImageId && { profileImageId }),
-    };
+    let mediaDeletionPlans: MediaAssetDeletionPlan[] = [];
 
-    if (Object.keys(updateData).length > 0) {
-      await this.userRepo.update(userId, updateData);
+    await this.userRepo.manager.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const user = await userRepo
+        .createQueryBuilder('u')
+        .where('u.id = :userId', { userId })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      if (!user) {
+        throw new AuthUnauthorizedException(
+          AUTH_ERROR_CODES.USER_NOT_FOUND,
+          '사용자를 찾을 수 없습니다.',
+        );
+      }
+
+      // 2. 부분 업데이트 수행
+      const updateData: Partial<User> = {
+        ...(nickname && { nickname }),
+        ...(profileImageId !== undefined ? { profileImageId } : {}),
+      };
+
+      if (Object.keys(updateData).length > 0) {
+        await userRepo.update(userId, updateData);
+      }
+
+      const nextProfileImageId =
+        profileImageId !== undefined
+          ? profileImageId
+          : (user.profileImageId ?? null);
+
+      if (
+        user.profileImageId != null &&
+        user.profileImageId !== nextProfileImageId
+      ) {
+        mediaDeletionPlans =
+          await this.mediaService.deleteOrphanMediaCandidatesWithManager(
+            manager,
+            [user.profileImageId],
+          );
+      }
+    });
+
+    if (mediaDeletionPlans.length > 0) {
+      await this.mediaService.deleteMediaAssets(mediaDeletionPlans);
     }
 
     // 3. 수정된 사용자 정보 반환 (no-unsafe-return 방지)
