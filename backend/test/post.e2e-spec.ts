@@ -612,12 +612,12 @@ describe('PostController (e2e)', () => {
         },
         {
           type: 'MOOD',
-          value: { mood: '보통' },
+          value: { mood: '불안' },
           layout: { row: 4, col: 1, span: 1 },
         },
         {
           type: 'MOOD',
-          value: { mood: '좋음' },
+          value: { mood: '우울' },
           layout: { row: 4, col: 2, span: 1 },
         },
       ],
