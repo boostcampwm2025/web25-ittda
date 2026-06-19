@@ -128,7 +128,7 @@ describe('MyPageService', () => {
   let mediaService: {
     collectPostMediaIdsWithManager: jest.Mock;
     collectUserMonthCoverMediaIdsWithManager: jest.Mock;
-    deleteOrphanMediaCandidatesWithManager: jest.Mock;
+    markMediaDeletionCandidatesWithManager: jest.Mock;
     deleteMediaAssets: jest.Mock;
   };
   let postDraftCleanupService: {
@@ -191,7 +191,7 @@ describe('MyPageService', () => {
     mediaService = {
       collectPostMediaIdsWithManager: jest.fn(),
       collectUserMonthCoverMediaIdsWithManager: jest.fn(),
-      deleteOrphanMediaCandidatesWithManager: jest.fn(),
+      markMediaDeletionCandidatesWithManager: jest.fn(),
       deleteMediaAssets: jest.fn(),
     };
     postDraftCleanupService = {
@@ -222,8 +222,8 @@ describe('MyPageService', () => {
         nickname: '길동이',
         profileImageId: 'new-profile',
       });
-      mediaService.deleteOrphanMediaCandidatesWithManager.mockResolvedValue([
-        { id: 'old-profile', storageKey: 'profile/old' },
+      mediaService.markMediaDeletionCandidatesWithManager.mockResolvedValue([
+        'old-profile',
       ]);
       mediaService.deleteMediaAssets.mockResolvedValue(undefined);
 
@@ -237,10 +237,10 @@ describe('MyPageService', () => {
         profileImageId: 'new-profile',
       });
       expect(
-        mediaService.deleteOrphanMediaCandidatesWithManager,
+        mediaService.markMediaDeletionCandidatesWithManager,
       ).toHaveBeenCalledWith(transactionManager, ['old-profile']);
       expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
-        { id: 'old-profile', storageKey: 'profile/old' },
+        'old-profile',
       ]);
       expect(updated).toEqual({
         id: 'user-1',
@@ -263,8 +263,8 @@ describe('MyPageService', () => {
         nickname: '길동이',
         profileImageId: null,
       });
-      mediaService.deleteOrphanMediaCandidatesWithManager.mockResolvedValue([
-        { id: 'old-profile', storageKey: 'profile/old' },
+      mediaService.markMediaDeletionCandidatesWithManager.mockResolvedValue([
+        'old-profile',
       ]);
       mediaService.deleteMediaAssets.mockResolvedValue(undefined);
 
@@ -274,10 +274,10 @@ describe('MyPageService', () => {
         profileImageId: null,
       });
       expect(
-        mediaService.deleteOrphanMediaCandidatesWithManager,
+        mediaService.markMediaDeletionCandidatesWithManager,
       ).toHaveBeenCalledWith(transactionManager, ['old-profile']);
       expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
-        { id: 'old-profile', storageKey: 'profile/old' },
+        'old-profile',
       ]);
       expect(updated).toEqual({
         id: 'user-1',
@@ -307,7 +307,7 @@ describe('MyPageService', () => {
         nickname: '고길동',
       });
       expect(
-        mediaService.deleteOrphanMediaCandidatesWithManager,
+        mediaService.markMediaDeletionCandidatesWithManager,
       ).not.toHaveBeenCalled();
       expect(mediaService.deleteMediaAssets).not.toHaveBeenCalled();
       expect(updated).toEqual({
@@ -403,28 +403,25 @@ describe('MyPageService', () => {
         draftIds: ['draft-group-1'],
         groupIds: ['group-1'],
         reason: 'GROUP_DELETED',
-        mediaDeletionPlans: [{ id: 'group-1-media', storageKey: 'group/1' }],
+        mediaDeletionCandidateIds: ['group-1-media'],
       });
       postDraftCleanupService.invalidateOwnedDraftsInGroupWithManager
         .mockResolvedValueOnce({
           draftIds: ['draft-group-2'],
           groupIds: ['group-2'],
           reason: 'OWNER_WITHDRAWN',
-          mediaDeletionPlans: [{ id: 'draft-2-media', storageKey: 'draft/2' }],
+          mediaDeletionCandidateIds: ['draft-2-media'],
         })
         .mockResolvedValueOnce({
           draftIds: [],
           groupIds: [],
           reason: 'OWNER_WITHDRAWN',
-          mediaDeletionPlans: [],
+          mediaDeletionCandidateIds: [],
         });
-      mediaService.deleteOrphanMediaCandidatesWithManager
-        .mockResolvedValueOnce([{ id: 'profile-group-2', storageKey: 'gm/2' }])
-        .mockResolvedValueOnce([{ id: 'profile-group-3', storageKey: 'gm/3' }])
-        .mockResolvedValueOnce([
-          { id: 'personal-media-1', storageKey: 'post/1' },
-          { id: 'month-cover-1', storageKey: 'cover/1' },
-        ]);
+      mediaService.markMediaDeletionCandidatesWithManager
+        .mockResolvedValueOnce(['profile-group-2'])
+        .mockResolvedValueOnce(['profile-group-3'])
+        .mockResolvedValueOnce(['personal-media-1', 'month-cover-1']);
       postDraftCleanupService.notifyDraftInvalidations.mockResolvedValue(
         undefined,
       );
@@ -502,28 +499,28 @@ describe('MyPageService', () => {
           draftIds: ['draft-group-1'],
           groupIds: ['group-1'],
           reason: 'GROUP_DELETED',
-          mediaDeletionPlans: [{ id: 'group-1-media', storageKey: 'group/1' }],
+          mediaDeletionCandidateIds: ['group-1-media'],
         },
         {
           draftIds: ['draft-group-2'],
           groupIds: ['group-2'],
           reason: 'OWNER_WITHDRAWN',
-          mediaDeletionPlans: [{ id: 'draft-2-media', storageKey: 'draft/2' }],
+          mediaDeletionCandidateIds: ['draft-2-media'],
         },
         {
           draftIds: [],
           groupIds: [],
           reason: 'OWNER_WITHDRAWN',
-          mediaDeletionPlans: [],
+          mediaDeletionCandidateIds: [],
         },
       ]);
       expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
-        { id: 'group-1-media', storageKey: 'group/1' },
-        { id: 'draft-2-media', storageKey: 'draft/2' },
-        { id: 'profile-group-2', storageKey: 'gm/2' },
-        { id: 'profile-group-3', storageKey: 'gm/3' },
-        { id: 'personal-media-1', storageKey: 'post/1' },
-        { id: 'month-cover-1', storageKey: 'cover/1' },
+        'group-1-media',
+        'draft-2-media',
+        'profile-group-2',
+        'profile-group-3',
+        'personal-media-1',
+        'month-cover-1',
       ]);
     });
 
@@ -575,13 +572,11 @@ describe('MyPageService', () => {
           draftIds: ['draft-group-1'],
           groupIds: ['group-1'],
           reason: 'OWNER_WITHDRAWN',
-          mediaDeletionPlans: [
-            { id: 'draft-group-1-media', storageKey: 'd/1' },
-          ],
+          mediaDeletionCandidateIds: ['draft-group-1-media'],
         },
       );
-      mediaService.deleteOrphanMediaCandidatesWithManager
-        .mockResolvedValueOnce([{ id: 'profile-group-1', storageKey: 'gm/1' }])
+      mediaService.markMediaDeletionCandidatesWithManager
+        .mockResolvedValueOnce(['profile-group-1'])
         .mockResolvedValueOnce([]);
       postDraftCleanupService.notifyDraftInvalidations.mockResolvedValue(
         undefined,
@@ -619,14 +614,12 @@ describe('MyPageService', () => {
           draftIds: ['draft-group-1'],
           groupIds: ['group-1'],
           reason: 'OWNER_WITHDRAWN',
-          mediaDeletionPlans: [
-            { id: 'draft-group-1-media', storageKey: 'd/1' },
-          ],
+          mediaDeletionCandidateIds: ['draft-group-1-media'],
         },
       ]);
       expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
-        { id: 'draft-group-1-media', storageKey: 'd/1' },
-        { id: 'profile-group-1', storageKey: 'gm/1' },
+        'draft-group-1-media',
+        'profile-group-1',
       ]);
     });
 
@@ -678,9 +671,9 @@ describe('MyPageService', () => {
         draftIds: ['draft-group-1'],
         groupIds: ['group-1'],
         reason: 'GROUP_DELETED',
-        mediaDeletionPlans: [{ id: 'group-1-media', storageKey: 'group/1' }],
+        mediaDeletionCandidateIds: ['group-1-media'],
       });
-      mediaService.deleteOrphanMediaCandidatesWithManager.mockResolvedValueOnce(
+      mediaService.markMediaDeletionCandidatesWithManager.mockResolvedValueOnce(
         [],
       );
       postDraftCleanupService.notifyDraftInvalidations.mockResolvedValue(
@@ -713,11 +706,11 @@ describe('MyPageService', () => {
           draftIds: ['draft-group-1'],
           groupIds: ['group-1'],
           reason: 'GROUP_DELETED',
-          mediaDeletionPlans: [{ id: 'group-1-media', storageKey: 'group/1' }],
+          mediaDeletionCandidateIds: ['group-1-media'],
         },
       ]);
       expect(mediaService.deleteMediaAssets).toHaveBeenCalledWith([
-        { id: 'group-1-media', storageKey: 'group/1' },
+        'group-1-media',
       ]);
     });
 
