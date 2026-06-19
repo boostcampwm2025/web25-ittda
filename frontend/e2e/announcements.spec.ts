@@ -1,8 +1,30 @@
 import { test, expect } from '@playwright/test';
 
+const ADMIN_KEY = 'ittda_admin';
+const BACKEND = 'http://localhost:4000/v1';
+const TEST_TITLE = 'E2E 테스트 공지사항';
+
 // 공지사항 페이지는 서버 컴포넌트(RSC)로 백엔드에서 직접 fetch.
-// 실서버가 실행된 상태에서 테스트 — 공지사항이 없으면 안내 메시지를 보여준다.
+// beforeAll에서 admin API로 활성 공지를 생성하고 afterAll에서 삭제한다.
 test.describe('공지사항', () => {
+  let announcementId: string;
+
+  test.beforeAll(async ({ request }) => {
+    const res = await request.post(`${BACKEND}/admin/announcements`, {
+      headers: { 'x-admin-key': ADMIN_KEY },
+      data: { title: TEST_TITLE, isActive: true },
+    });
+    const body = await res.json();
+    announcementId = body?.id ?? body?.data?.id;
+  });
+
+  test.afterAll(async ({ request }) => {
+    if (!announcementId) return;
+    await request.delete(`${BACKEND}/admin/announcements/${announcementId}`, {
+      headers: { 'x-admin-key': ADMIN_KEY },
+    });
+  });
+
   test('공지사항 페이지가 로드된다', async ({ page }) => {
     await page.goto('/announcements');
     await expect(page.locator('body')).toBeVisible();
@@ -39,36 +61,15 @@ test.describe('공지사항', () => {
   test('공지사항이 있을 때 각 항목에 제목과 날짜가 표시된다', async ({ page }) => {
     await page.goto('/announcements');
 
-    // 빈 상태면 건너뜀
-    const isEmpty = await page
-      .getByText('공지사항이 없습니다.')
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-    if (isEmpty) {
-      test.skip();
-      return;
-    }
-
     const firstCard = page.locator('main > div').first();
-    // 제목 — h3 태그 (카드가 여러 개일 수 있으므로 .first() 사용)
     await expect(firstCard.locator('h3').first()).toBeVisible({ timeout: 8000 });
     await expect(firstCard.locator('h3').first()).not.toBeEmpty();
-    // 날짜 — formatKoreanDate가 '년' 포함 (카드가 여러 개일 수 있으므로 .first() 사용)
     await expect(firstCard.getByText(/\d{4}년/).first()).toBeVisible();
   });
 
   test('진행 중인 공지에는 "진행 중" 배지가 표시된다', async ({ page }) => {
     await page.goto('/announcements');
 
-    const badge = page.getByText('진행 중');
-    const hasBadge = await badge.isVisible({ timeout: 3000 }).catch(() => false);
-
-    if (!hasBadge) {
-      // 현재 활성 공지가 없는 환경이면 건너뜀
-      test.skip();
-      return;
-    }
-
-    await expect(badge.first()).toBeVisible();
+    await expect(page.getByText('진행 중').first()).toBeVisible({ timeout: 8000 });
   });
 });
