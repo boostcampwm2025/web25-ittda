@@ -66,13 +66,21 @@ test.describe('미래 날짜 선택 불가', () => {
     const hasFutureButton = await futureWeekButton.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (!hasFutureButton) {
-      // 오늘이 주의 마지막 날(토요일)이면 다음 주로 이동 후 확인
+      // 오늘이 토요일(주의 마지막 날) — 다음 주로 이동해 미래 날짜 disabled 검증
       const nextWeekButton = page.locator('button').filter({ has: page.locator('[data-lucide="chevron-right"]') }).last();
       const hasNext = await nextWeekButton.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasNext) {
-        await nextWeekButton.click();
+      if (!hasNext) {
+        test.skip(); // 다음 주 이동 버튼이 없는 예외 상황
+        return;
       }
-      test.skip();
+      await nextWeekButton.click();
+
+      // 다음 주는 모든 날짜가 미래 → 첫 번째 버튼이 disabled 상태여야 함
+      const nextFutureButton = weekCalendar.locator('button[disabled]').first();
+      await expect(nextFutureButton).toBeVisible({ timeout: 5000 });
+      await expect(nextFutureButton).toBeDisabled();
+      await nextFutureButton.click({ force: true });
+      await expect(nextFutureButton).toBeDisabled();
       return;
     }
 
