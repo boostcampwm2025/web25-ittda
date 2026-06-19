@@ -102,6 +102,7 @@ export class GroupManagementService {
     targetUserId: string,
   ) {
     let draftInvalidation: DraftInvalidationResult | null = null;
+    let profileMediaDeletionCandidateIds: string[] = [];
 
     await this.groupMemberRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
@@ -135,6 +136,13 @@ export class GroupManagementService {
           groupId,
           'GROUP_MEMBER_REMOVED',
         );
+      profileMediaDeletionCandidateIds =
+        groupMember.profileMediaId != null
+          ? await this.mediaService.markMediaDeletionCandidatesWithManager(
+              manager,
+              [groupMember.profileMediaId],
+            )
+          : [];
 
       await groupMemberRepo.softDelete(groupMember.id);
     });
@@ -147,7 +155,12 @@ export class GroupManagementService {
         finalizedDraftInvalidation,
       ]);
       await this.mediaService.deleteMediaAssets(
-        finalizedDraftInvalidation.mediaDeletionCandidateIds,
+        Array.from(
+          new Set([
+            ...finalizedDraftInvalidation.mediaDeletionCandidateIds,
+            ...profileMediaDeletionCandidateIds,
+          ]),
+        ),
       );
     }
 
@@ -279,6 +292,7 @@ export class GroupManagementService {
   /** 그룹 나가기 */
   async leaveGroup(userId: string, groupId: string) {
     let draftInvalidation: DraftInvalidationResult | null = null;
+    let profileMediaDeletionCandidateIds: string[] = [];
 
     await this.groupMemberRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
@@ -321,6 +335,13 @@ export class GroupManagementService {
           groupId,
           'GROUP_LEFT',
         );
+      profileMediaDeletionCandidateIds =
+        meMember.profileMediaId != null
+          ? await this.mediaService.markMediaDeletionCandidatesWithManager(
+              manager,
+              [meMember.profileMediaId],
+            )
+          : [];
 
       const deleteResult = await groupMemberRepo.softDelete(meMember.id);
 
@@ -337,7 +358,12 @@ export class GroupManagementService {
         finalizedDraftInvalidation,
       ]);
       await this.mediaService.deleteMediaAssets(
-        finalizedDraftInvalidation.mediaDeletionCandidateIds,
+        Array.from(
+          new Set([
+            ...finalizedDraftInvalidation.mediaDeletionCandidateIds,
+            ...profileMediaDeletionCandidateIds,
+          ]),
+        ),
       );
     }
 
