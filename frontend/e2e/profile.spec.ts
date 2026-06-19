@@ -21,13 +21,13 @@ test.describe('프로필', () => {
 test.describe('프로필 수정', () => {
   test('프로필 수정 페이지에 닉네임 입력 필드가 표시된다', async ({ page }) => {
     await page.goto('/profile/edit');
-    const nicknameInput = page.locator('input[name="nickname"], input[placeholder*="닉네임"]');
+    const nicknameInput = page.locator('input[placeholder*="닉네임"]');
     await expect(nicknameInput).toBeVisible({ timeout: 5000 });
   });
 
   test('닉네임을 수정하고 저장하면 성공 토스트가 표시된다', async ({ page }) => {
     await page.goto('/profile/edit');
-    const nicknameInput = page.locator('input[name="nickname"], input[placeholder*="닉네임"]').first();
+    const nicknameInput = page.locator('input[placeholder*="닉네임"]').first();
     const hasInput = await nicknameInput.isVisible({ timeout: 5000 }).catch(() => false);
     if (!hasInput) { test.skip(); return; }
 

@@ -20,7 +20,7 @@ test.describe('기록 상세 조회', () => {
 
   test('텍스트 블록 내용이 표시된다', async ({ page }) => {
     await page.goto(`/record/${postId}`);
-    await expect(page.getByText('E2E 테스트 내용입니다.')).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('p', { hasText: 'E2E 테스트 내용입니다.' })).toBeVisible({ timeout: 8000 });
   });
 });
 
