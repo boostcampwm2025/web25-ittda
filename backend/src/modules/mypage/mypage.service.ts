@@ -6,7 +6,7 @@ import { RefreshToken } from '../auth/refresh_token/refresh_token.entity';
 import { Post } from '../post/entity/post.entity';
 import { PostScope } from '@/enums/post-scope.enum';
 import { TemplateScope } from '@/enums/template-scope.enum';
-import { MediaAssetDeletionPlan, MediaService } from '../media/media.service';
+import { MediaService } from '../media/media.service';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 import { pickNextGroupAdmin } from '../group/utils/group-role-priority';
@@ -24,7 +24,7 @@ import {
 
 type WithdrawalMembershipCleanupResult = {
   draftInvalidation: DraftInvalidationResult | null;
-  mediaDeletionPlans: MediaAssetDeletionPlan[];
+  mediaDeletionCandidateIds: string[];
 };
 
 // Mypage Service에서 기능 구현
@@ -79,7 +79,7 @@ export class MyPageService {
       }
     }
 
-    let mediaDeletionPlans: MediaAssetDeletionPlan[] = [];
+    let mediaDeletionCandidateIds: string[] = [];
 
     await this.userRepo.manager.transaction(async (manager) => {
       const userRepo = manager.getRepository(User);
@@ -115,16 +115,16 @@ export class MyPageService {
         user.profileImageId != null &&
         user.profileImageId !== nextProfileImageId
       ) {
-        mediaDeletionPlans =
-          await this.mediaService.deleteOrphanMediaCandidatesWithManager(
+        mediaDeletionCandidateIds =
+          await this.mediaService.markMediaDeletionCandidatesWithManager(
             manager,
             [user.profileImageId],
           );
       }
     });
 
-    if (mediaDeletionPlans.length > 0) {
-      await this.mediaService.deleteMediaAssets(mediaDeletionPlans);
+    if (mediaDeletionCandidateIds.length > 0) {
+      await this.mediaService.deleteMediaAssets(mediaDeletionCandidateIds);
     }
 
     // 3. 수정된 사용자 정보 반환 (no-unsafe-return 방지)
@@ -145,18 +145,18 @@ export class MyPageService {
           'OWNER_WITHDRAWN',
         );
       await groupMemberRepo.softDelete(membership.id);
-      const mediaDeletionPlans =
+      const mediaDeletionCandidateIds =
         membership.profileMediaId != null
-          ? await this.mediaService.deleteOrphanMediaCandidatesWithManager(
+          ? await this.mediaService.markMediaDeletionCandidatesWithManager(
               manager,
               [membership.profileMediaId],
             )
           : [];
       return {
         draftInvalidation,
-        mediaDeletionPlans: [
-          ...draftInvalidation.mediaDeletionPlans,
-          ...mediaDeletionPlans,
+        mediaDeletionCandidateIds: [
+          ...draftInvalidation.mediaDeletionCandidateIds,
+          ...mediaDeletionCandidateIds,
         ],
       };
     }
@@ -193,18 +193,18 @@ export class MyPageService {
           'OWNER_WITHDRAWN',
         );
       await groupMemberRepo.softDelete(me.id);
-      const mediaDeletionPlans =
+      const mediaDeletionCandidateIds =
         membership.profileMediaId != null
-          ? await this.mediaService.deleteOrphanMediaCandidatesWithManager(
+          ? await this.mediaService.markMediaDeletionCandidatesWithManager(
               manager,
               [membership.profileMediaId],
             )
           : [];
       return {
         draftInvalidation,
-        mediaDeletionPlans: [
-          ...draftInvalidation.mediaDeletionPlans,
-          ...mediaDeletionPlans,
+        mediaDeletionCandidateIds: [
+          ...draftInvalidation.mediaDeletionCandidateIds,
+          ...mediaDeletionCandidateIds,
         ],
       };
     }
@@ -216,7 +216,7 @@ export class MyPageService {
       );
       return {
         draftInvalidation,
-        mediaDeletionPlans: draftInvalidation.mediaDeletionPlans,
+        mediaDeletionCandidateIds: draftInvalidation.mediaDeletionCandidateIds,
       };
     }
 
@@ -231,7 +231,7 @@ export class MyPageService {
       );
       return {
         draftInvalidation,
-        mediaDeletionPlans: draftInvalidation.mediaDeletionPlans,
+        mediaDeletionCandidateIds: draftInvalidation.mediaDeletionCandidateIds,
       };
     }
 
@@ -253,18 +253,18 @@ export class MyPageService {
         'OWNER_WITHDRAWN',
       );
     await groupMemberRepo.softDelete(me.id);
-    const mediaDeletionPlans =
+    const mediaDeletionCandidateIds =
       membership.profileMediaId != null
-        ? await this.mediaService.deleteOrphanMediaCandidatesWithManager(
+        ? await this.mediaService.markMediaDeletionCandidatesWithManager(
             manager,
             [membership.profileMediaId],
           )
         : [];
     return {
       draftInvalidation,
-      mediaDeletionPlans: [
-        ...draftInvalidation.mediaDeletionPlans,
-        ...mediaDeletionPlans,
+      mediaDeletionCandidateIds: [
+        ...draftInvalidation.mediaDeletionCandidateIds,
+        ...mediaDeletionCandidateIds,
       ],
     };
   }
@@ -275,7 +275,7 @@ export class MyPageService {
    */
   async withdraw(userId: string): Promise<void> {
     const draftInvalidations: DraftInvalidationResult[] = [];
-    const mediaDeletionPlans: MediaAssetDeletionPlan[] = [];
+    const mediaDeletionCandidateIds: string[] = [];
 
     await this.userRepo.manager.transaction(async (manager) => {
       const groupMemberRepo = manager.getRepository(GroupMember);
@@ -329,7 +329,9 @@ export class MyPageService {
         if (membershipCleanup.draftInvalidation) {
           draftInvalidations.push(membershipCleanup.draftInvalidation);
         }
-        mediaDeletionPlans.push(...membershipCleanup.mediaDeletionPlans);
+        mediaDeletionCandidateIds.push(
+          ...membershipCleanup.mediaDeletionCandidateIds,
+        );
       }
 
       await postRepo.update({ ownerUserId: userId }, { shareToken: null });
@@ -342,11 +344,10 @@ export class MyPageService {
         scope: TemplateScope.ME,
       });
       await userMonthCoverRepo.delete({ userId });
-      mediaDeletionPlans.push(
-        ...(await this.mediaService.deleteOrphanMediaCandidatesWithManager(
+      mediaDeletionCandidateIds.push(
+        ...(await this.mediaService.markMediaDeletionCandidatesWithManager(
           manager,
           [...personalPostMediaIds, ...userMonthCoverMediaIds],
-          { ignorePostIds: personalPostIds },
         )),
       );
       await refreshTokenRepo.update({ userId }, { revoked: true });
@@ -356,6 +357,6 @@ export class MyPageService {
     await this.postDraftCleanupService.notifyDraftInvalidations(
       draftInvalidations,
     );
-    await this.mediaService.deleteMediaAssets(mediaDeletionPlans);
+    await this.mediaService.deleteMediaAssets(mediaDeletionCandidateIds);
   }
 }

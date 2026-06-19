@@ -147,7 +147,7 @@ export class GroupManagementService {
         finalizedDraftInvalidation,
       ]);
       await this.mediaService.deleteMediaAssets(
-        finalizedDraftInvalidation.mediaDeletionPlans,
+        finalizedDraftInvalidation.mediaDeletionCandidateIds,
       );
     }
 
@@ -182,7 +182,7 @@ export class GroupManagementService {
           updateResult.draftInvalidation,
         ]);
         await this.mediaService.deleteMediaAssets(
-          updateResult.draftInvalidation.mediaDeletionPlans,
+          updateResult.draftInvalidation.mediaDeletionCandidateIds,
         );
       }
 
@@ -337,7 +337,7 @@ export class GroupManagementService {
         finalizedDraftInvalidation,
       ]);
       await this.mediaService.deleteMediaAssets(
-        finalizedDraftInvalidation.mediaDeletionPlans,
+        finalizedDraftInvalidation.mediaDeletionCandidateIds,
       );
     }
 

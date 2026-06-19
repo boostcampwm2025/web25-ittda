@@ -175,7 +175,7 @@ export class GroupService {
         finalizedDraftInvalidation,
       ]);
       await this.mediaService.deleteMediaAssets(
-        finalizedDraftInvalidation.mediaDeletionPlans,
+        finalizedDraftInvalidation.mediaDeletionCandidateIds,
       );
     }
   }
@@ -214,17 +214,17 @@ export class GroupService {
     // TODO: 그룹 삭제 시 post_drafts는 CASCADE 대신 서비스 로직에서 정리(soft delete 고려).
     await groupRepo.remove(group);
 
-    const mediaDeletionPlans =
-      await this.mediaService.deleteOrphanMediaCandidatesWithManager(manager, [
+    const mediaDeletionCandidateIds =
+      await this.mediaService.markMediaDeletionCandidatesWithManager(manager, [
         ...postMediaIds,
         ...groupScopedMediaIds,
       ]);
 
     return {
       ...draftInvalidation,
-      mediaDeletionPlans: [
-        ...draftInvalidation.mediaDeletionPlans,
-        ...mediaDeletionPlans,
+      mediaDeletionCandidateIds: [
+        ...draftInvalidation.mediaDeletionCandidateIds,
+        ...mediaDeletionCandidateIds,
       ],
     };
   }

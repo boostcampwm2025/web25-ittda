@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager, In } from 'typeorm';
 
-import {
-  MediaAssetDeletionPlan,
-  MediaService,
-} from '@/modules/media/media.service';
+import { MediaService } from '@/modules/media/media.service';
 import { PostDraft } from './entity/post-draft.entity';
 import { PostDraftMedia } from './entity/post-draft-media.entity';
 import { PostDraftGateway } from './post-draft.gateway';
@@ -20,7 +17,7 @@ export type DraftInvalidationResult = {
   draftIds: string[];
   groupIds: string[];
   reason: DraftInvalidationReason;
-  mediaDeletionPlans: MediaAssetDeletionPlan[];
+  mediaDeletionCandidateIds: string[];
 };
 
 @Injectable()
@@ -98,7 +95,7 @@ export class PostDraftCleanupService {
     );
 
     if (drafts.length === 0) {
-      return { draftIds: [], groupIds, reason, mediaDeletionPlans: [] };
+      return { draftIds: [], groupIds, reason, mediaDeletionCandidateIds: [] };
     }
 
     const draftIds = drafts.map((draft) => draft.id);
@@ -113,12 +110,12 @@ export class PostDraftCleanupService {
     await draftRepo.update({ id: In(draftIds) }, { isActive: false });
     await draftMediaRepo.delete({ draftId: In(draftIds) });
 
-    const mediaDeletionPlans =
-      await this.mediaService.deleteOrphanMediaCandidatesWithManager(
+    const mediaDeletionCandidateIds =
+      await this.mediaService.markMediaDeletionCandidatesWithManager(
         manager,
         draftMediaIds,
       );
 
-    return { draftIds, groupIds, reason, mediaDeletionPlans };
+    return { draftIds, groupIds, reason, mediaDeletionCandidateIds };
   }
 }
