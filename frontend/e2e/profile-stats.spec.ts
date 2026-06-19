@@ -63,12 +63,12 @@ test.describe('마이페이지 통계', () => {
   test('기록에 사용한 태그를 최근 사용·자주 사용 탭에서 확인할 수 있다', async ({ page }) => {
     await page.goto('/profile');
 
-    // 최근 사용 탭 (기본 활성)
-    await expect(page.getByText('최근 사용')).toBeVisible({ timeout: 8000 });
+    // 최근 사용 탭 (기본 활성) — hydration 과정에서 SSR/CSR 두 요소가 잠깐 공존할 수 있어 .first() 사용
+    await expect(page.getByText('최근 사용').first()).toBeVisible({ timeout: 8000 });
     await expect(page.getByText(TAG_NAME).first()).toBeVisible({ timeout: 8000 });
 
     // 자주 사용 탭으로 전환
-    await page.getByText('자주 사용').click();
+    await page.getByText('자주 사용').first().click();
     await expect(page.getByText(TAG_NAME).first()).toBeVisible({ timeout: 5000 });
   });
 
@@ -78,8 +78,9 @@ test.describe('마이페이지 통계', () => {
     await page.goto('/profile');
 
     // PlaceDashboard·EmotionDashboard는 "통계 더보기" 클릭 후에 렌더링됨
-    await expect(page.getByText('통계 더보기')).toBeVisible({ timeout: 8000 });
-    await page.getByText('통계 더보기').click();
+    // getByText는 <span>과 부모 <button> 둘 다 매칭하므로 role로 좁힘
+    await expect(page.getByRole('button', { name: '통계 더보기' })).toBeVisible({ timeout: 8000 });
+    await page.getByRole('button', { name: '통계 더보기' }).click();
 
     // 방문 장소 통계 섹션
     await expect(page.getByRole('heading', { name: '방문 장소 통계' })).toBeVisible({
@@ -110,10 +111,11 @@ test.describe('마이페이지 통계', () => {
     try {
       await page.goto('/profile');
 
-      // "작성한 기록" 항목의 카운트 수치 추출
-      await expect(page.getByText('작성한 기록')).toBeVisible({ timeout: 8000 });
+      // "작성한 기록" 항목의 카운트 수치 추출 — hydration 중복 방지를 위해 .first()
+      await expect(page.getByText('작성한 기록').first()).toBeVisible({ timeout: 8000 });
       const countText = await page
         .getByText('작성한 기록', { exact: true })
+        .first()
         .locator('xpath=..')
         .locator('span')
         .filter({ hasText: /^\d+$/ })
