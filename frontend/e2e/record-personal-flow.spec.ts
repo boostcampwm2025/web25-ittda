@@ -15,7 +15,9 @@ import { RecordEditorPage } from './pages/RecordEditorPage';
  *  2. 홈(/)에서 기록 제목 표시, 개인 기록이므로 작성자 닉네임 미표시
  */
 
-const TODAY = new Date().toISOString().split('T')[0];
+// toISOString()은 UTC 기준이라 KST와 날짜가 다를 수 있으므로 로컬 날짜 사용
+const _now = new Date();
+const TODAY = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
 const RECORD_TITLE = 'E2E 시나리오 테스트 기록';
 const RECORD_CONTENT = '시나리오 테스트 본문입니다.';
 
