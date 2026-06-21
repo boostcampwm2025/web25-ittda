@@ -4,10 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LayoutGrid, Newspaper } from 'lucide-react';
 import WeekCalendar from '@/app/(main)/_components/WeekCalendar';
 import RecordList from '@/app/(main)/_components/RecordList';
-import MonthRecords from '@/app/(post)/_components/MonthRecords';
-import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
-import ErrorFallback from '@/components/ErrorFallback';
-import MonthRecordsSkeleton from '@/app/(post)/_components/MonthRecordsSkeleton';
+import MonthRecordsInfinite from '@/app/(post)/_components/MonthRecordsInfinite';
 import { Suspense } from 'react';
 import HomePageSkeleton from '@/app/(main)/_components/HomePageSkeleton';
 import WeekCalendarSkeleton from '@/app/(main)/_components/WeekCalendarSkeleton';
@@ -94,23 +91,10 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
 
       {isArchive ? (
         <div className="pt-3">
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-sm sm:text-base font-bold dark:text-white text-[#222]">
-              {new Date().getFullYear()}년
-            </span>
-            <span className="text-xs text-gray-400">
-              이번 해의 월별 기록이에요
-            </span>
-          </div>
-          <ErrorHandlingWrapper
-            fallbackComponent={ErrorFallback}
-            suspenseFallback={<MonthRecordsSkeleton />}
-          >
-            <MonthRecords
-              groupId={groupId}
-              cardRoute={`/group/${groupId}/month`}
-            />
-          </ErrorHandlingWrapper>
+          <MonthRecordsInfinite
+            groupId={groupId}
+            cardRoute={`/group/${groupId}/month`}
+          />
         </div>
       ) : (
         <div className="min-h-0 flex-1 flex flex-col gap-4 pb-bottom-nav">
