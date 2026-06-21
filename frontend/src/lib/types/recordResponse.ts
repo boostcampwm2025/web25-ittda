@@ -125,6 +125,11 @@ export interface MonthlyRecordList {
   latestLocation: string | null;
 }
 
+export interface PaginatedMonthlyRecordListResponse {
+  items: MonthlyRecordList[];
+  nextCursor: string | null;
+}
+
 export interface DailyRecordList {
   date: string;
   postCount: number;

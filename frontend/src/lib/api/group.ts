@@ -7,6 +7,7 @@ import {
   GroupDailyRecordedDatesResponse,
   GroupListResponse,
   MonthlyRecordList,
+  PaginatedMonthlyRecordListResponse,
 } from '../types/recordResponse';
 import {
   GroupActivityResponse,
@@ -265,6 +266,27 @@ export const groupMonthlyRecordListOptions = (groupId: string, year?: string) =>
       return response.data;
     },
     select: (data: MonthlyRecordList[]) => convertMontRecords(data),
+    retry: false,
+  });
+
+export const groupMonthlyRecordInfiniteOptions = (groupId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['group', groupId, 'records', 'month', 'all'],
+    queryFn: async ({ pageParam }) => {
+      const query = pageParam
+        ? `?allYears=true&sort=latest&cursor=${pageParam}`
+        : '?allYears=true&sort=latest';
+      const response = await get<PaginatedMonthlyRecordListResponse>(
+        `/api/groups/${groupId}/archives/months${query}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
     retry: false,
   });
 

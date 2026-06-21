@@ -7,6 +7,7 @@ import {
   MyDailyRecordedDatesResponse,
   DailyRecordList,
   MonthlyRecordList,
+  PaginatedMonthlyRecordListResponse,
 } from '../types/recordResponse';
 import {
   convertDayRecords,
@@ -63,6 +64,28 @@ export const myMonthlyRecordListOptions = (year?: string) =>
       return response.data;
     },
     select: (data: MonthlyRecordList[]) => convertMontRecords(data),
+    staleTime: PERSONAL_STALE_TIME,
+    retry: false,
+  });
+
+export const myMonthlyRecordInfiniteOptions = () =>
+  infiniteQueryOptions({
+    queryKey: ['my', 'records', 'month', 'all'],
+    queryFn: async ({ pageParam }) => {
+      const query = pageParam
+        ? `?allYears=true&cursor=${pageParam}`
+        : '?allYears=true';
+      const response = await get<PaginatedMonthlyRecordListResponse>(
+        `/api/user/archives/months${query}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
     staleTime: PERSONAL_STALE_TIME,
     retry: false,
   });
