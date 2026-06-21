@@ -63,7 +63,7 @@ export function formatTimeStr(timeStr: string): string {
 /**
  * 날짜를 상대적인 시간으로 표시
  * @param date - 비교할 날짜
- * @returns "방금 전", "5분 전", "어제", "3일 전" 등의 문자열
+ * @returns "방금 전", "5분 전", "하루 전", "3일 전" 등의 문자열
  * @example
  * formatRelativeTime(new Date()) // "방금 전"
  * formatRelativeTime(new Date(Date.now() - 1000 * 60 * 5)) // "5분 전"
@@ -82,9 +82,11 @@ export function formatRelativeTime(date: Date): string {
   if (seconds < 60) return '방금 전';
   if (minutes < 60) return `${minutes}분 전`;
   if (hours < 24) return `${hours}시간 전`;
-  if (days === 1) return '어제';
+  if (days === 1) return '하루 전';
   if (days < 30) return `${days}일 전`;
-  if (months < 12) return `${months}개월 전`;
+  if (months === 1) return '한 달 전';
+  if (months === 2) return '두 달 전';
+  if (months < 12) return `${months}달 전`;
   return `${years}년 전`;
 }
 

@@ -71,6 +71,7 @@ import LocationDrawer from '@/components/map/LocationDrawer';
 import { toast } from 'sonner';
 import { groupDetailOptions } from '@/lib/api/group';
 import { cn } from '@/lib/utils';
+import { formatRelativeTime } from '@/lib/date';
 
 interface PostEditorProps {
   mode: 'add' | 'edit';
@@ -439,8 +440,7 @@ export default function PostEditor({
     if (!draft) return;
 
     const savedDate = new Date(draft.savedAt);
-    const minutes = Math.floor((Date.now() - savedDate.getTime()) / 60_000);
-    const timeLabel = minutes < 1 ? '방금' : `${minutes}분 전`;
+    const timeLabel = formatRelativeTime(savedDate);
 
     toast(`${timeLabel} 작성하던 기록이 있어요`, {
       description: draft.title ? `"${draft.title}"` : '제목 없음',
