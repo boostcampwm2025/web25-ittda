@@ -26,7 +26,7 @@ import {
 } from '@/lib/api/group';
 
 // convertMontRecords의 반환 타입 추론
-type ConvertedMonthRecord = {
+export type ConvertedMonthRecord = {
   id: string;
   name: string;
   count: number;
@@ -36,7 +36,7 @@ type ConvertedMonthRecord = {
 };
 
 // 개별 월 카드 컴포넌트 - 콜백 최적화
-const MonthCard = memo(function MonthCard({
+export const MonthCard = memo(function MonthCard({
   month,
   onNavigate,
   onChangeCover,
