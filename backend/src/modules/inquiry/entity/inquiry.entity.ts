@@ -3,8 +3,10 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
 
+@Index('IDX_inquiries_is_read', ['isRead'])
 @Entity('inquiries')
 export class Inquiry {
   @PrimaryGeneratedColumn('uuid')

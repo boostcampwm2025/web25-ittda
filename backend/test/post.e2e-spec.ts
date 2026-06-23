@@ -81,7 +81,8 @@ describe('PostController (e2e)', () => {
     if (owner?.id) {
       await postRepository.delete({ ownerUserId: owner.id });
       await postDraftRepository.delete({ ownerActorId: owner.id });
-      await groupRepository.delete({ owner: { id: owner.id } });
+      await groupRepository.delete({ name: '활동 그룹' });
+      await groupRepository.delete({ name: 'draft 그룹' });
       await userRepository.delete({ id: owner.id });
     }
     if (otherUser?.id) {
@@ -253,7 +254,6 @@ describe('PostController (e2e)', () => {
     const group = await groupRepository.save(
       groupRepository.create({
         name: '활동 그룹',
-        owner: { id: owner.id } as User,
       }),
     );
     await groupMemberRepository.save(
@@ -340,7 +340,6 @@ describe('PostController (e2e)', () => {
     const group = await groupRepository.save(
       groupRepository.create({
         name: 'draft 그룹',
-        owner: { id: owner.id } as User,
       }),
     );
     await groupMemberRepository.save(

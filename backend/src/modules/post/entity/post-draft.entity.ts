@@ -14,6 +14,14 @@ import {
   type PostDraftKind,
 } from '@/enums/post-draft-kind.enum';
 
+@Index('uq_post_drafts_active_group_edit', ['groupId', 'targetPostId'], {
+  unique: true,
+  where: `is_active = true AND kind = 'EDIT'`,
+})
+@Index('uq_post_drafts_active_group_create_slot', ['groupId', 'createSlot'], {
+  unique: true,
+  where: `is_active = true AND kind = 'CREATE'`,
+})
 @Entity('post_drafts')
 export class PostDraft {
   @PrimaryGeneratedColumn('uuid')

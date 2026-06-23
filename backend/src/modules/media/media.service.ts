@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, LessThan, Repository } from 'typeorm';
+import { EntityManager, In, IsNull, LessThan, Not, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import {
   HeadObjectCommand,
@@ -25,8 +25,15 @@ import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
+import { Group } from '@/modules/group/entity/group.entity';
+import { GroupMonthCover } from '@/modules/group/entity/group-month-cover.entity';
 import { User } from '@/modules/user/entity/user.entity';
+import { UserMonthCover } from '@/modules/user/entity/user-month-cover.entity';
 import type { PresignFileRequestDto } from './dto/presign-media.dto';
+
+type MediaStorageDeletionResult =
+  | { id: string; ok: true }
+  | { id: string; ok: false; message: string };
 
 @Injectable()
 export class MediaService {
@@ -46,6 +53,13 @@ export class MediaService {
     'image/heif',
   ]);
   private readonly pendingRetentionMs = 7 * 24 * 60 * 60 * 1000;
+  private readonly orphanReadyRetentionMs = 24 * 60 * 60 * 1000;
+  private readonly mediaDeletionConcurrency = 5;
+  private readonly pendingDeletionBatchSize = 100;
+  private readonly maxDeleteErrorLength = 1000;
+  private readonly pendingMediaDeletionQueue = new Set<string>();
+  private isPendingMediaDeletionFlushScheduled = false;
+  private isPendingMediaDeletionWorkerRunning = false;
 
   constructor(
     private readonly configService: ConfigService,
@@ -63,8 +77,14 @@ export class MediaService {
     private readonly postContributorRepository: Repository<PostContributor>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
+    @InjectRepository(GroupMonthCover)
+    private readonly groupMonthCoverRepository: Repository<GroupMonthCover>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserMonthCover)
+    private readonly userMonthCoverRepository: Repository<UserMonthCover>,
   ) {
     const endpoint = this.configService.get<string>('S3_ENDPOINT');
     const publicEndpoint =
@@ -349,6 +369,295 @@ export class MediaService {
     }
   }
 
+  async collectPostMediaIdsWithManager(
+    manager: EntityManager,
+    postIds: string[],
+  ): Promise<string[]> {
+    if (postIds.length === 0) return [];
+
+    const postMediaRows = await manager.getRepository(PostMedia).find({
+      where: { postId: In(postIds) },
+      select: { mediaId: true },
+    });
+
+    return Array.from(
+      new Set(postMediaRows.map((row) => row.mediaId).filter(Boolean)),
+    );
+  }
+
+  async collectDraftMediaIdsWithManager(
+    manager: EntityManager,
+    draftIds: string[],
+  ): Promise<string[]> {
+    if (draftIds.length === 0) return [];
+
+    const draftMediaRows = await manager.getRepository(PostDraftMedia).find({
+      where: { draftId: In(draftIds) },
+      select: { mediaId: true },
+    });
+
+    return Array.from(
+      new Set(draftMediaRows.map((row) => row.mediaId).filter(Boolean)),
+    );
+  }
+
+  async collectUserMonthCoverMediaIdsWithManager(
+    manager: EntityManager,
+    userId: string,
+  ): Promise<string[]> {
+    const coverRows = await manager.getRepository(UserMonthCover).find({
+      where: { userId },
+      select: { coverAssetId: true },
+    });
+
+    return Array.from(
+      new Set(coverRows.map((row) => row.coverAssetId).filter(Boolean)),
+    ) as string[];
+  }
+
+  async collectGroupScopedMediaIdsWithManager(
+    manager: EntityManager,
+    groupId: string,
+  ): Promise<string[]> {
+    const [group, groupMembers, groupMonthCovers] = await Promise.all([
+      manager.getRepository(Group).findOne({
+        where: { id: groupId },
+        select: { coverMediaId: true },
+      }),
+      manager.getRepository(GroupMember).find({
+        where: { groupId },
+        select: { profileMediaId: true },
+      }),
+      manager.getRepository(GroupMonthCover).find({
+        where: { groupId },
+        select: { coverAssetId: true },
+      }),
+    ]);
+
+    return Array.from(
+      new Set(
+        [
+          group?.coverMediaId ?? null,
+          ...groupMembers.map((member) => member.profileMediaId ?? null),
+          ...groupMonthCovers.map((cover) => cover.coverAssetId ?? null),
+        ].filter(Boolean),
+      ),
+    ) as string[];
+  }
+
+  async markMediaDeletionCandidatesWithManager(
+    manager: EntityManager,
+    mediaIds: string[],
+  ): Promise<string[]> {
+    if (mediaIds.length === 0) {
+      return [];
+    }
+
+    const uniqueMediaIds = Array.from(new Set(mediaIds));
+    const mediaAssetRepo = manager.getRepository(MediaAsset);
+
+    await mediaAssetRepo.update(
+      {
+        id: In(uniqueMediaIds),
+        status: MediaAssetStatus.READY,
+      },
+      {
+        deleteRequestedAt: new Date(),
+        deleteRetryCount: 0,
+        lastDeleteError: null,
+      },
+    );
+
+    return uniqueMediaIds;
+  }
+
+  deleteMediaAssets(mediaIds: string[]): Promise<void> {
+    if (mediaIds.length === 0) {
+      return Promise.resolve();
+    }
+
+    this.enqueuePendingMediaDeletionPlans(mediaIds);
+    return Promise.resolve();
+  }
+
+  private enqueuePendingMediaDeletionPlans(mediaIds: string[]) {
+    for (const mediaId of mediaIds) {
+      this.pendingMediaDeletionQueue.add(mediaId);
+    }
+
+    this.schedulePendingMediaDeletionFlush();
+  }
+
+  private schedulePendingMediaDeletionFlush() {
+    if (
+      this.isPendingMediaDeletionFlushScheduled ||
+      this.isPendingMediaDeletionWorkerRunning
+    ) {
+      return;
+    }
+
+    this.isPendingMediaDeletionFlushScheduled = true;
+    queueMicrotask(() => {
+      this.isPendingMediaDeletionFlushScheduled = false;
+      void this.drainPendingMediaDeletionQueue();
+    });
+  }
+
+  private async drainPendingMediaDeletionQueue(): Promise<void> {
+    if (this.isPendingMediaDeletionWorkerRunning) {
+      return;
+    }
+
+    this.isPendingMediaDeletionWorkerRunning = true;
+
+    try {
+      while (this.pendingMediaDeletionQueue.size > 0) {
+        const mediaIds = Array.from(
+          this.pendingMediaDeletionQueue.values(),
+        ).slice(0, this.pendingDeletionBatchSize);
+        mediaIds.forEach((mediaId) => {
+          this.pendingMediaDeletionQueue.delete(mediaId);
+        });
+        await this.processPendingMediaDeletionCandidates(mediaIds);
+      }
+    } catch (error) {
+      this.logger.error(
+        'Failed to process pending media deletions.',
+        error instanceof Error ? error.stack : String(error),
+      );
+    } finally {
+      this.isPendingMediaDeletionWorkerRunning = false;
+
+      if (this.pendingMediaDeletionQueue.size > 0) {
+        this.schedulePendingMediaDeletionFlush();
+      }
+    }
+  }
+
+  private async processPendingMediaDeletionCandidates(
+    mediaIds: string[],
+  ): Promise<void> {
+    if (!this.s3ConfigValid || mediaIds.length === 0) {
+      return;
+    }
+
+    const assets = await this.mediaAssetRepository.find({
+      where: {
+        id: In(mediaIds),
+        status: MediaAssetStatus.READY,
+        deleteRequestedAt: Not(IsNull()),
+      },
+      select: {
+        id: true,
+        storageKey: true,
+      },
+    });
+
+    if (assets.length === 0) {
+      return;
+    }
+
+    const assetIds = assets.map((asset) => asset.id);
+    const referencedMediaIds = await this.collectReferencedMediaIds(assetIds);
+    const reactivatedIds = assetIds.filter((id) => referencedMediaIds.has(id));
+
+    if (reactivatedIds.length > 0) {
+      await this.mediaAssetRepository.update(
+        { id: In(reactivatedIds) },
+        {
+          deleteRequestedAt: null,
+          deleteRetryCount: 0,
+          lastDeleteError: null,
+        },
+      );
+    }
+
+    const orphanAssets = assets.filter(
+      (asset) => !referencedMediaIds.has(asset.id),
+    );
+
+    if (orphanAssets.length === 0) {
+      return;
+    }
+
+    const deletionResults =
+      await this.deleteMediaAssetsFromStorage(orphanAssets);
+    const deletedAssetIds = deletionResults
+      .filter((result): result is { id: string; ok: true } => result.ok)
+      .map((result) => result.id);
+    const failedDeletions = deletionResults.filter(
+      (result): result is { id: string; ok: false; message: string } =>
+        !result.ok,
+    );
+
+    if (deletedAssetIds.length > 0) {
+      await this.mediaAssetRepository.delete(deletedAssetIds);
+    }
+
+    if (failedDeletions.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      failedDeletions.map(async ({ id, message }) => {
+        this.logger.warn(
+          `Failed to delete media from storage (mediaId=${id}): ${message}`,
+        );
+        await this.mediaAssetRepository.increment(
+          { id },
+          'deleteRetryCount',
+          1,
+        );
+        await this.mediaAssetRepository.update(
+          { id },
+          {
+            lastDeleteError: this.truncateDeleteError(message),
+          },
+        );
+      }),
+    );
+  }
+
+  private async deleteMediaAssetsFromStorage(
+    assets: Array<Pick<MediaAsset, 'id' | 'storageKey'>>,
+  ): Promise<MediaStorageDeletionResult[]> {
+    const results: MediaStorageDeletionResult[] = [];
+
+    for (
+      let index = 0;
+      index < assets.length;
+      index += this.mediaDeletionConcurrency
+    ) {
+      const chunk = assets.slice(index, index + this.mediaDeletionConcurrency);
+      const chunkResults = await Promise.all(
+        chunk.map(async (asset) => {
+          try {
+            await this.s3Client.send(
+              new DeleteObjectCommand({
+                Bucket: this.bucket,
+                Key: asset.storageKey,
+              }),
+            );
+            return { id: asset.id, ok: true } as const;
+          } catch (error) {
+            return {
+              id: asset.id,
+              ok: false as const,
+              message: error instanceof Error ? error.message : 'unknown error',
+            };
+          }
+        }),
+      );
+      results.push(...chunkResults);
+    }
+
+    return results;
+  }
+
+  private truncateDeleteError(message: string) {
+    return message.slice(0, this.maxDeleteErrorLength);
+  }
+
   async completeUploads(ownerUserId: string, mediaIds: string[]) {
     const assets = await this.mediaAssetRepository.find({
       where: mediaIds.map((id) => ({ id })),
@@ -555,8 +864,15 @@ export class MediaService {
   }
 
   // 매일 오전 3시에 보류 중인 미디어 자산 정리
-  @Cron('0 3 * * *')
+  @Cron('0 3 * * 1')
   async cleanupPendingAssets() {
+    if (!this.s3ConfigValid) {
+      this.logger.warn(
+        'pending media cleanup skipped because S3 configuration is invalid.',
+      );
+      return;
+    }
+
     const cutoff = new Date(Date.now() - this.pendingRetentionMs);
     const expired = await this.mediaAssetRepository.find({
       where: {
@@ -567,20 +883,163 @@ export class MediaService {
 
     if (expired.length === 0) return;
 
-    await Promise.all(
-      expired.map((asset) =>
-        this.s3Client
-          .send(
-            new DeleteObjectCommand({
-              Bucket: this.bucket,
-              Key: asset.storageKey,
-            }),
-          )
-          .catch(() => undefined),
-      ),
+    const deletionResults = await this.deleteMediaAssetsFromStorage(
+      expired.map((asset) => ({
+        id: asset.id,
+        storageKey: asset.storageKey,
+      })),
+    );
+    const deletedAssetIds = deletionResults
+      .filter((result): result is { id: string; ok: true } => result.ok)
+      .map((result) => result.id);
+
+    deletionResults.forEach((result) => {
+      if (!result.ok) {
+        this.logger.warn(
+          `Failed to delete expired pending media from storage (mediaId=${result.id}): ${result.message}`,
+        );
+      }
+    });
+
+    if (deletedAssetIds.length === 0) return;
+
+    await this.mediaAssetRepository.delete(deletedAssetIds);
+  }
+
+  // 매일 오전 4시에 READY 상태 orphan 미디어 자산 정리
+  @Cron('0 4 * * *')
+  async cleanupOrphanReadyAssets() {
+    const cutoff = new Date(Date.now() - this.orphanReadyRetentionMs);
+    const candidates = await this.mediaAssetRepository.find({
+      where: {
+        status: MediaAssetStatus.READY,
+        uploadedAt: LessThan(cutoff),
+        deleteRequestedAt: IsNull(),
+      },
+      select: {
+        id: true,
+        storageKey: true,
+      },
+    });
+
+    if (candidates.length === 0) return;
+
+    const candidateIds = candidates.map((asset) => asset.id);
+    const referencedMediaIds =
+      await this.collectReferencedMediaIds(candidateIds);
+    const orphanAssets = candidates.filter(
+      (asset) => !referencedMediaIds.has(asset.id),
     );
 
-    await this.mediaAssetRepository.delete(expired.map((asset) => asset.id));
+    if (orphanAssets.length === 0) return;
+
+    await this.mediaAssetRepository.update(
+      { id: In(orphanAssets.map((asset) => asset.id)) },
+      {
+        deleteRequestedAt: new Date(),
+        deleteRetryCount: 0,
+        lastDeleteError: null,
+      },
+    );
+    await this.deleteMediaAssets(orphanAssets.map((asset) => asset.id));
+  }
+
+  // 15분마다 삭제 예약된 미디어 자산 재시도
+  @Cron('*/15 * * * *')
+  async retryPendingMediaAssetDeletions() {
+    const pendingAssets = await this.mediaAssetRepository.find({
+      where: {
+        status: MediaAssetStatus.READY,
+        deleteRequestedAt: Not(IsNull()),
+      },
+      order: {
+        deleteRequestedAt: 'ASC',
+      },
+      select: {
+        id: true,
+        storageKey: true,
+      },
+      take: this.pendingDeletionBatchSize,
+    });
+
+    if (pendingAssets.length === 0) {
+      return;
+    }
+
+    await this.deleteMediaAssets(pendingAssets.map((asset) => asset.id));
+  }
+
+  private async collectReferencedMediaIds(
+    mediaIds: string[],
+  ): Promise<Set<string>> {
+    if (mediaIds.length === 0) return new Set<string>();
+
+    const [
+      postMediaLinks,
+      draftMediaLinks,
+      users,
+      groupMembers,
+      groups,
+      userMonthCovers,
+      groupMonthCovers,
+    ] = await Promise.all([
+      this.postMediaRepository
+        .createQueryBuilder('pm')
+        .innerJoin(Post, 'p', 'p.id = pm.postId')
+        .select('pm.mediaId', 'mediaId')
+        .where('pm.mediaId IN (:...mediaIds)', { mediaIds })
+        .andWhere('p.deletedAt IS NULL')
+        .getRawMany<{ mediaId: string }>(),
+      this.postDraftMediaRepository
+        .createQueryBuilder('pdm')
+        .innerJoin(PostDraft, 'pd', 'pd.id = pdm.draftId')
+        .select('pdm.mediaId', 'mediaId')
+        .where('pdm.mediaId IN (:...mediaIds)', { mediaIds })
+        .andWhere('pd.isActive = true')
+        .getRawMany<{ mediaId: string }>(),
+      this.userRepository.find({
+        where: { profileImageId: In(mediaIds) },
+        select: { profileImageId: true },
+      }),
+      this.groupMemberRepository.find({
+        where: { profileMediaId: In(mediaIds) },
+        select: { profileMediaId: true },
+      }),
+      this.groupRepository.find({
+        where: { coverMediaId: In(mediaIds) },
+        select: { coverMediaId: true },
+      }),
+      this.userMonthCoverRepository.find({
+        where: { coverAssetId: In(mediaIds) },
+        select: { coverAssetId: true },
+      }),
+      this.groupMonthCoverRepository.find({
+        where: { coverAssetId: In(mediaIds) },
+        select: { coverAssetId: true },
+      }),
+    ]);
+
+    const referenced = new Set<string>();
+
+    postMediaLinks.forEach((link) => referenced.add(link.mediaId));
+    draftMediaLinks.forEach((link) => referenced.add(link.mediaId));
+    users.forEach((user) => {
+      if (user.profileImageId) referenced.add(user.profileImageId);
+    });
+    groupMembers.forEach((member) => {
+      if (member.profileMediaId) referenced.add(member.profileMediaId);
+    });
+    groups.forEach((group) => {
+      if (group.coverMediaId) referenced.add(group.coverMediaId);
+    });
+    userMonthCovers.forEach((cover) => {
+      if (cover.coverAssetId) referenced.add(cover.coverAssetId);
+    });
+    groupMonthCovers.forEach((cover) => {
+      if (cover.coverAssetId) referenced.add(cover.coverAssetId);
+    });
+
+    return referenced;
   }
 
   private buildStorageKey(ownerUserId: string, mediaId: string) {

@@ -8,7 +8,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, Repository, DataSource } from 'typeorm';
+import { FindOneOptions, Repository, DataSource, EntityManager } from 'typeorm';
 import { Group } from '../entity/group.entity';
 import { GroupMember } from '../entity/group_member.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -22,6 +22,11 @@ import {
 import { PostScope } from '@/enums/post-scope.enum';
 import { GetGroupsResponseDto, GroupItemDto } from '../dto/get-groups.dto';
 import { GroupActivityService } from './group-activity.service';
+import { MediaService } from '@/modules/media/media.service';
+import {
+  DraftInvalidationResult,
+  PostDraftCleanupService,
+} from '@/modules/post/post-draft-cleanup.service';
 
 import { resolveGroupNickname } from '../utils/group-nickname';
 
@@ -49,29 +54,30 @@ export class GroupService {
 
     private readonly dataSource: DataSource,
     private readonly groupActivityService: GroupActivityService,
+    private readonly mediaService: MediaService,
+    private readonly postDraftCleanupService: PostDraftCleanupService,
   ) {}
 
   /** 그룹 생성 + ADMIN 등록 (트랜잭션 적용) */
-  async createGroup(ownerId: string, name: string): Promise<Group> {
+  async createGroup(userId: string, name: string): Promise<Group> {
     const savedGroup = await this.dataSource.transaction(async (manager) => {
       try {
         const group = manager.create(Group, {
           name,
-          owner: { id: ownerId } as User,
         });
         const savedGroup = await manager.save(group);
 
-        const owner = await manager.findOneOrFail(User, {
-          where: { id: ownerId },
+        const user = await manager.findOneOrFail(User, {
+          where: { id: userId },
         });
 
-        const ownerMember = manager.create(GroupMember, {
+        const firstMember = manager.create(GroupMember, {
           group: savedGroup,
-          user: { id: ownerId } as User,
+          user: { id: userId } as User,
           role: GroupRoleEnum.ADMIN,
-          nicknameInGroup: resolveGroupNickname(owner.nickname),
+          nicknameInGroup: resolveGroupNickname(user.nickname),
         });
-        await manager.save(ownerMember);
+        await manager.save(firstMember);
 
         return savedGroup;
       } catch (error) {
@@ -85,7 +91,7 @@ export class GroupService {
         const message =
           error instanceof Error ? error.message : 'unknown error';
         this.logger.error(
-          `Failed to create group (ownerId=${ownerId}): ${message}`,
+          `Failed to create group (userId=${userId}): ${message}`,
           error instanceof Error ? error.stack : undefined,
         );
         throw new InternalServerErrorException(
@@ -96,7 +102,7 @@ export class GroupService {
     await this.groupActivityService.recordActivity({
       groupId: savedGroup.id,
       type: GroupActivityType.GROUP_CREATE,
-      actorIds: [ownerId],
+      actorIds: [userId],
       meta: { name },
     });
     return savedGroup;
@@ -133,30 +139,100 @@ export class GroupService {
     throw new ForbiddenException('그룹 멤버가 아닙니다.');
   }
 
-  /** 그룹 삭제 (방장만 가능) */
+  /** 그룹 삭제 (관리자만 가능) */
   async deleteGroup(userId: string, groupId: string): Promise<void> {
-    const group = await this.groupRepo.findOne({
+    let draftInvalidation: DraftInvalidationResult | null = null;
+
+    await this.dataSource.transaction(async (manager) => {
+      const groupRepo = manager.getRepository(Group);
+      const groupMemberRepo = manager.getRepository(GroupMember);
+
+      const group = await groupRepo.findOne({
+        where: { id: groupId },
+      });
+
+      if (!group) {
+        throw new NotFoundException('존재하지 않는 그룹입니다.');
+      }
+
+      const member = await groupMemberRepo.findOne({
+        where: { userId, groupId },
+        select: ['role'],
+      });
+
+      if (member?.role !== GroupRoleEnum.ADMIN) {
+        throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
+      }
+
+      draftInvalidation = await this.deleteGroupWithManager(manager, groupId);
+    });
+
+    const finalizedDraftInvalidation =
+      draftInvalidation as DraftInvalidationResult | null;
+
+    if (finalizedDraftInvalidation) {
+      await this.postDraftCleanupService.notifyDraftInvalidations([
+        finalizedDraftInvalidation,
+      ]);
+      await this.mediaService.deleteMediaAssets(
+        finalizedDraftInvalidation.mediaDeletionCandidateIds,
+      );
+    }
+  }
+
+  async deleteGroupWithManager(
+    manager: EntityManager,
+    groupId: string,
+  ): Promise<DraftInvalidationResult> {
+    const groupRepo = manager.getRepository(Group);
+    const postRepo = manager.getRepository(Post);
+    const group = await groupRepo.findOne({
       where: { id: groupId },
-      relations: ['owner'],
     });
 
     if (!group) {
       throw new NotFoundException('존재하지 않는 그룹입니다.');
     }
 
-    if (group.owner.id !== userId) {
-      throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
-    }
+    const groupPosts = await postRepo.find({
+      where: { groupId },
+      select: { id: true },
+    });
+    const groupPostIds = groupPosts.map((post) => post.id);
+    const [postMediaIds, groupScopedMediaIds] = await Promise.all([
+      this.mediaService.collectPostMediaIdsWithManager(manager, groupPostIds),
+      this.mediaService.collectGroupScopedMediaIdsWithManager(manager, groupId),
+    ]);
+
+    const draftInvalidation =
+      await this.postDraftCleanupService.invalidateGroupDraftsWithManager(
+        manager,
+        groupId,
+        'GROUP_DELETED',
+      );
 
     // TODO: 그룹 삭제 시 post_drafts는 CASCADE 대신 서비스 로직에서 정리(soft delete 고려).
-    await this.groupRepo.remove(group);
+    await groupRepo.remove(group);
+
+    const mediaDeletionCandidateIds =
+      await this.mediaService.markMediaDeletionCandidatesWithManager(manager, [
+        ...postMediaIds,
+        ...groupScopedMediaIds,
+      ]);
+
+    return {
+      ...draftInvalidation,
+      mediaDeletionCandidateIds: [
+        ...draftInvalidation.mediaDeletionCandidateIds,
+        ...mediaDeletionCandidateIds,
+      ],
+    };
   }
 
   /** 그룹 정보 수정 */
   async updateGroup(userId: string, groupId: string, name: string) {
     const group = await this.groupRepo.findOne({
       where: { id: groupId },
-      relations: ['owner'],
     });
 
     if (!group) {

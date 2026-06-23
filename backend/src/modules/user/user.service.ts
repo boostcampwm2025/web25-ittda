@@ -34,18 +34,21 @@ export class UserService {
     private readonly userMonthCoverRepo: Repository<UserMonthCover>,
   ) {}
 
+  /**
+   * OAuth 식별자(provider + providerId)로 사용자를 조회하고 없으면 생성한다.
+   * 탈퇴한 사용자는 복구하지 않고, active user만 기존 계정으로 취급한다.
+   *
+   * @param params OAuth 사용자 정보
+   * @returns 기존 또는 신규 생성된 사용자 엔티티
+   */
   async findOrCreateOAuthUser(params: OAuthUserType): Promise<User> {
     const { provider, providerId } = params;
 
     let user = await this.userRepo.findOne({
       where: { provider, providerId },
-      withDeleted: true,
     });
 
     if (user) {
-      if (user.deletedAt) {
-        await this.userRepo.recover(user);
-      }
       user.email = params.email ?? user.email;
       user.nickname = params.nickname ?? user.nickname;
       return this.userRepo.save(user);

@@ -192,16 +192,15 @@ async function upsertSeedOwner() {
 //   return userRepository.save(user);
 // }
 
-async function upsertSeedGroup(owner: User) {
+async function upsertSeedGroup() {
   const groupRepository = dataSource.getRepository(Group);
   const existing = await groupRepository.findOne({
-    where: { name: 'seed-group', owner: { id: owner.id } },
+    where: { name: 'seed-group' },
   });
   if (existing) return existing;
 
   const group = groupRepository.create({
     name: 'seed-group',
-    owner,
   });
   return groupRepository.save(group);
 }
@@ -306,7 +305,7 @@ async function run() {
   try {
     const owner = await upsertSeedOwner();
     // const devUser = await upsertDevUser();
-    const group = await upsertSeedGroup(owner);
+    const group = await upsertSeedGroup();
     await ensureGroupMember(group, owner);
     // await ensureGroupMember(group, devUser);
     await upsertSeedDraft(owner, group);

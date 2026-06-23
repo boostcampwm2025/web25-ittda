@@ -4,8 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 
+@Index('IDX_announcements_is_active', ['isActive'])
 @Entity('announcements')
 export class Announcement {
   @PrimaryGeneratedColumn('uuid')

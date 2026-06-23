@@ -12,6 +12,11 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('healthz')
+  getHealth(): string {
+    return this.appService.getHealth();
+  }
+
   @Get('.well-known/appspecific/com.chrome.devtools.json')
   @Get('favicon.ico')
   ignoreDefaultRequests(@Res() res: Response) {

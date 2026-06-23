@@ -11,9 +11,30 @@ export interface ApiError extends Error {
 export const ERROR_CODES = {
   TOKEN_EXPIRED: 'TOKEN_EXPIRED',
   INVALID_TOKEN: 'INVALID_TOKEN',
+  ACCESS_TOKEN_REQUIRED: 'ACCESS_TOKEN_REQUIRED',
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  REFRESH_TOKEN_NOT_FOUND: 'REFRESH_TOKEN_NOT_FOUND',
+  REFRESH_TOKEN_REUSE_DETECTED: 'REFRESH_TOKEN_REUSE_DETECTED',
+  REFRESH_TOKEN_EXPIRED: 'REFRESH_TOKEN_EXPIRED',
+  SESSION_INVALID: 'SESSION_INVALID',
   UNAUTHORIZED: 'UNAUTHORIZED',
   NETWORK_ERROR: 'NETWORK_ERROR',
 } as const;
+
+const REFRESHABLE_AUTH_ERRORS: string[] = [
+  ERROR_CODES.TOKEN_EXPIRED,
+  ERROR_CODES.UNAUTHORIZED,
+];
+
+const TERMINAL_AUTH_ERRORS: string[] = [
+  ERROR_CODES.ACCESS_TOKEN_REQUIRED,
+  ERROR_CODES.INVALID_TOKEN,
+  ERROR_CODES.USER_NOT_FOUND,
+  ERROR_CODES.REFRESH_TOKEN_NOT_FOUND,
+  ERROR_CODES.REFRESH_TOKEN_REUSE_DETECTED,
+  ERROR_CODES.REFRESH_TOKEN_EXPIRED,
+  ERROR_CODES.SESSION_INVALID,
+];
 
 /**
  * 인증 에러 여부 확인
@@ -21,11 +42,20 @@ export const ERROR_CODES = {
 export function isAuthError(errorCode?: string): boolean {
   if (!errorCode) return false;
   const authErrors: string[] = [
-    ERROR_CODES.TOKEN_EXPIRED,
-    ERROR_CODES.INVALID_TOKEN,
-    ERROR_CODES.UNAUTHORIZED,
+    ...REFRESHABLE_AUTH_ERRORS,
+    ...TERMINAL_AUTH_ERRORS,
   ];
   return authErrors.includes(errorCode);
+}
+
+export function isRefreshableAuthError(errorCode?: string): boolean {
+  if (!errorCode) return false;
+  return REFRESHABLE_AUTH_ERRORS.includes(errorCode);
+}
+
+export function isTerminalAuthError(errorCode?: string): boolean {
+  if (!errorCode) return false;
+  return TERMINAL_AUTH_ERRORS.includes(errorCode);
 }
 
 /**

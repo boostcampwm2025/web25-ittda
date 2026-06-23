@@ -634,7 +634,6 @@ export const createMockGroupSettings = (id: string): GroupEditResponse => ({
     groupId: id,
     name: '우리들의 기록',
     createdAt: '2025-12-01T03:12:00Z',
-    ownerUserId: 'uuid',
     cover: {
       assetId: '/profile-ex.jpeg',
       sourcePostId: 'uuid',

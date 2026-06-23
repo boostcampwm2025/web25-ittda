@@ -128,6 +128,11 @@ interface Role {
   icon: ReactNode;
 }
 
+type RemoveMemberVariables = {
+  userId: string;
+  name: string;
+};
+
 const ROLE: Role[] = [
   {
     userId: 'ADMIN',
@@ -165,12 +170,17 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
   const [editingMember, setEditingMember] = useState<GroupMember | null>(null);
   const [tempRole, setTempRole] = useState<GroupRoleType | null>(null);
 
-  const { mutate: removeMember } = useApiDelete(
-    `/api/groups/${groupId}/members/${deleteMember?.userId}`,
+  const { mutate: removeMember } = useApiDelete<
+    unknown,
+    RemoveMemberVariables
+  >(
+    ({ userId }) => `/api/groups/${groupId}/members/${userId}`,
     {
-      onSuccess: () => {
-        toast.success(`${deleteMember?.name}을 내보냈습니다.`);
-        setMembers(members.filter((m) => m.userId !== deleteMember?.userId));
+      onSuccess: (_data, variables) => {
+        toast.success(`${variables.name}을 내보냈습니다.`);
+        setMembers((prev) =>
+          prev.filter((m) => m.userId !== variables.userId),
+        );
         setDeleteMember(null);
       },
     },
@@ -203,7 +213,7 @@ const GroupMemberManagement = memo(function GroupMemberManagement({
 
   const handleRemoveMember = useCallback(() => {
     if (deleteMember) {
-      removeMember({});
+      removeMember(deleteMember);
     }
     setShowDeleteDrawer(false);
   }, [deleteMember, removeMember]);

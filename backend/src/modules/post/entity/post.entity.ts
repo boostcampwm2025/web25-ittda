@@ -78,7 +78,10 @@ export class Post {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
-  @Index({ unique: true, where: 'share_token IS NOT NULL' })
+  @Index('IDX_posts_share_token', ['shareToken'], {
+    unique: true,
+    where: 'share_token IS NOT NULL',
+  })
   @Column({ name: 'share_token', type: 'uuid', nullable: true, unique: false })
   shareToken?: string | null;
 
