@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback, memo, useMemo } from 'react';
-import { GripVertical, User } from 'lucide-react';
+import { GripVertical, Loader2, User } from 'lucide-react';
 
 // 컴포넌트 및 필드 임포트
 import RecordEditorHeader from './RecordEditorHeader';
@@ -86,6 +86,7 @@ interface PostEditorProps {
 const BlockItem = memo(function BlockItem({
   block,
   isDraggingId,
+  isDeleting,
   locks,
   mySessionId,
   members,
@@ -100,6 +101,7 @@ const BlockItem = memo(function BlockItem({
 }: {
   block: RecordBlock;
   isDraggingId: string | null;
+  isDeleting: boolean;
   locks: Record<string, string>;
   mySessionId: string | null;
   members: PresenceMember[];
@@ -159,8 +161,13 @@ const BlockItem = memo(function BlockItem({
       data-block-id={block.id}
       onPointerUp={handleDragEnd}
       onPointerCancel={handleDragEnd}
-      className={`cursor-grab relative group/field select-none ${isDraggingId ? 'touch-none' : 'touch-auto'} ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
+      className={`cursor-grab relative group/field select-none ${isDraggingId ? 'touch-none' : 'touch-auto'} ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : isDeleting ? 'opacity-40 pointer-events-none' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
     >
+      {isDeleting && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-black/40">
+          <Loader2 className="w-5 h-5 animate-spin text-itta-point" />
+        </div>
+      )}
       <div
         className={`relative w-full flex flex-row gap-2 items-center ${isDraggingId ? 'touch-none' : 'touch-auto'} ${
           block.layout.col === 1 ? 'justify-start' : 'justify-end'
@@ -317,6 +324,7 @@ export default function PostEditor({
     handleDone,
     addOrShowBlock,
     removeBlock,
+    deletingBlockIds,
     //handleApplyTemplate,
   } = usePostEditorBlocks({
     blocks,
@@ -1135,6 +1143,7 @@ export default function PostEditor({
               key={block.id}
               block={block}
               isDraggingId={isDraggingId}
+              isDeleting={deletingBlockIds.has(block.id)}
               locks={locks}
               mySessionId={mySessionId}
               members={members}
