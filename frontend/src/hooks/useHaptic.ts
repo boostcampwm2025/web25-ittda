@@ -14,6 +14,8 @@ export function useHaptic() {
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.id = '__haptic_trigger';
+    // iOS 18+ WebKit이 switch 타입 체크박스를 토글할 때만 햅틱을 발생시킴
+    input.setAttribute('switch', '');
     input.style.cssText =
       'position:fixed;opacity:0;pointer-events:none;width:0;height:0';
 
@@ -32,7 +34,7 @@ export function useHaptic() {
     (duration = 30) => {
       try {
         if (isIOS()) {
-          // iOS: hidden checkbox toggle → Taptic Engine 발동
+          // iOS: hidden switch checkbox toggle → Taptic Engine 발동
           getLabelEl()?.click();
         } else if (navigator.vibrate) {
           navigator.vibrate(duration);
