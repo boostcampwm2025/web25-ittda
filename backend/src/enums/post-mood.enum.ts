@@ -10,10 +10,12 @@ export const PostMood = {
   BUSY: '바쁨',
   BORED: '심심',
   WORRIED: '걱정',
+  ANXIOUS: '불안',
   SECRET: '비밀',
   SURPRISED: '놀람',
   ANGRY: '화남',
   SAD: '슬픔',
+  DEPRESSED: '우울',
   SICK: '아픔',
   ANNOYED: '짜증',
 } as const;
