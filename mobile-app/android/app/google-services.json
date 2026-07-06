@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "513351224432",
+    "project_id": "friendly-magnet-481309-k6",
+    "storage_bucket": "friendly-magnet-481309-k6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:513351224432:android:14d3b31fb415ce5d2bb8b5",
+        "android_client_info": {
+          "package_name": "com.ittda.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "513351224432-1seqo4kpaqlrfq5sh7r0qr9f087cc3ih.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArVb-YzJK1xFoz9CYJ9dxJAmAyBQiqP5g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "513351224432-1seqo4kpaqlrfq5sh7r0qr9f087cc3ih.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
