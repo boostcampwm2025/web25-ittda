@@ -67,9 +67,15 @@ test.describe('공지사항', () => {
     await expect(firstCard.getByText(/\d{4}년/).first()).toBeVisible();
   });
 
-  test('진행 중인 공지에는 "진행 중" 배지가 표시된다', async ({ page }) => {
-    await page.goto('/announcements');
+  test('진행 중인 공지에는 "진행 중" 배지가 표시된다', async ({ page, request }) => {
+    // announcement-modal.spec.ts와 병렬 실행 시 해당 spec의 beforeAll이
+    // 이 spec의 활성 공지를 비활성화할 수 있으므로 테스트 직전 재활성화한다
+    await request.patch(`${BACKEND}/admin/announcements/${announcementId}`, {
+      headers: { 'x-admin-key': ADMIN_KEY },
+      data: { isActive: true },
+    });
 
+    await page.goto('/announcements');
     await expect(page.getByText('진행 중').first()).toBeVisible({ timeout: 8000 });
   });
 });
