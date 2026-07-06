@@ -12,43 +12,54 @@ const isNativePlatform = () =>
   !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
     .Capacitor?.isNativePlatform?.();
 
+async function registerAndroidToken() {
+  const { PushNotifications } = await import('@capacitor/push-notifications');
+
+  const result = await PushNotifications.requestPermissions();
+  if (result.receive !== 'granted') return;
+
+  await new Promise<void>((resolve) => {
+    PushNotifications.addListener('registration', async ({ value: token }) => {
+      await registerFcmToken(token, 'android').catch(() => {});
+      await PushNotifications.removeAllListeners();
+      resolve();
+    });
+    PushNotifications.addListener('registrationError', async () => {
+      await PushNotifications.removeAllListeners();
+      resolve();
+    });
+    PushNotifications.register();
+  });
+}
+
+async function registerWebToken() {
+  if (!('Notification' in window)) return;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return;
+
+  const messaging = await getFirebaseMessaging();
+  if (!messaging) return;
+
+  const swReg = await navigator.serviceWorker.register(
+    '/firebase-messaging-sw.js',
+    { scope: '/firebase-cloud-messaging-push-scope' },
+  );
+
+  const token = await getToken(messaging, {
+    vapidKey: VAPID_KEY,
+    serviceWorkerRegistration: swReg,
+  });
+
+  if (token) await registerFcmToken(token, 'web');
+}
+
 export function usePushNotification(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
-    if (isNativePlatform()) return;
     if (typeof window === 'undefined') return;
-    if (!('Notification' in window)) return;
 
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted' || cancelled) return;
-
-        const messaging = await getFirebaseMessaging();
-        if (!messaging || cancelled) return;
-
-        const swReg = await navigator.serviceWorker.register(
-          '/firebase-messaging-sw.js',
-          { scope: '/firebase-cloud-messaging-push-scope' },
-        );
-
-        const token = await getToken(messaging, {
-          vapidKey: VAPID_KEY,
-          serviceWorkerRegistration: swReg,
-        });
-
-        if (!token || cancelled) return;
-
-        await registerFcmToken(token, 'web');
-      } catch {
-        // 알림 권한 거부나 지원 불가 환경은 무시
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    const register = isNativePlatform() ? registerAndroidToken : registerWebToken;
+    register().catch(() => {});
   }, [enabled]);
 }
