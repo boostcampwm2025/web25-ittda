@@ -294,7 +294,10 @@ export default function PostEditor({
       setIsSaving(false);
       resetNavigatingToRecord();
     },
-    onSuccess: isPersonalNew ? clearDraftAndPhotos : undefined,
+    onSuccess: () => {
+      setIsSaving(false);
+      if (isPersonalNew) clearDraftAndPhotos();
+    },
   });
 
   // 네비게이션이 실패하거나 느린 경우 로딩 화면이 무한히 뜨는 것을 방지하는 안전망
@@ -304,14 +307,11 @@ export default function PostEditor({
     return () => clearTimeout(timer);
   }, [isPublishing, setIsPublishing]);
 
-  // 개인 기록 저장 응답이 너무 오래 걸릴 경우 로딩 화면 해제 및 알림
+  // 저장 응답이 오래 걸릴 경우 지연 안내 (로딩 화면은 유지)
   useEffect(() => {
     if (!isSaving) return;
     const timer = setTimeout(() => {
-      setIsSaving(false);
-      toast.error(
-        '네트워크 지연 또는 기록 저장에 실패했습니다. 다시 시도해 주세요.',
-      );
+      toast.info('저장이 지연되고 있습니다. 잠시 후 자동으로 완료됩니다.');
     }, 10_000);
     return () => clearTimeout(timer);
   }, [isSaving]);
