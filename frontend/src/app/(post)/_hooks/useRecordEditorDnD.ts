@@ -7,6 +7,7 @@ import { useHaptic } from '@/hooks/useHaptic';
 
 const LONG_PRESS_DURATION = 300; // ms — 이 시간 이상 누르고 있어야 드래그 시작
 const SCROLL_CANCEL_THRESHOLD = 6; // px — 롱프레스 대기 중 이 이상 움직이면 스크롤로 판단해 취소
+const MOUSE_DRAG_THRESHOLD = 6; // px — 마우스(데스크탑) 드래그 시작 이동 거리 임계값
 
 export const useRecordEditorDnD = (
   blocks: RecordBlock[],
@@ -30,7 +31,7 @@ export const useRecordEditorDnD = (
     blockId: string;
     startX: number;
     startY: number;
-    timer: ReturnType<typeof setTimeout>;
+    timer: ReturnType<typeof setTimeout> | null;
   } | null>(null);
 
   // touch 이벤트 기반 롱프레스 대기 (textarea/input — iOS pointercancel 우회)
@@ -62,6 +63,19 @@ export const useRecordEditorDnD = (
       const blockId = blockEl.getAttribute('data-block-id');
       if (!blockId) return;
 
+      // 마우스(데스크탑): 타이머 없이 펜딩만 설정 — pointermove에서 움직임 기준으로 드래그 시작
+      if (e.pointerType === 'mouse') {
+        pendingDragRef.current = {
+          pointerId: e.pointerId,
+          blockId,
+          startX: e.clientX,
+          startY: e.clientY,
+          timer: null,
+        };
+        return;
+      }
+
+      // 터치/펜: 기존 롱프레스 방식
       const timer = setTimeout(() => {
         if (pendingDragRef.current?.blockId === blockId) {
           // 롱프레스 완료 → 드래그 활성화
@@ -264,12 +278,34 @@ export const useRecordEditorDnD = (
       ) {
         const dx = e.clientX - pendingDragRef.current.startX;
         const dy = e.clientY - pendingDragRef.current.startY;
-        // 롱프레스 대기 중 스크롤 의도 감지 → 타이머 취소
-        if (
-          dx * dx + dy * dy >
-          SCROLL_CANCEL_THRESHOLD * SCROLL_CANCEL_THRESHOLD
-        ) {
-          clearTimeout(pendingDragRef.current.timer);
+        const distSq = dx * dx + dy * dy;
+
+        if (e.pointerType === 'mouse') {
+          // 마우스(데스크탑): 움직임 임계값 초과 시 즉시 드래그 활성화
+          if (distSq > MOUSE_DRAG_THRESHOLD * MOUSE_DRAG_THRESHOLD) {
+            const { blockId } = pendingDragRef.current;
+            const el = document.querySelector(
+              `[data-block-id="${blockId}"]`,
+            ) as HTMLElement | null;
+            if (el) {
+              try {
+                el.setPointerCapture(e.pointerId);
+              } catch {}
+              pointerIdRef.current = e.pointerId;
+              capturedElementRef.current = el;
+            }
+            isPointerDraggingRef.current = true;
+            isDraggingIdRef.current = blockId;
+            setIsDraggingId(blockId);
+            pendingDragRef.current = null;
+          }
+          return;
+        }
+
+        // 터치/펜: 롱프레스 대기 중 스크롤 의도 감지 → 타이머 취소
+        if (distSq > SCROLL_CANCEL_THRESHOLD * SCROLL_CANCEL_THRESHOLD) {
+          if (pendingDragRef.current.timer)
+            clearTimeout(pendingDragRef.current.timer);
           pendingDragRef.current = null;
         }
         return;
@@ -317,7 +353,7 @@ export const useRecordEditorDnD = (
         pendingDragRef.current &&
         e.pointerId === pendingDragRef.current.pointerId
       ) {
-        clearTimeout(pendingDragRef.current.timer);
+        clearTimeout(pendingDragRef.current.timer ?? undefined);
         pendingDragRef.current = null;
       }
     };
@@ -357,7 +393,7 @@ export const useRecordEditorDnD = (
 
   const handleDragEnd = useCallback(() => {
     if (pendingDragRef.current) {
-      clearTimeout(pendingDragRef.current.timer);
+      clearTimeout(pendingDragRef.current.timer ?? undefined);
       pendingDragRef.current = null;
     }
     if (pendingTouchDragRef.current) {
