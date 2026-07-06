@@ -36,6 +36,7 @@ const CURRENT_YEAR = String(new Date().getFullYear());
 interface MonthRecordsInfiniteProps {
   cardRoute: string;
   groupId?: string;
+  scrollRoot?: { current: Element | null };
 }
 
 type RenderItem =
@@ -59,7 +60,7 @@ const MonthRecordsInfinite = ({
     ? ['group', groupId, 'records', 'month', 'all']
     : ['my', 'records', 'month', 'all'];
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, isError } =
     useInfiniteQuery(options);
 
   // 그룹 게시글인 경우 권한 확인
@@ -100,7 +101,7 @@ const MonthRecordsInfinite = ({
 
       observerRef.current = new IntersectionObserver(
         (entries) => {
-          if (entries[0].isIntersecting && hasNextPage) {
+          if (entries[0].isIntersecting && hasNextPage && !isError) {
             fetchNextPage();
           }
         },
@@ -109,7 +110,7 @@ const MonthRecordsInfinite = ({
 
       if (node) observerRef.current.observe(node);
     },
-    [isFetchingNextPage, hasNextPage, fetchNextPage],
+    [isFetchingNextPage, isError, hasNextPage, fetchNextPage],
   );
 
   const handleNavigate = useCallback(
