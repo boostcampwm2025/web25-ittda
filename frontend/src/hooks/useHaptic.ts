@@ -1,8 +1,13 @@
 import { useCallback, useRef } from 'react';
 
-const isIOS = () =>
-  typeof navigator !== 'undefined' &&
-  /iPad|iPhone|iPod/.test(navigator.userAgent);
+const isIOS = () => {
+  if (typeof navigator === 'undefined') return false;
+  const iOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  // iPadOS 13+는 userAgent에 "iPad"가 없고 MacIntel로 표시됨
+  const iPadOS =
+    navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  return iOSDevice || iPadOS;
+};
 
 export function useHaptic() {
   const labelElRef = useRef<HTMLLabelElement | null>(null);
