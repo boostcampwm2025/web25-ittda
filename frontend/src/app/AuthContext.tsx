@@ -27,7 +27,7 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
   const logout = useAuthStore((state) => state.logout);
   const { resolvedTheme } = useTheme();
 
-  usePushNotification(status === 'authenticated');
+  usePushNotification(userType !== null);
 
   // skipHydration: true이므로 마운트 후 localStorage에서 상태 복원
   useEffect(() => {
@@ -70,7 +70,10 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
       const androidTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
       const androidBridge = (
         window as unknown as {
-          AndroidBridge?: { themeChange: (t: string) => void; appReady: () => void };
+          AndroidBridge?: {
+            themeChange: (t: string) => void;
+            appReady: () => void;
+          };
         }
       ).AndroidBridge;
 

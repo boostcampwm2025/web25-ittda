@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getToken } from 'firebase/messaging';
+import { getToken, deleteToken } from 'firebase/messaging';
 import { getFirebaseMessaging } from '@/lib/firebase';
 import { registerFcmToken } from '@/lib/api/notification';
 
@@ -45,22 +45,44 @@ async function getAndRegisterWebFcmToken() {
   if (!swReg.active) {
     await new Promise<void>((resolve) => {
       const sw = swReg.installing ?? swReg.waiting;
-      if (!sw) { resolve(); return; }
-      sw.addEventListener('statechange', function handler() {
+      if (!sw) {
+        resolve();
+        return;
+      }
+      const handler = () => {
         if (sw.state === 'activated') {
           sw.removeEventListener('statechange', handler);
           resolve();
         }
-      });
+      };
+      sw.addEventListener('statechange', handler);
+      if (sw.state === 'activated' || swReg.active) {
+        sw.removeEventListener('statechange', handler);
+        resolve();
+      }
     });
+  }
+
+  const existingSub = await swReg.pushManager
+    .getSubscription()
+    .catch(() => null);
+
+  if (!existingSub) {
+    await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: swReg,
+    }).catch(() => {});
+    await deleteToken(messaging).catch(() => {});
   }
 
   const token = await getToken(messaging, {
     vapidKey: VAPID_KEY,
     serviceWorkerRegistration: swReg,
-  });
+  }).catch(() => null);
 
-  if (token) await registerFcmToken(token, 'web');
+  if (token) {
+    await registerFcmToken(token, 'web').catch(() => {});
+  }
 }
 
 // 로그인 후 자동 갱신용 — 이미 허용된 경우에만 조용히 토큰 등록 (다이얼로그 없음)

@@ -64,12 +64,30 @@ export default function AndroidNotificationHandler() {
     if (!userId) return;
 
     navigateFn = (route: string) => {
-      // navigate와 동시에 prefetch — 컴포넌트 마운트 시 캐시 히트 가능성을 높임
       const postId = extractPostId(route);
-      if (postId) {
-        queryClient.prefetchQuery(recordDetailOptions(postId)).catch(() => {});
+      const hasCache: boolean = postId
+        ? queryClient.getQueryData(recordDetailOptions(postId).queryKey) !==
+          undefined
+        : true;
+
+      if (hasCache) {
+        // 캐시 존재 → 즉시 이동(stale 데이터 표시), prefetch로 백그라운드 갱신
+        // useSuspenseQuery는 stale 데이터가 있어도 suspend하지 않음 → 스켈레톤 없음
+        if (postId)
+          queryClient
+            .prefetchQuery(recordDetailOptions(postId))
+            .catch(() => {});
+        router.push(route);
+      } else {
+        // 캐시 없음 → prefetch 완료 후 이동
+        // 서버 컴포넌트 fetch보다 데이터가 먼저 캐시에 들어와 스켈레톤 방지
+        const prefetch = postId
+          ? queryClient
+              .prefetchQuery(recordDetailOptions(postId))
+              .catch(() => {})
+          : Promise.resolve();
+        prefetch.finally(() => router.push(route));
       }
-      router.push(route);
     };
 
     if (pendingRoute) {

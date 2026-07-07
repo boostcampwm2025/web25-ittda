@@ -71,23 +71,34 @@ export class NotificationService implements OnModuleInit {
 
     const tokens = await this.fcmTokenRepo.find({
       where: userIds.map((userId) => ({ userId })),
-      select: ['token'],
+      select: ['token', 'platform'],
     });
 
-    const tokenValues = tokens.map((t) => t.token);
-    if (tokenValues.length === 0) return;
+    if (tokens.length === 0) return;
 
     try {
-      const messages = tokenValues.map((token) => ({
-        token,
-        notification: { title, body },
-        ...(data ? { data } : {}),
-        webpush: { notification: { icon: '/web-app-icon-192x192.png' } },
-      }));
+      // 웹: data-only 메시지 → Firebase가 자동 표시하지 않고 SW onBackgroundMessage에서 처리.
+      //     notification 필드가 있으면 Firebase가 자동 표시(FCM_MSG 래핑)와 onBackgroundMessage 둘 다 호출해
+      //     알림이 중복되고 notificationclick에서 data 파싱이 깨지는 문제가 발생함.
+      // 안드로이드: notification 필드 필요 (네이티브 FCM이 시스템 알림 표시에 사용).
+      const messages = tokens.map(({ token, platform }) =>
+        platform === 'web'
+          ? {
+              token,
+              data: { title, body, ...(data ?? {}) },
+              webpush: { headers: { Urgency: 'high' } },
+            }
+          : {
+              token,
+              notification: { title, body },
+              ...(data ? { data } : {}),
+              webpush: { notification: { icon: '/web-app-icon-192x192.png' } },
+            },
+      );
       const response = await getMessaging(this.app).sendEach(messages);
 
       const staleTokens = response.responses
-        .map((r, i) => ({ ...r, token: tokenValues[i] }))
+        .map((r, i) => ({ ...r, token: messages[i].token }))
         .filter(
           (r) =>
             !r.success &&
@@ -107,7 +118,7 @@ export class NotificationService implements OnModuleInit {
 
       const failedCount = response.responses.filter((r) => !r.success).length;
       if (failedCount > 0) {
-        this.logger.warn(`FCM 발송 실패: ${failedCount}/${tokenValues.length}`);
+        this.logger.warn(`FCM 발송 실패: ${failedCount}/${messages.length}`);
       }
     } catch (e) {
       this.logger.error('FCM 발송 오류', e);
