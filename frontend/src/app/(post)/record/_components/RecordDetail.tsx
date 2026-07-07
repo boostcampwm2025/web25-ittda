@@ -3,10 +3,17 @@
 import { recordDetailOptions } from '@/lib/api/records';
 import { Block } from '@/lib/types/record';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import RecordDetailHeaderActions from './RecordDetailHeaderActions';
+import dynamic from 'next/dynamic';
 import BlockContent from '@/components/BlockContent';
 import { cn } from '@/lib/utils';
 import AssetImage from '@/components/AssetImage';
+
+// SSR에서 렌더링하지 않음: Radix Popover의 useId가 서버-클라이언트 간 렌더 트리 순서 차이로
+// aria-controls 불일치(하이드레이션 에러)를 일으키기 때문.
+const RecordDetailHeaderActions = dynamic(
+  () => import('./RecordDetailHeaderActions'),
+  { ssr: false },
+);
 
 interface RecordDetailProps {
   recordId: string;

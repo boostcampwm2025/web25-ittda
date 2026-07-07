@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
-import { getCachedRecordDetail } from '@/lib/api/records';
-import RecordDetailContent from '../_components/RecordDetailContent';
 import {
-  ImageValue,
-  TextValue,
-} from '@/lib/types/record';
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+import { getCachedRecordDetail, recordDetailOptions } from '@/lib/api/records';
+import RecordDetailContent from '../_components/RecordDetailContent';
+import { ImageValue, TextValue } from '@/lib/types/record';
 import { get } from '@/lib/api/api';
 import { SingleResolveResponse } from '@/hooks/useMediaResolve';
 import { randomBaseImage } from '@/lib/image';
@@ -90,5 +92,19 @@ export async function generateMetadata({
 export default async function RecordPage({ params }: RecordPageProps) {
   const { recordId } = await params;
 
-  return <RecordDetailContent recordId={recordId} />;
+  const queryClient = new QueryClient();
+  try {
+    // generateMetadata에서 getCachedRecordDetail을 이미 호출했다면 React cache()로 중복 요청 없이 재사용됨.
+    // setQueryData로 서버 데이터를 클라이언트 QueryClient에 이식해 useSuspenseQuery가 바로 캐시를 찾게 함.
+    const data = await getCachedRecordDetail(recordId);
+    queryClient.setQueryData(recordDetailOptions(recordId).queryKey, data);
+  } catch {
+    // 에러는 RecordDetail 클라이언트 컴포넌트의 ErrorBoundary에서 처리
+  }
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <RecordDetailContent recordId={recordId} />
+    </HydrationBoundary>
+  );
 }
