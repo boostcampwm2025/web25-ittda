@@ -1,8 +1,14 @@
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+self.addEventListener('activate', (event) =>
+  event.waitUntil(self.clients.claim()),
+);
 
-importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
+importScripts(
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',
+);
+importScripts(
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js',
+);
 
 firebase.initializeApp({
   apiKey: 'AIzaSyAaP2MD3vim6zP0OQYw4AFAfP2nWh5GlDk',
@@ -20,5 +26,33 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, {
     body,
     icon: '/web-app-icon-192x192.png',
+    data: payload.data ?? {},
   });
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const { groupId, postId } = event.notification.data ?? {};
+  const url =
+    postId && groupId
+      ? `/record/${postId}?scope=group&groupId=${groupId}`
+      : postId
+        ? `/record/${postId}`
+        : groupId
+          ? `/group/${groupId}`
+          : '/shared';
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if ('focus' in client) {
+            client.navigate(url);
+            return client.focus();
+          }
+        }
+        return clients.openWindow(url);
+      }),
+  );
 });
