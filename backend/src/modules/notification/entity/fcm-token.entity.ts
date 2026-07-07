@@ -4,13 +4,13 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
+  Unique,
 } from 'typeorm';
 
 export type FcmPlatform = 'web' | 'android';
 
 @Entity('fcm_tokens')
-@Index(['userId', 'platform'])
+@Unique(['userId', 'platform'])
 export class FcmToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;

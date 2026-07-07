@@ -9,7 +9,7 @@ interface RequestWithUser extends Request {
 }
 
 @UseGuards(JwtAuthGuard)
-@Controller('api/notifications')
+@Controller({ path: 'notifications', version: '1' })
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
