@@ -65,6 +65,9 @@ export class GroupMember {
   @JoinColumn({ name: 'profile_media_id' })
   profileMedia?: MediaAsset | null;
 
+  @Column({ name: 'notification_muted', type: 'boolean', default: false })
+  notificationMuted: boolean;
+
   @Column({ name: 'last_read_at', type: 'timestamptz', nullable: true })
   lastReadAt?: Date | null;
 

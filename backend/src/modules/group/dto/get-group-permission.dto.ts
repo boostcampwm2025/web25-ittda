@@ -3,5 +3,8 @@ import { GroupRoleEnum } from '@/enums/group-role.enum';
 
 export class GetGroupPermissionResponseDto {
   @ApiProperty({ enum: GroupRoleEnum })
-  role: GroupRoleEnum;
+  role!: GroupRoleEnum;
+
+  @ApiProperty()
+  notificationMuted!: boolean;
 }

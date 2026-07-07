@@ -147,8 +147,12 @@ export class GroupActivityService {
     const recipients = await this.groupMemberRepo.find({
       where:
         actorIds.length > 0
-          ? { groupId: input.groupId, userId: Not(In(actorIds)) }
-          : { groupId: input.groupId },
+          ? {
+              groupId: input.groupId,
+              userId: Not(In(actorIds)),
+              notificationMuted: false,
+            }
+          : { groupId: input.groupId, notificationMuted: false },
       select: ['userId'],
     });
 

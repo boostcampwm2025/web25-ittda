@@ -129,6 +129,7 @@ export interface GroupMembersResponse {
 
 export interface GroupMemberRoleResponse {
   role: GroupRoleType;
+  notificationMuted: boolean;
 }
 
 export interface GroupActivityResponse {
