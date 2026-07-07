@@ -189,6 +189,19 @@ export class GroupManagementController {
     return this.groupManagementService.getGroupPermission(user.sub, groupId);
   }
 
+  @Patch(':groupId/members/me/read')
+  @ApiOperation({
+    summary: '그룹 읽음 처리',
+    description: '그룹 페이지 진입 시 lastReadAt을 현재 시간으로 갱신합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  async markGroupAsRead(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+  ): Promise<void> {
+    await this.groupManagementService.markGroupAsRead(user.sub, groupId);
+  }
+
   @Patch(':groupId/members/me/notification')
   @ApiOperation({
     summary: '그룹 알림 설정 토글',

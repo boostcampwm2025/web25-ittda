@@ -28,11 +28,16 @@ import {
   UserCircle,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
 import { cn } from '@/lib/utils';
 import { GroupMembersResponse } from '@/lib/types/groupResponse';
-import { groupMyRoleOptions, toggleGroupNotification } from '@/lib/api/group';
+import {
+  groupMyRoleOptions,
+  markGroupAsRead,
+  toggleGroupNotification,
+} from '@/lib/api/group';
+import { GroupSummary } from '@/lib/types/recordResponse';
 import { toast } from 'sonner';
 
 interface GroupHeaderActionsProps {
@@ -49,6 +54,18 @@ export default function GroupHeaderActions({
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    markGroupAsRead(groupId).catch(() => {});
+    queryClient.setQueryData<GroupSummary[]>(['shared'], (prev) =>
+      prev
+        ? prev.map((g) =>
+            g.groupId === groupId ? { ...g, hasUnread: false } : g,
+          )
+        : prev,
+    );
+  }, [groupId, queryClient]);
+
   const { mutate: leaveGroup } = useApiDelete(
     `/api/groups/${groupId}/members/me`,
     {
@@ -78,7 +95,15 @@ export default function GroupHeaderActions({
     onSuccess: (_, muted) => {
       queryClient.setQueryData(
         ['group', groupId, 'me', 'role'],
-        (prev: typeof roleData) => prev ? { ...prev, notificationMuted: muted } : prev,
+        (prev: typeof roleData) =>
+          prev ? { ...prev, notificationMuted: muted } : prev,
+      );
+      queryClient.setQueryData<GroupSummary[]>(['shared'], (prev) =>
+        prev
+          ? prev.map((g) =>
+              g.groupId === groupId ? { ...g, notificationMuted: muted } : g,
+            )
+          : prev,
       );
     },
   });
@@ -101,10 +126,11 @@ export default function GroupHeaderActions({
           className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400"
           title={notificationMuted ? '알림 켜기' : '알림 끄기'}
         >
-          {notificationMuted
-            ? <BellOff className="w-5 h-5" />
-            : <Bell className="w-5 h-5" />
-          }
+          {notificationMuted ? (
+            <BellOff className="w-5 h-5" />
+          ) : (
+            <Bell className="w-5 h-5" />
+          )}
         </button>
 
         <DateSelectorDrawer
