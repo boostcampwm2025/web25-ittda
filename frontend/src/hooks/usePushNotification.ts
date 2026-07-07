@@ -9,10 +9,11 @@ const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
 const isNativePlatform = () =>
   typeof window !== 'undefined' &&
-  !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-    .Capacitor?.isNativePlatform?.();
+  !!(
+    window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor?.isNativePlatform?.();
 
-async function registerAndroidToken() {
+export async function registerAndroidToken() {
   const { PushNotifications } = await import('@capacitor/push-notifications');
 
   const result = await PushNotifications.requestPermissions();
@@ -32,12 +33,7 @@ async function registerAndroidToken() {
   });
 }
 
-async function registerWebToken() {
-  if (!('Notification' in window)) return;
-
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return;
-
+async function getAndRegisterWebFcmToken() {
   const messaging = await getFirebaseMessaging();
   if (!messaging) return;
 
@@ -45,6 +41,19 @@ async function registerWebToken() {
     '/firebase-messaging-sw.js',
     { scope: '/firebase-cloud-messaging-push-scope' },
   );
+
+  if (!swReg.active) {
+    await new Promise<void>((resolve) => {
+      const sw = swReg.installing ?? swReg.waiting;
+      if (!sw) { resolve(); return; }
+      sw.addEventListener('statechange', function handler() {
+        if (sw.state === 'activated') {
+          sw.removeEventListener('statechange', handler);
+          resolve();
+        }
+      });
+    });
+  }
 
   const token = await getToken(messaging, {
     vapidKey: VAPID_KEY,
@@ -54,12 +63,31 @@ async function registerWebToken() {
   if (token) await registerFcmToken(token, 'web');
 }
 
+// 로그인 후 자동 갱신용 — 이미 허용된 경우에만 조용히 토큰 등록 (다이얼로그 없음)
+async function registerWebToken() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  await getAndRegisterWebFcmToken();
+}
+
+// Settings 토글 클릭 시 — 브라우저 권한 다이얼로그 표시 후 토큰 등록
+export async function requestAndRegisterWebToken() {
+  if (!('Notification' in window)) return;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return;
+
+  await getAndRegisterWebFcmToken();
+}
+
 export function usePushNotification(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
     if (typeof window === 'undefined') return;
 
-    const register = isNativePlatform() ? registerAndroidToken : registerWebToken;
+    const register = isNativePlatform()
+      ? registerAndroidToken
+      : registerWebToken;
     register().catch(() => {});
   }, [enabled]);
 }
