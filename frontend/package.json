@@ -40,6 +40,7 @@
     "@tanstack/react-query": "^5.90.12",
     "@types/js-cookie": "^3.0.6",
     "@vis.gl/react-google-maps": "^1.7.1",
+    "capacitor-native-settings": "^8.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

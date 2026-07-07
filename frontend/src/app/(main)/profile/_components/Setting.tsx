@@ -165,7 +165,11 @@ export default function Setting() {
           setPushBlocked(false);
         } else {
           setPushBlocked(true);
-          toast.info('설정에서 알림에서 허용해 주세요.');
+          const { NativeSettings, AndroidSettings } =
+            await import('capacitor-native-settings');
+          await NativeSettings.openAndroid({
+            option: AndroidSettings.AppNotification,
+          }).catch(() => {});
         }
       } else {
         await requestAndRegisterWebToken();
