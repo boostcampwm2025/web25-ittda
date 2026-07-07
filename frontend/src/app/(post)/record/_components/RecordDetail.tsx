@@ -4,15 +4,25 @@ import { recordDetailOptions } from '@/lib/api/records';
 import { Block } from '@/lib/types/record';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
+import Back from '@/components/Back';
 import BlockContent from '@/components/BlockContent';
 import { cn } from '@/lib/utils';
 import AssetImage from '@/components/AssetImage';
 
 // SSR에서 렌더링하지 않음: Radix Popover의 useId가 서버-클라이언트 간 렌더 트리 순서 차이로
 // aria-controls 불일치(하이드레이션 에러)를 일으키기 때문.
+// loading으로 Back + 우측 placeholder를 즉시 렌더링해 레이아웃 이동 방지.
 const RecordDetailHeaderActions = dynamic(
   () => import('./RecordDetailHeaderActions'),
-  { ssr: false },
+  {
+    ssr: false,
+    loading: () => (
+      <>
+        <Back fallback="/" />
+        <div className="w-8 h-8" />
+      </>
+    ),
+  },
 );
 
 interface RecordDetailProps {
