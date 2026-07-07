@@ -2,7 +2,7 @@ import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, handleLogout } from './auth';
 import * as Sentry from '@sentry/nextjs';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getBackendApiBaseUrl } from '@/lib/config/backend';
+import { getBackendApiBaseUrl, getBackendOrigin } from '@/lib/config/backend';
 import {
   isRefreshableAuthError,
   isTerminalAuthError,
@@ -23,8 +23,9 @@ function getApiBaseUrl() {
     return '';
   }
 
-  // 서버 환경 - 백엔드 절대 URL
-  return getBackendApiBaseUrl();
+  // 서버 환경 - /api → /v1 치환이 fetchApi 내부에서 이루어지므로
+  // /v1을 포함하지 않는 origin만 반환해야 이중 /v1이 생기지 않음
+  return getBackendOrigin();
 }
 
 interface FetchOptions extends RequestInit {
