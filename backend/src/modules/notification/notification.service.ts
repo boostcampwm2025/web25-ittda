@@ -82,7 +82,7 @@ export class NotificationService implements OnModuleInit {
         token,
         notification: { title, body },
         ...(data ? { data } : {}),
-        webpush: { notification: { icon: '/icons/icon-192x192.png' } },
+        webpush: { notification: { icon: '/web-app-icon-192x192.png' } },
       }));
       const response = await getMessaging(this.app).sendEach(messages);
 
