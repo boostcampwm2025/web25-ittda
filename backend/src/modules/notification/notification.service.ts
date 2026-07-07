@@ -86,6 +86,25 @@ export class NotificationService implements OnModuleInit {
       }));
       const response = await getMessaging(this.app).sendEach(messages);
 
+      const staleTokens = response.responses
+        .map((r, i) => ({ ...r, token: tokenValues[i] }))
+        .filter(
+          (r) =>
+            !r.success &&
+            (r.error?.code === 'messaging/registration-token-not-registered' ||
+              r.error?.code === 'messaging/invalid-argument'),
+        )
+        .map((r) => r.token);
+
+      if (staleTokens.length > 0) {
+        await this.fcmTokenRepo
+          .createQueryBuilder()
+          .delete()
+          .where('token IN (:...tokens)', { tokens: staleTokens })
+          .execute();
+        this.logger.log(`만료 FCM 토큰 ${staleTokens.length}개 삭제`);
+      }
+
       const failedCount = response.responses.filter((r) => !r.success).length;
       if (failedCount > 0) {
         this.logger.warn(`FCM 발송 실패: ${failedCount}/${tokenValues.length}`);
