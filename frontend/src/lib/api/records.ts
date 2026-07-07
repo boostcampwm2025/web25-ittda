@@ -130,7 +130,7 @@ export const mapRecordListOptions = ({
     retry: false,
   });
 
-export const recordDetailOptions = (recordId: string, scope?: 'group' | 'personal') =>
+export const recordDetailOptions = (recordId: string) =>
   queryOptions({
     queryKey: ['record', recordId],
     queryFn: async () => {
@@ -143,7 +143,7 @@ export const recordDetailOptions = (recordId: string, scope?: 'group' | 'persona
       }
       return response.data;
     },
-    staleTime: scope === 'group' ? 0 : PERSONAL_STALE_TIME,
+    staleTime: 0,
     retry: false,
   });
 
