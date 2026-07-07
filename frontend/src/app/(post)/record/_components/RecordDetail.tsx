@@ -3,7 +3,6 @@
 import { recordDetailOptions } from '@/lib/api/records';
 import { Block } from '@/lib/types/record';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'next/navigation';
 import RecordDetailHeaderActions from './RecordDetailHeaderActions';
 import BlockContent from '@/components/BlockContent';
 import { cn } from '@/lib/utils';
@@ -14,9 +13,7 @@ interface RecordDetailProps {
 }
 
 export default function RecordDetail({ recordId }: RecordDetailProps) {
-  const searchParams = useSearchParams();
-  const scope = searchParams.get('scope') === 'group' ? 'group' : 'personal';
-  const { data: record } = useSuspenseQuery(recordDetailOptions(recordId, scope));
+  const { data: record } = useSuspenseQuery(recordDetailOptions(recordId));
 
   // 블록을 row별로 그룹화
   const rowMap = new Map<number, Block[]>();
