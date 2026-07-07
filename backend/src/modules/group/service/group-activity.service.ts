@@ -159,10 +159,16 @@ export class GroupActivityService {
     const recipientIds = recipients.map((m) => m.userId);
     if (recipientIds.length === 0) return;
 
+    const hasPost = input.refId && input.type !== GroupActivityType.POST_DELETE;
+
     await this.notificationService.sendToUsers(
       recipientIds,
       notification.title,
       notification.body,
+      {
+        groupId: input.groupId,
+        ...(hasPost ? { postId: input.refId as string } : {}),
+      },
     );
   }
 
