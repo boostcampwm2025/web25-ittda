@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, MapPin } from 'lucide-react';
+import { BellOff, Clock, MapPin } from 'lucide-react';
 import { PostCard } from './PostCard';
 import { useRouter } from 'next/navigation';
 import { GroupCover } from '@/lib/types/group';
@@ -18,6 +18,7 @@ export interface RecordCardProps {
   latestLocation?: string | null;
   cover?: GroupCover | null;
   hasNotification?: boolean;
+  notificationMuted?: boolean;
   createdAt?: string;
   height?: string;
   onClick?: () => void;
@@ -33,6 +34,7 @@ export const RecordCard = memo(function RecordCard({
   latestLocation,
   cover,
   hasNotification,
+  notificationMuted,
   onClick,
   onChangeCover,
   createdAt,
@@ -47,6 +49,13 @@ export const RecordCard = memo(function RecordCard({
       onClick={onClick}
       priorityLoad={priorityLoad}
     >
+      {/* 알림 뮤트 표시 */}
+      {notificationMuted && (
+        <div className="absolute top-3 left-3 z-10 p-1.5 rounded-lg bg-black/40 backdrop-blur-md border border-white/10">
+          <BellOff className="w-3 h-3 text-white/70" />
+        </div>
+      )}
+
       {/* 커버 변경 버튼 */}
       {onChangeCover && (
         <PostCard.Action

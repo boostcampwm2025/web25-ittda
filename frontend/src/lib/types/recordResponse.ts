@@ -70,6 +70,8 @@ export interface GroupSummary {
   lastActivityAt: string;
   latestPost: LatestPost | null;
   permission: 'ADMIN' | 'EDITOR' | 'VIEWER';
+  notificationMuted: boolean;
+  hasUnread: boolean;
 }
 
 export interface Unread {

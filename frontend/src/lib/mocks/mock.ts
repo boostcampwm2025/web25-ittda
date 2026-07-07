@@ -266,6 +266,8 @@ export const createMockGroupList = (): GroupListResponse => ({
         placeName: '성수동',
       },
       permission: 'ADMIN',
+      notificationMuted: false,
+      hasUnread: false,
     },
     {
       groupId: 'group-2',
@@ -287,6 +289,8 @@ export const createMockGroupList = (): GroupListResponse => ({
         placeName: '협재 해수욕장',
       },
       permission: 'ADMIN',
+      notificationMuted: false,
+      hasUnread: false,
     },
     {
       groupId: 'group-3',
@@ -308,6 +312,8 @@ export const createMockGroupList = (): GroupListResponse => ({
         placeName: '강남역 모임장소',
       },
       permission: 'ADMIN',
+      notificationMuted: false,
+      hasUnread: false,
     },
   ],
 });

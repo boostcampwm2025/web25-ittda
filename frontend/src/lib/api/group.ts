@@ -166,6 +166,9 @@ export const groupMyRoleOptions = (groupId: string) =>
 export const toggleGroupNotification = (groupId: string, muted: boolean) =>
   patch(`/api/groups/${groupId}/members/me/notification`, { muted });
 
+export const markGroupAsRead = (groupId: string) =>
+  patch(`/api/groups/${groupId}/members/me/read`, {});
+
 export const groupDetailOptions = (groupId: string) =>
   queryOptions({
     queryKey: ['group', groupId, 'edit'],

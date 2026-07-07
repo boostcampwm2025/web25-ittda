@@ -600,7 +600,10 @@ export class GroupManagementService {
     const member = await this.groupService.ensureMember(userId, groupId, {
       select: { role: true, notificationMuted: true },
     });
-    return { role: member.role, notificationMuted: member.notificationMuted };
+    return {
+      role: member.role,
+      notificationMuted: Boolean(member.notificationMuted),
+    };
   }
 
   async toggleGroupNotification(
@@ -614,6 +617,16 @@ export class GroupManagementService {
     await this.groupMemberRepo.update(
       { userId, groupId },
       { notificationMuted: muted },
+    );
+  }
+
+  async markGroupAsRead(userId: string, groupId: string): Promise<void> {
+    await this.groupService.ensureMember(userId, groupId, {
+      select: { id: true },
+    });
+    await this.groupMemberRepo.update(
+      { userId, groupId },
+      { lastReadAt: new Date() },
     );
   }
 

@@ -253,7 +253,12 @@ export class GroupService {
     const members = await this.groupMemberRepo
       .createQueryBuilder('gm')
       .innerJoin('gm.user', 'u')
-      .select(['gm.groupId', 'gm.role'])
+      .select([
+        'gm.groupId',
+        'gm.role',
+        'gm.notificationMuted',
+        'gm.lastReadAt',
+      ])
       .where('gm.userId = :userId', { userId })
       .andWhere('u.deletedAt IS NULL')
       .getMany();
@@ -264,6 +269,12 @@ export class GroupService {
 
     const groupIds = members.map((m) => m.groupId);
     const roleByGroupId = new Map(members.map((m) => [m.groupId, m.role]));
+    const mutedByGroupId = new Map(
+      members.map((m) => [m.groupId, Boolean(m.notificationMuted)]),
+    );
+    const lastReadAtByGroupId = new Map<string, Date | null>(
+      members.map((m) => [m.groupId, m.lastReadAt ?? null]),
+    );
     if (groupIds.length > 0) {
       this.cleanupStaleGroupCovers(groupIds);
     }
@@ -368,6 +379,12 @@ export class GroupService {
             }
           : null,
         permission: roleByGroupId.get(groupId) ?? null,
+        notificationMuted: mutedByGroupId.get(groupId) ?? false,
+        hasUnread: (() => {
+          const lastRead = lastReadAtByGroupId.get(groupId) ?? null;
+          if (!lastRead) return true;
+          return new Date(lastActivityAt) > new Date(lastRead);
+        })(),
       });
     }
 
