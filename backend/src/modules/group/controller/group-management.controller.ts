@@ -189,6 +189,25 @@ export class GroupManagementController {
     return this.groupManagementService.getGroupPermission(user.sub, groupId);
   }
 
+  @Patch(':groupId/members/me/notification')
+  @ApiOperation({
+    summary: '그룹 알림 설정 토글',
+    description:
+      '권한에 관계없이 모든 멤버가 해당 그룹의 알림을 켜고 끌 수 있습니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  async toggleGroupNotification(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+    @Body('muted') muted: boolean,
+  ): Promise<void> {
+    await this.groupManagementService.toggleGroupNotification(
+      user.sub,
+      groupId,
+      muted,
+    );
+  }
+
   @UseGuards(GroupRoleGuard)
   @GroupRoles(GroupRoleEnum.VIEWER)
   @Patch(':groupId/members/me')

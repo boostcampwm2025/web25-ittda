@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { get } from './api';
+import { get, patch } from './api';
 import {
   DailyRecordList,
   GroupCoverListResponse,
@@ -162,6 +162,9 @@ export const groupMyRoleOptions = (groupId: string) =>
     },
     staleTime: PERSONAL_STALE_TIME,
   });
+
+export const toggleGroupNotification = (groupId: string, muted: boolean) =>
+  patch(`/api/groups/${groupId}/members/me/notification`, { muted });
 
 export const groupDetailOptions = (groupId: string) =>
   queryOptions({

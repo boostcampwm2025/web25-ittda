@@ -16,8 +16,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Bell,
+  BellOff,
   LogOut,
   MoreVertical,
   Settings,
@@ -30,7 +32,7 @@ import { useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
 import { cn } from '@/lib/utils';
 import { GroupMembersResponse } from '@/lib/types/groupResponse';
-import { groupMyRoleOptions } from '@/lib/api/group';
+import { groupMyRoleOptions, toggleGroupNotification } from '@/lib/api/group';
 import { toast } from 'sonner';
 
 interface GroupHeaderActionsProps {
@@ -69,6 +71,17 @@ export default function GroupHeaderActions({
   const roleLoaded = roleData !== undefined;
   const isViewer = roleData?.role === 'VIEWER';
   const isAdmin = roleData?.role === 'ADMIN';
+  const notificationMuted = roleData?.notificationMuted ?? false;
+
+  const { mutate: toggleNotification } = useMutation({
+    mutationFn: (muted: boolean) => toggleGroupNotification(groupId, muted),
+    onSuccess: (_, muted) => {
+      queryClient.setQueryData(
+        ['group', groupId, 'me', 'role'],
+        (prev: typeof roleData) => prev ? { ...prev, notificationMuted: muted } : prev,
+      );
+    },
+  });
 
   const handleLeaveGroup = () => {
     leaveGroup({});
@@ -82,6 +95,17 @@ export default function GroupHeaderActions({
       </span>
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {roleLoaded && !isViewer && <GroupInviteDrawer groupId={groupId || 'gruop'} />}
+
+        <button
+          onClick={() => toggleNotification(!notificationMuted)}
+          className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400"
+          title={notificationMuted ? '알림 켜기' : '알림 끄기'}
+        >
+          {notificationMuted
+            ? <BellOff className="w-5 h-5" />
+            : <Bell className="w-5 h-5" />
+          }
+        </button>
 
         <DateSelectorDrawer
           className={className}

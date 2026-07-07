@@ -598,9 +598,23 @@ export class GroupManagementService {
     groupId: string,
   ): Promise<GetGroupPermissionResponseDto> {
     const member = await this.groupService.ensureMember(userId, groupId, {
-      select: { role: true },
+      select: { role: true, notificationMuted: true },
     });
-    return { role: member.role };
+    return { role: member.role, notificationMuted: member.notificationMuted };
+  }
+
+  async toggleGroupNotification(
+    userId: string,
+    groupId: string,
+    muted: boolean,
+  ): Promise<void> {
+    await this.groupService.ensureMember(userId, groupId, {
+      select: { id: true },
+    });
+    await this.groupMemberRepo.update(
+      { userId, groupId },
+      { notificationMuted: muted },
+    );
   }
 
   /** 그룹 내 내 설정 정보 수정 */
