@@ -2,7 +2,7 @@ import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, handleLogout } from './auth';
 import * as Sentry from '@sentry/nextjs';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getBackendApiBaseUrl, getBackendOrigin } from '@/lib/config/backend';
+import { getBackendOrigin } from '@/lib/config/backend';
 import {
   isRefreshableAuthError,
   isTerminalAuthError,
@@ -326,15 +326,14 @@ export async function fetchApi<T>(
   } = options;
 
   const currentBaseUrl = getApiBaseUrl();
-  // 서버 환경에서는 /api 접두사 제거 (base URL에 이미 /v1 포함)
+  // 서버 환경에서는 /api → /v1 치환 (Next.js rewrite 없이 백엔드에 직접 요청)
   const finalEndpoint =
-    typeof window === 'undefined' ? endpoint.replace(/^\/api/, '') : endpoint;
+    typeof window === 'undefined' ? endpoint.replace(/^\/api/, '/v1') : endpoint;
 
   let fullUrl = `${currentBaseUrl}${finalEndpoint}`;
   // 서버 환경인데 여전히 상대경로라면 강제로 도메인을 붙여줌 (방어 코드)
   if (typeof window === 'undefined' && !fullUrl.startsWith('http')) {
-    const fallback = getBackendApiBaseUrl();
-    fullUrl = `${fallback}${finalEndpoint.replace(/^\/api/, '')}`;
+    fullUrl = `${getBackendOrigin()}${finalEndpoint}`;
   }
 
   const url = buildUrl(fullUrl, params);
