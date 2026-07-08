@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getToken, deleteToken } from 'firebase/messaging';
+import {
+  register as fcmRegister,
+  unregister,
+  onRegistered,
+} from 'firebase/messaging';
+import type { Messaging } from 'firebase/messaging';
 import { getFirebaseMessaging } from '@/lib/firebase';
 import { registerFcmToken } from '@/lib/api/notification';
 
@@ -30,6 +35,26 @@ export async function registerAndroidToken() {
       resolve();
     });
     PushNotifications.register();
+  });
+}
+
+// onRegistered 콜백을 await 가능한 형태로 변환
+function registerAndGetFid(
+  messaging: Messaging,
+  options: {
+    vapidKey: string | undefined;
+    serviceWorkerRegistration: ServiceWorkerRegistration;
+  },
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    const unsubOnRegistered = onRegistered(messaging, (fid) => {
+      unsubOnRegistered();
+      resolve(fid);
+    });
+    fcmRegister(messaging, options).catch(() => {
+      unsubOnRegistered();
+      resolve(null);
+    });
   });
 }
 
@@ -63,25 +88,21 @@ async function getAndRegisterWebFcmToken() {
     });
   }
 
+  const options = { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg };
+
   const existingSub = await swReg.pushManager
     .getSubscription()
     .catch(() => null);
 
   if (!existingSub) {
-    await getToken(messaging, {
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: swReg,
-    }).catch(() => {});
-    await deleteToken(messaging).catch(() => {});
+    // SW unregister로 push subscription이 소멸한 경우:
+    // 기존 FID 등록 정보를 삭제해 fcmRegister()가 새 push subscription으로 재등록하도록 강제
+    await unregister(messaging).catch(() => {});
   }
 
-  const token = await getToken(messaging, {
-    vapidKey: VAPID_KEY,
-    serviceWorkerRegistration: swReg,
-  }).catch(() => null);
-
-  if (token) {
-    await registerFcmToken(token, 'web').catch(() => {});
+  const fid = await registerAndGetFid(messaging, options);
+  if (fid) {
+    await registerFcmToken(fid, 'web').catch(() => {});
   }
 }
 

@@ -81,10 +81,13 @@ export class NotificationService implements OnModuleInit {
       //     notification 필드가 있으면 Firebase가 자동 표시(FCM_MSG 래핑)와 onBackgroundMessage 둘 다 호출해
       //     알림이 중복되고 notificationclick에서 data 파싱이 깨지는 문제가 발생함.
       // 안드로이드: notification 필드 필요 (네이티브 FCM이 시스템 알림 표시에 사용).
+      // 웹: FidMessage({ fid }) — DB의 token 컬럼에 FID가 저장됨
+      // 안드로이드: TokenMessage({ token }) — DB의 token 컬럼에 FCM 등록 토큰이 저장됨
+      const identifiers = tokens.map(({ token }) => token);
       const messages = tokens.map(({ token, platform }) =>
         platform === 'web'
           ? {
-              token,
+              fid: token,
               data: { title, body, ...(data ?? {}) },
               webpush: { headers: { Urgency: 'high' } },
             }
@@ -97,23 +100,23 @@ export class NotificationService implements OnModuleInit {
       );
       const response = await getMessaging(this.app).sendEach(messages);
 
-      const staleTokens = response.responses
-        .map((r, i) => ({ ...r, token: messages[i].token }))
+      const staleIdentifiers = response.responses
+        .map((r, i) => ({ ...r, identifier: identifiers[i] }))
         .filter(
           (r) =>
             !r.success &&
             (r.error?.code === 'messaging/registration-token-not-registered' ||
               r.error?.code === 'messaging/invalid-argument'),
         )
-        .map((r) => r.token);
+        .map((r) => r.identifier);
 
-      if (staleTokens.length > 0) {
+      if (staleIdentifiers.length > 0) {
         await this.fcmTokenRepo
           .createQueryBuilder()
           .delete()
-          .where('token IN (:...tokens)', { tokens: staleTokens })
+          .where('token IN (:...tokens)', { tokens: staleIdentifiers })
           .execute();
-        this.logger.log(`만료 FCM 토큰 ${staleTokens.length}개 삭제`);
+        this.logger.log(`만료 FCM 식별자 ${staleIdentifiers.length}개 삭제`);
       }
 
       const failedCount = response.responses.filter((r) => !r.success).length;
