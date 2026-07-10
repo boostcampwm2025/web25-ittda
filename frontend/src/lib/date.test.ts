@@ -35,16 +35,20 @@ describe('formatDate', () => {
 
 describe('formatTime', () => {
   it('낮 시간을 "오후 HH:mm" 형식으로 반환한다', () => {
-    expect(formatTime(new Date('2024-06-15T12:00:00'))).toBe('오후 12:00');
+    expect(formatTime(new Date('2024-06-15T12:00:00+09:00'))).toBe(
+      '오후 12:00',
+    );
   });
 
   it('오전 시간을 "오전 HH:mm" 형식으로 반환한다', () => {
-    expect(formatTime(new Date('2024-06-15T09:05:00'))).toBe('오전 09:05');
+    expect(formatTime(new Date('2024-06-15T09:05:00+09:00'))).toBe(
+      '오전 09:05',
+    );
   });
 
   it('인자가 없으면 현재 시간을 사용한다', () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2024-06-15T09:05:00'));
+    vi.setSystemTime(new Date('2024-06-15T09:05:00+09:00'));
 
     expect(formatTime()).toBe('오전 09:05');
 
@@ -54,7 +58,7 @@ describe('formatTime', () => {
 
 describe('formatDateTime', () => {
   it('날짜와 시간을 함께 담은 객체를 반환한다', () => {
-    expect(formatDateTime(new Date('2024-06-15T09:05:00'))).toEqual({
+    expect(formatDateTime(new Date('2024-06-15T09:05:00+09:00'))).toEqual({
       timeZone: 'Asia/Seoul',
       date: '2024년 6월 15일',
       time: '오전 09:05',
