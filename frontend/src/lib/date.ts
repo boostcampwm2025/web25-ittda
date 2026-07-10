@@ -24,11 +24,19 @@ export function formatDate(date: Date = new Date()): string {
  * formatTime(new Date('2024-12-25 14:30')) // "오후 02:30"
  */
 export function formatTime(date: Date = new Date()): string {
-  return date.toLocaleTimeString('ko-KR', {
+  // Intl의 로케일별 오전/오후 표기는 실행 환경(ICU 데이터)에 따라 영어(AM/PM)로
+  // 나올 수 있어, 24시간 값만 뽑아 오전/오후를 직접 계산한다.
+  const parts = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
     timeZone: 'Asia/Seoul',
-  });
+  }).formatToParts(date);
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value);
+  const minute = parts.find((p) => p.type === 'minute')?.value;
+  const period = hour >= 12 ? '오후' : '오전';
+  const hour12 = hour % 12 || 12;
+  return `${period} ${String(hour12).padStart(2, '0')}:${minute}`;
 }
 
 /**
