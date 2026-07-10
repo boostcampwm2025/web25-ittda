@@ -6,10 +6,12 @@
 
 | 도구 | 대상 |
 |------|------|
-| **Vitest** | 순수 함수, 유틸, 훅, 비즈니스 로직 단위 테스트 |
+| **Vitest** | 순수 함수, 유틸, 훅, 비즈니스 로직 단위 테스트 (훅 의존성·조건부 렌더링 등 로직이 있는 컴포넌트 포함) |
 | **Playwright** | 사용자 흐름 기반 E2E 테스트 (페이지 이동, 실제 인터랙션) |
 
 Playwright를 단위 비즈니스 로직 검증에 쓰지 않는다. 렌더링 없이 검증 가능한 로직은 Vitest로 먼저 커버한다.
+
+컴포넌트 테스트는 페이지 전체가 아니라 **로직이 있는 단위**(훅 의존, 조건부 렌더링, props에 따른 분기 등)에 한정한다. 마크업/스타일만 있는 프레젠테이셔널 컴포넌트는 Vitest 대신 Storybook으로 시각 확인한다 (`STORYBOOK.md` 참고).
 
 ---
 
@@ -26,12 +28,15 @@ src/
   hooks/
     useDebounce.ts
     useDebounce.test.ts
+  components/
+    DailyDetailRecordItem.tsx
+    DailyDetailRecordItem.test.tsx  ← JSX 포함 시 .tsx
 e2e/
   record-create.spec.ts      ← Playwright E2E
   group-invite.spec.ts
 ```
 
-- Vitest: `*.test.ts` — 소스 파일과 같은 폴더
+- Vitest: `*.test.ts`(순수 로직) / `*.test.tsx`(JSX·컴포넌트 포함) — 소스 파일과 같은 폴더
 - Playwright: `*.spec.ts` — `e2e/` 폴더에 분리
 
 ---
@@ -106,6 +111,35 @@ describe('useDebounce', () => {
   });
 });
 ```
+
+### 3-5. 컴포넌트 테스트
+
+렌더링 결과 자체가 아니라 **props/상태에 따른 분기 로직**을 검증한다. 텍스트가 여러 엘리먼트로 쪼개질 수 있으므로 `getByText`의 정확한 문자열 매칭보다 `container.textContent`에 대한 부분 매칭(`toContain`)이 안전할 때가 많다.
+
+```typescript
+import { render } from '@testing-library/react';
+import { ActivityMessage } from './ActivityMessage';
+
+it('POST_CREATE 타입이면 새 기록 작성 문구와 제목을 표시한다', () => {
+  const { container } = render(
+    <ActivityMessage
+      activity={{
+        id: '1',
+        type: 'POST_CREATE',
+        meta: { title: '첫 기록' },
+        createdAt: '2024-06-15T00:00:00.000Z',
+        actors: [{ nickname: '테스트유저' }],
+      }}
+    />,
+  );
+
+  expect(container.textContent).toContain('테스트유저');
+  expect(container.textContent).toContain('"첫 기록"');
+  expect(container.textContent).toContain('작성했습니다');
+});
+```
+
+외부 네비게이션(`next/navigation`), 소켓, 이미지 로더 등에 의존하는 컴포넌트는 `vi.mock`으로 격리하고, 페이지 전체 흐름(라우팅, 여러 컴포넌트 조합)은 이 계층이 아니라 Playwright에서 검증한다.
 
 ---
 
