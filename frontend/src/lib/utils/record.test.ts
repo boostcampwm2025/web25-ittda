@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { getBlockValue, getBlockValues } from './record';
+import { getBlockValue, getBlockValues, getSingleBlockValue } from './record';
 import type { RecordBlock } from '../types/record';
+import type { RecordPreview } from '../types/recordResponse';
 
 const layout = { row: 0, col: 0, span: 2 };
 
@@ -52,5 +53,19 @@ describe('getBlockValues', () => {
 
   it('블록 배열이 비어 있으면 빈 배열을 반환한다', () => {
     expect(getBlockValues([], 'content')).toEqual([]);
+  });
+});
+
+describe('getSingleBlockValue', () => {
+  const record = { blocks } as unknown as RecordPreview;
+
+  it('존재하는 타입의 블록 값을 반환한다', () => {
+    expect(
+      getSingleBlockValue<{ mood: string }>(record, 'emotion'),
+    ).toEqual({ mood: '행복' });
+  });
+
+  it('존재하지 않는 타입이면 undefined를 반환한다', () => {
+    expect(getSingleBlockValue(record, 'location')).toBeUndefined();
   });
 });

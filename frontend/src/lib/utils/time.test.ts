@@ -55,6 +55,10 @@ describe('convertTo24Hour', () => {
   it('한 자리 시간도 0 패딩하여 반환한다', () => {
     expect(convertTo24Hour('9:05')).toBe('09:05');
   });
+
+  it('12시간/24시간 형식이 아닌 문자열은 그대로 반환한다', () => {
+    expect(convertTo24Hour('invalid')).toBe('invalid');
+  });
 });
 
 describe('convertTo12Hour → convertTo24Hour 왕복 변환', () => {
