@@ -13,6 +13,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest run --project unit",
+    "test:coverage": "vitest run --project unit --coverage",
     "test:e2e": "playwright test",
     "test:e2e:view": "playwright test; playwright show-report",
     "test:e2e:ui": "playwright test --ui",
