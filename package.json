@@ -31,6 +31,7 @@
     "test:fe:e2e:view": "pnpm --filter frontend test:e2e:view",
     "show-report:fe": "pnpm --filter frontend show-report",
     "test:be": "pnpm --filter backend test",
+    "test:be:coverage": "pnpm --filter backend test:cov",
     "test:be:e2e": "pnpm --filter backend test:e2e",
     "test:be:e2e:debug": "pnpm --filter backend test:e2e:debug",
     "test:all": "pnpm run test:fe && pnpm run test:be",
