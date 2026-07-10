@@ -22,9 +22,13 @@ export default defineConfig({
           include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
           environment: 'jsdom',
           globals: true,
+          setupFiles: ['./vitest.setup.ts'],
         },
         resolve: {
           alias: {
+            // tsconfig.json의 "@/_lib/*": ["src/lib/*"]와 동일 — 더 일반적인
+            // '@' 별칭보다 먼저 매칭되어야 하므로 순서상 위에 둔다.
+            '@/_lib': path.resolve(dirname, 'src/lib'),
             '@': path.resolve(dirname, 'src'),
           },
         },

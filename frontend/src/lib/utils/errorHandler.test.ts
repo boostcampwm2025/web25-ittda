@@ -109,7 +109,8 @@ describe('createApiError', () => {
   it('에러 응답에서 에러 객체를 생성한다', () => {
     const response: ApiResponse<unknown> = {
       success: false,
-      error: { message: '권한이 없습니다.', code: 'UNAUTHORIZED' },
+      data: null,
+      error: { message: '권한이 없습니다.', code: 'UNAUTHORIZED', details: {} },
     };
     const error = createApiError(response);
 
@@ -121,7 +122,8 @@ describe('createApiError', () => {
   it('NETWORK_ERROR 코드이면 isAuthError가 false다', () => {
     const response: ApiResponse<unknown> = {
       success: false,
-      error: { message: '네트워크 오류', code: 'NETWORK_ERROR' },
+      data: null,
+      error: { message: '네트워크 오류', code: 'NETWORK_ERROR', details: {} },
     };
     const error = createApiError(response);
 
@@ -132,6 +134,8 @@ describe('createApiError', () => {
     const response: ApiResponse<unknown> = {
       success: true,
       data: {},
+      meta: {},
+      error: null,
     };
     const error = createApiError(response);
 
@@ -141,7 +145,8 @@ describe('createApiError', () => {
   it('에러 코드가 없으면 INTERNAL_SERVER_ERROR로 설정된다', () => {
     const response: ApiResponse<unknown> = {
       success: false,
-      error: { message: '서버 오류' },
+      data: null,
+      error: { message: '서버 오류', code: '', details: {} },
     };
     const error = createApiError(response);
 
