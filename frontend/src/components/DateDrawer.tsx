@@ -154,6 +154,7 @@ export default function DateDrawer({
               <div className="flex gap-1">
                 <button
                   onClick={() => setCalendarDate(new Date(year, month - 1, 1))}
+                  aria-label="이전 달"
                   className="p-1.5 sm:p-2 rounded-xl bg-gray-50 dark:bg-white/5 active:scale-95 transition-transform"
                 >
                   <ChevronLeft size={16} className="sm:hidden" />
@@ -161,6 +162,7 @@ export default function DateDrawer({
                 </button>
                 <button
                   onClick={() => setCalendarDate(new Date(year, month + 1, 1))}
+                  aria-label="다음 달"
                   className="p-1.5 sm:p-2 rounded-xl bg-gray-50 dark:bg-white/5 active:scale-95 transition-transform"
                 >
                   <ChevronRight size={16} className="sm:hidden" />
