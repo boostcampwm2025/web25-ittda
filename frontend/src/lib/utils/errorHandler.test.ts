@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   isAuthError,
+  isRefreshableAuthError,
+  isTerminalAuthError,
   getErrorMessage,
   createApiError,
   ERROR_CODES,
@@ -30,6 +32,42 @@ describe('isAuthError', () => {
 
   it('undefined이면 인증 에러가 아니다', () => {
     expect(isAuthError(undefined)).toBe(false);
+  });
+});
+
+describe('isRefreshableAuthError', () => {
+  it('TOKEN_EXPIRED는 재발급 가능한 인증 에러다', () => {
+    expect(isRefreshableAuthError(ERROR_CODES.TOKEN_EXPIRED)).toBe(true);
+  });
+
+  it('UNAUTHORIZED는 재발급 가능한 인증 에러다', () => {
+    expect(isRefreshableAuthError(ERROR_CODES.UNAUTHORIZED)).toBe(true);
+  });
+
+  it('INVALID_TOKEN은 재발급 가능한 인증 에러가 아니다', () => {
+    expect(isRefreshableAuthError(ERROR_CODES.INVALID_TOKEN)).toBe(false);
+  });
+
+  it('undefined이면 재발급 가능한 인증 에러가 아니다', () => {
+    expect(isRefreshableAuthError(undefined)).toBe(false);
+  });
+});
+
+describe('isTerminalAuthError', () => {
+  it('INVALID_TOKEN은 종료 처리해야 하는 인증 에러다', () => {
+    expect(isTerminalAuthError(ERROR_CODES.INVALID_TOKEN)).toBe(true);
+  });
+
+  it('SESSION_INVALID는 종료 처리해야 하는 인증 에러다', () => {
+    expect(isTerminalAuthError(ERROR_CODES.SESSION_INVALID)).toBe(true);
+  });
+
+  it('TOKEN_EXPIRED는 종료 처리 대상이 아니다', () => {
+    expect(isTerminalAuthError(ERROR_CODES.TOKEN_EXPIRED)).toBe(false);
+  });
+
+  it('undefined이면 종료 처리 대상이 아니다', () => {
+    expect(isTerminalAuthError(undefined)).toBe(false);
   });
 });
 

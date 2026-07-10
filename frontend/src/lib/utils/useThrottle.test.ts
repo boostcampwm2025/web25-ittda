@@ -78,4 +78,15 @@ describe('useThrottle', () => {
     expect(fn).toHaveBeenCalledTimes(2);
     expect(fn).toHaveBeenLastCalledWith('두 번째');
   });
+
+  it('대기 중인 호출이 없을 때 flush를 호출해도 아무 일도 일어나지 않는다', () => {
+    const fn = vi.fn();
+    const { result } = renderHook(() => useThrottle(fn, 500));
+
+    act(() => {
+      result.current.flush();
+    });
+
+    expect(fn).not.toHaveBeenCalled();
+  });
 });

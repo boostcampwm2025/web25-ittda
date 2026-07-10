@@ -17,7 +17,9 @@ function ScrollTestComponent() {
 }
 
 function getVisible(): boolean {
-  return screen.getByTestId('container').getAttribute('data-visible') === 'true';
+  return (
+    screen.getByTestId('container').getAttribute('data-visible') === 'true'
+  );
 }
 
 function scrollTo(scrollTop: number) {

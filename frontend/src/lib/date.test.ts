@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
+  formatDate,
+  formatTime,
+  formatDateTime,
+  formatTimeStr,
   formatRelativeTime,
+  formatDateDot,
+  getDateMetadata,
   getMonthRange,
   getWeekDays,
   getStartOfWeek,
@@ -9,6 +15,74 @@ import {
   formatDotDateString,
   getWeekdayFromDotString,
 } from './date';
+
+describe('formatDate', () => {
+  it('날짜를 "N년 N월 N일" 형식으로 반환한다', () => {
+    expect(formatDate(new Date('2024-06-15T12:00:00'))).toBe(
+      '2024년 6월 15일',
+    );
+  });
+
+  it('인자가 없으면 현재 날짜를 사용한다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-06-15T12:00:00'));
+
+    expect(formatDate()).toBe('2024년 6월 15일');
+
+    vi.useRealTimers();
+  });
+});
+
+describe('formatTime', () => {
+  it('낮 시간을 "오후 HH:mm" 형식으로 반환한다', () => {
+    expect(formatTime(new Date('2024-06-15T12:00:00'))).toBe('오후 12:00');
+  });
+
+  it('오전 시간을 "오전 HH:mm" 형식으로 반환한다', () => {
+    expect(formatTime(new Date('2024-06-15T09:05:00'))).toBe('오전 09:05');
+  });
+
+  it('인자가 없으면 현재 시간을 사용한다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-06-15T09:05:00'));
+
+    expect(formatTime()).toBe('오전 09:05');
+
+    vi.useRealTimers();
+  });
+});
+
+describe('formatDateTime', () => {
+  it('날짜와 시간을 함께 담은 객체를 반환한다', () => {
+    expect(formatDateTime(new Date('2024-06-15T09:05:00'))).toEqual({
+      timeZone: 'Asia/Seoul',
+      date: '2024년 6월 15일',
+      time: '오전 09:05',
+    });
+  });
+});
+
+describe('formatTimeStr', () => {
+  it('오전 시간을 "오전 HH:mm" 형식으로 변환한다', () => {
+    expect(formatTimeStr('09:05')).toBe('오전 09:05');
+  });
+
+  it('오후 시간을 "오후 HH:mm" 형식으로 변환한다', () => {
+    expect(formatTimeStr('13:30')).toBe('오후 01:30');
+  });
+
+  it('자정(00:00)은 "오전 12:00"으로 변환한다', () => {
+    expect(formatTimeStr('00:00')).toBe('오전 12:00');
+  });
+
+  it('정오(12:00)는 "오후 12:00"으로 변환한다', () => {
+    expect(formatTimeStr('12:00')).toBe('오후 12:00');
+  });
+
+  it('시간 형식이 잘못되면 입력값을 그대로 반환한다', () => {
+    expect(formatTimeStr('abc:def')).toBe('abc:def');
+  });
+});
 
 describe('formatRelativeTime', () => {
   beforeEach(() => {
@@ -174,5 +248,50 @@ describe('getWeekdayFromDotString', () => {
 
   it('일요일 날짜 문자열에서 "일"을 반환한다', () => {
     expect(getWeekdayFromDotString('2024.06.09')).toBe('일');
+  });
+});
+
+describe('formatDateDot', () => {
+  it('날짜를 "YYYY.MM.DD" 형식으로 반환한다', () => {
+    expect(formatDateDot(new Date(2024, 5, 15))).toBe('2024.06.15');
+  });
+
+  it('한 자리 월/일은 0으로 채운다', () => {
+    expect(formatDateDot(new Date(2024, 0, 5))).toBe('2024.01.05');
+  });
+
+  it('인자가 없으면 현재 날짜를 사용한다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2024, 5, 15));
+
+    expect(formatDateDot()).toBe('2024.06.15');
+
+    vi.useRealTimers();
+  });
+});
+
+describe('getDateMetadata', () => {
+  it('날짜, 시간, 요일 정보를 담은 객체를 반환한다', () => {
+    const date = new Date('2024-06-12T09:05:00'); // 수요일
+    const metadata = getDateMetadata(date);
+
+    expect(metadata.date).toBe(formatDateISO(date));
+    expect(metadata.time).toBe(
+      `${String(date.getHours()).padStart(2, '0')}:${String(
+        date.getMinutes(),
+      ).padStart(2, '0')}`,
+    );
+    expect(metadata.weekday).toBe('수요일');
+  });
+
+  it('인자가 없으면 현재 날짜를 사용한다', () => {
+    vi.useFakeTimers();
+    const now = new Date('2024-06-09T00:00:00'); // 일요일
+    vi.setSystemTime(now);
+
+    const metadata = getDateMetadata();
+    expect(metadata.weekday).toBe('일요일');
+
+    vi.useRealTimers();
   });
 });

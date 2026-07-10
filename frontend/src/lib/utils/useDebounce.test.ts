@@ -63,6 +63,18 @@ describe('useDebounce', () => {
     expect(fn).not.toHaveBeenCalled();
   });
 
+  it('대기 중인 타이머가 없을 때 cancel을 호출해도 아무 일도 일어나지 않는다', () => {
+    const fn = vi.fn();
+    const { result } = renderHook(() => useDebounce(fn, 500));
+
+    act(() => {
+      result.current.cancel();
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   it('unmount 시 타이머가 정리된다', () => {
     const fn = vi.fn();
     const { result, unmount } = renderHook(() => useDebounce(fn, 500));
