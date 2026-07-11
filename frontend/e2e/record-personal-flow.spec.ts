@@ -136,7 +136,11 @@ test.describe('개인 기록 작성 → 상세 확인 → 홈 확인', () => {
 
     // 홈 피드에서 방금 작성한 기록 제목 확인
     // HomeData → RecordList → 각 기록의 title 렌더링
-    await expect(page.getByText(RECORD_TITLE)).toBeVisible({ timeout: 10000 });
+    const recordCard = page
+      .locator('div[class*="cursor-pointer"]')
+      .filter({ has: page.getByRole('heading', { name: RECORD_TITLE }) })
+      .first();
+    await expect(recordCard).toBeVisible({ timeout: 10000 });
 
     // 개인 기록은 홈에서 contributor 아바타/닉네임을 렌더링하지 않음
     // RecordList: `record.groupId &&` 조건이 false → contributor 섹션 미렌더링
