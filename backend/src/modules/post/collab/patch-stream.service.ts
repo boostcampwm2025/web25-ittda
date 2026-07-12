@@ -82,36 +82,53 @@ export class PatchStreamService implements OnModuleDestroy {
       .filter((command) => command.type === 'BLOCK_INSERT')
       .map((command) => command.block?.id)
       .filter((blockId): blockId is string => Boolean(blockId));
-
-    for (const command of commands) {
-      if (command.type === 'BLOCK_INSERT') {
-        continue;
-      }
-      if (command.type === 'BLOCK_MOVE') {
-        // Layout moves are allowed without locks.
-        continue;
-      }
-      if (command.type === 'BLOCK_SET_TITLE') {
-        this.ensureTitleLockOwner(draftId, sessionId);
-        continue;
-      }
-      const blockId = 'blockId' in command ? command.blockId : null;
-      if (!blockId) continue;
-      if (!isUUID(blockId)) {
-        throw new WsException('blockId must be a UUID.');
-      }
-      this.ensureLockOwner(draftId, sessionId, blockId);
-    }
+    const temporaryDeleteLockKeys: string[] = [];
 
     type ApplyPatchResult = Awaited<ReturnType<PostDraftService['applyPatch']>>;
     let result: ApplyPatchResult;
     try {
+      for (const command of commands) {
+        if (command.type === 'BLOCK_INSERT') {
+          continue;
+        }
+        if (command.type === 'BLOCK_MOVE') {
+          // Layout moves are allowed without locks.
+          continue;
+        }
+        if (command.type === 'BLOCK_SET_TITLE') {
+          this.ensureTitleLockOwner(draftId, sessionId);
+          continue;
+        }
+        const blockId = 'blockId' in command ? command.blockId : null;
+        if (!blockId) continue;
+        if (!isUUID(blockId)) {
+          throw new WsException('blockId must be a UUID.');
+        }
+        if (command.type === 'BLOCK_DELETE') {
+          this.ensureDeleteLockOwnerOrAcquire(
+            draftId,
+            actorId,
+            sessionId,
+            blockId,
+            temporaryDeleteLockKeys,
+          );
+          continue;
+        }
+        this.ensureLockOwner(draftId, sessionId, blockId);
+      }
+
       result = await this.postDraftService.applyPatch(
         draftId,
         payload.baseVersion,
         payload.patch,
       );
     } catch (error) {
+      this.releaseTemporaryLocks(
+        draftId,
+        actorId,
+        sessionId,
+        temporaryDeleteLockKeys,
+      );
       if (error instanceof WsException) {
         throw error;
       }
@@ -128,6 +145,12 @@ export class PatchStreamService implements OnModuleDestroy {
       throw new WsException('Internal server error');
     }
     if (result.status === 'stale') {
+      this.releaseTemporaryLocks(
+        draftId,
+        actorId,
+        sessionId,
+        temporaryDeleteLockKeys,
+      );
       socket.emit('PATCH_REJECTED_STALE', {
         currentVersion: result.currentVersion,
       });
@@ -158,6 +181,13 @@ export class PatchStreamService implements OnModuleDestroy {
         if (!lockResult.ok) return;
       });
     }
+
+    this.releaseTemporaryLocks(
+      draftId,
+      actorId,
+      sessionId,
+      temporaryDeleteLockKeys,
+    );
   }
 
   private ensureNotPublishing(draftId: string) {
@@ -241,6 +271,58 @@ export class PatchStreamService implements OnModuleDestroy {
       return;
     }
     throw new WsException('Lock owner only.');
+  }
+
+  private ensureDeleteLockOwnerOrAcquire(
+    draftId: string,
+    actorId: string,
+    sessionId: string,
+    blockId: string,
+    temporaryDeleteLockKeys: string[],
+  ) {
+    const blockLockKey = `block:${blockId}`;
+    const tableLockKey = `table:${blockId}`;
+    const blockOwner = this.lockService.getActiveLockOwnerSessionId(
+      draftId,
+      blockLockKey,
+    );
+    const tableOwner = this.lockService.getActiveLockOwnerSessionId(
+      draftId,
+      tableLockKey,
+    );
+
+    if (blockOwner === sessionId || tableOwner === sessionId) {
+      return;
+    }
+    if (blockOwner || tableOwner) {
+      throw new WsException('Lock owner only.');
+    }
+
+    const result = this.lockService.acquireLock(
+      draftId,
+      blockLockKey,
+      actorId,
+      sessionId,
+      () => undefined,
+    );
+    if (!result.ok) {
+      throw new WsException('Lock owner only.');
+    }
+    temporaryDeleteLockKeys.push(blockLockKey);
+  }
+
+  private releaseTemporaryLocks(
+    draftId: string,
+    actorId: string,
+    sessionId: string,
+    temporaryDeleteLockKeys: string[],
+  ) {
+    if (temporaryDeleteLockKeys.length === 0) return;
+
+    temporaryDeleteLockKeys.forEach((lockKey) => {
+      this.lockService.releaseLock(draftId, lockKey, actorId, sessionId);
+    });
+    temporaryDeleteLockKeys.length = 0;
   }
 
   private isStreamOwner(draftId: string, blockId: string, sessionId: string) {
