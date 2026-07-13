@@ -56,7 +56,11 @@ test.describe('개인 기록 작성 → 상세 확인 → 홈 확인', () => {
     postId = page.url().split('/record/')[1].split('?')[0];
 
     // 제목 확인
-    await expect(page.getByRole('heading', { name: RECORD_TITLE })).toBeVisible({ timeout: 8000 });
+    // 상세 페이지 진입 직후 스켈레톤 → 실제 콘텐츠 전환 과정에서 heading이
+    // 순간적으로 겹쳐 보일 수 있어 strict mode 위반을 피하기 위해 first() 사용
+    await expect(
+      page.getByRole('heading', { name: RECORD_TITLE }).first(),
+    ).toBeVisible({ timeout: 8000 });
 
     // 본문 확인
     await expect(page.getByText(RECORD_CONTENT)).toBeVisible();

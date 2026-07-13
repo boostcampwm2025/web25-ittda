@@ -15,7 +15,11 @@ test.describe('기록 상세 조회', () => {
 
   test('기록 상세 페이지에 제목이 표시된다', async ({ page }) => {
     await page.goto(`/record/${postId}`);
-    await expect(page.getByRole('heading', { name: '상세 조회 테스트 기록' })).toBeVisible({ timeout: 8000 });
+    // 스켈레톤 → 실제 콘텐츠 전환 과정에서 heading이 순간적으로 겹쳐 보일 수
+    // 있어 strict mode 위반을 피하기 위해 first() 사용
+    await expect(
+      page.getByRole('heading', { name: '상세 조회 테스트 기록' }).first(),
+    ).toBeVisible({ timeout: 8000 });
   });
 
   test('텍스트 블록 내용이 표시된다', async ({ page }) => {
