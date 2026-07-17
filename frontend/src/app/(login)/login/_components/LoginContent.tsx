@@ -7,6 +7,7 @@ import { getRedirectUri } from '@/lib/utils/getRedirectUri';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { post } from '@/lib/api/api';
@@ -16,6 +17,7 @@ import { createApiError } from '@/lib/utils/errorHandler';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 import { isInAppBrowser } from '@/lib/utils/browserDetect';
+import ServiceIntro from './ServiceIntro';
 
 const isNativePlatform = () =>
   typeof window !== 'undefined' &&
@@ -25,8 +27,9 @@ const isNativePlatform = () =>
 
 const isAndroidPlatform = () =>
   typeof window !== 'undefined' &&
-  (window as unknown as { Capacitor?: { getPlatform?: () => string } })
-    .Capacitor?.getPlatform?.() === 'android';
+  (
+    window as unknown as { Capacitor?: { getPlatform?: () => string } }
+  ).Capacitor?.getPlatform?.() === 'android';
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_callback: '잘못된 로그인 요청입니다.',
@@ -54,7 +57,9 @@ export default function LoginContent({
   const router = useRouter();
   const inviteCode =
     getCookie('invite-code') ||
-    (typeof window !== 'undefined' ? sessionStorage.getItem('invite-code') : null) ||
+    (typeof window !== 'undefined'
+      ? sessionStorage.getItem('invite-code')
+      : null) ||
     '';
 
   const { setGuestInfo, isLoggedIn, guestSessionId } = useAuthStore();
@@ -236,7 +241,9 @@ export default function LoginContent({
               toast.success(`그룹에 참여되었습니다!`);
               redirectPath = `/group/${inviteGroupId}`;
             } catch (error) {
-              toast.error('그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.');
+              toast.error(
+                '그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.',
+              );
               deleteCookie('invite-code');
               sessionStorage.removeItem('invite-code');
               logger.error('게스트 복원 후 그룹 가입 실패', error);
@@ -304,117 +311,157 @@ export default function LoginContent({
     };
 
   return (
-    <div className="min-h-screen w-full flex flex-col transition-colors duration-500 dark:bg-[#0F1115] bg-[#FFFFFF]">
-      {/* 상단 로고 및 슬로건 영역 */}
-      <div
-        className="flex-1 flex flex-col items-center justify-center px-6"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2.5rem)' }}
-      >
-        <div className="flex flex-col items-center">
-          {/* 서비스 명 */}
-          <h1 className="text-4xl font-medium tracking-tighter mb-4 flex items-center dark:text-white text-[#111111]">
+    <div className="relative left-1/2 -ml-[50vw] w-screen min-h-screen flex flex-col bg-white">
+      {/* 히어로: 흰 배경(고정, 다크모드 미적용) + 노션처럼 이미지 없이 중앙 정렬 */}
+      <div className="relative w-full min-h-screen flex flex-col overflow-hidden bg-white">
+        {/* 좌상단 워드마크 */}
+        <div
+          className="relative z-10 px-6 lg:px-12"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1.25rem)' }}
+        >
+          <h1 className="text-xl font-medium tracking-tighter flex items-center text-itta-black">
             잇다
             <span
-              className="dark:text-white/60 text-itta-black/90 ml-1"
+              className="text-itta-black/50 ml-0.5"
               style={{ fontWeight: 100 }}
             >
               -
             </span>
           </h1>
+        </div>
 
-          <div className="flex flex-col items-center space-y-1.5">
-            <p className="text-[13px] font-medium tracking-tight opacity-90 dark:text-gray-300 text-[#666666]">
-              기억과 맥락을 잇다.
-            </p>
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-60 text-itta-point">
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-12 px-6 lg:px-12 py-10 max-w-6xl mx-auto w-full">
+          {/* 텍스트 + 로그인 CTA — 노션처럼 이미지 없이 중앙 정렬된 단순한 히어로 */}
+          <div className="flex flex-col items-center text-center max-w-xl">
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-itta-point mb-4">
               Connected by Context
             </p>
+            <h2 className="text-[32px] lg:text-[44px] font-bold leading-[1.3] mb-3 text-itta-black">
+              기억과 맥락을 잇다
+            </h2>
+            <p className="text-base lg:text-lg leading-relaxed break-keep text-gray-500 max-w-xs lg:max-w-md mb-9">
+              사진 한 장이면 날짜와 장소가 자동으로 기록되고, 친구와 함께
+              우리만의 기억을 만들어가요.
+            </p>
+
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center flex-wrap justify-center gap-3">
+                {/* 구글 로그인 */}
+                <Link
+                  href={getRedirectUri({
+                    provider: 'google',
+                    callback,
+                    forceAccountSelect,
+                  })}
+                  onClick={handleSocialLogin('google')}
+                  className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-white border border-gray-200 shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                  <span className="text-[14px] font-semibold text-[#1F1F1F]">
+                    Google로 시작하기
+                  </span>
+                </Link>
+
+                {/* 카카오 로그인 */}
+                <Link
+                  href={getRedirectUri({
+                    provider: 'kakao',
+                    callback,
+                    forceAccountSelect,
+                  })}
+                  onClick={handleSocialLogin('kakao')}
+                  className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-[#FEE500] shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-4 h-4 shrink-0 fill-[#3C1E1E]"
+                  >
+                    <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.707 4.8 4.315 6.091l-1.098 4.019c-.066.242.062.483.286.538.074.018.15.016.223-.004l4.744-3.137c.174.005.35.008.53.008 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
+                  </svg>
+                  <span className="text-[14px] font-semibold text-[#3C1E1E]">
+                    Kakao로 시작하기
+                  </span>
+                </Link>
+              </div>
+
+              <button
+                onClick={handleLoginGuest}
+                disabled={isLoading || isPending}
+                className="text-[13px] font-medium text-gray-500 transition-opacity hover:opacity-60 active:scale-95 disabled:opacity-30"
+              >
+                {isLoading || isPending ? '로그인 중...' : '가입 없이 시작하기'}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* 아래에 기능 소개가 더 있다는 걸 알려주는 스크롤 유도(마우스 스크롤 아이콘) */}
+        <div className="relative z-10 flex flex-col items-center gap-2 pb-4">
+          <span className="text-[11px] text-gray-400">
+            스크롤해서 더 알아보기
+          </span>
+          <div className="w-6 h-10 rounded-full border-2 border-gray-300 flex justify-center pt-1.5">
+            <motion.div
+              className="w-1 h-2 rounded-full bg-gray-400"
+              animate={{ y: [0, 12, 0], opacity: [1, 1, 0] }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          className="relative z-10 flex justify-center pb-6"
+          style={{
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.25rem)',
+          }}
+        >
+          <Link
+            href="/privacy-policy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-gray-400 hover:underline transition-all"
+          >
+            개인정보처리방침
+          </Link>
+        </div>
+      </div>
+
+      {/* 기능 소개: 스크롤해야 보이는 영역 */}
+      <ServiceIntro />
+
+      <div className="w-full bg-white flex justify-center py-10">
+        <p className="text-[11px] text-gray-400">
+          © 2026 잇다-. ALL RIGHTS RESERVED.
+        </p>
       </div>
 
       <div
-        className="px-8 flex flex-col items-center w-full max-w-lg mx-auto"
+        aria-hidden
         style={{
-          paddingBottom:
-            'max(10rem, calc(env(safe-area-inset-bottom) + 10rem))',
+          height: 'max(2rem, env(safe-area-inset-bottom))',
         }}
-      >
-        {/* SNS 구분선 */}
-        <div className="w-full flex items-center gap-4 mb-10">
-          <div className="flex-1 h-px dark:bg-white/20 bg-gray-200" />
-          <span className="text-[13px] font-medium whitespace-nowrap tracking-tight dark:text-gray-300 text-gray-500">
-            SNS 계정으로 간편하게 시작하기
-          </span>
-          <div className="flex-1 h-px dark:bg-white/20 bg-gray-200" />
-        </div>
-
-        <div className="flex items-center justify-center gap-8 mb-16">
-          {/* 구글 로그인 */}
-          <Link
-            aria-label="구글로 로그인하기"
-            href={getRedirectUri({
-              provider: 'google',
-              callback,
-              forceAccountSelect,
-            })}
-            onClick={handleSocialLogin('google')}
-            className="bg-white border-gray-100 w-14 h-14 rounded-full flex items-center justify-center border shadow-sm transition-all hover:shadow-md active:scale-90"
-          >
-            <svg viewBox="0 0 24 24" className="w-6 h-6">
-              <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                fill="#4285F4"
-              />
-              <path
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                fill="#34A853"
-              />
-              <path
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fill="#EA4335"
-              />
-            </svg>
-          </Link>
-
-          {/* 카카오 로그인 */}
-          <Link
-            aria-label="카카오로 로그인하기"
-            href={getRedirectUri({
-              provider: 'kakao',
-              callback,
-              forceAccountSelect,
-            })}
-            onClick={handleSocialLogin('kakao')}
-            className="w-14 h-14 rounded-full bg-[#FEE500] flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90"
-          >
-            <svg viewBox="0 0 24 24" className="w-7 h-7 fill-[#3C1E1E]">
-              <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.707 4.8 4.315 6.091l-1.098 4.019c-.066.242.062.483.286.538.074.018.15.016.223-.004l4.744-3.137c.174.005.35.008.53.008 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
-            </svg>
-          </Link>
-        </div>
-
-        <button
-          onClick={handleLoginGuest}
-          disabled={isLoading || isPending}
-          className="text-[13px] font-medium transition-all hover:opacity-60 active:scale-95 dark:text-gray-300 text-gray-500 disabled:opacity-30"
-        >
-          {isLoading || isPending ? '로그인 중...' : '가입 없이 시작하기'}
-        </button>
-
-        <Link
-          href="/privacy-policy.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-6 text-[11px] dark:text-gray-300 text-gray-600 hover:underline transition-all"
-        >
-          개인정보처리방침
-        </Link>
-      </div>
+      />
     </div>
   );
 }
