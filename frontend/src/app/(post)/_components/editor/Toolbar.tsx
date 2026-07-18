@@ -59,16 +59,23 @@ export default function Toolbar({ onAddBlock, onOpenDrawer }: ToolbarProps) {
         className="w-full bg-white dark:bg-[#2A2A2A] border-t border-gray-100 dark:border-white/5 px-2 pt-4 sm:px-4 sm:pt-3 flex justify-around items-center"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
       >
-        {TOOL_ITEMS.map(({ id, Icon }) => (
-          <button
-            key={id}
-            onClick={() => onAddBlock(id as FieldType)}
-            className="p-1.5 sm:p-2 text-itta-gray3 hover:text-[#10B981] dark:text-gray-500 dark:hover:text-[#10B981] transition-colors active:scale-110"
-          >
-            <Icon size={20} strokeWidth={1.5} className="sm:hidden" />
-            <Icon size={24} strokeWidth={1.5} className="hidden sm:block" />
-          </button>
-        ))}
+        {/* 코치마크 스포트라이트가 세이프에어리어 패딩까지 포함하지 않고
+            아이콘 줄에만 딱 맞도록 별도 래퍼에 타겟을 건다 */}
+        <div
+          data-tutorial-id="tutorial-editor-toolbar"
+          className="w-full flex justify-around items-center"
+        >
+          {TOOL_ITEMS.map(({ id, Icon }) => (
+            <button
+              key={id}
+              onClick={() => onAddBlock(id as FieldType)}
+              className="p-1.5 sm:p-2 text-itta-gray3 hover:text-[#10B981] dark:text-gray-500 dark:hover:text-[#10B981] transition-colors active:scale-110"
+            >
+              <Icon size={20} strokeWidth={1.5} className="sm:hidden" />
+              <Icon size={24} strokeWidth={1.5} className="hidden sm:block" />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
