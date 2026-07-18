@@ -388,14 +388,44 @@ export class PostService {
     }
   }
 
-  async createShareToken(postId: string, userId: string): Promise<string> {
+  private async ensureCanManageShare(
+    postId: string,
+    userId: string,
+    select: { shareToken?: true } = {},
+  ) {
     const post = await this.postRepository.findOne({
       where: { id: postId, deletedAt: IsNull() },
-      select: { id: true, ownerUserId: true, shareToken: true },
+      select: {
+        id: true,
+        ownerUserId: true,
+        groupId: true,
+        scope: true,
+        ...select,
+      },
     });
     if (!post) throw new NotFoundException('Post not found');
-    if (post.ownerUserId !== userId)
-      throw new ForbiddenException('Only the owner can share this post');
+    if (post.ownerUserId === userId) return post;
+
+    if (post.scope === PostScope.GROUP && post.groupId) {
+      const member = await this.groupMemberRepository.findOne({
+        where: { groupId: post.groupId, userId },
+        select: { role: true },
+      });
+      if (
+        member &&
+        (member.role === GroupRoleEnum.ADMIN ||
+          member.role === GroupRoleEnum.EDITOR)
+      ) {
+        return post;
+      }
+    }
+    throw new ForbiddenException('You do not have access to share this post');
+  }
+
+  async createShareToken(postId: string, userId: string): Promise<string> {
+    const post = await this.ensureCanManageShare(postId, userId, {
+      shareToken: true,
+    });
 
     if (post.shareToken) return post.shareToken;
 
@@ -405,13 +435,7 @@ export class PostService {
   }
 
   async revokeShareToken(postId: string, userId: string): Promise<void> {
-    const post = await this.postRepository.findOne({
-      where: { id: postId, deletedAt: IsNull() },
-      select: { id: true, ownerUserId: true },
-    });
-    if (!post) throw new NotFoundException('Post not found');
-    if (post.ownerUserId !== userId)
-      throw new ForbiddenException('Only the owner can revoke this share');
+    await this.ensureCanManageShare(postId, userId);
 
     await this.postRepository.update(postId, { shareToken: null });
   }
