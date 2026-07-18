@@ -136,8 +136,11 @@ export default function Coachmark({
     <>
       {/* 코치마크 중 실제 화면 클릭 차단 */}
       <div
-        className="fixed inset-0 z-99"
-        onClick={(e) => e.preventDefault()}
+        className="fixed inset-0 z-[99]"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
       />
 
       {/* 어두운 배경 + 타겟 부분만 뚫린 스포트라이트(타겟 비율 그대로) */}
