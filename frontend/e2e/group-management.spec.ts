@@ -208,8 +208,8 @@ test.describe('멤버 관리 - 역할 변경', () => {
 
     // 서버 반영 확인을 위해 reload 후 재검증
     await page.reload();
-    await expect(page.getByText(MEMBER_B_NICKNAME)).toBeVisible({ timeout: 8000 });
     const bCardAfter = page.locator('[data-testid="member-card"]').filter({ has: page.getByText(MEMBER_B_NICKNAME) });
+    await expect(bCardAfter).toBeVisible({ timeout: 8000 });
     await expect(bCardAfter.locator('span').filter({ hasText: '뷰어' })).toBeVisible({ timeout: 5000 });
   });
 
