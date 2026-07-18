@@ -7,7 +7,7 @@ import { getRedirectUri } from '@/lib/utils/getRedirectUri';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { toast } from 'sonner';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { post } from '@/lib/api/api';
@@ -55,6 +55,7 @@ export default function LoginContent({
   forceAccountSelect?: boolean;
 }) {
   const router = useRouter();
+  const shouldReduceMotion = useReducedMotion();
   const inviteCode =
     getCookie('invite-code') ||
     (typeof window !== 'undefined'
@@ -420,12 +421,16 @@ export default function LoginContent({
           <div className="w-6 h-10 rounded-full border-2 border-gray-300 flex justify-center pt-1.5">
             <motion.div
               className="w-1 h-2 rounded-full bg-gray-400"
-              animate={{ y: [0, 12, 0], opacity: [1, 1, 0] }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
+              animate={
+                shouldReduceMotion
+                  ? { y: 0, opacity: 1 }
+                  : { y: [0, 12, 0], opacity: [1, 1, 0] }
+              }
+              transition={
+                shouldReduceMotion
+                  ? undefined
+                  : { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+              }
             />
           </div>
         </div>
