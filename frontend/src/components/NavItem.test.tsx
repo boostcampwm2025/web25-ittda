@@ -46,12 +46,7 @@ describe('NavItem', () => {
 
   it('isGroup이 true이고 active가 false면 그룹 비활성 색상 클래스가 적용된다', () => {
     render(
-      <NavItem
-        icon={<TestIcon />}
-        active={false}
-        onClick={vi.fn()}
-        isGroup
-      />,
+      <NavItem icon={<TestIcon />} active={false} onClick={vi.fn()} isGroup />,
     );
 
     expect(screen.getByRole('button')).toHaveClass('text-gray-400');
@@ -72,5 +67,27 @@ describe('NavItem', () => {
     await userEvent.click(button);
 
     expect(button.querySelector('span')).toBeInTheDocument();
+  });
+
+  it('tutorialId를 전달하면 data-tutorial-id 속성이 렌더링된다', () => {
+    render(
+      <NavItem
+        icon={<TestIcon />}
+        active={false}
+        onClick={vi.fn()}
+        tutorialId="tutorial-nav-group"
+      />,
+    );
+
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'data-tutorial-id',
+      'tutorial-nav-group',
+    );
+  });
+
+  it('tutorialId를 전달하지 않으면 data-tutorial-id 속성이 없다', () => {
+    render(<NavItem icon={<TestIcon />} active={false} onClick={vi.fn()} />);
+
+    expect(screen.getByRole('button')).not.toHaveAttribute('data-tutorial-id');
   });
 });

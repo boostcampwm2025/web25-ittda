@@ -9,6 +9,7 @@ interface NavItemProps {
   active: boolean;
   onClick: VoidFunction;
   isGroup?: boolean;
+  tutorialId?: string;
 }
 
 export default function NavItem({
@@ -16,6 +17,7 @@ export default function NavItem({
   active,
   onClick,
   isGroup,
+  tutorialId,
 }: NavItemProps) {
   const [ripple, setRipple] = useState(false);
 
@@ -55,6 +57,9 @@ export default function NavItem({
         strokeWidth: active ? 2.5 : 2.2,
         fill: 'none',
         fillOpacity: active ? 0.08 : 0,
+        // 코치마크는 버튼 전체(터치 영역)가 아니라 눈에 보이는 아이콘만 감싸도록
+        // 아이콘 자체에 타겟을 건다 — 버튼은 터치 영역 확보용 패딩이 커서 박스가 커 보임
+        ...(tutorialId ? { 'data-tutorial-id': tutorialId } : {}),
       })}
     </button>
   );

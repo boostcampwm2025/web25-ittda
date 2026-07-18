@@ -89,7 +89,10 @@ export default function GroupDraftFloatingButton({
         <Popover>
           {/* 플로팅 버튼 */}
           <PopoverTrigger asChild>
-            <button className="z-50 relative h-12 w-12 sm:h-13 sm:w-13 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 bg-itta-black text-white">
+            <button
+              data-tutorial-id="tutorial-group-drafts"
+              className="z-50 relative h-12 w-12 sm:h-13 sm:w-13 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 bg-itta-black text-white"
+            >
               <Edit3 className="w-5 h-5" />
               {drafts.length > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-itta-point px-1.5 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#121212]">

@@ -63,7 +63,10 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
           )}
         </div>
 
-        <div className="flex gap-0.5 p-0.5 rounded-lg bg-gray-100 dark:bg-white/5">
+        <div
+          data-tutorial-id="tutorial-group-tabs"
+          className="flex gap-0.5 p-0.5 rounded-lg bg-gray-100 dark:bg-white/5"
+        >
           <button
             onClick={() => router.replace(`/group/${groupId}`)}
             className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${
