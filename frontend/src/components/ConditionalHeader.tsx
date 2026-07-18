@@ -18,7 +18,6 @@ export default function ConditionalHeader() {
     '/profile/all-emotions',
     '/location-picker',
     '/invite',
-    '/onboarding',
     '/announcements',
     '/inquiry',
   ];

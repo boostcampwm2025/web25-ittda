@@ -89,7 +89,7 @@ describe('PWAInstallBannerClient', () => {
     await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 
-  it.each(['/login', '/onboarding', '/oauth/callback'])(
+  it.each(['/login', '/oauth/callback'])(
     '%s 경로에서는 렌더링하지 않는다',
     async (pathname) => {
       setup({ pathname });
