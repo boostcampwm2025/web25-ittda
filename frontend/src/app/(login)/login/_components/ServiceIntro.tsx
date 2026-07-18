@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import Image from 'next/image';
 import {
   Camera,
@@ -69,6 +69,18 @@ const FEATURE_DATA: FeatureItem[] = [
 ];
 
 export default function ServiceIntro() {
+  const shouldReduceMotion = useReducedMotion();
+  const entranceProps = shouldReduceMotion
+    ? {
+        initial: { opacity: 1, y: 0, scale: 1 },
+        whileInView: { opacity: 1, y: 0, scale: 1 },
+      }
+    : {
+        initial: { opacity: 0, y: 56, scale: 0.97 },
+        whileInView: { opacity: 1, y: 0, scale: 1 },
+        transition: { duration: 0.7, ease: 'easeOut' as const },
+      };
+
   return (
     <section className="w-full bg-white">
       {/* 기능 소개: 섹션마다 진한 컬러 배경으로 대비를 주고, 좌우 배치는 번갈아 바뀜 */}
@@ -81,10 +93,8 @@ export default function ServiceIntro() {
             className={cn('relative w-full overflow-hidden', SECTION_BG[i])}
           >
             <motion.div
-              initial={{ opacity: 0, y: 56, scale: 0.97 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              {...entranceProps}
               viewport={{ once: true, amount: 0.35 }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
               className={cn(
                 'relative mx-auto max-w-4xl flex flex-col items-center gap-10 lg:gap-16 px-6 py-16 lg:py-24 text-center',
                 imageOnLeft ? 'lg:flex-row-reverse' : 'lg:flex-row',
@@ -147,10 +157,8 @@ export default function ServiceIntro() {
       {/* 보관함: 진한 섹션들 사이에서 숨 고르는 밝은 마무리 섹션 */}
       <div className="relative w-full overflow-hidden bg-white">
         <motion.div
-          initial={{ opacity: 0, y: 56, scale: 0.97 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          {...entranceProps}
           viewport={{ once: true, amount: 0.35 }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
           className="relative mx-auto max-w-2xl flex flex-col items-center text-center px-6 py-20 lg:py-28"
         >
           <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-gray-100 text-itta-black mb-5">
