@@ -31,7 +31,9 @@ export default function OAuthCallbackContent({
   const router = useRouter();
   const inviteCode =
     getCookie('invite-code') ||
-    (typeof window !== 'undefined' ? sessionStorage.getItem('invite-code') : null) ||
+    (typeof window !== 'undefined'
+      ? sessionStorage.getItem('invite-code')
+      : null) ||
     '';
   const queryClient = useQueryClient();
   const setLogin = useAuthStore((state) => state.setLogin);
@@ -74,11 +76,9 @@ export default function OAuthCallbackContent({
         router.push('/login?error=login_failed');
       } else {
         // 유저 프로필 조회 및 캐시 저장
-        let userId: string | null = null;
         let profileData: UserProfileResponse | null = null;
         try {
           profileData = await queryClient.fetchQuery(userProfileOptions());
-          userId = profileData.userId;
           const userInfo = {
             id: profileData.userId,
             email: profileData.user.email ?? 'example.com',
@@ -148,23 +148,8 @@ export default function OAuthCallbackContent({
           ? `/group/${inviteGroupId}`
           : finalCallback || '/';
 
-        // 온보딩 체크 (DB settings 기준)
-        if (userId) {
-          const hasSeenOnboarding =
-            profileData?.user?.settings?.hasSeenOnboarding === true;
-          if (hasSeenOnboarding) {
-            // window.location.replace를 사용하여 즉시 리디렉션
-            window.location.replace(redirectPath);
-          } else {
-            // 온보딩을 안 본 경우 온보딩으로 (리디렉션 경로를 callback으로 전달)
-            window.location.replace(
-              `/onboarding?callback=${encodeURIComponent(redirectPath)}`,
-            );
-          }
-        } else {
-          // userId를 가져오지 못한 경우에도 기본적으로 최종 경로로 이동
-          window.location.replace(redirectPath);
-        }
+        // window.location.replace를 사용하여 즉시 리디렉션
+        window.location.replace(redirectPath);
         return; // 리디렉션 후 추가 실행 방지
       }
     };

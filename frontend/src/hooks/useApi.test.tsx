@@ -142,11 +142,11 @@ describe('useApiPut / useApiPatch', () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({ hasSeenOnboarding: true });
+    result.current.mutate({ theme: 'dark' });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(patchMock).toHaveBeenCalledWith('/api/me/settings', {
-      hasSeenOnboarding: true,
+      theme: 'dark',
     });
   });
 });

@@ -91,7 +91,6 @@ export default function PWAInstallBannerClient() {
 
   if (
     pathname.startsWith('/login') ||
-    pathname.startsWith('/onboarding') ||
     pathname.startsWith('/oauth/callback')
   ) {
     return null;

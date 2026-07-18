@@ -58,7 +58,6 @@ export default function BottomNavigation() {
     '/profile/edit',
     '/location-picker',
     '/invite',
-    '/onboarding',
     '/announcements',
     '/inquiry',
   ];
@@ -106,10 +105,12 @@ export default function BottomNavigation() {
               active={pathname === `/group/${effectiveGroupId}/map`}
               onClick={() => router.push(`/group/${effectiveGroupId}/map`)}
               isGroup
+              tutorialId="tutorial-group-map"
             />
             <button
               onClick={() => !isViewer && setIsAddDrawerOpen(true)}
               disabled={isViewer}
+              data-tutorial-id="tutorial-group-add-record"
               className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl ring-white flex items-center justify-center shadow-2xl transition-all ring-4 ${
                 isViewer
                   ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200'
@@ -151,6 +152,7 @@ export default function BottomNavigation() {
               icon={<Book />}
               active={pathname.startsWith('/my')}
               onClick={() => router.replace('/my')}
+              tutorialId="tutorial-nav-my"
             />
             <button
               onClick={() => {
@@ -160,6 +162,7 @@ export default function BottomNavigation() {
                   router.push('/add');
                 }
               }}
+              data-tutorial-id="tutorial-fab-add-record"
               className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
                 isSharedPage
                   ? 'dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20] ring-white'
@@ -172,6 +175,7 @@ export default function BottomNavigation() {
               icon={<Users />}
               active={pathname === '/shared'}
               onClick={() => router.replace('/shared')}
+              tutorialId="tutorial-nav-group"
             />
             <NavItem
               icon={<MapIcon />}
