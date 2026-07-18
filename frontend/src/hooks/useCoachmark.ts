@@ -6,6 +6,9 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { userProfileOptions } from '@/lib/api/profile';
 import { useApiPatch } from '@/hooks/useApi';
 
+// 롤 제약 등으로 타겟이 애초에 렌더되지 않을 수 있는 스텝을 위한 포기 시간.
+const TARGET_NOT_FOUND_TIMEOUT = 4000;
+
 export interface CoachmarkStep {
   id: string;
   title: string;
@@ -127,6 +130,18 @@ export function useCoachmark({
       setStepIndex((s) => s + 1);
     }
   };
+
+  // 롤(예: VIEWER)에 따라 타겟이 애초에 렌더되지 않는 경우가 있다(예: 초대 버튼은
+  // 뷰어에게 안 보임). 그런 스텝에서 타겟을 계속 못 찾으면 영원히 멈춰서 아무것도
+  // 안 뜨는 상태가 되므로, 일정 시간 못 찾으면 자동으로 다음 스텝으로 넘어간다.
+  useEffect(() => {
+    if (!isActive || rect) return;
+    const timeoutId = setTimeout(() => {
+      nextStep();
+    }, TARGET_NOT_FOUND_TIMEOUT);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, currentStep, rect]);
 
   return {
     isActive,
