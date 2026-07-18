@@ -69,7 +69,7 @@ describe('NavItem', () => {
     expect(button.querySelector('span')).toBeInTheDocument();
   });
 
-  it('tutorialId를 전달하면 data-tutorial-id 속성이 렌더링된다', () => {
+  it('tutorialId를 전달하면 아이콘 자체에 data-tutorial-id 속성이 렌더링된다', () => {
     render(
       <NavItem
         icon={<TestIcon />}
@@ -79,15 +79,25 @@ describe('NavItem', () => {
       />,
     );
 
-    expect(screen.getByRole('button')).toHaveAttribute(
+    // 코치마크 스포트라이트가 버튼의 넓은 터치 영역이 아니라 눈에 보이는
+    // 아이콘만 감싸도록, data-tutorial-id는 버튼이 아닌 아이콘에 붙는다.
+    expect(screen.getByTestId('icon')).toHaveAttribute(
       'data-tutorial-id',
       'tutorial-nav-group',
+    );
+    expect(screen.getByRole('button')).not.toHaveAttribute(
+      'data-tutorial-id',
     );
   });
 
   it('tutorialId를 전달하지 않으면 data-tutorial-id 속성이 없다', () => {
     render(<NavItem icon={<TestIcon />} active={false} onClick={vi.fn()} />);
 
-    expect(screen.getByRole('button')).not.toHaveAttribute('data-tutorial-id');
+    expect(screen.getByTestId('icon')).not.toHaveAttribute(
+      'data-tutorial-id',
+    );
+    expect(screen.getByRole('button')).not.toHaveAttribute(
+      'data-tutorial-id',
+    );
   });
 });
