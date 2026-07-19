@@ -65,7 +65,7 @@ function buildActivityNotification(
     case GroupActivityType.GROUP_NAME_UPDATE:
       return {
         title: '그룹 이름 변경',
-        body: `그룹 이름이 "${meta?.afterName as string}"(으)로 변경되었습니다.`,
+        body: `그룹 이름이 "${(meta?.afterName as string) ?? '알 수 없음'}"(으)로 변경되었습니다.`,
       };
     default:
       return null;

@@ -23,6 +23,7 @@ import { GetGroupMembersResponseDto } from '../dto/get-group-members.dto';
 import { GetGroupMemberMeResponseDto } from '../dto/get-group-member-me.dto';
 import { UpdateGroupMemberMeDto } from '../dto/update-group-member-me.dto';
 import { GetGroupPermissionResponseDto } from '../dto/get-group-permission.dto';
+import { ToggleGroupNotificationDto } from '../dto/toggle-group-notification.dto';
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../../auth/auth.type';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -209,15 +210,16 @@ export class GroupManagementController {
       '권한에 관계없이 모든 멤버가 해당 그룹의 알림을 켜고 끌 수 있습니다.',
   })
   @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiBody({ type: ToggleGroupNotificationDto })
   async toggleGroupNotification(
     @User() user: MyJwtPayload,
     @Param('groupId') groupId: string,
-    @Body('muted') muted: boolean,
+    @Body() dto: ToggleGroupNotificationDto,
   ): Promise<void> {
     await this.groupManagementService.toggleGroupNotification(
       user.sub,
       groupId,
-      muted,
+      dto.muted,
     );
   }
 
