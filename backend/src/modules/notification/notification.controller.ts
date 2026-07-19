@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import { JwtAuthGuard } from '@/modules/auth/jwt/jwt.guard';
 import { NotificationService } from './notification.service';
 import { RegisterFcmTokenDto } from './dto/register-fcm-token.dto';
+import { RemoveFcmTokenDto } from './dto/remove-fcm-token.dto';
 
 interface RequestWithUser extends Request {
   user: { sub: string };
@@ -29,7 +30,7 @@ export class NotificationController {
   @Delete('fcm-token')
   async removeToken(
     @Req() req: RequestWithUser,
-    @Body() dto: Pick<RegisterFcmTokenDto, 'platform'>,
+    @Body() dto: RemoveFcmTokenDto,
   ) {
     await this.notificationService.removeToken(req.user.sub, dto.platform);
     return { success: true };
