@@ -251,6 +251,10 @@ export default function PostEditor({
 
   const { socket, sessionId: mySessionId } = useSocketStore();
   const [locks, setLocks] = useState<Record<string, string>>({});
+  const titleRef = useRef(title);
+  const blocksRef = useRef(blocks);
+  const locksRef = useRef(locks);
+  const mySessionIdRef = useRef<string | null>(mySessionId);
 
   // LOCK_DENIED 수신 시 열려있는 drawer가 해당 블록이면 강제 닫기
   // (usePostEditorBlocks보다 먼저 선언되므로 ref 패턴으로 최신 setActiveDrawer 참조)
@@ -276,6 +280,7 @@ export default function PostEditor({
     streamingValues,
     emitStream,
     applyPatch,
+    waitForPendingPatches,
     versionRef,
     isPublishing,
     setIsPublishing,
@@ -288,6 +293,14 @@ export default function PostEditor({
     initialPost?.version, // 초기 버전 주입
     groupId,
   );
+  const streamingValuesRef = useRef(streamingValues);
+
+  titleRef.current = title;
+  blocksRef.current = blocks;
+  locksRef.current = locks;
+  mySessionIdRef.current = mySessionId;
+  streamingValuesRef.current = streamingValues;
+
   const { execute } = useCreateRecord(groupId, postId, {
     onError: () => {
       setIsPublishing(false);
@@ -685,23 +698,38 @@ export default function PostEditor({
       return;
     }
 
+    if (groupId && draftId) {
+      flushEmitStream();
+      const isSynced = await waitForPendingPatches(3000);
+      if (!isSynced) {
+        toast.info('편집 내용을 동기화하는 중입니다. 잠시 후 다시 저장해 주세요.');
+        return;
+      }
+    }
+
+    const currentTitle = titleRef.current;
+    const currentBlocks = blocksRef.current;
+    const currentLocks = locksRef.current;
+    const currentStreamingValues = streamingValuesRef.current;
+    const currentSessionId = mySessionIdRef.current;
+
     // draft 모드에서 다른 사용자가 편집 중인 블록은 아직 커밋되지 않은 streaming 값을 사용
     const blocksToValidate = (
       draftId
-        ? blocks.map((b) => {
-            const ownerSessionId = locks[`block:${b.id}`];
+        ? currentBlocks.map((b) => {
+            const ownerSessionId = currentLocks[`block:${b.id}`];
             const isLockedByOther =
-              !!ownerSessionId && ownerSessionId !== mySessionId;
-            if (isLockedByOther && streamingValues[b.id]) {
-              return { ...b, value: streamingValues[b.id] };
+              !!ownerSessionId && ownerSessionId !== currentSessionId;
+            if (isLockedByOther && currentStreamingValues[b.id]) {
+              return { ...b, value: currentStreamingValues[b.id] };
             }
             return b;
           })
-        : blocks
+        : currentBlocks
     ) as RecordBlock[];
 
     const { isValid, message, filteredBlocks } = validateAndCleanRecord(
-      title,
+      currentTitle,
       blocksToValidate,
     );
 
@@ -720,7 +748,7 @@ export default function PostEditor({
       execute({
         draftId,
         draftVersion: versionRef.current,
-        titleOverride: title,
+        titleOverride: currentTitle,
         // 소켓 BLOCK_SET_VALUE/BLOCK_INSERT와 HTTP publish 간 race condition 방지:
         // 현재 프론트 블록 상태 전체를 전송해 서버 스냅샷을 완전 교체
         blocksOverride: filteredBlocks.map((b) => ({
@@ -783,7 +811,7 @@ export default function PostEditor({
       });
 
       const postPayload: CreateRecordRequest = {
-        title,
+        title: currentTitle,
         blocks: mapBlocksToPayload(validBlocks, isDraft),
         ...(groupId ? { groupId } : {}),
         ...(!postId ? { scope } : {}),

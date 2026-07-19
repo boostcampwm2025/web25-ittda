@@ -89,7 +89,7 @@ export class PostPublishService {
             lock: { mode: 'pessimistic_write' },
           });
           if (!draft) throw new NotFoundException('Draft not found');
-          if (draftVersion > draft.version) {
+          if (draftVersion !== draft.version) {
             throw new ConflictException('Draft version mismatch.');
           }
 
@@ -274,7 +274,7 @@ export class PostPublishService {
           lock: { mode: 'pessimistic_write' },
         });
         if (!draft) throw new NotFoundException('Draft not found');
-        if (draftVersion > draft.version) {
+        if (draftVersion !== draft.version) {
           throw new ConflictException('Draft version mismatch.');
         }
         draftOwnerId = draft.ownerActorId;
@@ -520,22 +520,16 @@ export class PostPublishService {
       snapshot.title = titleOverride.trim();
     }
 
-    // 프론트 상태를 최종 반영해 소켓 이벤트와 HTTP publish 간 race condition을 줄인다.
-    // publisher가 아는 블록은 override 값으로 업데이트/삽입하고,
-    // 스냅샷에만 있는 블록은 뒤에 보존한다.
+    // publish 직전의 최신 클라이언트 블록 배열을 최종본으로 사용한다.
+    // 버전 일치 검사를 통과한 경우에만 허용해 오래된 스냅샷의 블록 복원을 막는다.
     if (!Array.isArray(blocksOverride) || blocksOverride.length === 0) {
       return;
     }
 
     const prevBlocks = snapshot.blocks;
-    const overrideIds = new Set(blocksOverride.map((override) => override.id));
-    const merged = blocksOverride.map((override) =>
+    snapshot.blocks = blocksOverride.map((override) =>
       this.mergePublishOverrideBlock(prevBlocks, override),
-    );
-    const snapshotOnly = prevBlocks.filter(
-      (block) => block.id && !overrideIds.has(block.id),
-    );
-    snapshot.blocks = [...merged, ...snapshotOnly] as typeof snapshot.blocks;
+    ) as typeof snapshot.blocks;
   }
 
   private mergePublishOverrideBlock(
