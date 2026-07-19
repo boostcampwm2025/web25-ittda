@@ -18,9 +18,7 @@ import {
 
 describe('formatDate', () => {
   it('날짜를 "N년 N월 N일" 형식으로 반환한다', () => {
-    expect(formatDate(new Date('2024-06-15T12:00:00'))).toBe(
-      '2024년 6월 15일',
-    );
+    expect(formatDate(new Date('2024-06-15T12:00:00'))).toBe('2024년 6월 15일');
   });
 
   it('인자가 없으면 현재 날짜를 사용한다', () => {
@@ -113,9 +111,9 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(date)).toBe('3시간 전');
   });
 
-  it('정확히 1일 전이면 "어제" 반환', () => {
+  it('정확히 1일 전이면 "하루 전" 반환', () => {
     const date = new Date('2024-06-14T12:00:00');
-    expect(formatRelativeTime(date)).toBe('어제');
+    expect(formatRelativeTime(date)).toBe('하루 전');
   });
 
   it('2일~29일이면 "N일 전" 반환', () => {
@@ -123,9 +121,19 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(date)).toBe('5일 전');
   });
 
-  it('1개월~11개월이면 "N개월 전" 반환', () => {
+  it('1개월이면 "한 달 전" 반환', () => {
+    const date = new Date('2024-05-15T12:00:00');
+    expect(formatRelativeTime(date)).toBe('한 달 전');
+  });
+
+  it('2개월이면 "두 달 전" 반환', () => {
+    const date = new Date('2024-04-15T12:00:00');
+    expect(formatRelativeTime(date)).toBe('두 달 전');
+  });
+
+  it('3개월~11개월이면 "N달 전" 반환', () => {
     const date = new Date('2024-03-15T12:00:00');
-    expect(formatRelativeTime(date)).toBe('3개월 전');
+    expect(formatRelativeTime(date)).toBe('3달 전');
   });
 
   it('12개월 이상이면 "N년 전" 반환', () => {
