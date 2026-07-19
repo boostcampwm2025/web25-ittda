@@ -312,9 +312,9 @@ export default function LoginContent({
     };
 
   return (
-    <div className="relative left-1/2 -ml-[50vw] w-screen min-h-screen flex flex-col bg-white">
+    <div className="relative left-1/2 -ml-[50vw] w-screen h-dvh overflow-y-auto snap-y snap-mandatory flex flex-col bg-white">
       {/* 히어로: 흰 배경(고정, 다크모드 미적용) + 노션처럼 이미지 없이 중앙 정렬 */}
-      <div className="relative w-full min-h-screen flex flex-col overflow-hidden bg-white">
+      <div className="relative w-full h-dvh shrink-0 snap-start flex flex-col overflow-hidden bg-white">
         {/* 좌상단 워드마크 */}
         <div
           className="relative z-10 px-6 lg:px-12"
@@ -455,7 +455,7 @@ export default function LoginContent({
       {/* 기능 소개: 스크롤해야 보이는 영역 */}
       <ServiceIntro />
 
-      <div className="w-full bg-white flex justify-center py-10">
+      <div className="w-full bg-white flex justify-center py-10 shrink-0 snap-start">
         <p className="text-[11px] text-gray-400">
           © 2026 잇다-. ALL RIGHTS RESERVED.
         </p>

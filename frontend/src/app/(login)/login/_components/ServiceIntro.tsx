@@ -90,22 +90,25 @@ export default function ServiceIntro() {
         return (
           <div
             key={item.headline}
-            className={cn('relative w-full overflow-hidden', SECTION_BG[i])}
+            className={cn(
+              'relative w-full overflow-hidden h-dvh shrink-0 snap-start flex items-center justify-center',
+              SECTION_BG[i],
+            )}
           >
             <motion.div
               {...entranceProps}
               viewport={{ once: true, amount: 0.35 }}
               className={cn(
-                'relative mx-auto max-w-4xl flex flex-col items-center gap-10 lg:gap-16 px-6 py-16 lg:py-24 text-center',
-                imageOnLeft ? 'lg:flex-row-reverse' : 'lg:flex-row',
+                'relative w-full mx-auto max-w-4xl flex flex-col items-center gap-4 md:gap-16 lg:gap-24 px-6 py-16 lg:py-24 text-center',
+                imageOnLeft ? 'md:flex-row-reverse' : 'md:flex-row',
               )}
             >
               <div
                 className={cn(
                   'flex-1 min-w-0 flex flex-col items-center',
                   imageOnLeft
-                    ? 'lg:items-end lg:text-right'
-                    : 'lg:items-start lg:text-left',
+                    ? 'md:items-end md:text-right'
+                    : 'md:items-start md:text-left',
                 )}
               >
                 <span
@@ -155,11 +158,11 @@ export default function ServiceIntro() {
       })}
 
       {/* 보관함: 진한 섹션들 사이에서 숨 고르는 밝은 마무리 섹션 */}
-      <div className="relative w-full overflow-hidden bg-white">
+      <div className="relative w-full overflow-hidden h-dvh shrink-0 snap-start flex items-center justify-center bg-white">
         <motion.div
           {...entranceProps}
           viewport={{ once: true, amount: 0.35 }}
-          className="relative mx-auto max-w-2xl flex flex-col items-center text-center px-6 py-20 lg:py-28"
+          className="relative w-full mx-auto max-w-2xl flex flex-col items-center text-center px-6 py-20 lg:py-28"
         >
           <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-gray-100 text-itta-black mb-5">
             <Book className="w-5 h-5" />
