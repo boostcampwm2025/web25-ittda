@@ -19,7 +19,7 @@ export default function MonthlyPatternChart({
   emotions,
 }: MonthlyPatternChartProps) {
   const [isInitialRender, setIsInitialRender] = useState(true);
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsInitialRender(false), 1500);
@@ -38,7 +38,7 @@ export default function MonthlyPatternChart({
   return (
     <>
       <div className="h-44 w-full mb-2">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={resolvedTheme} width="100%" height="100%">
           <RadarChart
             cx="50%"
             cy="50%"
@@ -51,7 +51,7 @@ export default function MonthlyPatternChart({
               dataKey="subject"
               tick={{
                 fontSize: 10,
-                fill: theme === 'dark' ? '#E6E7EB' : '#333333',
+                fill: resolvedTheme === 'dark' ? '#E6E7EB' : '#333333',
                 fontWeight: 500,
               }}
             />

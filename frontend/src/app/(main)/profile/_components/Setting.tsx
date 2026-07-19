@@ -146,7 +146,7 @@ export default function Setting() {
               )}
             </div>
             <span className="text-xs sm:text-sm font-bold dark:text-gray-200 text-itta-black">
-              다크 모드
+              {currentTheme === 'dark' ? '다크 모드' : '라이트 모드'}
             </span>
           </div>
           <button

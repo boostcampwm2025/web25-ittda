@@ -1,5 +1,7 @@
 node_modules
 .vscode
+CLAUDE.md
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+.superset/*

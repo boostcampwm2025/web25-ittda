@@ -1,174 +1,81 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import EmotionList from '../EmotionList';
-import { ProfileEmotion } from '@/lib/types/profile';
+import { Emotion } from '@/lib/types/profile';
+
+// EmotionList props:
+//   emotions: Emotion[]  →  { emotion: string; count: number }[]
+//   defaultTab?: 'recent' | 'frequent'
+//
+// 이모지는 EMOTION_MAP에서 컴포넌트가 직접 조회하므로 mock에 포함하지 않는다.
+// 최근 사용 탭은 전달받은 순서 그대로, 자주 사용 탭은 count 내림차순으로 내부 정렬된다.
+
+// 최근 사용 순 (시간순 — count 순 아님)
+const mockRecent: Emotion[] = [
+  { emotion: '재미', count: 3 },
+  { emotion: '행복', count: 18 },
+  { emotion: '피곤', count: 4 },
+  { emotion: '만족', count: 10 },
+  { emotion: '보통', count: 8 },
+  { emotion: '좋음', count: 12 },
+  { emotion: '감동', count: 6 },
+  { emotion: '슬픔', count: 2 },
+];
+
+const fewEmotions: Emotion[] = [
+  { emotion: '행복', count: 3 },
+  { emotion: '보통', count: 2 },
+];
 
 const meta = {
   title: 'Profile/AllEmotions/EmotionList',
   component: EmotionList,
   parameters: {
     layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          '감정 전체 보기 페이지의 감정 목록 컴포넌트입니다. 최근 사용한 / 자주 사용한 탭으로 전환하며, 자주 사용한 탭은 count 내림차순으로 자동 정렬됩니다. 감정 아이템 클릭 시 해당 감정으로 필터링된 검색 페이지(/search?emotions=…)로 이동합니다.',
+      },
+    },
   },
   tags: ['autodocs'],
+  decorators: [
+    (Story) => (
+      <div className="max-w-2xl mx-auto bg-white dark:bg-[#121212] min-h-screen">
+        <Story />
+      </div>
+    ),
+  ],
+  argTypes: {
+    emotions: { description: '감정 목록 (Emotion[]). 최근 사용 탭은 전달된 순서, 자주 사용 탭은 count 내림차순으로 표시됩니다.' },
+    defaultTab: { control: 'inline-radio', options: ['recent', 'frequent'], description: '초기 선택 탭' },
+  },
 } satisfies Meta<typeof EmotionList>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const mockEmotions: ProfileEmotion = {
-  recent: [
-    { name: '행복', emoji: '😊', count: 15 },
-    { name: '설렘', emoji: '🥰', count: 12 },
-    { name: '평온', emoji: '😌', count: 10 },
-    { name: '뿌듯', emoji: '😎', count: 8 },
-    { name: '감사', emoji: '🙏', count: 7 },
-    { name: '기쁨', emoji: '😄', count: 5 },
-    { name: '만족', emoji: '😁', count: 4 },
-    { name: '즐거움', emoji: '😆', count: 3 },
-  ],
-  frequent: [
-    { name: '평온', emoji: '😌', count: 45 },
-    { name: '행복', emoji: '😊', count: 38 },
-    { name: '감사', emoji: '🙏', count: 32 },
-    { name: '기쁨', emoji: '😄', count: 28 },
-    { name: '뿌듯', emoji: '😎', count: 25 },
-    { name: '설렘', emoji: '🥰', count: 22 },
-    { name: '만족', emoji: '😁', count: 18 },
-    { name: '즐거움', emoji: '😆', count: 15 },
-  ],
-  all: [],
-};
-
-const fewEmotions: ProfileEmotion = {
-  recent: [
-    { name: '행복', emoji: '😊', count: 3 },
-    { name: '설렘', emoji: '🥰', count: 2 },
-  ],
-  frequent: [
-    { name: '평온', emoji: '😌', count: 5 },
-    { name: '감사', emoji: '🙏', count: 4 },
-  ],
-  all: [],
-};
-
-const emptyEmotions: ProfileEmotion = {
-  recent: [],
-  frequent: [],
-  all: [],
-};
-
 export const Default: Story = {
-  args: {
-    emotions: mockEmotions,
-  },
+  args: { emotions: mockRecent },
   parameters: {
     docs: {
       description: {
-        story: '기본 감정 목록 - 최근 사용한 탭이 기본으로 선택됨',
-      },
-    },
-  },
-};
-
-export const RecentTab: Story = {
-  args: {
-    emotions: mockEmotions,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '최근 사용한 감정 탭 - 시간순으로 정렬된 감정 표시',
-      },
-    },
-  },
-};
-
-export const FrequentTab: Story = {
-  args: {
-    emotions: mockEmotions,
-    defaultTab: 'frequent',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '자주 사용한 감정 탭 - 사용 횟수가 많은 감정 표시',
-      },
-    },
-  },
-};
-
-export const FewEmotions: Story = {
-  args: {
-    emotions: fewEmotions,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '감정이 적은 경우 - 각 탭에 2개씩만 표시',
+        story: `
+최근 사용 탭 기본 — 전달된 순서 그대로 표시됩니다.
+- **탭 전환**: 자주 사용한 탭으로 전환하면 count 내림차순으로 재정렬됨
+- **감정 클릭**: \`/search?emotions={감정명}\`으로 이동
+        `,
       },
     },
   },
 };
 
 export const EmptyEmotions: Story = {
-  args: {
-    emotions: emptyEmotions,
-  },
+  args: { emotions: [] },
   parameters: {
     docs: {
       description: {
-        story: '감정이 없는 경우 - 빈 목록 표시',
-      },
-    },
-  },
-};
-
-export const DarkMode: Story = {
-  args: {
-    emotions: mockEmotions,
-  },
-  parameters: {
-    backgrounds: { default: 'dark' },
-    docs: {
-      description: {
-        story: '다크 모드 - 어두운 배경의 감정 목록',
-      },
-    },
-  },
-  decorators: [
-    (Story) => (
-      <div className="dark">
-        <div className="min-h-screen bg-[#121212]">
-          <Story />
-        </div>
-      </div>
-    ),
-  ],
-};
-
-export const Interactive: Story = {
-  args: {
-    emotions: mockEmotions,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: `
-감정 목록 컴포넌트 기능:
-
-**탭 전환**
-- 최근 사용한: 시간순으로 정렬된 감정
-- 자주 사용한: 사용 횟수가 많은 순서로 정렬
-
-**감정 아이템**
-- 이모지와 감정명 표시
-- 우측에 사용 횟수 표시
-- 클릭 시 해당 감정으로 검색 페이지 이동
-- Active 상태: 회색 배경 표시
-
-**스크롤**
-- 긴 목록은 스크롤 가능
-- 스크롤바 숨김 처리
-        `,
+        story: '감정이 없는 경우 — "아직 기록한 감정이 없어요" 빈 상태 표시',
       },
     },
   },

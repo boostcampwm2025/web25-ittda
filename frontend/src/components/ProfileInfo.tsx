@@ -129,6 +129,7 @@ export default function ProfileInfo({
               {nickname && (
                 <button
                   onClick={() => setNickname('')}
+                  aria-label="닉네임 지우기"
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-300 hover:text-gray-400"
                 >
                   <X className="w-4 h-4" />

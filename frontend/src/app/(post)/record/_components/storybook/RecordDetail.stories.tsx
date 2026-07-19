@@ -44,7 +44,8 @@ const mockBlocks: Block[] = [
     id: 'block-4',
     type: 'IMAGE',
     value: {
-      mediaIds: ['media-1', 'media-2'],
+      // mediaIds를 넣으면 /api/media-image/:id 프록시를 우선 사용해 Storybook에서 이미지가 깨짐.
+      // tempUrls만 두면 Unsplash URL을 직접 사용한다.
       tempUrls: [
         'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
         'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=400',
@@ -72,7 +73,7 @@ const mockBlocks: Block[] = [
   {
     id: 'block-7',
     type: 'MOOD',
-    value: { mood: '😊' },
+    value: { mood: '행복' },
     layout: { row: 6, col: 1, span: 1 },
   },
   {
@@ -123,6 +124,12 @@ const meta = {
   component: RecordDetail,
   parameters: {
     layout: 'padded',
+    docs: {
+      description: {
+        component:
+          '기록 상세 페이지 컴포넌트입니다. 블록 기반 기록 본문(날짜, 시간, 텍스트, 이미지, 위치, 태그, 무드, 평점)과 작성자/기여자 섹션을 표시합니다.',
+      },
+    },
     nextjs: {
       appDirectory: true,
     },
@@ -145,10 +152,12 @@ const meta = {
   decorators: [
     (Story) => (
       <QueryClientProvider client={queryClient}>
-        <div className="mt-6 mx-6">
-          <Suspense fallback={<RecordDetailSkeleton />}>
-            <Story />
-          </Suspense>
+        <div className="min-h-screen bg-[#F9F9F9] dark:bg-[#121212]">
+          <div className="max-w-2xl mx-auto px-6 mt-6">
+            <Suspense fallback={<RecordDetailSkeleton />}>
+              <Story />
+            </Suspense>
+          </div>
         </div>
       </QueryClientProvider>
     ),
@@ -165,7 +174,23 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: '내 기록함 상세 페이지 - 기본 뷰',
+        story: `
+내 기록함 상세 페이지 - 기본 뷰
+- **블록 렌더링**: 블록 타입(DATE, TIME, TEXT, IMAGE, LOCATION, TAG, MOOD, RATING)에 따라 기록 본문이 동적으로 구성됨
+- **이미지 블록**: 여러 이미지를 갤러리 형태로 표시
+- **기여자 섹션**: 그룹 기록의 경우 기여자(EDITOR) 아바타 목록 표시
+
+**헤더 우측 ⋯ 버튼 (Popover)**
+
+작성자 본인 / 그룹 EDITOR 이상인 경우에만 표시됩니다. 버튼을 클릭하면 Popover가 열리며 아래 옵션이 나타납니다.
+
+| 옵션 | 동작 |
+|---|---|
+| 공유하기 | 공유 링크가 이미 있으면 공유 드로어 오픈, 없으면 링크 생성 후 드로어 오픈 |
+| 공유 링크 생성 / 해제 | 공유 토큰 유무에 따라 토글 — 링크 생성 또는 링크 해제 API 호출 |
+| 수정하기 | 개인 기록: \`/add?mode=edit&postId={id}\` 이동 · 그룹 기록: 편집 세션 시작 후 편집 페이지 이동 |
+| 삭제하기 | 삭제 확인 Drawer 오픈 → "삭제하기" 클릭 시 기록 삭제 후 이전 페이지로 이동 |
+        `
       },
     },
   },
@@ -197,29 +222,3 @@ export const MinimalBlocks: Story = {
   },
 };
 
-export const DarkMode: Story = {
-  args: {
-    recordId: 'record-1',
-  },
-  parameters: {
-    backgrounds: { default: 'dark' },
-    docs: {
-      description: {
-        story: '다크 모드',
-      },
-    },
-  },
-  decorators: [
-    (Story) => (
-      <QueryClientProvider client={queryClient}>
-        <div className="dark min-h-screen bg-[#121212]">
-          <div className="mt-6 px-6 mx-auto">
-            <Suspense fallback={<RecordDetailSkeleton />}>
-              <Story />
-            </Suspense>
-          </div>
-        </div>
-      </QueryClientProvider>
-    ),
-  ],
-};

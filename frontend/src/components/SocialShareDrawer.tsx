@@ -187,24 +187,26 @@ export default function SocialShareDrawer({
           {/* 소셜 버튼 목록 */}
           <div className="overflow-x-auto scrollbar-hide pb-4 scroll-smooth touch-pan-x overscroll-x-contain">
             <ul className="flex justify-start gap-4 sm:gap-6 min-w-max">
-              <li className="flex flex-col items-center shrink-0">
-                <button
-                  onClick={handleKakaoShare}
-                  className="flex flex-col items-center"
-                  aria-label="카카오톡으로 공유하기"
-                >
-                  <div className="w-10 h-10 sm:w-15 sm:h-15 relative">
-                    <Image
-                      src="/kakao_logo.png"
-                      alt="카카오톡 로고"
-                      width={60}
-                      height={60}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  </div>
-                  <SocialName name="Kakao" />
-                </button>
-              </li>
+              {typeof window !== 'undefined' && window.Kakao?.Share && (
+                <li className="flex flex-col items-center shrink-0">
+                  <button
+                    onClick={handleKakaoShare}
+                    className="flex flex-col items-center"
+                    aria-label="카카오톡으로 공유하기"
+                  >
+                    <div className="w-10 h-10 sm:w-15 sm:h-15 relative">
+                      <Image
+                        src="/kakao_logo.png"
+                        alt="카카오톡 로고"
+                        width={60}
+                        height={60}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    </div>
+                    <SocialName name="Kakao" />
+                  </button>
+                </li>
+              )}
               <li className="flex flex-col items-center shrink-0">
                 <FacebookShareButton
                   url={path}

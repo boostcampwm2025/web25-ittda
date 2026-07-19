@@ -64,6 +64,9 @@ export default function GroupHeaderActions({
     enabled: !!groupId,
   });
 
+  // roleData가 undefined(로딩 중)일 때 false로 평가되면 VIEWER에게 초대 버튼이 잠깐 표시되는 문제가 있음.
+  // role이 확정된 후에만 버튼 가시성을 결정하기 위해 undefined 체크를 포함한다.
+  const roleLoaded = roleData !== undefined;
   const isViewer = roleData?.role === 'VIEWER';
   const isAdmin = roleData?.role === 'ADMIN';
 
@@ -78,7 +81,7 @@ export default function GroupHeaderActions({
         {groupInfo.groupName}
       </span>
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        {!isViewer && <GroupInviteDrawer groupId={groupId || 'gruop'} />}
+        {roleLoaded && !isViewer && <GroupInviteDrawer groupId={groupId || 'gruop'} />}
 
         <DateSelectorDrawer
           className={className}
@@ -89,7 +92,7 @@ export default function GroupHeaderActions({
         />
 
         <Popover>
-          <PopoverTrigger className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400">
+          <PopoverTrigger aria-label="그룹 메뉴" className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400">
             <MoreVertical className="w-5 h-5" />
           </PopoverTrigger>
 
