@@ -18,6 +18,8 @@ export interface CoachmarkStep {
   yOffsetMobile?: number;
   // 모바일 폭에서 스포트라이트 박스를 오른쪽으로 살짝 옮길 px(기본 0).
   xOffsetMobile?: number;
+  // 타겟 비율 기반 자동 여백 대신 고정 여백을 쓰고 싶을 때(예: 아이콘 하나만 딱 감싸기).
+  spotlightPadding?: number;
 }
 
 interface UseCoachmarkOptions {

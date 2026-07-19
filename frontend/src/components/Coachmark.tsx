@@ -26,11 +26,7 @@ interface CoachmarkProps {
   enabled?: boolean;
 }
 
-export default function Coachmark({
-  flowKey,
-  steps,
-  enabled,
-}: CoachmarkProps) {
+export default function Coachmark({ flowKey, steps, enabled }: CoachmarkProps) {
   const { isActive, step, isLastStep, rect, nextStep, skip } = useCoachmark({
     flowKey,
     steps,
@@ -59,6 +55,7 @@ export default function Coachmark({
   // 모바일의 작은 네비 아이콘과 데스크톱의 넓은 툴바 모두에서 비율이 자연스럽다.
   const isMobileWidth = window.innerWidth < MOBILE_BREAKPOINT;
   const spotlightPadding =
+    step.spotlightPadding ??
     Math.min(
       SPOTLIGHT_PADDING_MAX,
       Math.max(
@@ -155,7 +152,8 @@ export default function Coachmark({
           boxShadow: '0 0 0 9999px rgba(0,0,0,0.78)',
           pointerEvents: 'none',
           zIndex: 100,
-          transition: 'top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease',
+          transition:
+            'top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease',
         }}
       />
       {/* 타겟 포인트 컬러 테두리 + 은은한 글로우 */}
@@ -170,7 +168,8 @@ export default function Coachmark({
           boxShadow: '0 0 0 2px #10b981, 0 0 6px 0px rgba(16,185,129,0.5)',
           pointerEvents: 'none',
           zIndex: 101,
-          transition: 'top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease',
+          transition:
+            'top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease',
         }}
       />
 

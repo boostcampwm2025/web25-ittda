@@ -69,6 +69,9 @@ export default function Toolbar({ onAddBlock, onOpenDrawer }: ToolbarProps) {
             <button
               key={id}
               onClick={() => onAddBlock(id as FieldType)}
+              data-tutorial-id={
+                id === 'location' ? 'tutorial-editor-location' : undefined
+              }
               className="p-1.5 sm:p-2 text-itta-gray3 hover:text-[#10B981] dark:text-gray-500 dark:hover:text-[#10B981] transition-colors active:scale-110"
             >
               <Icon size={20} strokeWidth={1.5} className="sm:hidden" />
