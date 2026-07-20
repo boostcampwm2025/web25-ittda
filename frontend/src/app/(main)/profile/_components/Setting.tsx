@@ -147,7 +147,10 @@ export default function Setting() {
     if (pushEnabled) {
       try {
         await removeFcmToken(platform);
-      } catch {}
+      } catch {
+        toast.error('알림 해제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
       localStorage.setItem('push_notifications_disabled', 'true');
       setPushEnabled(false);
       return;
