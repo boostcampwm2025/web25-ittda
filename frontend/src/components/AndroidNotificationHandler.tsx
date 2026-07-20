@@ -36,16 +36,18 @@ if (typeof window !== 'undefined') {
   ).Capacitor?.getPlatform?.();
 
   if (platform === 'android') {
-    import('@capacitor/push-notifications').then(({ PushNotifications }) => {
-      PushNotifications.addListener(
-        'pushNotificationActionPerformed',
-        (action) => {
-          handleNotificationAction(
-            action.notification.data as Record<string, string> | undefined,
-          );
-        },
-      );
-    });
+    import('@capacitor/push-notifications')
+      .then(({ PushNotifications }) => {
+        PushNotifications.addListener(
+          'pushNotificationActionPerformed',
+          (action) => {
+            handleNotificationAction(
+              action.notification.data as Record<string, string> | undefined,
+            );
+          },
+        );
+      })
+      .catch(() => {});
   }
 }
 
