@@ -10,7 +10,9 @@ import { recordDetailOptions } from '@/lib/api/records';
 let pendingRoute: string | null = null;
 let navigateFn: ((route: string) => void) | null = null;
 
-function handleNotificationAction(data: Record<string, string> | undefined) {
+export function handleNotificationAction(
+  data: Record<string, string> | undefined,
+) {
   const postId = data?.postId;
   const groupId = data?.groupId;
   const route =
@@ -51,7 +53,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-function extractPostId(route: string): string | null {
+export function extractPostId(route: string): string | null {
   const match = route.match(/\/record\/([^?]+)/);
   return match ? match[1] : null;
 }

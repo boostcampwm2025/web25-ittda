@@ -46,6 +46,7 @@ type GroupMemberRepoWithManager = {
   manager: {
     transaction: jest.Mock<Promise<void>, [TransactionCallback]>;
   };
+  update: jest.Mock;
 };
 
 function createRemoveMemberQueryBuilder(
@@ -78,6 +79,9 @@ describe('GroupManagementService', () => {
   let groupActivityService: {
     recordActivity: jest.Mock;
   };
+  let groupService: {
+    ensureMember: jest.Mock;
+  };
   let mediaService: {
     markMediaDeletionCandidatesWithManager: jest.Mock;
     deleteMediaAssets: jest.Mock;
@@ -94,7 +98,9 @@ describe('GroupManagementService', () => {
       softDelete: jest.fn(),
     };
     transactionManager = {
-      getRepository: jest.fn(() => txGroupMemberRepo),
+      getRepository: jest.fn<TxGroupMemberRepo, [typeof GroupMember]>(
+        () => txGroupMemberRepo,
+      ),
     };
     groupMemberRepo = {
       manager: {
@@ -102,9 +108,13 @@ describe('GroupManagementService', () => {
           callback(transactionManager),
         ),
       },
+      update: jest.fn(),
     };
     groupActivityService = {
       recordActivity: jest.fn(),
+    };
+    groupService = {
+      ensureMember: jest.fn(),
     };
     mediaService = {
       markMediaDeletionCandidatesWithManager: jest.fn(),
@@ -123,7 +133,7 @@ describe('GroupManagementService', () => {
       {} as Repository<PostMedia>,
       {} as Repository<MediaAsset>,
       groupActivityService as unknown as GroupActivityService,
-      {} as GroupService,
+      groupService as unknown as GroupService,
       mediaService as unknown as MediaService,
       postDraftCleanupService as unknown as PostDraftCleanupService,
     );
@@ -207,5 +217,49 @@ describe('GroupManagementService', () => {
       'draft-media-1',
       'profile-media-1',
     ]);
+  });
+
+  it('toggleGroupNotification: 멤버 확인 후 notificationMuted를 갱신한다', async () => {
+    groupService.ensureMember.mockResolvedValue({ id: 'member-1' });
+    groupMemberRepo.update.mockResolvedValue({ affected: 1 });
+
+    await service.toggleGroupNotification('user-1', 'group-1', true);
+
+    expect(groupService.ensureMember).toHaveBeenCalledWith(
+      'user-1',
+      'group-1',
+      { select: { id: true } },
+    );
+    expect(groupMemberRepo.update).toHaveBeenCalledWith(
+      { userId: 'user-1', groupId: 'group-1' },
+      { notificationMuted: true },
+    );
+  });
+
+  it('toggleGroupNotification: 그룹 멤버가 아니면 업데이트를 실행하지 않는다', async () => {
+    groupService.ensureMember.mockRejectedValue(new Error('member not found'));
+
+    await expect(
+      service.toggleGroupNotification('user-1', 'group-1', true),
+    ).rejects.toThrow('member not found');
+
+    expect(groupMemberRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('markGroupAsRead: 멤버 확인 후 lastReadAt을 현재 시간으로 갱신한다', async () => {
+    groupService.ensureMember.mockResolvedValue({ id: 'member-1' });
+    groupMemberRepo.update.mockResolvedValue({ affected: 1 });
+
+    await service.markGroupAsRead('user-1', 'group-1');
+
+    expect(groupService.ensureMember).toHaveBeenCalledWith(
+      'user-1',
+      'group-1',
+      { select: { id: true } },
+    );
+    expect(groupMemberRepo.update).toHaveBeenCalledWith(
+      { userId: 'user-1', groupId: 'group-1' },
+      { lastReadAt: expect.any(Date) as Date },
+    );
   });
 });

@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import GroupHeaderActions from '../GroupHeaderActions';
-import { GroupMembersResponse, GroupMemberRoleResponse } from '@/lib/types/groupResponse';
+import {
+  GroupMembersResponse,
+  GroupMemberRoleResponse,
+} from '@/lib/types/groupResponse';
 
 const GROUP_ID = 'group-1';
 
@@ -22,7 +25,12 @@ const clients = {
   viewer: makeClient(GROUP_ID, 'VIEWER'),
   longName: makeClient(LONG_NAME_GROUP_ID, 'ADMIN'),
   manyMembers: makeClient(GROUP_ID, 'ADMIN'),
+  muted: makeClient(GROUP_ID, 'ADMIN'),
 };
+clients.muted.setQueryData(['group', GROUP_ID, 'me', 'role'], {
+  role: 'ADMIN',
+  notificationMuted: true,
+});
 
 const baseMembers = [
   { memberId: 'user-1', profileImageId: null },
@@ -42,7 +50,8 @@ const defaultGroupInfo: GroupMembersResponse = {
 };
 
 const longNameGroupInfo: GroupMembersResponse = {
-  groupName: '우리 가족의 아주아주 길고 소중한 2026년 추억 보관함 (말줄임표 확인용)',
+  groupName:
+    '우리 가족의 아주아주 길고 소중한 2026년 추억 보관함 (말줄임표 확인용)',
   groupMemberCount: 3,
   members: baseMembers,
 };
@@ -117,7 +126,25 @@ export const LongGroupName: Story = {
       navigation: { pathname: `/group/${LONG_NAME_GROUP_ID}` },
     },
   },
-}
+};
+
+export const NotificationMuted: Story = {
+  args: { groupInfo: defaultGroupInfo },
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={clients.muted}>
+        <Story />
+      </QueryClientProvider>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story: '그룹 알림이 꺼진 상태 — 벨 아이콘이 BellOff로 표시됨',
+      },
+    },
+  },
+};
 
 export const ViewerRole: Story = {
   args: { groupInfo: defaultGroupInfo },
@@ -131,7 +158,8 @@ export const ViewerRole: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'VIEWER 권한 — 초대 버튼이 숨겨지고 그룹 정보 수정·멤버 관리 메뉴가 비표시',
+        story:
+          'VIEWER 권한 — 초대 버튼이 숨겨지고 그룹 정보 수정·멤버 관리 메뉴가 비표시',
       },
     },
   },

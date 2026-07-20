@@ -203,9 +203,15 @@ export class MapService {
 
   // 날짜만 있는 문자열(YYYY-MM-DD)을 하루의 시작/끝 시각으로 정규화
   // search.service.ts의 normalizeDateOnlyBoundary와 동일한 방식
-  private normalizeDateBoundary(value: string, boundary: 'start' | 'end'): string {
+  private normalizeDateBoundary(
+    value: string,
+    boundary: 'start' | 'end',
+  ): string {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
     const dt = DateTime.fromISO(value, { zone: 'Asia/Seoul' });
-    return (boundary === 'start' ? dt.startOf('day') : dt.endOf('day')).toISO() ?? value;
+    return (
+      (boundary === 'start' ? dt.startOf('day') : dt.endOf('day')).toISO() ??
+      value
+    );
   }
 }
