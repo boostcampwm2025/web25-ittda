@@ -24,18 +24,29 @@ export async function registerAndroidToken() {
   const result = await PushNotifications.requestPermissions();
   if (result.receive !== 'granted') return;
 
-  await new Promise<void>((resolve) => {
-    PushNotifications.addListener('registration', async ({ value: token }) => {
-      await registerFcmToken(token, 'android').catch(() => {});
-      await PushNotifications.removeAllListeners();
-      resolve();
-    });
-    PushNotifications.addListener('registrationError', async () => {
-      await PushNotifications.removeAllListeners();
-      resolve();
-    });
-    PushNotifications.register();
-  });
+  await Promise.race([
+    new Promise<void>((resolve) => {
+      PushNotifications.addListener(
+        'registration',
+        async ({ value: token }) => {
+          await registerFcmToken(token, 'android').catch(() => {});
+          await PushNotifications.removeAllListeners();
+          resolve();
+        },
+      );
+      PushNotifications.addListener('registrationError', async () => {
+        await PushNotifications.removeAllListeners();
+        resolve();
+      });
+      PushNotifications.register();
+    }),
+    new Promise<void>((resolve) =>
+      setTimeout(() => {
+        PushNotifications.removeAllListeners();
+        resolve();
+      }, 10000),
+    ),
+  ]);
 }
 
 // onRegistered 콜백을 await 가능한 형태로 변환
