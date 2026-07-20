@@ -90,7 +90,7 @@ export default function GroupHeaderActions({
   const isAdmin = roleData?.role === 'ADMIN';
   const notificationMuted = roleData?.notificationMuted ?? false;
 
-  const { mutate: toggleNotification } = useMutation({
+  const { mutate: toggleNotification, isPending: isToggleNotificationPending } = useMutation({
     mutationFn: (muted: boolean) => toggleGroupNotification(groupId, muted),
     onSuccess: (_, muted) => {
       queryClient.setQueryData(
@@ -105,6 +105,9 @@ export default function GroupHeaderActions({
             )
           : prev,
       );
+    },
+    onError: () => {
+      toast.error('알림 설정 변경에 실패했습니다.');
     },
   });
 
@@ -123,7 +126,8 @@ export default function GroupHeaderActions({
 
         <button
           onClick={() => toggleNotification(!notificationMuted)}
-          className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400"
+          disabled={isToggleNotificationPending}
+          className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
           title={notificationMuted ? '알림 켜기' : '알림 끄기'}
         >
           {notificationMuted ? (
