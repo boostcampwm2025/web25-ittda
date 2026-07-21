@@ -130,6 +130,28 @@ describe('useCoachmark', () => {
     await waitFor(() => expect(result.current.isActive).toBe(true));
   });
 
+  it('PWA 배너 표시 여부 체크가 진행 중이면(data-pwa-banner-pending) 활성화되지 않고, 끝나면 활성화된다', async () => {
+    setup({ userId: 'user-1' });
+    addTarget('step-1');
+    const pendingMarker = document.createElement('div');
+    pendingMarker.setAttribute('data-pwa-banner-pending', '');
+    document.body.appendChild(pendingMarker);
+
+    const { result } = renderHook(
+      () => useCoachmark({ flowKey: 'home', steps: STEPS }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(getMock).toHaveBeenCalled());
+    expect(result.current.isActive).toBe(false);
+
+    act(() => {
+      pendingMarker.remove();
+    });
+
+    await waitFor(() => expect(result.current.isActive).toBe(true));
+  });
+
   it('nextStep은 마지막 스텝이 아니면 다음 스텝으로 넘어간다', async () => {
     setup({ userId: 'user-1' });
     addTarget('step-1');
