@@ -4,6 +4,12 @@ const isIOS = () =>
   typeof navigator !== 'undefined' &&
   /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+const isNativePlatform = () =>
+  typeof window !== 'undefined' &&
+  !!(
+    window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor?.isNativePlatform?.();
+
 export function useHaptic() {
   const labelElRef = useRef<HTMLLabelElement | null>(null);
 
@@ -30,9 +36,20 @@ export function useHaptic() {
 
   const trigger = useCallback(
     (duration = 30) => {
+      // Capacitor 네이티브 앱: navigator.vibrate는 네이티브 VIBRATE 권한 등
+      // 웹 API만으로는 보장이 안 되므로 네이티브 브릿지를 직접 호출한다.
+      if (isNativePlatform()) {
+        import('@capacitor/haptics')
+          .then(({ Haptics, ImpactStyle }) =>
+            Haptics.impact({ style: ImpactStyle.Light }),
+          )
+          .catch(() => {});
+        return;
+      }
+
       try {
         if (isIOS()) {
-          // iOS: hidden checkbox toggle → Taptic Engine 발동
+          // iOS 웹: hidden checkbox toggle → Taptic Engine 발동
           getLabelEl()?.click();
         } else if (navigator.vibrate) {
           navigator.vibrate(duration);
