@@ -80,7 +80,7 @@ export interface RecordSearchItem {
   address: string;
   date: string;
   content: string;
-  thumbnailMediaId: string;
+  previewMediaIds: string[];
   snippet?: string;
 }
 

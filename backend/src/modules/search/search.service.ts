@@ -1,14 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder, Brackets } from 'typeorm';
+import { Repository, SelectQueryBuilder, Brackets, In } from 'typeorm';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostBlock } from '@/modules/post/entity/post-block.entity';
-import {
-  PostMedia,
-  PostMediaKind,
-} from '@/modules/post/entity/post-media.entity';
+import { PostMediaKind } from '@/modules/post/entity/post-media.entity';
 import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
+import { BlockValueMap } from '@/modules/post/types/post-block.types';
 import {
   SearchPostsDto,
   PaginatedSearchResponseDto,
@@ -169,28 +167,32 @@ export class SearchService {
     const hasNextPage = posts.length > limit;
     const items = posts.slice(0, limit);
 
+    const postIds = items.map((post) => post.id);
+    const previewMediaMap = new Map<string, string[]>();
+    if (postIds.length > 0) {
+      const imageBlocks = await this.postRepository.manager.find(PostBlock, {
+        where: {
+          postId: In(postIds),
+          type: PostBlockType.IMAGE,
+        },
+        order: {
+          layoutRow: 'ASC',
+          layoutCol: 'ASC',
+          layoutSpan: 'ASC',
+        },
+      });
+      imageBlocks.forEach((block) => {
+        const val = block.value as BlockValueMap[typeof PostBlockType.IMAGE];
+        const mediaIds = val.mediaIds ?? [];
+        const existing = previewMediaMap.get(block.postId) ?? [];
+        const merged = [...existing, ...mediaIds].slice(0, 5);
+        previewMediaMap.set(block.postId, merged);
+      });
+    }
+
     const resultItems: SearchResultItemDto[] = await Promise.all(
       items.map(async (post) => {
-        const firstImageBlock = await this.postRepository.manager.findOne(
-          PostBlock,
-          {
-            where: { postId: post.id, type: PostBlockType.IMAGE },
-            order: { layoutRow: 'ASC', layoutCol: 'ASC' },
-            select: { id: true },
-          },
-        );
-        const firstImageMedia = firstImageBlock
-          ? await this.postRepository.manager.findOne(PostMedia, {
-              where: {
-                postId: post.id,
-                kind: PostMediaKind.BLOCK,
-                blockId: firstImageBlock.id,
-              },
-              order: { sortOrder: 'ASC', createdAt: 'ASC' },
-              select: { mediaId: true },
-            })
-          : null;
-        const firstImageMediaId = firstImageMedia?.mediaId;
+        const previewMediaIds = previewMediaMap.get(post.id) ?? [];
 
         // Snippet extraction (first text block)
         const firstTextBlock = await this.postRepository.manager.findOne(
@@ -211,7 +213,7 @@ export class SearchService {
 
         return {
           id: post.id,
-          thumbnailMediaId: firstImageMediaId,
+          previewMediaIds,
           title: post.title,
           eventAt: post.eventAt!,
           location: locationBlock

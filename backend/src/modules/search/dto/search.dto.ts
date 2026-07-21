@@ -69,8 +69,11 @@ export class SearchResultItemDto {
   @ApiProperty({ description: '게시글 ID' })
   id: string;
 
-  @ApiPropertyOptional({ description: '썸네일 미디어 ID' })
-  thumbnailMediaId?: string;
+  @ApiProperty({
+    type: [String],
+    description: '미리보기 이미지 ID 목록 (최대 5개)',
+  })
+  previewMediaIds: string[];
 
   @ApiProperty({ description: '제목' })
   title: string;
