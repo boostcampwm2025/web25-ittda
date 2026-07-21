@@ -18,9 +18,17 @@ const SearchItem: React.FC<SearchItemProps> = ({
   priorityLoad,
 }) => {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(record.id)}
-      className="w-full py-4 border-b text-left transition-colors duration-150 dark:border-white/5 border-gray-100 active:bg-gray-50/50 dark:active:bg-white/3"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(record.id);
+        }
+      }}
+      className="w-full py-4 border-b text-left transition-colors duration-150 dark:border-white/5 border-gray-100 active:bg-gray-50/50 dark:active:bg-white/3 cursor-pointer"
     >
       {/* 텍스트 영역 */}
       <div className="flex items-start justify-between gap-2">
@@ -87,7 +95,7 @@ const SearchItem: React.FC<SearchItemProps> = ({
           )}
         </div>
       )}
-    </button>
+    </div>
   );
 };
 
