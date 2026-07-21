@@ -17,6 +17,7 @@ import NetworkGuard from '@/components/NetworkGuard';
 import AndroidBackHandler from '@/components/AndroidBackHandler';
 import ServiceGuard from '@/components/ServiceGuard';
 import AndroidNotificationHandler from '@/components/AndroidNotificationHandler';
+import ServiceWorkerUpdater from '@/components/ServiceWorkerUpdater';
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 const notoSans = Noto_Sans_KR({
@@ -266,6 +267,7 @@ export default function RootLayout({
               <ServiceGuard />
               <AndroidBackHandler />
               <AndroidNotificationHandler />
+              <ServiceWorkerUpdater />
               <div
                 data-app-root
                 className="flex flex-col min-h-screen w-full mx-auto max-w-4xl relative transition-colors duration-300 dark:bg-[#121212] dark:text-white bg-white text-itta-black"
