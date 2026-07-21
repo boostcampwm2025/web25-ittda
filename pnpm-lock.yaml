@@ -243,6 +243,9 @@ importers:
       '@capacitor/core':
         specifier: ^7.0.0
         version: 7.5.0
+      '@capacitor/haptics':
+        specifier: ^8.0.2
+        version: 8.0.2(@capacitor/core@7.5.0)
       '@capacitor/network':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@7.5.0)
@@ -997,6 +1000,11 @@ packages:
 
   '@capacitor/core@7.5.0':
     resolution: {integrity: sha512-4Y4trISe2Bp3lwsoGFoQIvgX4hiZO8S1Slmbz6oFaMxAuEc4noipQGCQx974PF4glwVVe/8+H3P9iEmCXtrUgA==}
+
+  '@capacitor/haptics@8.0.2':
+    resolution: {integrity: sha512-c2hZzRR5Fk1tbTvhG1jhh2XBAf3EhnIerMIb2sl7Mt41Gxx1fhBJFDa0/BI1IbY4loVepyyuqNC9820/GZuoWQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/ios@7.5.0':
     resolution: {integrity: sha512-HlEWLjmPMSyjD8pM2FSTYF7a7aoYDdrlUoA3Ybm8OnmOaby3R7L8jpzJr96igh/i2SpsHvDI7v3sO2FhSNKCKA==}
@@ -10759,6 +10767,10 @@ snapshots:
   '@capacitor/core@7.5.0':
     dependencies:
       tslib: 2.8.1
+
+  '@capacitor/haptics@8.0.2(@capacitor/core@7.5.0)':
+    dependencies:
+      '@capacitor/core': 7.5.0
 
   '@capacitor/ios@7.5.0(@capacitor/core@7.5.0)':
     dependencies:
