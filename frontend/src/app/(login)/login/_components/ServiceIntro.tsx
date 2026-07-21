@@ -91,7 +91,7 @@ export default function ServiceIntro() {
           <div
             key={item.headline}
             className={cn(
-              'relative w-full overflow-hidden h-dvh shrink-0 snap-start flex items-center justify-center',
+              'relative w-full overflow-hidden min-h-dvh shrink-0 snap-start flex items-center justify-center',
               SECTION_BG[i],
             )}
           >
@@ -99,7 +99,7 @@ export default function ServiceIntro() {
               {...entranceProps}
               viewport={{ once: true, amount: 0.35 }}
               className={cn(
-                'relative w-full mx-auto max-w-4xl flex flex-col items-center gap-4 md:gap-16 lg:gap-24 px-6 py-16 lg:py-24 text-center',
+                'relative w-full mx-auto max-w-4xl flex flex-col items-center gap-4 md:gap-16 lg:gap-24 px-6 py-10 md:py-16 lg:py-10 text-center',
                 imageOnLeft ? 'md:flex-row-reverse' : 'md:flex-row',
               )}
             >
@@ -121,12 +121,12 @@ export default function ServiceIntro() {
                 >
                   <item.icon className="w-5 h-5" />
                 </span>
-                <p className="text-lg lg:text-xl font-bold mb-2 text-itta-point">
+                <p className="text-base md:text-lg lg:text-xl font-bold mb-2 text-itta-point">
                   {item.caption}
                 </p>
                 <h3
                   className={cn(
-                    'text-[26px] lg:text-4xl font-bold leading-[1.35] whitespace-pre-line mb-4',
+                    'text-xl md:text-2xl lg:text-4xl font-bold leading-[1.35] whitespace-pre-line mb-4',
                     isLight ? 'text-itta-black' : 'text-white',
                   )}
                 >
@@ -134,7 +134,7 @@ export default function ServiceIntro() {
                 </h3>
                 <p
                   className={cn(
-                    'text-base lg:text-lg leading-relaxed whitespace-pre-line',
+                    'text-sm md:text-base lg:text-lg leading-relaxed whitespace-pre-line',
                     isLight ? 'text-gray-500' : 'text-white/60',
                   )}
                 >
@@ -142,13 +142,13 @@ export default function ServiceIntro() {
                 </p>
               </div>
 
-              <div className="w-full max-w-65 lg:max-w-80 shrink-0">
+              <div className="w-full max-w-40 md:max-w-65 lg:max-w-72 shrink-0">
                 <Image
                   src={item.image}
                   alt={item.caption}
                   width={512}
                   height={1001}
-                  sizes="(min-width: 1024px) 320px, 260px"
+                  sizes="(min-width: 1024px) 288px, (min-width: 768px) 260px, 160px"
                   className="w-full h-auto object-contain"
                 />
               </div>
@@ -158,23 +158,23 @@ export default function ServiceIntro() {
       })}
 
       {/* 보관함: 진한 섹션들 사이에서 숨 고르는 밝은 마무리 섹션 */}
-      <div className="relative w-full overflow-hidden h-dvh shrink-0 snap-start flex items-center justify-center bg-white">
+      <div className="relative w-full overflow-hidden min-h-dvh shrink-0 snap-start flex items-center justify-center bg-white">
         <motion.div
           {...entranceProps}
           viewport={{ once: true, amount: 0.35 }}
-          className="relative w-full mx-auto max-w-2xl flex flex-col items-center text-center px-6 py-20 lg:py-28"
+          className="relative w-full mx-auto max-w-2xl flex flex-col items-center text-center px-6 py-14 md:py-20 lg:py-28"
         >
           <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-gray-100 text-itta-black mb-5">
             <Book className="w-5 h-5" />
           </span>
-          <p className="text-lg lg:text-xl font-bold text-itta-point mb-2">
+          <p className="text-base md:text-lg lg:text-xl font-bold text-itta-point mb-2">
             보관함
           </p>
-          <h3 className="text-[26px] lg:text-4xl font-bold leading-[1.35] mb-4 text-itta-black">
+          <h3 className="text-xl md:text-2xl lg:text-4xl font-bold leading-[1.35] mb-4 text-itta-black">
             그룹마다 따로,
             <br />또 같이 쌓이는 우리의 기록
           </h3>
-          <p className="text-base lg:text-lg leading-relaxed text-gray-500">
+          <p className="text-sm md:text-base lg:text-lg leading-relaxed text-gray-500">
             가족 여행부터 친구들과의 일상까지
             <br />
             그룹별로 나누어 보관함에 기록해요
