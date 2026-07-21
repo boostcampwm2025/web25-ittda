@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder, Brackets, In } from 'typeorm';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostBlock } from '@/modules/post/entity/post-block.entity';
-import { PostMediaKind } from '@/modules/post/entity/post-media.entity';
 import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
@@ -74,15 +73,6 @@ export class SearchService {
     }
     const query = this.postRepository
       .createQueryBuilder('post')
-      .leftJoinAndSelect(
-        'post.postMedia',
-        'postMedia',
-        'postMedia.kind = :thumbnailKind',
-        {
-          thumbnailKind: PostMediaKind.THUMBNAIL,
-        },
-      )
-      .leftJoinAndSelect('postMedia.media', 'media')
       .leftJoin('post.ownerUser', 'ownerUser')
       .where(
         new Brackets((qb) => {
