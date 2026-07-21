@@ -175,7 +175,7 @@ export class SearchService {
         const val = block.value as BlockValueMap[typeof PostBlockType.IMAGE];
         const mediaIds = val.mediaIds ?? [];
         const existing = previewMediaMap.get(block.postId) ?? [];
-        const merged = [...existing, ...mediaIds].slice(0, 5);
+        const merged = [...new Set([...existing, ...mediaIds])].slice(0, 5);
         previewMediaMap.set(block.postId, merged);
       });
     }
