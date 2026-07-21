@@ -37,6 +37,7 @@ export function useCoachmark({
   const [stepIndex, setStepIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const [announcementOpen, setAnnouncementOpen] = useState(false);
+  const [layoutUnstable, setLayoutUnstable] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
   const { data: profile, isLoading } = useQuery({
@@ -56,12 +57,17 @@ export function useCoachmark({
     invalidateKeys: [['profile', 'me']],
   });
 
-  // 공지 모달이 떠 있는 동안은 코치마크를 시작하지 않고, 닫히면 바로 시작한다
+  // 공지 모달이 떠 있는 동안, 그리고 PWA 설치 배너의 표시 여부 판단(비동기 체크)이
+  // 끝나기 전까지는 코치마크를 시작하지 않는다. 배너가 코치마크 타겟보다 위쪽에
+  // 렌더링되어, 체크가 끝나며 배너가 나타나거나 계속 숨겨지는 순간 타겟 위치가
+  // 밀려서 코치마크가 깜빡이는 문제를 막기 위함.
   useEffect(() => {
-    const check = () =>
+    const check = () => {
       setAnnouncementOpen(
         !!document.querySelector('[data-announcement-modal]'),
       );
+      setLayoutUnstable(!!document.querySelector('[data-pwa-banner-pending]'));
+    };
     check();
     const observer = new MutationObserver(check);
     observer.observe(document.body, { childList: true, subtree: true });
@@ -74,6 +80,7 @@ export function useCoachmark({
     !isLoading &&
     !hasSeen &&
     !announcementOpen &&
+    !layoutUnstable &&
     !dismissed;
 
   const currentStep = steps[stepIndex];

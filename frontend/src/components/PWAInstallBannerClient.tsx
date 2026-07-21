@@ -80,9 +80,11 @@ export default function PWAInstallBannerClient() {
     }
   };
 
-  // 모든 비동기 체크가 완료되기 전까지는 렌더링 안 함 (flash 방지)
+  // 모든 비동기 체크가 완료되기 전까지는 배너를 렌더링하지 않되(flash 방지),
+  // 체크가 진행 중이라는 걸 알리는 마커는 남겨둔다 — 코치마크가 이 마커를 보고
+  // 배너 표시 여부가 확정될 때까지(=레이아웃이 밀릴 일이 없어질 때까지) 대기한다.
   if (!isCheckComplete || !isPrivateCheckDone) {
-    return null;
+    return <div data-pwa-banner-pending className="hidden" aria-hidden />;
   }
 
   if (isInstalled || !showBanner || isPrivateBrowsing) {

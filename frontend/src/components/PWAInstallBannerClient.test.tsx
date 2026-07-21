@@ -66,12 +66,17 @@ describe('PWAInstallBannerClient', () => {
     vi.clearAllMocks();
   });
 
-  it('isCheckComplete가 false면 렌더링하지 않는다', async () => {
+  it('isCheckComplete가 false면 배너 대신 대기 마커만 렌더링한다', async () => {
     setup({ isCheckComplete: false });
-    const { container } = render(<PWAInstallBannerClient />);
+    render(<PWAInstallBannerClient />);
 
     await waitFor(() => expect(mockIsPrivateMode).toHaveBeenCalled());
-    expect(container).toBeEmptyDOMElement();
+    // 체크 진행 중에는 실제 배너 콘텐츠가 없어야 하지만,
+    // 코치마크가 감지할 수 있는 대기 마커는 DOM에 남아있어야 한다.
+    expect(
+      screen.queryByText('잇다- 앱으로 설치하기'),
+    ).not.toBeInTheDocument();
+    expect(document.querySelector('[data-pwa-banner-pending]')).not.toBeNull();
   });
 
   it('이미 설치되어 있으면 렌더링하지 않는다', async () => {
