@@ -314,7 +314,7 @@ export default function LoginContent({
   return (
     <div className="relative left-1/2 -ml-[50vw] w-screen h-dvh overflow-y-auto snap-y snap-mandatory flex flex-col bg-white">
       {/* 히어로: 흰 배경(고정, 다크모드 미적용) + 노션처럼 이미지 없이 중앙 정렬 */}
-      <div className="relative w-full h-dvh shrink-0 snap-start flex flex-col overflow-hidden bg-white">
+      <div className="relative w-full min-h-dvh shrink-0 snap-start flex flex-col overflow-hidden bg-white">
         {/* 좌상단 워드마크 */}
         <div
           className="relative z-10 px-6 lg:px-12"
@@ -337,10 +337,10 @@ export default function LoginContent({
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-itta-point mb-4">
               Connected by Context
             </p>
-            <h2 className="text-[32px] lg:text-[44px] font-bold leading-[1.3] mb-3 text-itta-black">
+            <h2 className="text-2xl md:text-3xl lg:text-[44px] font-bold leading-[1.3] mb-3 text-itta-black">
               기억과 맥락을 잇다
             </h2>
-            <p className="text-base lg:text-lg leading-relaxed break-keep text-gray-500 max-w-xs lg:max-w-md mb-9">
+            <p className="text-sm md:text-base lg:text-lg leading-relaxed break-keep text-gray-500 max-w-xs lg:max-w-md mb-9">
               사진 한 장이면 날짜와 장소가 자동으로 기록되고, 친구와 함께
               우리만의 기억을 만들어가요.
             </p>
