@@ -54,15 +54,16 @@ describe('ServiceWorkerUpdater', () => {
     render(<ServiceWorkerUpdater />);
     await vi.waitFor(() => expect(serviceWorker.getRegistrations).toHaveBeenCalledTimes(1));
 
-    Object.defineProperty(document, 'visibilityState', {
-      value: 'visible',
-      configurable: true,
-    });
+    const visibilitySpy = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible');
     document.dispatchEvent(new Event('visibilitychange'));
 
     await vi.waitFor(() =>
       expect(serviceWorker.getRegistrations).toHaveBeenCalledTimes(2),
     );
+
+    visibilitySpy.mockRestore();
   });
 
   it('controllerchange 발생 시 페이지를 한 번만 새로고침한다', async () => {
