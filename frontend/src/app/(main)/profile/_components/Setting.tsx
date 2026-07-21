@@ -187,7 +187,14 @@ export default function Setting() {
           }
         }
       }
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error, {
+        tags: {
+          context: 'notification',
+          operation: 'push-enable',
+          platform: isNativePlatform() ? 'android' : 'web',
+        },
+      });
       toast.error('알림 설정 변경에 실패했습니다.');
     }
   };
