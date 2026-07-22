@@ -20,6 +20,11 @@ export interface CoachmarkStep {
   xOffsetMobile?: number;
   // 타겟 비율 기반 자동 여백 대신 고정 여백을 쓰고 싶을 때(예: 아이콘 하나만 딱 감싸기).
   spotlightPadding?: number;
+  // BottomNavigation 안의 타겟(NavItem, FAB 등)에만 사용.
+  // Capacitor 네이티브 환경에서 헤더 중복 padding 제거 시 상쇄한 것과 동일한
+  // 상태바 높이(--cap-status-bar-height/env(safe-area-inset-top))만큼
+  // 스포트라이트를 추가로 내려준다.
+  isBottomNavTarget?: boolean;
 }
 
 interface UseCoachmarkOptions {
