@@ -30,7 +30,7 @@ function getApiBaseUrl() {
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
-  maxRetries?: number; // 최대 재시도 횟수
+  maxRetries?: number; // 최대 재시도 횟수 (기본: GET/PUT/DELETE 3회, POST/PATCH 0회)
   retryDelay?: number; // 초기 재시도 지연 시간 ms
   skipAuth?: boolean; // 인증 헤더 제외 (로그인, 회원가입 등)
   timeout?: number; // 타임아웃 ms (0이면 비활성, 기본값 10000)
@@ -318,17 +318,28 @@ export async function fetchApi<T>(
   const {
     params,
     headers = {},
-    maxRetries = 3,
+    maxRetries,
     retryDelay = 1000,
     skipAuth = false,
     timeout = 10000,
     ...fetchOptions
   } = options;
 
+  // 네트워크 예외 재시도는 HTTP 스펙상 멱등이 보장되는 메서드(GET/PUT/DELETE)에만
+  // 기본 적용한다. POST(생성)와 PATCH(부분 수정, 멱등 보장 안 됨)는 요청이 서버에
+  // 도달해 처리된 뒤 응답만 유실됐을 수 있어, 자동 재시도가 중복 생성/중복 처리로
+  // 이어질 수 있다 — 필요하면 호출부에서 options.maxRetries로 명시적으로 오버라이드한다.
+  const method = (fetchOptions.method ?? 'GET').toUpperCase();
+  const isIdempotentMethod =
+    method === 'GET' || method === 'PUT' || method === 'DELETE';
+  const resolvedMaxRetries = maxRetries ?? (isIdempotentMethod ? 3 : 0);
+
   const currentBaseUrl = getApiBaseUrl();
   // 서버 환경에서는 /api → /v1 치환 (Next.js rewrite 없이 백엔드에 직접 요청)
   const finalEndpoint =
-    typeof window === 'undefined' ? endpoint.replace(/^\/api/, '/v1') : endpoint;
+    typeof window === 'undefined'
+      ? endpoint.replace(/^\/api/, '/v1')
+      : endpoint;
 
   let fullUrl = `${currentBaseUrl}${finalEndpoint}`;
   // 서버 환경인데 여전히 상대경로라면 강제로 도메인을 붙여줌 (방어 코드)
@@ -367,7 +378,7 @@ export async function fetchApi<T>(
       ...(sendCookie ? { credentials: 'include' } : {}),
     }, // 쿠키에 담긴 refresh token을 보호하기 위해 reissue를 보낼 때만 허용
     0,
-    maxRetries,
+    resolvedMaxRetries,
     retryDelay,
     skipAuth,
     timeout,
