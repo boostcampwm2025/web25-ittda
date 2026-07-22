@@ -6,3 +6,6 @@ dist
 .gitignore
 logs
 *.log
+
+# Credentials and private keys
+secrets/
