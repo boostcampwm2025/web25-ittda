@@ -82,17 +82,25 @@ export default function Coachmark({ flowKey, steps, enabled }: CoachmarkProps) {
     width: rect.width + spotlightPadding * 2,
     height: rect.height + spotlightPadding * 2,
   };
+  const maxSpotlightTop =
+    window.innerHeight - rawSpotlight.height - VIEWPORT_MARGIN;
+  const clampedTop = Math.min(
+    Math.max(rawSpotlight.top, VIEWPORT_MARGIN),
+    maxSpotlightTop,
+  );
   const spotlight = {
     left:
       Math.min(
         Math.max(rawSpotlight.left, VIEWPORT_MARGIN),
         window.innerWidth - rawSpotlight.width - VIEWPORT_MARGIN,
       ) + xOffset,
-    top:
-      Math.min(
-        Math.max(rawSpotlight.top, VIEWPORT_MARGIN),
-        window.innerHeight - rawSpotlight.height - VIEWPORT_MARGIN,
-      ) + yOffset,
+    // yOffset을 더한 뒤에도 화면 밖으로 나가지 않도록 다시 한 번 clamp한다.
+    // nativeStatusBarOffset처럼 큰 값이 더해지면 이미 하단 가장자리에 있는
+    // 타겟(BottomNavigation)이 뷰포트 밖으로 밀려날 수 있어서다.
+    top: Math.min(
+      Math.max(clampedTop + yOffset, VIEWPORT_MARGIN),
+      maxSpotlightTop,
+    ),
     width: rawSpotlight.width,
     height: rawSpotlight.height,
   };
