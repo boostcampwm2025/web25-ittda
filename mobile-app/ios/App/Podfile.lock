@@ -8,7 +8,7 @@ PODS:
   - CapacitorClipboard (7.0.4):
     - Capacitor
   - CapacitorCordova (7.5.0)
-  - CapacitorHaptics (8.0.2):
+  - CapacitorHaptics (7.0.5):
     - Capacitor
   - CapacitorNativeSettings (8.1.0):
     - Capacitor
@@ -27,7 +27,7 @@ DEPENDENCIES:
   - "CapacitorBrowser (from `../../../node_modules/.pnpm/@capacitor+browser@7.0.4_@capacitor+core@7.5.0/node_modules/@capacitor/browser`)"
   - "CapacitorClipboard (from `../../../node_modules/.pnpm/@capacitor+clipboard@7.0.4_@capacitor+core@7.5.0/node_modules/@capacitor/clipboard`)"
   - "CapacitorCordova (from `../../../node_modules/.pnpm/@capacitor+ios@7.5.0_@capacitor+core@7.5.0/node_modules/@capacitor/ios`)"
-  - "CapacitorHaptics (from `../../node_modules/@capacitor/haptics`)"
+  - "CapacitorHaptics (from `../../../node_modules/.pnpm/@capacitor+haptics@7.0.5_@capacitor+core@7.5.0/node_modules/@capacitor/haptics`)"
   - "CapacitorNativeSettings (from `../../../node_modules/.pnpm/capacitor-native-settings@8.1.0_@capacitor+core@7.5.0/node_modules/capacitor-native-settings`)"
   - "CapacitorPushNotifications (from `../../../node_modules/.pnpm/@capacitor+push-notifications@8.1.1_@capacitor+core@7.5.0/node_modules/@capacitor/push-notifications`)"
   - "CapacitorShare (from `../../../node_modules/.pnpm/@capacitor+share@7.0.4_@capacitor+core@7.5.0/node_modules/@capacitor/share`)"
@@ -46,7 +46,7 @@ EXTERNAL SOURCES:
   CapacitorCordova:
     :path: "../../../node_modules/.pnpm/@capacitor+ios@7.5.0_@capacitor+core@7.5.0/node_modules/@capacitor/ios"
   CapacitorHaptics:
-    :path: "../../node_modules/@capacitor/haptics"
+    :path: "../../../node_modules/.pnpm/@capacitor+haptics@7.0.5_@capacitor+core@7.5.0/node_modules/@capacitor/haptics"
   CapacitorNativeSettings:
     :path: "../../../node_modules/.pnpm/capacitor-native-settings@8.1.0_@capacitor+core@7.5.0/node_modules/capacitor-native-settings"
   CapacitorPushNotifications:
@@ -64,13 +64,13 @@ SPEC CHECKSUMS:
   CapacitorBrowser: d0a1ab6a22835100eb6a203a54571d11f82bf7a7
   CapacitorClipboard: 9779d5e2f766d501d8c90e0f0f689abd293efc2f
   CapacitorCordova: ae35646a9b46cfd00d637f195509c86594026aad
-  CapacitorHaptics: 4e1e84c2b74fb5918e403fb8f0e73a07d05937df
+  CapacitorHaptics: ec024a10130c230743219149c76a02da5cff6aed
   CapacitorNativeSettings: 3eb6d229080d11431c7126c7aa241cd05ec3ff23
   CapacitorPushNotifications: 7fa75d28307b23b314b19ec7cfe88611e9659352
   CapacitorShare: 14b5d7f0a2c6de86dcad8995da80fb707ee32f62
   CapacitorSplashScreen: b3d12b4324d93ce605fe57f05a199ade7f26189e
   CapacitorStatusBar: a3acb591ff56301e28aa1a01791ba74a8e1faabb
 
-PODFILE CHECKSUM: 0afc2bf78aa5a7542269808b5071a4c3b03c69a1
+PODFILE CHECKSUM: a725e27d0846ecb14295bdce707ad26b0908fffd
 
 COCOAPODS: 1.16.2
