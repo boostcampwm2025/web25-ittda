@@ -289,8 +289,11 @@ async function fetchWithRetry<T>(
       };
     }
 
-    // 재시도 전 대기 1 -> 2 -> 4
-    const waitTime = retryDelay * 2 ** attempt;
+    // 재시도 전 대기: 지수 백오프(최대 1 -> 2 -> 4초)에 Full Jitter 적용.
+    // 같은 장애로 여러 클라이언트가 동시에 재시도할 때 정확히 같은 타이밍에
+    // 몰려 서버 회복을 방해하지 않도록, 0~상한 사이에서 무작위로 대기 시간을 뽑는다.
+    const maxWaitTime = retryDelay * 2 ** attempt;
+    const waitTime = Math.random() * maxWaitTime;
     await delay(waitTime);
 
     return fetchWithRetry<T>(
