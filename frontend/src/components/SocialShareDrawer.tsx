@@ -187,7 +187,7 @@ export default function SocialShareDrawer({
           {/* 소셜 버튼 목록 */}
           <div className="overflow-x-auto scrollbar-hide pb-4 scroll-smooth touch-pan-x overscroll-x-contain">
             <ul className="flex justify-start gap-4 sm:gap-6 min-w-max">
-              {typeof window !== 'undefined' && window.Kakao?.Share && (
+              {typeof window !== 'undefined' && window.Kakao?.Share && !isNative && (
                 <li className="flex flex-col items-center shrink-0">
                   <button
                     onClick={handleKakaoShare}

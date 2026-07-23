@@ -64,6 +64,12 @@ export class GroupItemDto {
 
   @ApiProperty({ description: '내 권한', enum: GroupRoleEnum, nullable: true })
   permission: GroupRoleEnum | null;
+
+  @ApiProperty({ description: '알림 음소거 여부' })
+  notificationMuted: boolean;
+
+  @ApiProperty({ description: '읽지 않은 활동 여부' })
+  hasUnread: boolean;
 }
 
 export class GetGroupsResponseDto {

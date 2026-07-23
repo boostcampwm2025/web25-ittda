@@ -5,3 +5,5 @@ CLAUDE.md
 .env*
 !.env.example
 .superset/*
+# Firebase Admin SDK 서비스 계정 키 (절대 커밋 금지)
+*firebase-adminsdk*.json

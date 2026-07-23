@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import {
   AlertCircle,
+  Bell,
   ChevronRight,
   Download,
   FileText,
@@ -33,6 +34,17 @@ import { useApiDelete, useApiPost } from '@/hooks/useApi';
 import { toast } from 'sonner';
 import { signOut } from 'next-auth/react';
 import * as Sentry from '@sentry/nextjs';
+import { removeFcmToken } from '@/lib/api/notification';
+import {
+  registerAndroidToken,
+  requestAndRegisterWebToken,
+} from '@/hooks/usePushNotification';
+
+const isNativePlatform = () =>
+  typeof window !== 'undefined' &&
+  !!(
+    window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor?.isNativePlatform?.();
 
 export default function Setting() {
   const router = useRouter();
@@ -42,6 +54,8 @@ export default function Setting() {
   const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
     usePWAInstall();
   const [showInstructions, setShowInstructions] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBlocked, setPushBlocked] = useState(false);
 
   const { mutate: logout } = useApiPost('/api/auth/logout', {
     onSuccess: async () => {
@@ -85,6 +99,27 @@ export default function Setting() {
     return () => cancelAnimationFrame(raId);
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      if (isNativePlatform()) {
+        try {
+          const { PushNotifications } =
+            await import('@capacitor/push-notifications');
+          const { receive } = await PushNotifications.checkPermissions();
+          const disabled =
+            localStorage.getItem('push_notifications_disabled') === 'true';
+          setPushEnabled(receive === 'granted' && !disabled);
+          setPushBlocked(receive === 'denied');
+        } catch {}
+      } else if ('Notification' in window) {
+        const disabled =
+          localStorage.getItem('push_notifications_disabled') === 'true';
+        setPushEnabled(Notification.permission === 'granted' && !disabled);
+        setPushBlocked(Notification.permission === 'denied');
+      }
+    })();
+  }, []);
+
   // Hydration 불일치를 방지하기 위해 마운트되기 전에는 아무것도 렌더링하지 않음
   if (!mounted) {
     return null;
@@ -105,6 +140,68 @@ export default function Setting() {
   const toggleDarkMode = () => {
     const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
+  };
+
+  const handleTogglePush = async () => {
+    const platform = isNativePlatform() ? 'android' : 'web';
+
+    if (pushEnabled) {
+      // 낙관적 업데이트: 먼저 꺼진 것으로 표시하고, 실패하면 되돌린다.
+      setPushEnabled(false);
+      try {
+        await removeFcmToken(platform);
+        localStorage.setItem('push_notifications_disabled', 'true');
+      } catch {
+        setPushEnabled(true); // 롤백
+        toast.error('알림 해제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      }
+      return;
+    }
+
+    // 낙관적 업데이트: 먼저 켜진 것으로 표시하고, 권한 거부/실패 시 되돌린다.
+    setPushEnabled(true);
+    try {
+      if (isNativePlatform()) {
+        await registerAndroidToken();
+        const { PushNotifications } =
+          await import('@capacitor/push-notifications');
+        const { receive } = await PushNotifications.checkPermissions();
+        if (receive === 'granted') {
+          localStorage.removeItem('push_notifications_disabled');
+          setPushBlocked(false);
+        } else {
+          setPushEnabled(false); // 롤백
+          setPushBlocked(true);
+          const { NativeSettings, AndroidSettings } =
+            await import('capacitor-native-settings');
+          await NativeSettings.openAndroid({
+            option: AndroidSettings.AppNotification,
+          }).catch(() => {});
+        }
+      } else {
+        await requestAndRegisterWebToken();
+        if (Notification.permission === 'granted') {
+          localStorage.removeItem('push_notifications_disabled');
+          setPushBlocked(false);
+        } else {
+          setPushEnabled(false); // 롤백
+          setPushBlocked(Notification.permission === 'denied');
+          if (Notification.permission === 'denied') {
+            toast.info('설정에서 알림 권한을 허용해 주세요.');
+          }
+        }
+      }
+    } catch (error) {
+      setPushEnabled(false); // 롤백
+      Sentry.captureException(error, {
+        tags: {
+          context: 'notification',
+          operation: 'push-enable',
+          platform: isNativePlatform() ? 'android' : 'web',
+        },
+      });
+      toast.error('알림 설정 변경에 실패했습니다.');
+    }
   };
 
   const handleContact = () => {
@@ -168,6 +265,33 @@ export default function Setting() {
             />
           </button>
         </div>
+
+        {('Notification' in window || isNativePlatform()) && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg transition-colors dark:bg-blue-500/10 dark:text-blue-400 bg-blue-50 text-blue-500">
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold dark:text-gray-200 text-itta-black">
+                푸시 알림
+              </span>
+            </div>
+            <button
+              onClick={handleTogglePush}
+              className={cn(
+                'cursor-pointer w-10 h-5 sm:w-11 sm:h-6 rounded-full relative transition-all duration-300',
+                pushEnabled ? 'bg-blue-500' : 'bg-gray-200',
+              )}
+            >
+              <div
+                className={cn(
+                  'absolute top-0.5 left-0.5 sm:top-1 sm:left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out',
+                  pushEnabled && 'translate-x-5',
+                )}
+              />
+            </button>
+          </div>
+        )}
 
         <div className="pt-1.5 sm:pt-2 border-t dark:border-white/5 border-gray-50">
           <button

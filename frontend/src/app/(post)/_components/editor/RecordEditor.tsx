@@ -7,6 +7,8 @@ import { GripVertical, Loader2, User } from 'lucide-react';
 import RecordEditorHeader from './RecordEditorHeader';
 import RecordTitleInput from './RecordTitleInput';
 import Toolbar from './Toolbar';
+import Coachmark from '@/components/Coachmark';
+import { RECORD_EDITOR_COACHMARK_STEPS } from './recordEditorCoachmarkSteps';
 
 // 드로어
 import DateDrawer from '@/components/DateDrawer';
@@ -98,6 +100,7 @@ const BlockItem = memo(function BlockItem({
   onOpenDrawer,
   contentBlockCount,
   handleDragEnd,
+  tutorialId,
 }: {
   block: RecordBlock;
   isDraggingId: string | null;
@@ -120,6 +123,7 @@ const BlockItem = memo(function BlockItem({
   ) => void;
   contentBlockCount: number;
   handleDragEnd: () => void;
+  tutorialId?: string;
 }) {
   const lockKey = `block:${block.id}`;
   const ownerSessionId = locks[lockKey];
@@ -159,6 +163,7 @@ const BlockItem = memo(function BlockItem({
   return (
     <div
       data-block-id={block.id}
+      data-tutorial-id={tutorialId}
       onPointerUp={handleDragEnd}
       onPointerCancel={handleDragEnd}
       className={`cursor-grab relative group/field select-none ${isDraggingId ? 'touch-none' : 'touch-auto'} ${block.layout.span === 1 ? 'col-span-1' : 'col-span-2'} ${isDraggingId === block.id ? 'opacity-20 scale-95' : isDeleting ? 'opacity-40 pointer-events-none' : 'opacity-100'} ${!isDraggingId ? 'transition-all duration-300' : ''}`}
@@ -1166,7 +1171,7 @@ export default function PostEditor({
             isDraggingId ? '' : 'transition-all duration-300'
           }`}
         >
-          {blocks.map((block) => (
+          {blocks.map((block, index) => (
             <BlockItem
               key={block.id}
               block={block}
@@ -1185,6 +1190,7 @@ export default function PostEditor({
                 blocks.filter((b) => b.type === 'content').length
               }
               handleDragEnd={handleDragEnd}
+              tutorialId={index === 0 ? 'tutorial-editor-drag-blocks' : undefined}
             />
           ))}
         </div>
@@ -1192,6 +1198,10 @@ export default function PostEditor({
       <Toolbar
         onAddBlock={handleToolbarAddBlock}
         onOpenDrawer={setActiveDrawer}
+      />
+      <Coachmark
+        flowKey="record-editor"
+        steps={RECORD_EDITOR_COACHMARK_STEPS}
       />
 
       <input

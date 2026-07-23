@@ -30,6 +30,7 @@ import { GroupActivityActor } from './entity/group-activity-actor.entity';
 import { AuthModule } from '../auth/auth.module';
 import { PostModule } from '../post/post.module';
 import { MediaModule } from '../media/media.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { MediaModule } from '../media/media.module';
     AuthModule,
     forwardRef(() => PostModule),
     MediaModule,
+    NotificationModule,
   ],
   providers: [
     GroupService,

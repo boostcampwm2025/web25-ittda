@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, SelectQueryBuilder, Brackets } from 'typeorm';
+import { In, Not, Repository, SelectQueryBuilder, Brackets } from 'typeorm';
 
 import { GroupActivityLog } from '../entity/group-activity-log.entity';
 import { GroupActivityActor } from '../entity/group-activity-actor.entity';
@@ -11,6 +11,7 @@ import {
   GroupActivityItemDto,
   PaginatedGroupActivityResponseDto,
 } from '../dto/group-activity.dto';
+import { NotificationService } from '@/modules/notification/notification.service';
 
 type RecordActivityInput = {
   groupId: string;
@@ -20,8 +21,61 @@ type RecordActivityInput = {
   meta?: Record<string, unknown> | null;
 };
 
+function buildActivityNotification(
+  actorName: string,
+  type: GroupActivityType,
+  meta?: Record<string, unknown> | null,
+): { title: string; body: string } | null {
+  const postTitle = ((meta?.title ?? meta?.afterTitle ?? '') as string) || '';
+  const titlePart = postTitle ? ` "${postTitle}"` : '';
+
+  switch (type) {
+    case GroupActivityType.POST_CREATE:
+      return {
+        title: '새 기록',
+        body: `${actorName}님이 새 기록${titlePart}을(를) 작성했습니다.`,
+      };
+    case GroupActivityType.POST_COLLAB_COMPLETE:
+    case GroupActivityType.POST_EDIT_COMPLETE:
+    case GroupActivityType.POST_UPDATE:
+      return {
+        title: '기록 수정',
+        body: `${actorName}님이${titlePart} 기록을 수정했습니다.`,
+      };
+    case GroupActivityType.POST_DELETE:
+      return {
+        title: '기록 삭제',
+        body: `${actorName}님이${titlePart} 기록을 삭제했습니다.`,
+      };
+    case GroupActivityType.MEMBER_JOIN:
+      return {
+        title: '새 멤버',
+        body: `${actorName}님이 그룹에 참여했습니다.`,
+      };
+    case GroupActivityType.MEMBER_LEAVE:
+      return {
+        title: '멤버 탈퇴',
+        body: `${actorName}님이 그룹에서 나갔습니다.`,
+      };
+    case GroupActivityType.MEMBER_REMOVE:
+      return {
+        title: '멤버 내보내기',
+        body: '그룹에서 멤버가 내보내졌습니다.',
+      };
+    case GroupActivityType.GROUP_NAME_UPDATE:
+      return {
+        title: '그룹 이름 변경',
+        body: `그룹 이름이 "${(meta?.afterName as string) ?? '알 수 없음'}"(으)로 변경되었습니다.`,
+      };
+    default:
+      return null;
+  }
+}
+
 @Injectable()
 export class GroupActivityService {
+  private readonly logger = new Logger(GroupActivityService.name);
+
   constructor(
     @InjectRepository(GroupActivityLog)
     private readonly logRepo: Repository<GroupActivityLog>,
@@ -29,6 +83,7 @@ export class GroupActivityService {
     private readonly actorRepo: Repository<GroupActivityActor>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepo: Repository<GroupMember>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async recordActivity(input: RecordActivityInput): Promise<void> {
@@ -58,6 +113,63 @@ export class GroupActivityService {
         await actorRepo.save(actors);
       }
     });
+
+    void this.dispatchNotification(input, actorIds).catch((e) =>
+      this.logger.warn('푸시 알림 전송 실패', e),
+    );
+  }
+
+  private async dispatchNotification(
+    input: RecordActivityInput,
+    actorIds: string[],
+  ): Promise<void> {
+    const actorMembers =
+      actorIds.length > 0
+        ? await this.groupMemberRepo.find({
+            where: { groupId: input.groupId, userId: In(actorIds) },
+            relations: { user: true },
+          })
+        : [];
+
+    const first = actorMembers[0];
+    const baseName = first?.nicknameInGroup ?? first?.user?.nickname ?? '멤버';
+    const extraCount = actorIds.length - 1;
+    const actorDisplayName =
+      extraCount > 0 ? `${baseName} 외 ${extraCount}명` : baseName;
+
+    const notification = buildActivityNotification(
+      actorDisplayName,
+      input.type,
+      input.meta,
+    );
+    if (!notification) return;
+
+    const recipients = await this.groupMemberRepo.find({
+      where:
+        actorIds.length > 0
+          ? {
+              groupId: input.groupId,
+              userId: Not(In(actorIds)),
+              notificationMuted: false,
+            }
+          : { groupId: input.groupId, notificationMuted: false },
+      select: ['userId'],
+    });
+
+    const recipientIds = recipients.map((m) => m.userId);
+    if (recipientIds.length === 0) return;
+
+    const hasPost = input.refId && input.type !== GroupActivityType.POST_DELETE;
+
+    await this.notificationService.sendToUsers(
+      recipientIds,
+      notification.title,
+      notification.body,
+      {
+        groupId: input.groupId,
+        ...(hasPost ? { postId: input.refId as string } : {}),
+      },
+    );
   }
 
   async getGroupActivities(

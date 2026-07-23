@@ -16,8 +16,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@radix-ui/react-popover';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Bell,
+  BellOff,
   LogOut,
   MoreVertical,
   Settings,
@@ -26,11 +28,16 @@ import {
   UserCircle,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import GroupInviteDrawer from './GroupInviteDrawer';
 import { cn } from '@/lib/utils';
 import { GroupMembersResponse } from '@/lib/types/groupResponse';
-import { groupMyRoleOptions } from '@/lib/api/group';
+import {
+  groupMyRoleOptions,
+  markGroupAsRead,
+  toggleGroupNotification,
+} from '@/lib/api/group';
+import { GroupSummary } from '@/lib/types/recordResponse';
 import { toast } from 'sonner';
 
 interface GroupHeaderActionsProps {
@@ -47,6 +54,18 @@ export default function GroupHeaderActions({
   const [showLeaveGroup, setShowLeaveGroup] = useState(false);
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    markGroupAsRead(groupId).catch(() => {});
+    queryClient.setQueryData<GroupSummary[]>(['shared'], (prev) =>
+      prev
+        ? prev.map((g) =>
+            g.groupId === groupId ? { ...g, hasUnread: false } : g,
+          )
+        : prev,
+    );
+  }, [groupId, queryClient]);
+
   const { mutate: leaveGroup } = useApiDelete(
     `/api/groups/${groupId}/members/me`,
     {
@@ -69,6 +88,28 @@ export default function GroupHeaderActions({
   const roleLoaded = roleData !== undefined;
   const isViewer = roleData?.role === 'VIEWER';
   const isAdmin = roleData?.role === 'ADMIN';
+  const notificationMuted = roleData?.notificationMuted ?? false;
+
+  const { mutate: toggleNotification, isPending: isToggleNotificationPending } = useMutation({
+    mutationFn: (muted: boolean) => toggleGroupNotification(groupId, muted),
+    onSuccess: (_, muted) => {
+      queryClient.setQueryData(
+        ['group', groupId, 'me', 'role'],
+        (prev: typeof roleData) =>
+          prev ? { ...prev, notificationMuted: muted } : prev,
+      );
+      queryClient.setQueryData<GroupSummary[]>(['shared'], (prev) =>
+        prev
+          ? prev.map((g) =>
+              g.groupId === groupId ? { ...g, notificationMuted: muted } : g,
+            )
+          : prev,
+      );
+    },
+    onError: () => {
+      toast.error('알림 설정 변경에 실패했습니다.');
+    },
+  });
 
   const handleLeaveGroup = () => {
     leaveGroup({});
@@ -82,6 +123,19 @@ export default function GroupHeaderActions({
       </span>
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {roleLoaded && !isViewer && <GroupInviteDrawer groupId={groupId || 'gruop'} />}
+
+        <button
+          onClick={() => toggleNotification(!notificationMuted)}
+          disabled={isToggleNotificationPending}
+          className="cursor-pointer p-2 sm:p-2.5 rounded-xl transition-colors active:scale-95 dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={notificationMuted ? '알림 켜기' : '알림 끄기'}
+        >
+          {notificationMuted ? (
+            <BellOff className="w-5 h-5" />
+          ) : (
+            <Bell className="w-5 h-5" />
+          )}
+        </button>
 
         <DateSelectorDrawer
           className={className}

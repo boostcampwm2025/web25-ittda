@@ -46,12 +46,7 @@ describe('NavItem', () => {
 
   it('isGroup이 true이고 active가 false면 그룹 비활성 색상 클래스가 적용된다', () => {
     render(
-      <NavItem
-        icon={<TestIcon />}
-        active={false}
-        onClick={vi.fn()}
-        isGroup
-      />,
+      <NavItem icon={<TestIcon />} active={false} onClick={vi.fn()} isGroup />,
     );
 
     expect(screen.getByRole('button')).toHaveClass('text-gray-400');
@@ -72,5 +67,37 @@ describe('NavItem', () => {
     await userEvent.click(button);
 
     expect(button.querySelector('span')).toBeInTheDocument();
+  });
+
+  it('tutorialId를 전달하면 아이콘 자체에 data-tutorial-id 속성이 렌더링된다', () => {
+    render(
+      <NavItem
+        icon={<TestIcon />}
+        active={false}
+        onClick={vi.fn()}
+        tutorialId="tutorial-nav-group"
+      />,
+    );
+
+    // 코치마크 스포트라이트가 버튼의 넓은 터치 영역이 아니라 눈에 보이는
+    // 아이콘만 감싸도록, data-tutorial-id는 버튼이 아닌 아이콘에 붙는다.
+    expect(screen.getByTestId('icon')).toHaveAttribute(
+      'data-tutorial-id',
+      'tutorial-nav-group',
+    );
+    expect(screen.getByRole('button')).not.toHaveAttribute(
+      'data-tutorial-id',
+    );
+  });
+
+  it('tutorialId를 전달하지 않으면 data-tutorial-id 속성이 없다', () => {
+    render(<NavItem icon={<TestIcon />} active={false} onClick={vi.fn()} />);
+
+    expect(screen.getByTestId('icon')).not.toHaveAttribute(
+      'data-tutorial-id',
+    );
+    expect(screen.getByRole('button')).not.toHaveAttribute(
+      'data-tutorial-id',
+    );
   });
 });

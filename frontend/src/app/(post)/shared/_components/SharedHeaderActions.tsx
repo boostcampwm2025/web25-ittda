@@ -59,6 +59,8 @@ export default function SharedHeaderActions() {
         lastActivityAt: response.data.createdAt,
         latestPost: null,
         permission: 'ADMIN',
+        notificationMuted: false,
+        hasUnread: false,
       };
       // 서버 응답 데이터를 캐시에 즉시 추가
       queryClient.setQueryData<GroupSummary[]>(['shared'], (old) => {
@@ -171,6 +173,7 @@ export default function SharedHeaderActions() {
       <Drawer open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DrawerTrigger
           onClick={() => setShowCreateModal(true)}
+          data-tutorial-id="tutorial-shared-create-group"
           className="cursor-pointer p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md dark:bg-[#10B981] dark:text-white bg-[#222222] text-white"
         >
           <Plus className="w-4 h-4 sm:w-5 sm:h-5" />

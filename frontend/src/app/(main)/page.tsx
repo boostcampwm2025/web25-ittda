@@ -4,6 +4,8 @@ import HomePageSkeleton from './_components/HomePageSkeleton';
 import { Suspense } from 'react';
 import AnnouncementModal from '@/components/AnnouncementModal';
 import WeekCalendarSkeleton from './_components/WeekCalendarSkeleton';
+import Coachmark from '@/components/Coachmark';
+import { HOME_COACHMARK_STEPS } from './_components/homeCoachmarkSteps';
 
 export async function generateMetadata() {
   return {
@@ -31,6 +33,7 @@ export default function HomePage() {
       <Suspense fallback={null}>
         <AnnouncementModal />
       </Suspense>
+      <Coachmark flowKey="home" steps={HOME_COACHMARK_STEPS} />
       <Suspense fallback={<WeekCalendarSkeleton />}>
         <WeekCalendar />
       </Suspense>

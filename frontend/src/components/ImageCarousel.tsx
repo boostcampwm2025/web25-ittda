@@ -264,7 +264,7 @@ export default function ImageCarousel({ images, priorityLoad }: ImageCarouselPro
     return (
       <>
         <div
-          className="w-full rounded-sm overflow-hidden border dark:border-white/10 border-gray-100 cursor-zoom-in"
+          className="w-full aspect-square rounded-sm overflow-hidden border dark:border-white/10 border-gray-100 cursor-zoom-in"
           onClick={(e) => {
             e.stopPropagation();
             setLightboxIndex(0);

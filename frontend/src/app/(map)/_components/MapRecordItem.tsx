@@ -94,9 +94,9 @@ export function MapRecordItem({
       {(post.previewMediaIds?.length ?? 0) > 0 && (
         <div className="mt-3">
           {post.previewMediaIds?.length === 1 ? (
-            <div className="rounded-xl overflow-hidden h-36 sm:h-40">
+            <div className="rounded-xl overflow-hidden aspect-square w-36 sm:w-40">
               <AssetImage
-                width={600}
+                width={160}
                 height={160}
                 className="w-full h-full object-cover"
                 assetId={post.previewMediaIds[0]}

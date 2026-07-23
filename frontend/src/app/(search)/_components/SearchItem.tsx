@@ -18,9 +18,17 @@ const SearchItem: React.FC<SearchItemProps> = ({
   priorityLoad,
 }) => {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(record.id)}
-      className="w-full py-4 border-b text-left transition-colors duration-150 dark:border-white/5 border-gray-100 active:bg-gray-50/50 dark:active:bg-white/3"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(record.id);
+        }
+      }}
+      className="w-full py-4 border-b text-left transition-colors duration-150 dark:border-white/5 border-gray-100 active:bg-gray-50/50 dark:active:bg-white/3 cursor-pointer"
     >
       {/* 텍스트 영역 */}
       <div className="flex items-start justify-between gap-2">
@@ -52,20 +60,42 @@ const SearchItem: React.FC<SearchItemProps> = ({
         <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
       </div>
 
-      {/* 썸네일 이미지 */}
-      {record.thumbnailMediaId && (
-        <div className="mt-3 rounded-xl overflow-hidden h-36 sm:h-40">
-          <AssetImage
-            width={600}
-            height={160}
-            className="w-full h-full object-cover"
-            assetId={record.thumbnailMediaId}
-            alt={record.title}
-            priorityLoad={priorityLoad}
-          />
+      {/* 미리보기 이미지 */}
+      {record.previewMediaIds.length > 0 && (
+        <div className="mt-3">
+          {record.previewMediaIds.length === 1 ? (
+            <div className="rounded-xl overflow-hidden aspect-square w-36 sm:w-40">
+              <AssetImage
+                width={160}
+                height={160}
+                className="w-full h-full object-cover"
+                assetId={record.previewMediaIds[0]}
+                alt={record.title}
+                priorityLoad={priorityLoad}
+              />
+            </div>
+          ) : (
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+              {record.previewMediaIds.map((id, idx) => (
+                <div
+                  key={id}
+                  className="shrink-0 rounded-xl overflow-hidden h-28 sm:h-32 w-28 sm:w-32"
+                >
+                  <AssetImage
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
+                    assetId={id}
+                    alt={`${record.title} ${idx + 1}`}
+                    priorityLoad={priorityLoad && idx === 0}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
-    </button>
+    </div>
   );
 };
 

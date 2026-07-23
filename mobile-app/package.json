@@ -14,10 +14,13 @@
     "@capacitor/browser": "^7.0.0",
     "@capacitor/clipboard": "^7.0.4",
     "@capacitor/core": "^7.0.0",
+    "@capacitor/haptics": "^7.0.5",
     "@capacitor/ios": "^7.0.0",
+    "@capacitor/push-notifications": "^7.0.7",
     "@capacitor/share": "^7.0.4",
     "@capacitor/splash-screen": "^7.0.5",
-    "@capacitor/status-bar": "^7.0.6"
+    "@capacitor/status-bar": "^7.0.6",
+    "capacitor-native-settings": "^7.0.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",

@@ -3,6 +3,8 @@ import { recordPreviewListOptions } from '@/lib/api/records';
 import { formatDateISO } from '@/lib/date';
 import { Suspense } from 'react';
 import GroupMainTabs from './_components/GroupMainTabs';
+import Coachmark from '@/components/Coachmark';
+import { GROUP_DETAIL_COACHMARK_STEPS } from './_components/groupDetailCoachmarkSteps';
 
 interface GroupPageProps {
   params: Promise<{ groupId: string }>;
@@ -21,6 +23,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
+      <Coachmark flowKey="group-detail" steps={GROUP_DETAIL_COACHMARK_STEPS} />
       <Suspense>
         <GroupMainTabs groupId={groupId} />
       </Suspense>

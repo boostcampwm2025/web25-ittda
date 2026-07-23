@@ -23,6 +23,7 @@ import { GetGroupMembersResponseDto } from '../dto/get-group-members.dto';
 import { GetGroupMemberMeResponseDto } from '../dto/get-group-member-me.dto';
 import { UpdateGroupMemberMeDto } from '../dto/update-group-member-me.dto';
 import { GetGroupPermissionResponseDto } from '../dto/get-group-permission.dto';
+import { ToggleGroupNotificationDto } from '../dto/toggle-group-notification.dto';
 import { User } from '@/common/decorators/user.decorator';
 import type { MyJwtPayload } from '../../auth/auth.type';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
@@ -187,6 +188,39 @@ export class GroupManagementController {
     @Param('groupId') groupId: string,
   ): Promise<GetGroupPermissionResponseDto> {
     return this.groupManagementService.getGroupPermission(user.sub, groupId);
+  }
+
+  @Patch(':groupId/members/me/read')
+  @ApiOperation({
+    summary: '그룹 읽음 처리',
+    description: '그룹 페이지 진입 시 lastReadAt을 현재 시간으로 갱신합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  async markGroupAsRead(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+  ): Promise<void> {
+    await this.groupManagementService.markGroupAsRead(user.sub, groupId);
+  }
+
+  @Patch(':groupId/members/me/notification')
+  @ApiOperation({
+    summary: '그룹 알림 설정 토글',
+    description:
+      '권한에 관계없이 모든 멤버가 해당 그룹의 알림을 켜고 끌 수 있습니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiBody({ type: ToggleGroupNotificationDto })
+  async toggleGroupNotification(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+    @Body() dto: ToggleGroupNotificationDto,
+  ): Promise<void> {
+    await this.groupManagementService.toggleGroupNotification(
+      user.sub,
+      groupId,
+      dto.muted,
+    );
   }
 
   @UseGuards(GroupRoleGuard)

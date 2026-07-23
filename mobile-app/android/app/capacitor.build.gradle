@@ -12,9 +12,12 @@ dependencies {
     implementation project(':capacitor-app')
     implementation project(':capacitor-browser')
     implementation project(':capacitor-clipboard')
+    implementation project(':capacitor-haptics')
+    implementation project(':capacitor-push-notifications')
     implementation project(':capacitor-share')
     implementation project(':capacitor-splash-screen')
     implementation project(':capacitor-status-bar')
+    implementation project(':capacitor-native-settings')
 
 }
 

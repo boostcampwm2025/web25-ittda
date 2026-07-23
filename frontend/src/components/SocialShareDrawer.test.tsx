@@ -186,6 +186,18 @@ describe('SocialShareDrawer', () => {
     );
   });
 
+  it('네이티브 환경이면 window.Kakao가 있어도 카카오 공유 버튼을 노출하지 않는다', async () => {
+    window.Capacitor = { isNativePlatform: () => true };
+    window.Kakao = { Share: { sendDefault: vi.fn() } };
+
+    const { default: SocialShareDrawer } = await import('./SocialShareDrawer');
+    render(<SocialShareDrawer {...baseProps()} />);
+
+    expect(
+      screen.queryByRole('button', { name: '카카오톡으로 공유하기' }),
+    ).toBeNull();
+  });
+
   it('window.Kakao가 없으면 카카오 공유 버튼을 노출하지 않는다', async () => {
     const { default: SocialShareDrawer } = await import('./SocialShareDrawer');
     render(<SocialShareDrawer {...baseProps()} />);
