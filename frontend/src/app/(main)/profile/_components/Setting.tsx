@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -56,6 +56,9 @@ export default function Setting() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushBlocked, setPushBlocked] = useState(false);
+  // 연속으로 토글했을 때 먼저 시작된(느린) 요청이 나중에 끝나면서 최신 상태를
+  // 덮어쓰지 않도록, 매 호출마다 증가시켜 "이 완료가 아직 최신 요청인지" 판별한다.
+  const pushRequestIdRef = useRef(0);
 
   const { mutate: logout } = useApiPost('/api/auth/logout', {
     onSuccess: async () => {
@@ -143,6 +146,8 @@ export default function Setting() {
   };
 
   const handleTogglePush = async () => {
+    const requestId = ++pushRequestIdRef.current;
+    const isStale = () => pushRequestIdRef.current !== requestId;
     const platform = isNativePlatform() ? 'android' : 'web';
 
     if (pushEnabled) {
@@ -150,8 +155,10 @@ export default function Setting() {
       setPushEnabled(false);
       try {
         await removeFcmToken(platform);
+        if (isStale()) return; // 그 사이 더 최신 토글이 시작됨 — 이 완료는 무시
         localStorage.setItem('push_notifications_disabled', 'true');
       } catch {
+        if (isStale()) return;
         setPushEnabled(true); // 롤백
         toast.error('알림 해제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
@@ -166,6 +173,7 @@ export default function Setting() {
         const { PushNotifications } =
           await import('@capacitor/push-notifications');
         const { receive } = await PushNotifications.checkPermissions();
+        if (isStale()) return;
         if (receive === 'granted') {
           localStorage.removeItem('push_notifications_disabled');
           setPushBlocked(false);
@@ -180,6 +188,7 @@ export default function Setting() {
         }
       } else {
         await requestAndRegisterWebToken();
+        if (isStale()) return;
         if (Notification.permission === 'granted') {
           localStorage.removeItem('push_notifications_disabled');
           setPushBlocked(false);
@@ -192,6 +201,7 @@ export default function Setting() {
         }
       }
     } catch (error) {
+      if (isStale()) return;
       setPushEnabled(false); // 롤백
       Sentry.captureException(error, {
         tags: {
