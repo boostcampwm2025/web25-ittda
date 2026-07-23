@@ -144,18 +144,22 @@ export default function Setting() {
 
   const handleTogglePush = async () => {
     const platform = isNativePlatform() ? 'android' : 'web';
+
     if (pushEnabled) {
+      // 낙관적 업데이트: 먼저 꺼진 것으로 표시하고, 실패하면 되돌린다.
+      setPushEnabled(false);
       try {
         await removeFcmToken(platform);
+        localStorage.setItem('push_notifications_disabled', 'true');
       } catch {
+        setPushEnabled(true); // 롤백
         toast.error('알림 해제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-        return;
       }
-      localStorage.setItem('push_notifications_disabled', 'true');
-      setPushEnabled(false);
       return;
     }
 
+    // 낙관적 업데이트: 먼저 켜진 것으로 표시하고, 권한 거부/실패 시 되돌린다.
+    setPushEnabled(true);
     try {
       if (isNativePlatform()) {
         await registerAndroidToken();
@@ -164,9 +168,9 @@ export default function Setting() {
         const { receive } = await PushNotifications.checkPermissions();
         if (receive === 'granted') {
           localStorage.removeItem('push_notifications_disabled');
-          setPushEnabled(true);
           setPushBlocked(false);
         } else {
+          setPushEnabled(false); // 롤백
           setPushBlocked(true);
           const { NativeSettings, AndroidSettings } =
             await import('capacitor-native-settings');
@@ -178,9 +182,9 @@ export default function Setting() {
         await requestAndRegisterWebToken();
         if (Notification.permission === 'granted') {
           localStorage.removeItem('push_notifications_disabled');
-          setPushEnabled(true);
           setPushBlocked(false);
         } else {
+          setPushEnabled(false); // 롤백
           setPushBlocked(Notification.permission === 'denied');
           if (Notification.permission === 'denied') {
             toast.info('설정에서 알림 권한을 허용해 주세요.');
@@ -188,6 +192,7 @@ export default function Setting() {
         }
       }
     } catch (error) {
+      setPushEnabled(false); // 롤백
       Sentry.captureException(error, {
         tags: {
           context: 'notification',
