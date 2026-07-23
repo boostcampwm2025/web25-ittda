@@ -151,16 +151,27 @@ export default function Setting() {
     const platform = isNativePlatform() ? 'android' : 'web';
 
     if (pushEnabled) {
-      // 낙관적 업데이트: 먼저 꺼진 것으로 표시하고, 실패하면 되돌린다.
+      // 낙관적 업데이트: 먼저 꺼진 것으로 표시하고, 서버 토큰 삭제가 실패하면 되돌린다.
       setPushEnabled(false);
       try {
         await removeFcmToken(platform);
-        if (isStale()) return; // 그 사이 더 최신 토글이 시작됨 — 이 완료는 무시
-        localStorage.setItem('push_notifications_disabled', 'true');
       } catch {
         if (isStale()) return;
         setPushEnabled(true); // 롤백
         toast.error('알림 해제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      if (isStale()) return; // 그 사이 더 최신 토글이 시작됨 — 이 완료는 무시
+      try {
+        localStorage.setItem('push_notifications_disabled', 'true');
+      } catch (error) {
+        // 서버 토큰 삭제는 이미 성공했으므로 토글은 되돌리지 않는다.
+        Sentry.captureException(error, {
+          tags: {
+            context: 'notification',
+            operation: 'push-disable-persist',
+          },
+        });
       }
       return;
     }
