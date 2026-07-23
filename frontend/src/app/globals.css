@@ -43,16 +43,27 @@ html.cap-android [data-status-bar-cover] {
    상태바 높이만큼 빈 공간이 두 번 들어간다. margin-top으로 body가 밀어낸 만큼을
    상쇄해 헤더 자신의 padding-top만 유효하게 남긴다 — 스크롤로 고정된 뒤에는
    position: sticky가 top: 0 기준으로 배치하므로 margin의 영향을 받지 않는다. */
-html.cap-native .sticky.top-0 {
+/* [data-stacked-header]: 사이트 공용 Header 아래에 페이지 전용 헤더가 하나
+   더 이어지는 경우(예: 그룹 홈의 GroupHeader), 이 보정을 두 헤더 모두에
+   적용하면 두 번째 헤더의 margin-top이 첫 번째 헤더 영역까지 끌어올려져
+   그 위로 겹쳐 그려지며 첫 번째 헤더가 잘려 보인다. 그래서 이미 다른
+   sticky 헤더 아래에 이어지는 헤더는 이 보정에서 제외한다 — 상태바
+   바로 아래가 아니라 앞 헤더 바로 아래에 붙으면 되므로 자신의 원래
+   padding만으로 충분하다. */
+html.cap-native .sticky.top-0:not([data-stacked-header]) {
   top: 0;
   margin-top: calc(-1 * var(--cap-status-bar-height, env(safe-area-inset-top)));
-  padding-top: calc(var(--cap-status-bar-height, env(safe-area-inset-top)) + 0.75rem);
+  padding-top: calc(
+    var(--cap-status-bar-height, env(safe-area-inset-top)) + 0.75rem
+  );
 }
 
-html.cap-native header.sticky.top-0 {
+html.cap-native header.sticky.top-0:not([data-stacked-header]) {
   top: 0;
   margin-top: calc(-1 * var(--cap-status-bar-height, env(safe-area-inset-top)));
-  padding-top: calc(var(--cap-status-bar-height, env(safe-area-inset-top)) + 0.75rem);
+  padding-top: calc(
+    var(--cap-status-bar-height, env(safe-area-inset-top)) + 0.75rem
+  );
 }
 
 /* 검색 페이지 헤더 */
