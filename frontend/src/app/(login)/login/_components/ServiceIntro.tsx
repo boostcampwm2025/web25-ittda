@@ -121,12 +121,12 @@ export default function ServiceIntro() {
                 >
                   <item.icon className="w-5 h-5" />
                 </span>
-                <p className="text-base md:text-lg lg:text-xl font-bold mb-2 text-itta-point">
+                <p className="text-lg lg:text-xl font-bold mb-2 text-itta-point">
                   {item.caption}
                 </p>
                 <h3
                   className={cn(
-                    'text-xl md:text-2xl lg:text-4xl font-bold leading-[1.35] whitespace-pre-line mb-4',
+                    'text-2xl lg:text-4xl font-bold leading-[1.35] whitespace-pre-line mb-4',
                     isLight ? 'text-itta-black' : 'text-white',
                   )}
                 >
@@ -134,7 +134,7 @@ export default function ServiceIntro() {
                 </h3>
                 <p
                   className={cn(
-                    'text-sm md:text-base lg:text-lg leading-relaxed whitespace-pre-line',
+                    'text-base lg:text-lg leading-relaxed whitespace-pre-line',
                     isLight ? 'text-gray-500' : 'text-white/60',
                   )}
                 >
@@ -142,13 +142,13 @@ export default function ServiceIntro() {
                 </p>
               </div>
 
-              <div className="w-full max-w-40 md:max-w-65 lg:max-w-72 shrink-0">
+              <div className="w-full max-w-65 lg:max-w-72 shrink-0">
                 <Image
                   src={item.image}
                   alt={item.caption}
                   width={512}
                   height={1001}
-                  sizes="(min-width: 1024px) 288px, (min-width: 768px) 260px, 160px"
+                  sizes="(min-width: 1024px) 288px, 260px"
                   className="w-full h-auto object-contain"
                 />
               </div>
@@ -167,14 +167,14 @@ export default function ServiceIntro() {
           <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-gray-100 text-itta-black mb-5">
             <Book className="w-5 h-5" />
           </span>
-          <p className="text-base md:text-lg lg:text-xl font-bold text-itta-point mb-2">
+          <p className="text-lg lg:text-xl font-bold text-itta-point mb-2">
             보관함
           </p>
-          <h3 className="text-xl md:text-2xl lg:text-4xl font-bold leading-[1.35] mb-4 text-itta-black">
+          <h3 className="text-2xl lg:text-4xl font-bold leading-[1.35] mb-4 text-itta-black">
             그룹마다 따로,
             <br />또 같이 쌓이는 우리의 기록
           </h3>
-          <p className="text-sm md:text-base lg:text-lg leading-relaxed text-gray-500">
+          <p className="text-base lg:text-lg leading-relaxed text-gray-500">
             가족 여행부터 친구들과의 일상까지
             <br />
             그룹별로 나누어 보관함에 기록해요
