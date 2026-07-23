@@ -214,6 +214,9 @@ export default function Setting() {
     } catch (error) {
       if (isStale()) return;
       setPushEnabled(false); // 롤백
+      try {
+        localStorage.setItem('push_notifications_disabled', 'true');
+      } catch {}
       Sentry.captureException(error, {
         tags: {
           context: 'notification',
