@@ -1,7 +1,6 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState } from 'react';
-import { getNativeStatusBarOffset } from '@/lib/utils/nativeStatusBar';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { PointerIcon } from 'lucide-react';
@@ -36,8 +35,6 @@ export default function Coachmark({ flowKey, steps, enabled }: CoachmarkProps) {
 
   const textRef = useRef<HTMLDivElement>(null);
   const [textRect, setTextRect] = useState<DOMRect | null>(null);
-  // 세션 동안 바뀌지 않는 값이라 마운트 시 한 번만 계산한다.
-  const [nativeStatusBarOffset] = useState(getNativeStatusBarOffset);
 
   // 텍스트 블록이 실제로 렌더된 높이를 측정해서, 화살표가 텍스트를 가리지 않고
   // 정확히 텍스트가 끝나는 지점부터 시작하도록 한다(추정치 대신 실측값 사용).
@@ -67,11 +64,7 @@ export default function Coachmark({ flowKey, steps, enabled }: CoachmarkProps) {
       ),
     ) - (isMobileWidth ? MOBILE_PADDING_REDUCTION : 0);
   // 스텝마다 필요한 경우에만(예: BottomNavigation 아이템) 모바일 폭에서 살짝 내리거나 옆으로 옮긴다.
-  // BottomNavigation 타겟은 Capacitor 네이티브에서 헤더와 동일한 상태바 높이만큼 추가로 내려준다
-  // (헤더 중복 padding 제거 시 상쇄한 값과 같은 양 — 9ce79a92 참고).
-  const yOffset =
-    (isMobileWidth ? (step.yOffsetMobile ?? 0) : 0) +
-    (step.isBottomNavTarget ? nativeStatusBarOffset : 0);
+  const yOffset = isMobileWidth ? (step.yOffsetMobile ?? 0) : 0;
   const xOffset = isMobileWidth ? (step.xOffsetMobile ?? 0) : 0;
   // 화면 밖으로 나가지 않도록 뷰포트 안으로 먼저 clamp한 다음, offset은 그 위에 더한다.
   // 화면 가장자리에 붙은 타겟은 offset을 clamp 전에 더하면 "화면 밖으로 안 나가게"
@@ -95,8 +88,8 @@ export default function Coachmark({ flowKey, steps, enabled }: CoachmarkProps) {
         window.innerWidth - rawSpotlight.width - VIEWPORT_MARGIN,
       ) + xOffset,
     // yOffset을 더한 뒤에도 화면 밖으로 나가지 않도록 다시 한 번 clamp한다.
-    // nativeStatusBarOffset처럼 큰 값이 더해지면 이미 하단 가장자리에 있는
-    // 타겟(BottomNavigation)이 뷰포트 밖으로 밀려날 수 있어서다.
+    // yOffsetMobile이 큰 스텝은 이미 하단 가장자리에 있는 타겟(BottomNavigation)을
+    // 뷰포트 밖으로 밀어낼 수 있어서다.
     top: Math.min(
       Math.max(clampedTop + yOffset, VIEWPORT_MARGIN),
       maxSpotlightTop,

@@ -23,13 +23,11 @@ export const GROUP_DETAIL_COACHMARK_STEPS: CoachmarkStep[] = [
     title: '이 그룹에 기록을 남겨보세요',
     description: '사진과 함께 그룹원들과의 순간을 기록해요.',
     yOffsetMobile: 6.2,
-    isBottomNavTarget: true,
   },
   {
     id: 'tutorial-group-map',
     title: '지도에서 한눈에 확인해요',
     description: '그룹의 기록들이 남긴 장소를 지도로 둘러보세요.',
     yOffsetMobile: 4,
-    isBottomNavTarget: true,
   },
 ];
