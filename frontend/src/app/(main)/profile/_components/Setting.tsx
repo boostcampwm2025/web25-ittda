@@ -59,6 +59,11 @@ export default function Setting() {
   // 연속으로 토글했을 때 먼저 시작된(느린) 요청이 나중에 끝나면서 최신 상태를
   // 덮어쓰지 않도록, 매 호출마다 증가시켜 "이 완료가 아직 최신 요청인지" 판별한다.
   const pushRequestIdRef = useRef(0);
+  // 서버로 나가는 등록/삭제 요청을 순서대로 실행하기 위한 체인.
+  // isStale()은 완료 후의 "UI 반영"만 막을 뿐 네트워크 요청 자체는 막지 않아서,
+  // 겹쳐 실행되면 늦게 도착한 예전 요청(예: disable의 삭제)이 최신 요청(예:
+  // enable의 등록) 이후에 서버에 반영되며 서버 상태가 뒤집힐 수 있었다.
+  const pushMutationChainRef = useRef<Promise<void>>(Promise.resolve());
 
   const { mutate: logout } = useApiPost('/api/auth/logout', {
     onSuccess: async () => {
@@ -154,83 +159,91 @@ export default function Setting() {
     const requestId = ++pushRequestIdRef.current;
     const isStale = () => pushRequestIdRef.current !== requestId;
     const platform = isNativePlatform() ? 'android' : 'web';
+    const wasEnabled = pushEnabled;
 
-    if (pushEnabled) {
-      // 낙관적 업데이트: 먼저 꺼진 것으로 표시하고, 서버 토큰 삭제가 실패하면 되돌린다.
-      setPushEnabled(false);
-      try {
-        await removeFcmToken(platform);
-      } catch {
-        if (isStale()) return;
-        setPushEnabled(true); // 롤백
-        toast.error('알림 해제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    // 낙관적 업데이트: UI는 즉시 반영. 서버 요청은 아래에서 순서대로 실행한다.
+    setPushEnabled(!wasEnabled);
+
+    // 이전 토글의 서버 요청이 완전히 끝난 뒤에만 이번 요청을 시작한다 — 겹쳐서
+    // 보내면 늦게 도착하는 쪽이 순서와 무관하게 최종 서버 상태를 결정해버린다.
+    const previousMutation = pushMutationChainRef.current;
+    const thisMutation = previousMutation.catch(() => {}).then(async () => {
+      if (wasEnabled) {
+        try {
+          await removeFcmToken(platform);
+        } catch {
+          if (isStale()) return;
+          setPushEnabled(true); // 롤백
+          toast.error('알림 해제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+          return;
+        }
+        if (isStale()) return; // 그 사이 더 최신 토글이 시작됨 — 이 완료는 무시
+        try {
+          localStorage.setItem('push_notifications_disabled', 'true');
+        } catch (error) {
+          // 서버 토큰 삭제는 이미 성공했으므로 토글은 되돌리지 않는다.
+          Sentry.captureException(error, {
+            tags: {
+              context: 'notification',
+              operation: 'push-disable-persist',
+            },
+          });
+        }
         return;
       }
-      if (isStale()) return; // 그 사이 더 최신 토글이 시작됨 — 이 완료는 무시
+
       try {
-        localStorage.setItem('push_notifications_disabled', 'true');
+        if (isNativePlatform()) {
+          await registerAndroidToken();
+          const { PushNotifications } =
+            await import('@capacitor/push-notifications');
+          const { receive } = await PushNotifications.checkPermissions();
+          if (isStale()) return;
+          if (receive === 'granted') {
+            localStorage.removeItem('push_notifications_disabled');
+            setPushBlocked(false);
+          } else {
+            setPushEnabled(false); // 롤백
+            setPushBlocked(true);
+            const { NativeSettings, AndroidSettings } =
+              await import('capacitor-native-settings');
+            await NativeSettings.openAndroid({
+              option: AndroidSettings.AppNotification,
+            }).catch(() => {});
+          }
+        } else {
+          await requestAndRegisterWebToken();
+          if (isStale()) return;
+          if (Notification.permission === 'granted') {
+            localStorage.removeItem('push_notifications_disabled');
+            setPushBlocked(false);
+          } else {
+            setPushEnabled(false); // 롤백
+            setPushBlocked(Notification.permission === 'denied');
+            if (Notification.permission === 'denied') {
+              toast.info('설정에서 알림 권한을 허용해 주세요.');
+            }
+          }
+        }
       } catch (error) {
-        // 서버 토큰 삭제는 이미 성공했으므로 토글은 되돌리지 않는다.
+        if (isStale()) return;
+        setPushEnabled(false); // 롤백
+        try {
+          localStorage.setItem('push_notifications_disabled', 'true');
+        } catch {}
         Sentry.captureException(error, {
           tags: {
             context: 'notification',
-            operation: 'push-disable-persist',
+            operation: 'push-enable',
+            platform: isNativePlatform() ? 'android' : 'web',
           },
         });
+        toast.error('알림 설정 변경에 실패했습니다.');
       }
-      return;
-    }
+    });
 
-    // 낙관적 업데이트: 먼저 켜진 것으로 표시하고, 권한 거부/실패 시 되돌린다.
-    setPushEnabled(true);
-    try {
-      if (isNativePlatform()) {
-        await registerAndroidToken();
-        const { PushNotifications } =
-          await import('@capacitor/push-notifications');
-        const { receive } = await PushNotifications.checkPermissions();
-        if (isStale()) return;
-        if (receive === 'granted') {
-          localStorage.removeItem('push_notifications_disabled');
-          setPushBlocked(false);
-        } else {
-          setPushEnabled(false); // 롤백
-          setPushBlocked(true);
-          const { NativeSettings, AndroidSettings } =
-            await import('capacitor-native-settings');
-          await NativeSettings.openAndroid({
-            option: AndroidSettings.AppNotification,
-          }).catch(() => {});
-        }
-      } else {
-        await requestAndRegisterWebToken();
-        if (isStale()) return;
-        if (Notification.permission === 'granted') {
-          localStorage.removeItem('push_notifications_disabled');
-          setPushBlocked(false);
-        } else {
-          setPushEnabled(false); // 롤백
-          setPushBlocked(Notification.permission === 'denied');
-          if (Notification.permission === 'denied') {
-            toast.info('설정에서 알림 권한을 허용해 주세요.');
-          }
-        }
-      }
-    } catch (error) {
-      if (isStale()) return;
-      setPushEnabled(false); // 롤백
-      try {
-        localStorage.setItem('push_notifications_disabled', 'true');
-      } catch {}
-      Sentry.captureException(error, {
-        tags: {
-          context: 'notification',
-          operation: 'push-enable',
-          platform: isNativePlatform() ? 'android' : 'web',
-        },
-      });
-      toast.error('알림 설정 변경에 실패했습니다.');
-    }
+    pushMutationChainRef.current = thisMutation;
+    await thisMutation;
   };
 
   const handleContact = () => {
@@ -296,29 +309,37 @@ export default function Setting() {
         </div>
 
         {('Notification' in window || isNativePlatform()) && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 rounded-lg transition-colors dark:bg-blue-500/10 dark:text-blue-400 bg-blue-50 text-blue-500">
-                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-lg transition-colors dark:bg-blue-500/10 dark:text-blue-400 bg-blue-50 text-blue-500">
+                  <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+                <span className="text-xs sm:text-sm font-bold dark:text-gray-200 text-itta-black">
+                  푸시 알림
+                </span>
               </div>
-              <span className="text-xs sm:text-sm font-bold dark:text-gray-200 text-itta-black">
-                푸시 알림
-              </span>
-            </div>
-            <button
-              onClick={handleTogglePush}
-              className={cn(
-                'cursor-pointer w-10 h-5 sm:w-11 sm:h-6 rounded-full relative transition-all duration-300',
-                pushEnabled ? 'bg-blue-500' : 'bg-gray-200',
-              )}
-            >
-              <div
+              <button
+                onClick={handleTogglePush}
                 className={cn(
-                  'absolute top-0.5 left-0.5 sm:top-1 sm:left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out',
-                  pushEnabled && 'translate-x-5',
+                  'cursor-pointer w-10 h-5 sm:w-11 sm:h-6 rounded-full relative transition-all duration-300',
+                  pushEnabled ? 'bg-blue-500' : 'bg-gray-200',
                 )}
-              />
-            </button>
+              >
+                <div
+                  className={cn(
+                    'absolute top-0.5 left-0.5 sm:top-1 sm:left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out',
+                    pushEnabled && 'translate-x-5',
+                  )}
+                />
+              </button>
+            </div>
+            {pushBlocked && (
+              <p className="flex items-center gap-1 text-[11px] sm:text-xs text-red-500 dark:text-red-400 pl-8 sm:pl-9">
+                <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                알림이 차단되어 있어요. 기기 설정에서 허용해 주세요.
+              </p>
+            )}
           </div>
         )}
 
