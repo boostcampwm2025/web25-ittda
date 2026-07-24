@@ -103,18 +103,23 @@ export default function Setting() {
   }, []);
 
   useEffect(() => {
+    // 하이드레이션 시작 시점의 요청 번호를 기억해뒀다가, 완료 시점에 그 사이
+    // 토글이 일어나 번호가 바뀌었다면(=더 최신 상태가 있다면) 이 결과는 버린다.
+    const requestId = pushRequestIdRef.current;
     (async () => {
       if (isNativePlatform()) {
         try {
           const { PushNotifications } =
             await import('@capacitor/push-notifications');
           const { receive } = await PushNotifications.checkPermissions();
+          if (pushRequestIdRef.current !== requestId) return;
           const disabled =
             localStorage.getItem('push_notifications_disabled') === 'true';
           setPushEnabled(receive === 'granted' && !disabled);
           setPushBlocked(receive === 'denied');
         } catch {}
       } else if ('Notification' in window) {
+        if (pushRequestIdRef.current !== requestId) return;
         const disabled =
           localStorage.getItem('push_notifications_disabled') === 'true';
         setPushEnabled(Notification.permission === 'granted' && !disabled);
