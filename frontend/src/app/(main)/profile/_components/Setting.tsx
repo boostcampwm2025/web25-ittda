@@ -200,7 +200,17 @@ export default function Setting() {
           const { receive } = await PushNotifications.checkPermissions();
           if (isStale()) return;
           if (receive === 'granted') {
-            localStorage.removeItem('push_notifications_disabled');
+            // 토큰 등록은 이미 성공했으므로, 마커 제거가 실패해도 켜진 상태는 유지한다.
+            try {
+              localStorage.removeItem('push_notifications_disabled');
+            } catch (error) {
+              Sentry.captureException(error, {
+                tags: {
+                  context: 'notification',
+                  operation: 'push-enable-persist',
+                },
+              });
+            }
             setPushBlocked(false);
           } else {
             setPushEnabled(false); // 롤백
@@ -215,7 +225,17 @@ export default function Setting() {
           await requestAndRegisterWebToken();
           if (isStale()) return;
           if (Notification.permission === 'granted') {
-            localStorage.removeItem('push_notifications_disabled');
+            // 토큰 등록은 이미 성공했으므로, 마커 제거가 실패해도 켜진 상태는 유지한다.
+            try {
+              localStorage.removeItem('push_notifications_disabled');
+            } catch (error) {
+              Sentry.captureException(error, {
+                tags: {
+                  context: 'notification',
+                  operation: 'push-enable-persist',
+                },
+              });
+            }
             setPushBlocked(false);
           } else {
             setPushEnabled(false); // 롤백
