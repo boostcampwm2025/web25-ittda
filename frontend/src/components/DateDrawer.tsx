@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
-import { formatDateISO } from '@/lib/date';
+import { formatDateISO, parseLocalDate } from '@/lib/date';
 import { cn } from '@/lib/utils';
 
 interface DateRange {
@@ -94,8 +94,8 @@ export default function DateDrawer({
   };
 
   const handleSelectMonth = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // formatDateISO는 Asia/Seoul 기준으로 고정 계산해, 서버 타임존(UTC)과 무관하게 정확하다.
+    const today = parseLocalDate(formatDateISO());
 
     const firstDateOfMonth = new Date(year, month, 1);
     if (firstDateOfMonth > today) return;
@@ -200,8 +200,7 @@ export default function DateDrawer({
 
                 const dateObj = new Date(year, month, dayNumber);
                 const dateStr = formatDateISO(dateObj);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const today = parseLocalDate(formatDateISO());
 
                 const isSelectedSingle =
                   mode === 'single' && currentDate === dateStr;
