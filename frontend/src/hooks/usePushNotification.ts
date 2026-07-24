@@ -18,32 +18,38 @@ const isNativePlatform = () =>
     window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
   ).Capacitor?.isNativePlatform?.();
 
-export async function registerAndroidToken() {
+// 반환값: 서버에 FCM 토큰 등록까지 실제로 성공했는지 여부.
+// registerFcmToken 실패/registrationError/타임아웃을 전부 조용히 삼키면
+// 호출부(Settings 토글)가 이를 성공으로 오인해 서버엔 토큰이 없는데
+// UI만 켜짐으로 남는 문제가 있었다.
+export async function registerAndroidToken(): Promise<boolean> {
   const { PushNotifications } = await import('@capacitor/push-notifications');
 
   const result = await PushNotifications.requestPermissions();
-  if (result.receive !== 'granted') return;
+  if (result.receive !== 'granted') return false;
 
-  await Promise.race([
-    new Promise<void>((resolve) => {
+  return await Promise.race([
+    new Promise<boolean>((resolve) => {
       PushNotifications.addListener(
         'registration',
         async ({ value: token }) => {
-          await registerFcmToken(token, 'android').catch(() => {});
+          const success = await registerFcmToken(token, 'android')
+            .then(() => true)
+            .catch(() => false);
           await PushNotifications.removeAllListeners();
-          resolve();
+          resolve(success);
         },
       );
       PushNotifications.addListener('registrationError', async () => {
         await PushNotifications.removeAllListeners();
-        resolve();
+        resolve(false);
       });
       PushNotifications.register();
     }),
-    new Promise<void>((resolve) =>
+    new Promise<boolean>((resolve) =>
       setTimeout(() => {
         PushNotifications.removeAllListeners();
-        resolve();
+        resolve(false);
       }, 10000),
     ),
   ]);

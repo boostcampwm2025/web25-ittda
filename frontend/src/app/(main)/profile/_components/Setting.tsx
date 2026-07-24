@@ -194,11 +194,16 @@ export default function Setting() {
 
       try {
         if (isNativePlatform()) {
-          await registerAndroidToken();
+          const registered = await registerAndroidToken();
           const { PushNotifications } =
             await import('@capacitor/push-notifications');
           const { receive } = await PushNotifications.checkPermissions();
           if (isStale()) return;
+          if (receive === 'granted' && !registered) {
+            // 권한은 허용됐지만 서버에 토큰 등록이 실패한 경우 — 바깥 catch로
+            // 넘겨서 기존 실패 처리(롤백/마커 저장/Sentry/토스트)를 그대로 탄다.
+            throw new Error('FCM 토큰 서버 등록 실패');
+          }
           if (receive === 'granted') {
             // 토큰 등록은 이미 성공했으므로, 마커 제거가 실패해도 켜진 상태는 유지한다.
             try {
