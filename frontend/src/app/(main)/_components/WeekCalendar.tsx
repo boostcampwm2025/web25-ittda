@@ -72,8 +72,9 @@ export default function WeekCalendar({
     if (newDirection > 0) {
       const nextWeekStart = new Date(currentWeekStart);
       nextWeekStart.setDate(nextWeekStart.getDate() + 7);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // new Date()는 서버 렌더링 시 서버의 로컬 타임존(UTC)을 기준으로 자정을 계산해
+      // 한국 시간 00~09시 사이엔 하루 전으로 어긋난다. formatDateISO는 Asia/Seoul로 고정 계산하므로 안전하다.
+      const today = parseLocalDate(formatDateISO());
 
       // 다음 주의 시작일이 오늘 이후라면 페이지네이션 차단
       if (nextWeekStart > today) {
@@ -117,8 +118,7 @@ export default function WeekCalendar({
 
   const handleTouchDate = (dateStr: string) => {
     const selectedDate = parseLocalDate(dateStr);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = parseLocalDate(formatDateISO());
     selectedDate.setHours(0, 0, 0, 0);
 
     // 미래 날짜는 선택 불가
@@ -143,7 +143,9 @@ export default function WeekCalendar({
         <span
           className="flex items-center"
           onClick={() =>
-            router.push(`${monthBasePath}/month/${displayYearMonth.replace('.', '-')}`)
+            router.push(
+              `${monthBasePath}/month/${displayYearMonth.replace('.', '-')}`,
+            )
           }
         >
           <span className="text-sm sm:text-base font-semibold dark:text-white text-itta-black">
@@ -204,8 +206,7 @@ export default function WeekCalendar({
             >
               {weekDays.map((item) => {
                 const isSelected = selectedDateStr === item.dateStr;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const today = parseLocalDate(formatDateISO());
                 const isFuture = item.date > today;
 
                 return (

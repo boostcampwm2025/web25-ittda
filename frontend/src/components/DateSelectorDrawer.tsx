@@ -22,6 +22,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { groupDailyRecordedDatesOption } from '@/lib/api/group';
 import { myDailyRecordedDatesOption } from '@/lib/api/my';
+import { formatDateISO, parseLocalDate } from '@/lib/date';
 
 const ITEM_HEIGHT = 48;
 const PICKER_HEIGHT = 192;
@@ -341,8 +342,8 @@ export default function DateSelectorDrawer({
                   {calendarDays.map((date) => {
                     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                     const hasRecord = recordedDates.includes(dateStr);
-                    const isToday =
-                      new Date().toDateString() === date.toDateString();
+                    // formatDateISO는 Asia/Seoul 기준으로 고정 계산해, 서버 타임존(UTC)과 무관하게 정확하다.
+                    const isToday = dateStr === formatDateISO();
                     return (
                       <button
                         key={dateStr}
@@ -360,15 +361,12 @@ export default function DateSelectorDrawer({
                                 ? 'dark:hover:bg-white/5 dark:text-blue-400 hover:bg-gray-50 text-blue-500'
                                 : 'dark:hover:bg-white/5 dark:text-gray-300 hover:bg-gray-50 text-gray-600',
                         )}
-                        disabled={(() => {
-                          const date = new Date(dateStr);
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          date.setHours(0, 0, 0, 0);
-
-                          // 미래 날짜는 선택 불가
-                          return date > today;
-                        })()}
+                        // 미래 날짜는 선택 불가. new Date(dateStr)는 날짜 전용 문자열을 UTC로 해석하므로
+                        // parseLocalDate로 로컬(한국) 타임존 기준 자정을 만들어 비교한다.
+                        disabled={
+                          parseLocalDate(dateStr) >
+                          parseLocalDate(formatDateISO())
+                        }
                       >
                         <span className="text-xs font-bold">
                           {date.getDate()}
