@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
 import { userProfileOptions } from '@/lib/api/profile';
@@ -13,9 +13,12 @@ export interface CoachmarkStep {
   id: string;
   title: string;
   description: string;
-  // 모바일 폭에서 스포트라이트 박스를 아래로 살짝 내릴 px(기본 0).
+  // 모바일 폭에서 스포트라이트 박스를 아래로 살짝 내릴 px(기본 0). 브라우저(웹)에 적용.
   // BottomNavigation처럼 아이콘 특성상 살짝 위로 치우쳐 보이는 타겟에만 사용.
   yOffsetMobile?: number;
+  // 모바일 폭 + Capacitor 네이티브 환경에서만 쓰는 yOffsetMobile 대체값(기본 0).
+  // 같은 타겟이어도 네이티브 WebView 렌더링이 미묘하게 달라 웹과 다른 보정이 필요할 때 사용.
+  yOffsetMobileNative?: number;
   // 모바일 폭에서 스포트라이트 박스를 오른쪽으로 살짝 옮길 px(기본 0).
   xOffsetMobile?: number;
   // 타겟 비율 기반 자동 여백 대신 고정 여백을 쓰고 싶을 때(예: 아이콘 하나만 딱 감싸기).
@@ -57,16 +60,23 @@ export function useCoachmark({
     invalidateKeys: [['profile', 'me']],
   });
 
-  // 공지 모달이 떠 있는 동안, 그리고 PWA 설치 배너의 표시 여부 판단(비동기 체크)이
-  // 끝나기 전까지는 코치마크를 시작하지 않는다. 배너가 코치마크 타겟보다 위쪽에
-  // 렌더링되어, 체크가 끝나며 배너가 나타나거나 계속 숨겨지는 순간 타겟 위치가
-  // 밀려서 코치마크가 깜빡이는 문제를 막기 위함.
-  useEffect(() => {
+  // 공지 모달이 떠 있는 동안, 그리고 PWA 설치 배너/공지 모달의 표시 여부 판단
+  // (둘 다 비동기 체크)이 끝나기 전까지는 코치마크를 시작하지 않는다. 이 둘이
+  // 코치마크 타겟보다 위쪽에 렌더링되어, 판단이 끝나며 나타나거나 계속 숨겨지는
+  // 순간 타겟 위치가 밀려서 코치마크가 깜빡이는 문제를 막기 위함.
+  // useEffect(페인트 후 실행)를 쓰면 마운트 시점에 이미 마커가 DOM에 있어도
+  // 첫 페인트에서는 초기값(false)으로 코치마크가 잠깐 보였다가, effect가 실행되며
+  // 뒤늦게 layoutUnstable을 true로 바꿔 사라지는 깜빡임이 생긴다. useLayoutEffect로
+  // 페인트 전에 동기적으로 체크해서 이 첫 프레임의 오탐을 없앤다.
+  useLayoutEffect(() => {
     const check = () => {
       setAnnouncementOpen(
         !!document.querySelector('[data-announcement-modal]'),
       );
-      setLayoutUnstable(!!document.querySelector('[data-pwa-banner-pending]'));
+      setLayoutUnstable(
+        !!document.querySelector('[data-pwa-banner-pending]') ||
+          !!document.querySelector('[data-announcement-pending]'),
+      );
     };
     check();
     const observer = new MutationObserver(check);

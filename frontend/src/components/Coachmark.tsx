@@ -8,6 +8,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useCoachmark, type CoachmarkStep } from '@/hooks/useCoachmark';
 
+const isNativePlatform = () =>
+  typeof window !== 'undefined' &&
+  !!(
+    window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor?.isNativePlatform?.();
+
 const SPOTLIGHT_PADDING_MIN = 7;
 const SPOTLIGHT_PADDING_MAX = 10;
 const SPOTLIGHT_PADDING_RATIO = 0.2; // 타겟의 짧은 변에 비례한 여백(고정값 대신 상대값 사용)
@@ -64,7 +70,13 @@ export default function Coachmark({ flowKey, steps, enabled }: CoachmarkProps) {
       ),
     ) - (isMobileWidth ? MOBILE_PADDING_REDUCTION : 0);
   // 스텝마다 필요한 경우에만(예: BottomNavigation 아이템) 모바일 폭에서 살짝 내리거나 옆으로 옮긴다.
-  const yOffset = isMobileWidth ? (step.yOffsetMobile ?? 0) : 0;
+  // 같은 타겟이어도 웹과 Capacitor 네이티브의 실측 렌더링이 달라서, 네이티브에서는
+  // yOffsetMobileNative(없으면 0)를 쓰고 웹에서는 yOffsetMobile을 쓴다.
+  const yOffset = isMobileWidth
+    ? isNativePlatform()
+      ? (step.yOffsetMobileNative ?? 0)
+      : (step.yOffsetMobile ?? 0)
+    : 0;
   const xOffset = isMobileWidth ? (step.xOffsetMobile ?? 0) : 0;
   // 화면 밖으로 나가지 않도록 뷰포트 안으로 먼저 clamp한 다음, offset은 그 위에 더한다.
   // 화면 가장자리에 붙은 타겟은 offset을 clamp 전에 더하면 "화면 밖으로 안 나가게"
@@ -87,13 +99,14 @@ export default function Coachmark({ flowKey, steps, enabled }: CoachmarkProps) {
         Math.max(rawSpotlight.left, VIEWPORT_MARGIN),
         window.innerWidth - rawSpotlight.width - VIEWPORT_MARGIN,
       ) + xOffset,
-    // yOffset을 더한 뒤에도 화면 밖으로 나가지 않도록 다시 한 번 clamp한다.
-    // yOffsetMobile이 큰 스텝은 이미 하단 가장자리에 있는 타겟(BottomNavigation)을
-    // 뷰포트 밖으로 밀어낼 수 있어서다.
-    top: Math.min(
-      Math.max(clampedTop + yOffset, VIEWPORT_MARGIN),
-      maxSpotlightTop,
-    ),
+    // offset을 clamp 전 위치에 더하고, 재-clamp는 하지 않는다. 재-clamp를 하면
+    // BottomNavigation처럼 이미 하단 가장자리 근처에 있는(=clampedTop이
+    // maxSpotlightTop에 가까운) 타겟은 yOffsetMobile을 아무리 늘려도 상한에
+    // 도로 눌려서 값이 반영되지 않는다 — 실제로 8→12.4로 늘려도 동일한 위치로
+    // 계산되는 회귀가 있었다. 큰 값(예: 예전 nativeStatusBarOffset)이 화면
+    // 밖으로 밀어낼 위험은 현재 이 값이 전부 작은 수동 튜닝값이라 낮다고 보고
+    // 감수한다.
+    top: clampedTop + yOffset,
     width: rawSpotlight.width,
     height: rawSpotlight.height,
   };

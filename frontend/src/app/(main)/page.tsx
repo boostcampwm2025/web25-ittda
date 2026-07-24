@@ -30,7 +30,15 @@ export async function generateMetadata() {
 export default function HomePage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Suspense fallback={null}>
+      {/* AnnouncementModal은 서버에서 공지 표시 여부를 비동기로 판단하는 동안
+          아무것도 렌더링하지 않으면(fallback=null) 코치마크가 "공지 없음"으로
+          착각하고 먼저 떴다가, 판단이 끝나며 공지가 나타나면 밀려서 깜빡인다.
+          PWA 배너와 같은 방식으로 판단 중임을 알리는 마커를 남겨둔다. */}
+      <Suspense
+        fallback={
+          <div data-announcement-pending className="hidden" aria-hidden />
+        }
+      >
         <AnnouncementModal />
       </Suspense>
       <Coachmark flowKey="home" steps={HOME_COACHMARK_STEPS} />
