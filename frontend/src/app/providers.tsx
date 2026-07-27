@@ -8,7 +8,8 @@ import {
 } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Toaster, toast } from 'sonner';
-import { getErrorMessage, type ApiError } from '@/lib/utils/errorHandler';
+import { type ApiError } from '@/lib/utils/errorHandler';
+import { showErrorToast } from '@/lib/utils/errorToast';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // 렌더마다 새 QueryClient 생성 방지 (중요)
@@ -31,8 +32,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
               });
               return;
             }
-            const message = getErrorMessage(error);
-            toast.error(message);
+            showErrorToast(error);
           },
         }),
         mutationCache: new MutationCache({
@@ -55,8 +55,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
               });
               return;
             }
-            const message = getErrorMessage(error);
-            toast.error(message);
+            showErrorToast(error);
           },
         }),
         defaultOptions: {
