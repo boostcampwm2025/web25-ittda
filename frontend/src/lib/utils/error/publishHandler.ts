@@ -1,12 +1,6 @@
 import { toast } from 'sonner';
-import { ApiError } from '../errorHandler';
+import { type ApiError, ERROR_CODES } from '../errorHandler';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-
-export const ERROR_CODES = {
-  NOT_FOUND: 'NOT_FOUND',
-  CONFLICT: 'CONFLICT', //TODO: 서버에서 보내는 버전 충돌로
-  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
-} as const;
 
 export const handlePublishError = (
   error: ApiError,

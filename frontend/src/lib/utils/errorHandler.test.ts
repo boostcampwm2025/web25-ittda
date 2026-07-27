@@ -3,6 +3,7 @@ import {
   createApiError,
   ERROR_CODES,
   getErrorMessage,
+  hasErrorCode,
   isRefreshableAuthError,
   isTerminalAuthError,
 } from './errorHandler';
@@ -65,5 +66,17 @@ describe('errorHandler', () => {
     );
     expect(isTerminalAuthError(ERROR_CODES.SESSION_INVALID)).toBe(true);
     expect(isRefreshableAuthError(ERROR_CODES.INVALID_TOKEN)).toBe(false);
+  });
+
+  it('message가 아닌 code로 에러 종류를 판별한다', () => {
+    const error = Object.assign(new Error('unexpected raw message'), {
+      code: ERROR_CODES.NOT_FOUND,
+    });
+
+    expect(hasErrorCode(error, ERROR_CODES.NOT_FOUND)).toBe(true);
+    expect(hasErrorCode(error, ERROR_CODES.CONFLICT)).toBe(false);
+    expect(
+      hasErrorCode(new Error('Draft not found'), ERROR_CODES.NOT_FOUND),
+    ).toBe(false);
   });
 });

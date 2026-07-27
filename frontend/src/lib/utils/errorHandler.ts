@@ -27,7 +27,7 @@ export const ERROR_CODES = {
   TIMEOUT: 'TIMEOUT',
 } as const;
 
-type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 
 const DEFAULT_ERROR_MESSAGE =
   '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
@@ -104,6 +104,10 @@ export function getErrorMessage(error: unknown): string {
   const code = getErrorCode(error);
 
   return code ? ERROR_MESSAGES[code] : DEFAULT_ERROR_MESSAGE;
+}
+
+export function hasErrorCode(error: unknown, code: ErrorCode): boolean {
+  return getErrorCode(error) === code;
 }
 
 export function createApiError(response: ApiResponse<unknown>): ApiError {
