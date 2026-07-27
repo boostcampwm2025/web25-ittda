@@ -157,37 +157,39 @@ export class PatchStreamService implements OnModuleDestroy {
       return;
     }
 
-    this.draftStateService.addTouchedBy(draftId, actorId);
-    server.to(room).emit('PATCH_COMMITTED', {
-      version: result.version,
-      patch: payload.patch,
-      authorSessionId: sessionId,
-    });
-
-    if (insertedBlockIds.length > 0) {
-      insertedBlockIds.forEach((blockId) => {
-        if (!isUUID(blockId)) return;
-        const lockKey = `block:${blockId}`;
-        const lockResult = acquireLockWithEmit(
-          this.lockService,
-          server,
-          room,
-          socket,
-          draftId,
-          lockKey,
-          actorId,
-          sessionId,
-        );
-        if (!lockResult.ok) return;
+    try {
+      this.draftStateService.addTouchedBy(draftId, actorId);
+      server.to(room).emit('PATCH_COMMITTED', {
+        version: result.version,
+        patch: payload.patch,
+        authorSessionId: sessionId,
       });
-    }
 
-    this.releaseTemporaryLocks(
-      draftId,
-      actorId,
-      sessionId,
-      temporaryDeleteLockKeys,
-    );
+      if (insertedBlockIds.length > 0) {
+        insertedBlockIds.forEach((blockId) => {
+          if (!isUUID(blockId)) return;
+          const lockKey = `block:${blockId}`;
+          const lockResult = acquireLockWithEmit(
+            this.lockService,
+            server,
+            room,
+            socket,
+            draftId,
+            lockKey,
+            actorId,
+            sessionId,
+          );
+          if (!lockResult.ok) return;
+        });
+      }
+    } finally {
+      this.releaseTemporaryLocks(
+        draftId,
+        actorId,
+        sessionId,
+        temporaryDeleteLockKeys,
+      );
+    }
   }
 
   private ensureNotPublishing(draftId: string) {

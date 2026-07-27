@@ -721,15 +721,17 @@ export default function PostEditor({
     // draft 모드에서 다른 사용자가 편집 중인 블록은 아직 커밋되지 않은 streaming 값을 사용
     const blocksToValidate = (
       draftId
-        ? currentBlocks.map((b) => {
-            const ownerSessionId = currentLocks[`block:${b.id}`];
-            const isLockedByOther =
-              !!ownerSessionId && ownerSessionId !== currentSessionId;
-            if (isLockedByOther && currentStreamingValues[b.id]) {
-              return { ...b, value: currentStreamingValues[b.id] };
-            }
-            return b;
-          })
+        ? currentBlocks
+            .filter((block) => !deletingBlockIds.has(block.id))
+            .map((b) => {
+              const ownerSessionId = currentLocks[`block:${b.id}`];
+              const isLockedByOther =
+                !!ownerSessionId && ownerSessionId !== currentSessionId;
+              if (isLockedByOther && currentStreamingValues[b.id]) {
+                return { ...b, value: currentStreamingValues[b.id] };
+              }
+              return b;
+            })
         : currentBlocks
     ) as RecordBlock[];
 

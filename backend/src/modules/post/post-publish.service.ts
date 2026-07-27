@@ -522,7 +522,7 @@ export class PostPublishService {
 
     // publish 직전의 최신 클라이언트 블록 배열을 최종본으로 사용한다.
     // 버전 일치 검사를 통과한 경우에만 허용해 오래된 스냅샷의 블록 복원을 막는다.
-    if (!Array.isArray(blocksOverride) || blocksOverride.length === 0) {
+    if (!blocksOverride) {
       return;
     }
 
