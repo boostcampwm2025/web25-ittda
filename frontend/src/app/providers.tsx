@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import { type ApiError } from '@/lib/utils/errorHandler';
 import { showErrorToast } from '@/lib/utils/errorToast';
+import { captureSystemError } from '@/lib/utils/errorReporter';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // 렌더마다 새 QueryClient 생성 방지 (중요)
@@ -19,6 +20,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         queryCache: new QueryCache({
           onError: (error, query) => {
             if (query.meta?.silent) return;
+            captureSystemError(error, 'query');
             if ((error as ApiError)?.code === 'TIMEOUT') {
               toast.error('요청 시간이 초과되었습니다.', {
                 description: '네트워크 연결을 확인하고 다시 시도해 주세요.',
@@ -38,6 +40,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         mutationCache: new MutationCache({
           onError: (error, variables, _context, mutation) => {
             if (mutation.meta?.silent) return;
+            captureSystemError(error, 'mutation');
             if ((error as ApiError)?.code === 'TIMEOUT') {
               toast.error('요청 시간이 초과되었습니다.', {
                 description: '네트워크 연결을 확인하고 다시 시도해 주세요.',
