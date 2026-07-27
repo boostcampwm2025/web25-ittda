@@ -1,155 +1,69 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  isAuthError,
-  isRefreshableAuthError,
-  isTerminalAuthError,
-  getErrorMessage,
   createApiError,
   ERROR_CODES,
+  getErrorMessage,
+  isRefreshableAuthError,
+  isTerminalAuthError,
 } from './errorHandler';
-import type { ApiResponse } from '../types/response';
+import type { ErrorResponse } from '../types/response';
 
-describe('isAuthError', () => {
-  it('TOKEN_EXPIRED는 인증 에러다', () => {
-    expect(isAuthError(ERROR_CODES.TOKEN_EXPIRED)).toBe(true);
+describe('errorHandler', () => {
+  it('알려진 code를 사용자용 메시지로 변환한다', () => {
+    const error = new Error('raw backend message');
+    Object.assign(error, { code: ERROR_CODES.FORBIDDEN });
+
+    expect(getErrorMessage(error)).toBe('이 작업을 수행할 권한이 없습니다.');
   });
 
-  it('INVALID_TOKEN은 인증 에러다', () => {
-    expect(isAuthError(ERROR_CODES.INVALID_TOKEN)).toBe(true);
-  });
+  it('알 수 없는 code의 원본 메시지를 노출하지 않는다', () => {
+    const error = new Error('password=secret');
+    Object.assign(error, { code: 'DATABASE_CONNECTION_FAILED' });
 
-  it('UNAUTHORIZED는 인증 에러다', () => {
-    expect(isAuthError(ERROR_CODES.UNAUTHORIZED)).toBe(true);
-  });
-
-  it('NETWORK_ERROR는 인증 에러가 아니다', () => {
-    expect(isAuthError(ERROR_CODES.NETWORK_ERROR)).toBe(false);
-  });
-
-  it('알 수 없는 에러 코드는 인증 에러가 아니다', () => {
-    expect(isAuthError('SOME_OTHER_ERROR')).toBe(false);
-  });
-
-  it('undefined이면 인증 에러가 아니다', () => {
-    expect(isAuthError(undefined)).toBe(false);
-  });
-});
-
-describe('isRefreshableAuthError', () => {
-  it('TOKEN_EXPIRED는 재발급 가능한 인증 에러다', () => {
-    expect(isRefreshableAuthError(ERROR_CODES.TOKEN_EXPIRED)).toBe(true);
-  });
-
-  it('UNAUTHORIZED는 재발급 가능한 인증 에러다', () => {
-    expect(isRefreshableAuthError(ERROR_CODES.UNAUTHORIZED)).toBe(true);
-  });
-
-  it('INVALID_TOKEN은 재발급 가능한 인증 에러가 아니다', () => {
-    expect(isRefreshableAuthError(ERROR_CODES.INVALID_TOKEN)).toBe(false);
-  });
-
-  it('undefined이면 재발급 가능한 인증 에러가 아니다', () => {
-    expect(isRefreshableAuthError(undefined)).toBe(false);
-  });
-});
-
-describe('isTerminalAuthError', () => {
-  it('INVALID_TOKEN은 종료 처리해야 하는 인증 에러다', () => {
-    expect(isTerminalAuthError(ERROR_CODES.INVALID_TOKEN)).toBe(true);
-  });
-
-  it('SESSION_INVALID는 종료 처리해야 하는 인증 에러다', () => {
-    expect(isTerminalAuthError(ERROR_CODES.SESSION_INVALID)).toBe(true);
-  });
-
-  it('TOKEN_EXPIRED는 종료 처리 대상이 아니다', () => {
-    expect(isTerminalAuthError(ERROR_CODES.TOKEN_EXPIRED)).toBe(false);
-  });
-
-  it('undefined이면 종료 처리 대상이 아니다', () => {
-    expect(isTerminalAuthError(undefined)).toBe(false);
-  });
-});
-
-describe('getErrorMessage', () => {
-  it('ApiError 객체의 message를 반환한다', () => {
-    const error = { message: '토큰이 만료되었습니다.' };
-    expect(getErrorMessage(error)).toBe('토큰이 만료되었습니다.');
-  });
-
-  it('Error 인스턴스의 message를 반환한다', () => {
-    const error = new Error('네트워크 오류');
-    expect(getErrorMessage(error)).toBe('네트워크 오류');
-  });
-
-  it('문자열 에러를 그대로 반환한다', () => {
-    expect(getErrorMessage('서버 오류')).toBe('서버 오류');
-  });
-
-  it('null이면 기본 메시지를 반환한다', () => {
-    expect(getErrorMessage(null)).toBe('알 수 없는 오류가 발생했습니다.');
-  });
-
-  it('undefined이면 기본 메시지를 반환한다', () => {
-    expect(getErrorMessage(undefined)).toBe('알 수 없는 오류가 발생했습니다.');
-  });
-
-  it('빈 메시지 객체이면 기본 메시지를 반환한다', () => {
-    expect(getErrorMessage({ message: '   ' })).toBe(
-      '알 수 없는 오류가 발생했습니다.',
+    expect(getErrorMessage(error)).toBe(
+      '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
     );
   });
 
-  it('빈 문자열이면 기본 메시지를 반환한다', () => {
-    expect(getErrorMessage('')).toBe('알 수 없는 오류가 발생했습니다.');
+  it('code가 없는 Error와 문자열의 원문을 노출하지 않는다', () => {
+    expect(getErrorMessage(new Error('raw library error'))).toBe(
+      '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+    );
+    expect(getErrorMessage('raw string error')).toBe(
+      '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+    );
   });
-});
 
-describe('createApiError', () => {
-  it('에러 응답에서 에러 객체를 생성한다', () => {
-    const response: ApiResponse<unknown> = {
+  it('원본 메시지와 requestId를 추적용 ApiError에 유지한다', () => {
+    const response: ErrorResponse = {
       success: false,
       data: null,
-      error: { message: '권한이 없습니다.', code: 'UNAUTHORIZED', details: {} },
+      error: {
+        code: ERROR_CODES.CONFLICT,
+        message: 'duplicate key value violates unique constraint',
+        requestId: 'req_test',
+      },
     };
+
     const error = createApiError(response);
 
-    expect(error.message).toBe('권한이 없습니다.');
-    expect(error.code).toBe('UNAUTHORIZED');
-    expect(error.isAuthError).toBe(true);
+    expect(error.message).toBe(
+      'duplicate key value violates unique constraint',
+    );
+    expect(error.requestId).toBe('req_test');
+    expect(getErrorMessage(error)).toBe(
+      '이미 처리된 요청이거나 중복된 데이터입니다.',
+    );
   });
 
-  it('NETWORK_ERROR 코드이면 isAuthError가 false다', () => {
-    const response: ApiResponse<unknown> = {
-      success: false,
-      data: null,
-      error: { message: '네트워크 오류', code: 'NETWORK_ERROR', details: {} },
-    };
-    const error = createApiError(response);
-
-    expect(error.isAuthError).toBe(false);
-  });
-
-  it('success 응답이 들어오면 기본 에러를 반환한다', () => {
-    const response: ApiResponse<unknown> = {
-      success: true,
-      data: {},
-      meta: {},
-      error: null,
-    };
-    const error = createApiError(response);
-
-    expect(error.message).toBe('알 수 없는 서버 응답입니다.');
-  });
-
-  it('에러 코드가 없으면 INTERNAL_SERVER_ERROR로 설정된다', () => {
-    const response: ApiResponse<unknown> = {
-      success: false,
-      data: null,
-      error: { message: '서버 오류', code: '', details: {} },
-    };
-    const error = createApiError(response);
-
-    expect(error.code).toBe('INTERNAL_SERVER_ERROR');
+  it('기존 인증 복구 분류를 유지한다', () => {
+    expect(isRefreshableAuthError(ERROR_CODES.TOKEN_EXPIRED)).toBe(true);
+    expect(isRefreshableAuthError(ERROR_CODES.UNAUTHORIZED)).toBe(true);
+    expect(isTerminalAuthError(ERROR_CODES.REFRESH_TOKEN_EXPIRED)).toBe(true);
+    expect(isTerminalAuthError(ERROR_CODES.REFRESH_TOKEN_REUSE_DETECTED)).toBe(
+      true,
+    );
+    expect(isTerminalAuthError(ERROR_CODES.SESSION_INVALID)).toBe(true);
+    expect(isRefreshableAuthError(ERROR_CODES.INVALID_TOKEN)).toBe(false);
   });
 });

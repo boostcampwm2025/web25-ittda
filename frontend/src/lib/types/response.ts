@@ -13,7 +13,8 @@ export interface ErrorResponse {
   error: {
     code: string;
     message: string;
-    details: Record<string, string>;
+    requestId?: string;
+    details?: Record<string, unknown>;
   };
 }
 
