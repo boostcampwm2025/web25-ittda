@@ -36,5 +36,9 @@ export const handlePublishError = (
 
   if (handler) {
     handler();
+  } else {
+    // 알려지지 않은 에러 코드(네트워크 오류, 예기치 못한 서버 오류 등)도
+    // 사용자에게 실패를 알려야 로딩 화면만 조용히 사라지는 상황을 막을 수 있다.
+    toast.error('기록 저장에 실패했습니다. 다시 시도해 주세요.');
   }
 };

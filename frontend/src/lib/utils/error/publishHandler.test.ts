@@ -59,7 +59,7 @@ describe('handlePublishError', () => {
     );
   });
 
-  it('알 수 없는 코드면 아무 것도 하지 않는다', () => {
+  it('알 수 없는 코드면 실패 토스트만 띄운다', () => {
     const router = makeRouter();
     const error: ApiError = Object.assign(new Error('boom'), {
       code: 'INTERNAL_SERVER_ERROR',
@@ -67,7 +67,9 @@ describe('handlePublishError', () => {
 
     handlePublishError(error, router);
 
-    expect(toastErrorMock).not.toHaveBeenCalled();
+    expect(toastErrorMock).toHaveBeenCalledWith(
+      '기록 저장에 실패했습니다. 다시 시도해 주세요.',
+    );
     expect(router.replace).not.toHaveBeenCalled();
   });
 });
