@@ -107,9 +107,7 @@ describe('useCreateRecord.execute', () => {
     const updateMutation = makeMutation();
     useApiPatchMock.mockReturnValue(updateMutation);
 
-    const { result } = renderHook(() =>
-      useCreateRecord(undefined, 'post-1'),
-    );
+    const { result } = renderHook(() => useCreateRecord(undefined, 'post-1'));
     result.current.execute({ payload: { title: '수정된 제목' } as never });
 
     expect(updateMutation.mutate).toHaveBeenCalledWith({
@@ -163,9 +161,14 @@ describe('useCreateRecord - 저장 성공/실패 콜백', () => {
     expect(invalidateQueriesMock).toHaveBeenCalledWith({
       queryKey: ['my', 'records'],
     });
+    // 회귀 테스트: 새로 추가한 사진이 커버 사진 후보 목록에 반영되려면
+    // 이 쿼리도 함께 무효화돼야 한다(예전엔 빠져있었음).
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({
+      queryKey: ['cover'],
+    });
   });
 
-  it('그룹 기록 저장 성공 시 그룹 스코프 URL로 이동한다', async () => {
+  it('그룹 기록 저장 성공 시 그룹 스코프 URL로 이동하고 커버 후보 목록도 무효화한다', async () => {
     mockApiPost(makeMutation(), makeMutation());
     useApiPatchMock.mockReturnValue(makeMutation());
 
@@ -184,6 +187,9 @@ describe('useCreateRecord - 저장 성공/실패 콜백', () => {
         '/record/record-2?scope=group&groupId=group-1',
       ),
     );
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({
+      queryKey: ['cover'],
+    });
   });
 
   it('createMutation 실패 시 에러 토스트를 띄우고 onError를 호출한다', () => {
