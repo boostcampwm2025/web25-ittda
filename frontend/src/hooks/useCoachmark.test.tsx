@@ -24,10 +24,15 @@ const STEPS: CoachmarkStep[] = [
 ];
 
 function setup({
-  userId = null as string | null,
+  userType = null as 'social' | 'guest' | null,
+  // 로그아웃 없이 게스트로 전환된 경우 등, userType과 무관하게 스토어에
+  // 남아있을 수 있는 값을 시뮬레이션하기 위해 userId는 별도로 받는다.
+  userId = (userType === 'social' ? 'user-1' : null) as string | null,
   seenCoachmarks = [] as string[],
 } = {}) {
-  mockUseAuthStore.mockImplementation((selector) => selector({ userId }));
+  mockUseAuthStore.mockImplementation((selector) =>
+    selector({ userId, userType }),
+  );
   getMock.mockResolvedValue({
     success: true,
     data: {
@@ -68,7 +73,24 @@ afterEach(() => {
 
 describe('useCoachmark', () => {
   it('게스트(userId 없음)는 타겟이 있어도 활성화되지 않는다', async () => {
-    setup({ userId: null });
+    setup({ userType: null });
+    addTarget('step-1');
+
+    const { result } = renderHook(
+      () => useCoachmark({ flowKey: 'home', steps: STEPS }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(getMock).not.toHaveBeenCalled());
+    expect(result.current.isActive).toBe(false);
+    expect(result.current.rect).toBeNull();
+  });
+
+  // 회귀 테스트: logout() 없이 게스트로 전환되면 스토어에 예전 소셜 로그인의
+  // userId가 남아있을 수 있다. userId만으로 판단하면 이 경우 게스트인데도
+  // 로그인 사용자로 착각해 코치마크가 뜬다 — userType으로 판단해야 한다.
+  it('userType이 게스트면 userId가 남아있어도(로그아웃 없이 전환된 경우) 활성화되지 않는다', async () => {
+    setup({ userType: 'guest', userId: 'stale-user-id' });
     addTarget('step-1');
 
     const { result } = renderHook(
@@ -82,7 +104,7 @@ describe('useCoachmark', () => {
   });
 
   it('flowKey가 seenCoachmarks에 이미 있으면 활성화되지 않는다', async () => {
-    setup({ userId: 'user-1', seenCoachmarks: ['home'] });
+    setup({ userType: 'social', seenCoachmarks: ['home'] });
     addTarget('step-1');
 
     const { result } = renderHook(
@@ -95,7 +117,7 @@ describe('useCoachmark', () => {
   });
 
   it('로그인 유저이고 안 본 flowKey면 타겟을 찾아 활성화된다', async () => {
-    setup({ userId: 'user-1', seenCoachmarks: [] });
+    setup({ userType: 'social', seenCoachmarks: [] });
     addTarget('step-1');
 
     const { result } = renderHook(
@@ -109,7 +131,7 @@ describe('useCoachmark', () => {
   });
 
   it('공지 모달(data-announcement-modal)이 떠 있으면 활성화되지 않고, 닫히면 활성화된다', async () => {
-    setup({ userId: 'user-1' });
+    setup({ userType: 'social' });
     addTarget('step-1');
     const modal = document.createElement('div');
     modal.setAttribute('data-announcement-modal', '');
@@ -131,7 +153,7 @@ describe('useCoachmark', () => {
   });
 
   it('PWA 배너 표시 여부 체크가 진행 중이면(data-pwa-banner-pending) 활성화되지 않고, 끝나면 활성화된다', async () => {
-    setup({ userId: 'user-1' });
+    setup({ userType: 'social' });
     addTarget('step-1');
     const pendingMarker = document.createElement('div');
     pendingMarker.setAttribute('data-pwa-banner-pending', '');
@@ -153,7 +175,7 @@ describe('useCoachmark', () => {
   });
 
   it('nextStep은 마지막 스텝이 아니면 다음 스텝으로 넘어간다', async () => {
-    setup({ userId: 'user-1' });
+    setup({ userType: 'social' });
     addTarget('step-1');
     addTarget('step-2');
 
@@ -176,7 +198,7 @@ describe('useCoachmark', () => {
   });
 
   it('마지막 스텝에서 nextStep을 부르면 완료 처리되고, 로그인 유저는 seenCoachmarks에 flowKey를 합쳐서 저장한다', async () => {
-    setup({ userId: 'user-1', seenCoachmarks: ['shared'] });
+    setup({ userType: 'social', seenCoachmarks: ['shared'] });
     addTarget('step-1');
     addTarget('step-2');
 
@@ -203,7 +225,7 @@ describe('useCoachmark', () => {
   });
 
   it('skip을 호출하면 완료 처리되고 저장된다', async () => {
-    setup({ userId: 'user-1' });
+    setup({ userType: 'social' });
     addTarget('step-1');
 
     const { result } = renderHook(
@@ -224,7 +246,7 @@ describe('useCoachmark', () => {
   });
 
   it('게스트가 finish를 호출하면(스킵/마지막 확인) 설정 API를 호출하지 않는다', async () => {
-    setup({ userId: null });
+    setup({ userType: null });
 
     const { result } = renderHook(
       () => useCoachmark({ flowKey: 'home', steps: STEPS }),
@@ -240,7 +262,7 @@ describe('useCoachmark', () => {
 
   it('타겟을 계속 못 찾으면 타임아웃 후 자동으로 다음 스텝으로 넘어간다', async () => {
     vi.useFakeTimers();
-    setup({ userId: 'user-1' });
+    setup({ userType: 'social' });
     // step-1의 타겟은 DOM에 없음(예: 롤 제약으로 렌더되지 않는 버튼)
     addTarget('step-2');
 
