@@ -60,6 +60,12 @@ export function MapRecordItem({
             </span>
           </div>
 
+          {post.snippet && (
+            <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-1.5 line-clamp-2 leading-relaxed">
+              {post.snippet}
+            </p>
+          )}
+
           {post.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {post.tags.slice(0, 4).map((tag: string) => (

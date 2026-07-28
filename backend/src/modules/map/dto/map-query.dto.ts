@@ -119,6 +119,9 @@ export class MapPostItemDto {
 
   @ApiPropertyOptional({ description: '장소명', nullable: true })
   placeName?: string | null;
+
+  @ApiPropertyOptional({ description: '내용 요약 (snippet)' })
+  snippet?: string;
 }
 
 export class PaginatedMapPostsResponseDto {
