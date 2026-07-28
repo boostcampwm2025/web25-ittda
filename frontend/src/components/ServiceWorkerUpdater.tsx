@@ -11,7 +11,9 @@ const CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1시간
 
 function checkForUpdates() {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((registration) => registration.update().catch(() => {}));
+    registrations.forEach((registration) =>
+      registration.update().catch(() => {}),
+    );
   });
 }
 
@@ -28,27 +30,9 @@ export default function ServiceWorkerUpdater() {
 
     const intervalId = setInterval(checkForUpdates, CHECK_INTERVAL_MS);
 
-    // 새 서비스워커가 활성화되어 이 페이지의 제어권을 넘겨받으면(skipWaiting+clients.claim
-    // 덕분에 새로고침 없이도 발생함) 한 번만 새로고침해 최신 앱 셸을 확실히 반영한다.
-    // refreshing 플래그로 controllerchange가 중복 발생해도 재귀적으로 새로고침되지 않게 막는다.
-    let refreshing = false;
-    const handleControllerChange = () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    };
-    navigator.serviceWorker.addEventListener(
-      'controllerchange',
-      handleControllerChange,
-    );
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(intervalId);
-      navigator.serviceWorker?.removeEventListener(
-        'controllerchange',
-        handleControllerChange,
-      );
     };
   }, []);
 
