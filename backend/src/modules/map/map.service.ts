@@ -146,6 +146,15 @@ export class MapService {
           placeDisplay = val.placeName || val.address || null;
         }
 
+        // Snippet extraction (first text block) — 검색 결과와 동일한 방식
+        const firstTextBlock = await this.postRepository.manager.findOne(
+          PostBlock,
+          {
+            where: { postId: post.id, type: PostBlockType.TEXT },
+            order: { layoutRow: 'ASC', layoutCol: 'ASC' },
+          },
+        );
+
         return {
           id: post.id,
           lat: (post.location as Point).coordinates[1],
@@ -156,6 +165,9 @@ export class MapService {
           tags: post.tags || [],
           emotion: post.emotion ?? [],
           placeName: placeDisplay,
+          snippet: firstTextBlock
+            ? (firstTextBlock.value as { text: string }).text.substring(0, 100)
+            : undefined,
         };
       }),
     );

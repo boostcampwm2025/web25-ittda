@@ -243,4 +243,5 @@ export interface MapPostItem {
   createdAt: string;
   tags: string[];
   placeName: string | null;
+  snippet?: string;
 }
