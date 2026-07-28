@@ -90,6 +90,7 @@ export const useAuthStore = create<State & Action>()(
           guestSessionId: guest.guestSessionId,
           guestSessionExpiresAt: guest.guestSessionId,
           userType: 'guest',
+          userId: null,
           isLoggedIn: true,
         });
         setGuestCookie(guestCookieKey, guest.guestSessionId);
