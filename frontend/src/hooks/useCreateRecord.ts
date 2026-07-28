@@ -78,6 +78,8 @@ export const useCreateRecord = (
       queryClient.invalidateQueries({ queryKey: ['profile'] }),
       queryClient.invalidateQueries({ queryKey: ['summary'] }),
       queryClient.invalidateQueries({ queryKey: ['map', 'records'] }),
+      // 새로 추가한 사진이 커버 사진 후보 목록(GalleryDrawer)에 바로 반영되도록.
+      queryClient.invalidateQueries({ queryKey: ['cover'] }),
     ]);
   };
 
@@ -140,8 +142,6 @@ export const useCreateRecord = (
         : `/record/${res.data.id}`;
 
       if (groupId) {
-        // revalidatePath 서버 액션 전부 제외: 네비게이션 도중 응답이 도착하면
-        // Next.js App Router가 진행 중인 네비게이션을 취소해 /add로 되돌아가는 버그 발생.
         Promise.all([
           queryClient.invalidateQueries({ queryKey: ['me'] }),
           queryClient.invalidateQueries({ queryKey: ['summary'] }),
@@ -152,6 +152,8 @@ export const useCreateRecord = (
           }),
           queryClient.invalidateQueries({ queryKey: ['shared'] }),
           queryClient.invalidateQueries({ queryKey: ['map', 'records'] }),
+          // 새로 추가한 사진이 커버 사진 후보 목록(GalleryDrawer)에 바로 반영되도록.
+          queryClient.invalidateQueries({ queryKey: ['cover'] }),
         ]);
 
         // React lifecycle 안에서 replace해야 history entry가 제대로 교체됨
