@@ -24,21 +24,28 @@ export class NotificationService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
+    const encodedServiceAccount = this.configService.get<string>(
+      'FIREBASE_SERVICE_ACCOUNT_BASE64',
+    );
     const serviceAccountPath = this.configService.get<string>(
       'FIREBASE_SERVICE_ACCOUNT_PATH',
     );
-    if (!serviceAccountPath) {
+    if (!encodedServiceAccount && !serviceAccountPath) {
       this.logger.warn(
-        'FIREBASE_SERVICE_ACCOUNT_PATH가 설정되지 않아 FCM을 비활성화합니다.',
+        'Firebase 서비스 계정이 설정되지 않아 FCM을 비활성화합니다.',
       );
       return;
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const serviceAccount = require(
-        resolve(serviceAccountPath),
-      ) as ServiceAccount;
+      const serviceAccount = encodedServiceAccount
+        ? (JSON.parse(
+            Buffer.from(encodedServiceAccount, 'base64').toString('utf8'),
+          ) as ServiceAccount)
+        : // 로컬 파일 방식은 기존 개발 환경과의 호환성을 위해 유지한다.
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          (require(resolve(serviceAccountPath as string)) as ServiceAccount);
+
       this.app = initializeApp({ credential: cert(serviceAccount) });
       this.logger.log('Firebase Admin SDK 초기화 완료');
     } catch (e) {
@@ -67,7 +74,11 @@ export class NotificationService implements OnModuleInit {
     body: string,
     data?: Record<string, string>,
   ): Promise<void> {
-    if (!this.app || userIds.length === 0) return;
+    if (!this.app) {
+      this.logger.warn('Firebase가 초기화되지 않아 FCM 발송을 건너뜁니다.');
+      return;
+    }
+    if (userIds.length === 0) return;
 
     const tokens = await this.fcmTokenRepo.find({
       where: userIds.map((userId) => ({ userId })),
@@ -120,6 +131,10 @@ export class NotificationService implements OnModuleInit {
       }
 
       const failedCount = response.responses.filter((r) => !r.success).length;
+      const successCount = response.responses.length - failedCount;
+      this.logger.log(
+        `FCM 발송 완료: 성공 ${successCount}건, 실패 ${failedCount}건`,
+      );
       if (failedCount > 0) {
         this.logger.warn(`FCM 발송 실패: ${failedCount}/${messages.length}`);
       }
