@@ -10,7 +10,12 @@ import { PostBlock } from '../post/entity/post-block.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Group } from '../group/entity/group.entity';
 import { PostDraft } from '../post/entity/post-draft.entity';
-import { buildFeedCards, dayRange } from './feed.helpers';
+import {
+  buildFeedCards,
+  dayRange,
+  decodeFeedCursor,
+  encodeFeedCursor,
+} from './feed.helpers';
 
 @Injectable()
 export class FeedQueryService {
@@ -97,5 +102,72 @@ export class FeedQueryService {
         draftRepo: this.postDraftRepo,
       },
     );
+  }
+
+  async getPastFeedForUser(userId: string, cursor?: string, limit = 10) {
+    const cursorDate = decodeFeedCursor(cursor);
+
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.where(
+      new Brackets((qb: SelectQueryBuilder<Post>) => {
+        qb.where(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+    if (cursorDate) {
+      postsQb.andWhere('p.eventAt < :cursorDate', { cursorDate });
+    }
+
+    postsQb.orderBy('p.eventAt', 'DESC').addOrderBy('p.id', 'DESC');
+    postsQb.take(limit);
+
+    postsQb.select([
+      'p.id',
+      'p.groupId',
+      'p.ownerUserId',
+      'p.eventAt',
+      'p.createdAt',
+      'p.updatedAt',
+      'p.title',
+      'p.tags',
+      'p.emotion',
+      'p.rating',
+    ]);
+
+    const posts = await postsQb.getMany();
+    const { cards, warnings } = await buildFeedCards(
+      posts,
+      this.postBlockRepo,
+      this.postContributorRepo,
+      this.groupMemberRepo,
+      this.logger,
+      userId,
+      {
+        includeGroupName: true,
+        groupRepo: this.groupRepo,
+        draftRepo: this.postDraftRepo,
+      },
+    );
+
+    const lastPost = posts[posts.length - 1];
+    const nextCursor =
+      posts.length === limit && lastPost?.eventAt
+        ? encodeFeedCursor(new Date(lastPost.eventAt))
+        : null;
+
+    return { cards, warnings, nextCursor };
   }
 }

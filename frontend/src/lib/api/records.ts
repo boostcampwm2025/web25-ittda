@@ -2,7 +2,11 @@ import { cache } from 'react';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import { RecordBlock, RecordDetailResponse } from '../types/record';
-import { MapListResponse, RecordPreview } from '../types/recordResponse';
+import {
+  MapListResponse,
+  PaginatedRecordPreviewResponse,
+  RecordPreview,
+} from '../types/recordResponse';
 import { createApiError } from '../utils/errorHandler';
 import { PERSONAL_STALE_TIME } from '../constants/constants';
 
@@ -175,6 +179,30 @@ export const recordPreviewListOptions = (
     },
     staleTime: scope === 'personal' || !scope ? PERSONAL_STALE_TIME : 0,
     retry: false,
+  });
+
+// 홈에 오늘 기록이 없을 때 보여줄 "지난 기록" 무한스크롤 피드.
+export const pastFeedInfiniteOptions = (groupId?: string) =>
+  infiniteQueryOptions({
+    queryKey: groupId
+      ? ['group', groupId, 'records', 'past']
+      : ['my', 'records', 'past'],
+    queryFn: async ({ pageParam }) => {
+      const endpoint = groupId
+        ? `/api/feed/groups/${groupId}/past`
+        : '/api/feed/past';
+      const query = pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : '';
+
+      const response = await get<PaginatedRecordPreviewResponse>(
+        `${endpoint}${query}`,
+      );
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
   });
 
 export interface PersonalEditResponse {

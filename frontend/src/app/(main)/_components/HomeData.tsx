@@ -3,28 +3,29 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { recordPreviewListOptions } from '@/lib/api/records';
+import { pastFeedInfiniteOptions } from '@/lib/api/records';
 import { userRecordPatternOptions } from '@/lib/api/profile';
-import { formatDateISO } from '@/lib/date';
 import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
 import ErrorFallback from '@/components/ErrorFallback';
 import HomePageSkeleton from './HomePageSkeleton';
 import StreakStats from './StreakStats';
-import RecordList from './RecordList';
+import RecordTimelineFeed from './RecordTimelineFeed';
 
 export default async function HomeData() {
   const queryClient = new QueryClient();
-  const today = formatDateISO();
 
   if (process.env.NEXT_PUBLIC_MOCK === 'true') {
-    queryClient.setQueryData(recordPreviewListOptions(today).queryKey, []);
+    queryClient.setQueryData(pastFeedInfiniteOptions().queryKey, {
+      pages: [{ items: [], nextCursor: null }],
+      pageParams: [null],
+    });
     queryClient.setQueryData(userRecordPatternOptions().queryKey, {
       streak: 0,
       monthlyRecordingDays: 0,
     });
   } else {
     await Promise.all([
-      queryClient.prefetchQuery(recordPreviewListOptions(today)),
+      queryClient.prefetchInfiniteQuery(pastFeedInfiniteOptions()),
       queryClient.prefetchQuery(userRecordPatternOptions()),
     ]);
   }
@@ -35,11 +36,11 @@ export default async function HomeData() {
         fallbackComponent={ErrorFallback}
         suspenseFallback={<HomePageSkeleton />}
       >
-        <div className="flex flex-col flex-1 min-h-0">
+        <div className="flex flex-col">
           <StreakStats />
-          <div className="flex-1 w-full overflow-y-auto scrollbar-hide px-5 space-y-6 pt-7 pb-bottom-nav transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9]">
+          <div className="w-full px-5 space-y-6 pt-7 pb-bottom-nav transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9]">
             <div className="w-full flex flex-col gap-6">
-              <RecordList imageLayout="responsive" />
+              <RecordTimelineFeed imageLayout="responsive" />
             </div>
           </div>
         </div>

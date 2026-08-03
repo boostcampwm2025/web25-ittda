@@ -7,7 +7,7 @@ export default function StreakStats() {
   const { data: streakData } = useSuspenseQuery(userRecordPatternOptions());
 
   return (
-    <div className="border-t-[0.5px] border-gray-100 dark:border-gray-800 flex w-full p-2 sm:p-3 transition-colors duration-300 bg-transparent">
+    <div className="flex w-full p-2 sm:p-3 transition-colors duration-300 bg-transparent">
       <div className="flex w-full justify-between gap-1.5 sm:gap-3 items-center border-r px-2 sm:px-3 pr-3 sm:pr-5">
         <span className="text-[11px] sm:text-[12px] whitespace-nowrap">
           오늘 작성

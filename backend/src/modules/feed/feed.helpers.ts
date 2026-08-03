@@ -33,6 +33,24 @@ type BuildFeedCardsOptions = {
   draftRepo?: Repository<PostDraft>;
 };
 
+// 지난 기록 무한스크롤용 커서: 마지막 항목의 eventAt(ISO 문자열)을 base64로 인코딩.
+// month-cursor.ts의 월 단위 커서와 달리 레코드 단위라 임의의 ISO 타임스탬프를 그대로 담는다.
+export function encodeFeedCursor(eventAt: Date): string {
+  return Buffer.from(eventAt.toISOString(), 'utf-8').toString('base64');
+}
+
+export function decodeFeedCursor(cursor?: string | null): Date | null {
+  if (!cursor) return null;
+
+  try {
+    const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+    const date = new Date(decoded);
+    return Number.isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
+}
+
 export function dayRange(day: string, tz: string): DayRange {
   const dateOnly = DateTime.fromISO(day, { zone: 'UTC' });
   if (!dateOnly.isValid) throw new BadRequestException('Invalid date');

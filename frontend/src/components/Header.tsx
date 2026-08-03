@@ -8,10 +8,12 @@ import { Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AssetImage from './AssetImage';
+import { useHideOnScroll } from '@/hooks/useHideOnScroll';
 
 export default function Header() {
   const router = useRouter();
   const { userId, userType, setLogin } = useAuthStore();
+  const hidden = useHideOnScroll();
 
   const { data: userProfile } = useQuery(userProfileOptions());
 
@@ -30,11 +32,15 @@ export default function Header() {
   return (
     <header
       className={cn(
+        // 검색/마이페이지는 헤더를 통해서만 접근 가능하므로, 페이지 맨
+        // 위까지 스크롤해야만 다시 보이면 안 된다 — 아래로 스크롤하면
+        // 숨기고, 위로 스크롤하면(어느 위치에서든) 바로 다시 보이게 한다.
         'sticky top-0 z-50 max-w-4xl w-full px-4 py-3 sm:px-6 sm:py-4 mx-auto',
         'flex items-center justify-between',
-        'backdrop-blur-xl transition-all duration-500',
+        'backdrop-blur-xl transition-transform duration-300 ease-out',
         'bg-white/80',
         'dark:bg-[#121212]/80',
+        hidden ? '-translate-y-full' : 'translate-y-0',
       )}
     >
       <button

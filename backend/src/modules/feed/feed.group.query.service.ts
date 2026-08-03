@@ -10,7 +10,12 @@ import { GroupMember } from '../group/entity/group_member.entity';
 import { PostScope } from '@/enums/post-scope.enum';
 import { PostDraft } from '../post/entity/post-draft.entity';
 import { GetFeedQueryDto } from './dto/get-feed.query.dto';
-import { buildFeedCards, dayRange } from './feed.helpers';
+import {
+  buildFeedCards,
+  dayRange,
+  decodeFeedCursor,
+  encodeFeedCursor,
+} from './feed.helpers';
 
 @Injectable()
 export class FeedGroupQueryService {
@@ -61,5 +66,58 @@ export class FeedGroupQueryService {
       userId,
       { draftRepo: this.postDraftRepo },
     );
+  }
+
+  // getGroupFeed와 동일한 그룹 스코프 필터를 쓰되, 하루 단위 대신 eventAt
+  // 커서로 계속 더 과거로 페이지네이션하는 "지난 기록" 무한스크롤 피드.
+  async getPastFeedForGroup(
+    groupId: string,
+    userId: string,
+    cursor?: string,
+    limit = 10,
+  ) {
+    const cursorDate = decodeFeedCursor(cursor);
+
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.where('p.scope = :scope', { scope: PostScope.GROUP });
+    postsQb.andWhere('p.groupId = :groupId', { groupId });
+    if (cursorDate) {
+      postsQb.andWhere('p.eventAt < :cursorDate', { cursorDate });
+    }
+
+    postsQb.orderBy('p.eventAt', 'DESC').addOrderBy('p.id', 'DESC');
+    postsQb.take(limit);
+
+    postsQb.select([
+      'p.id',
+      'p.groupId',
+      'p.ownerUserId',
+      'p.eventAt',
+      'p.createdAt',
+      'p.updatedAt',
+      'p.title',
+      'p.tags',
+      'p.emotion',
+      'p.rating',
+    ]);
+
+    const posts = await postsQb.getMany();
+    const { cards, warnings } = await buildFeedCards(
+      posts,
+      this.postBlockRepo,
+      this.postContributorRepo,
+      this.groupMemberRepo,
+      this.logger,
+      userId,
+      { draftRepo: this.postDraftRepo },
+    );
+
+    const lastPost = posts[posts.length - 1];
+    const nextCursor =
+      posts.length === limit && lastPost?.eventAt
+        ? encodeFeedCursor(new Date(lastPost.eventAt))
+        : null;
+
+    return { cards, warnings, nextCursor };
   }
 }

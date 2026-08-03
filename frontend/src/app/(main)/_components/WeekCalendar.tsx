@@ -8,35 +8,27 @@ import {
 } from '@/lib/date';
 import { cn } from '@/lib/utils';
 import { ChevronRight } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRecordTimeline } from './RecordTimelineProvider';
+import { useHideOnScroll } from '@/hooks/useHideOnScroll';
 
 export default function WeekCalendar({
-  basePath = '/',
   monthBasePath = '/my',
 }: {
-  basePath?: string;
   monthBasePath?: string;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const { activeDate, requestJump } = useRecordTimeline();
+  const hidden = useHideOnScroll();
 
-  // URL에서 date 파라미터 읽기
-  const urlDateStr = searchParams.get('date') || formatDateISO();
-
-  // 클릭 즉시 강조 표시를 위한 낙관적 상태 (URL 커밋 전에도 즉시 반영)
-  const [optimisticDate, setOptimisticDate] = useState(urlDateStr);
-
-  // URL이 커밋되면 동기화
-  useEffect(() => {
-    setOptimisticDate(urlDateStr);
-  }, [urlDateStr]);
-
-  const selectedDateStr = optimisticDate;
+  // 캘린더는 "탭해서 필터"가 아니라 RecordTimelineFeed의 스크롤 위치를
+  // 보여주는 인덱스다 — 선택된 날짜는 이제 URL이 아니라 Provider가 소유.
+  const selectedDateStr = activeDate;
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
-    getStartOfWeek(parseLocalDate(urlDateStr)),
+    getStartOfWeek(parseLocalDate(activeDate)),
   );
   const [direction, setDirection] = useState(0); // -1: 이전, 1: 다음
   const [isMounted, setIsMounted] = useState(false); // 초기 마운트 추적
@@ -116,6 +108,20 @@ export default function WeekCalendar({
     [currentWeekStart],
   );
 
+  // activeDate가 (스크롤에 의해) 현재 표시 중인 주 밖으로 벗어나면, 그 주로
+  // 자동으로 스냅한다 — 인덱스가 항상 지금 보는 위치를 반영하도록.
+  useEffect(() => {
+    const activeWeekStart = getStartOfWeek(parseLocalDate(activeDate));
+    if (activeWeekStart.getTime() === currentWeekStart.getTime()) return;
+
+    setDirection(activeWeekStart > currentWeekStart ? 1 : -1);
+    setCurrentWeekStart(activeWeekStart);
+    setDisplayYearMonth(
+      `${activeWeekStart.getFullYear()}.${String(activeWeekStart.getMonth() + 1).padStart(2, '0')}`,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDate]);
+
   const handleTouchDate = (dateStr: string) => {
     const selectedDate = parseLocalDate(dateStr);
     const today = parseLocalDate(formatDateISO());
@@ -126,19 +132,27 @@ export default function WeekCalendar({
       return;
     }
 
-    // 클릭 즉시 강조 표시 반영
-    setOptimisticDate(dateStr);
-    // RecordList에 즉시 알림 (URL 커밋 전)
-    window.dispatchEvent(
-      new CustomEvent('itda:dateChange', { detail: dateStr }),
-    );
-    // URL 쿼리 파라미터로 날짜 설정
-    router.replace(`${basePath}?date=${dateStr}`);
+    requestJump(dateStr);
     calculateYearMonth(dateStr);
   };
 
   return (
-    <div className="overflow-hidden">
+    <div
+      // RecordTimelineFeed의 스크롤스파이가 "지금 화면에 실제로 보이는
+      // 콘텐츠가 어디부터 시작하는지"를 알아야 하는데, 이 캘린더의 높이가
+      // 헤더 표시 여부/브레이크포인트에 따라 계속 바뀌므로 고정값 대신 이
+      // 엘리먼트의 실제 하단 경계를 직접 측정하게 id로 노출한다.
+      id="week-calendar-sticky"
+      className={cn(
+        // 캘린더는 Header처럼 화면 밖으로 사라지지 않고 항상 보인다 —
+        // 대신 Header가 보일 땐 그 밑(top-16)에, Header가 스크롤로 숨으면
+        // 그 자리(top-0)까지 같이 따라 올라가 화면을 더 넓게 쓴다. Header와
+        // 같은 useHideOnScroll 신호를 구독하므로 늘 같은 타이밍에 맞아떨어진다.
+        'sticky z-40 overflow-hidden transition-[top] duration-300 ease-out',
+        'bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl',
+        hidden ? 'top-0' : 'top-16 sm:top-18',
+      )}
+    >
       <div className="px-4 py-2 sm:px-6 flex items-center gap-1 group cursor-pointer self-start">
         <span
           className="flex items-center"
@@ -154,93 +168,95 @@ export default function WeekCalendar({
           <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform dark:text-white text-itta-black" />
         </span>
       </div>
-      <div className="relative h-24">
-        <div className="px-3 py-3 sm:px-4 sm:py-4 flex justify-between">
-          {weekDays.map((item) => {
-            const dayColor =
-              item.dayName === '일'
-                ? '#F43F5E'
-                : item.dayName === '토'
-                  ? '#3B82F6'
-                  : '#9CA3AF';
+      {/* 지금 스크롤로 보고 있는 날짜를 보여주는 얇은 인덱스 — 탭하면 그
+            지점으로 스크롤, 스크롤하면 반대로 여기 활성 표시가 따라온다. */}
+      <div className="relative h-16 border-b dark:border-white/5 border-gray-100">
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
+          <motion.div
+            key={currentWeekStart.toISOString()}
+            custom={direction}
+            variants={variants}
+            initial={isMounted ? 'enter' : false}
+            animate="center"
+            exit={isMounted ? 'exit' : undefined}
+            transition={
+              isMounted
+                ? { type: 'spring', stiffness: 300, damping: 33 }
+                : { duration: 0 }
+            }
+            drag={isMounted ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            onDragEnd={(e, { offset }) => {
+              const swipe = offset.x;
+              if (swipe < -50) paginate(1);
+              else if (swipe > 50) paginate(-1);
+            }}
+            className="absolute inset-0 px-3 sm:px-4 flex justify-between touch-none select-none bg-transparent cursor-grab"
+          >
+            {weekDays.map((item) => {
+              const isSelected = selectedDateStr === item.dateStr;
+              const today = parseLocalDate(formatDateISO());
+              const isFuture = item.date > today;
+              const isWeekendColor =
+                item.dayName === '일' || item.dayName === '토';
 
-            return (
-              <div
-                key={`header-${item.dateStr}`}
-                className="flex flex-col items-center gap-1.5 sm:gap-2 min-w-10 sm:min-w-11"
-              >
-                <span
-                  className="text-[10px] sm:text-[11px] font-medium"
-                  style={{ color: dayColor }}
+              return (
+                <button
+                  key={item.dateStr}
+                  onClick={() => handleTouchDate(item.dateStr)}
+                  disabled={isFuture}
+                  className={cn(
+                    'flex items-center justify-center min-w-9 sm:min-w-10 transition-transform',
+                    isFuture
+                      ? 'cursor-not-allowed opacity-40'
+                      : 'active:scale-95 cursor-pointer',
+                  )}
                 >
-                  {item.dayName}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* 스와이프 가능한 영역 */}
-        <div className="border-gray-100 absolute top-8.5 left-0 right-0 h-[calc(100%-34px)]">
-          <AnimatePresence initial={false} custom={direction} mode="popLayout">
-            <motion.div
-              key={currentWeekStart.toISOString()}
-              custom={direction}
-              variants={variants}
-              initial={isMounted ? 'enter' : false}
-              animate="center"
-              exit={isMounted ? 'exit' : undefined}
-              transition={
-                isMounted
-                  ? { type: 'spring', stiffness: 300, damping: 33 }
-                  : { duration: 0 }
-              }
-              drag={isMounted ? 'x' : false}
-              dragConstraints={{ left: 0, right: 0 }}
-              onDragEnd={(e, { offset }) => {
-                const swipe = offset.x;
-                if (swipe < -50) paginate(1);
-                else if (swipe > 50) paginate(-1);
-              }}
-              className="absolute inset-0 px-3 sm:px-4 flex justify-between touch-none select-none bg-transparent cursor-grab"
-            >
-              {weekDays.map((item) => {
-                const isSelected = selectedDateStr === item.dateStr;
-                const today = parseLocalDate(formatDateISO());
-                const isFuture = item.date > today;
-
-                return (
-                  <button
-                    key={item.dateStr}
-                    onClick={() => handleTouchDate(item.dateStr)}
-                    disabled={isFuture}
+                  <div
                     className={cn(
-                      'flex items-center justify-center min-w-10 sm:min-w-11 transition-transform',
-                      isFuture
-                        ? 'cursor-not-allowed opacity-40'
-                        : 'active:scale-95 cursor-pointer',
+                      'w-9 sm:w-10 py-1.5 sm:py-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all',
+                      isSelected && 'dark:bg-white bg-itta-black shadow-md',
+                      !isSelected &&
+                        item.isToday &&
+                        'ring-1 ring-inset ring-[#10B981]/60',
                     )}
                   >
-                    <div
+                    <span
                       className={cn(
-                        'w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-xs sm:text-sm font-medium transition-all dark:text-gray-200',
+                        'text-[9px] sm:text-[10px] font-medium',
                         isSelected
-                          ? 'dark:bg-white dark:text-[#121212] bg-itta-black text-white shadow-md'
+                          ? 'dark:text-[#121212]/60 text-white/70'
+                          : isWeekendColor
+                            ? item.dayName === '일'
+                              ? 'text-[#F43F5E]'
+                              : 'text-[#3B82F6]'
+                            : 'text-gray-400 dark:text-gray-500',
+                      )}
+                    >
+                      {item.dayName}
+                    </span>
+                    <span
+                      className={cn(
+                        'text-xs sm:text-sm font-bold',
+                        isSelected
+                          ? 'dark:text-[#121212] text-white'
                           : item.isToday
-                            ? 'dark:text-[#10B981] dark:bg-[#10B981]/10 text-[#10B981] bg-[#10B981]/5'
-                            : 'text-gray-500',
-                        item.dayName === '일' && 'text-[#F43F5E]',
-                        item.dayName === '토' && 'text-[#3B82F6]',
+                            ? 'text-[#10B981]'
+                            : isWeekendColor
+                              ? item.dayName === '일'
+                                ? 'text-[#F43F5E]'
+                                : 'text-[#3B82F6]'
+                              : 'text-gray-600 dark:text-gray-300',
                       )}
                     >
                       {item.date.getDate()}
-                    </div>
-                  </button>
-                );
-              })}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
