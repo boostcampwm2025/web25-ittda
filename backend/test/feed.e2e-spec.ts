@@ -308,3 +308,191 @@ describe('FeedController (e2e)', () => {
       .expect(400);
   });
 });
+
+// 홈 화면의 끊김 없는 스크롤 타임라인(주간 달력과 연동)이 쓰는 커서 기반
+// "지난 기록" 엔드포인트. 위 FeedController 스위트와는 별도로, 날짜 하나에
+// 묶이지 않는 여러 시점의 기록과 커서 넘기기 자체를 검증하기 위해 전용
+// 픽스처를 둔다.
+describe('FeedController past feed (e2e)', () => {
+  let app: INestApplication<App>;
+  let userRepository: Repository<User>;
+  let postRepository: Repository<Post>;
+  let contributorRepository: Repository<PostContributor>;
+  let groupRepository: Repository<Group>;
+  let groupMemberRepository: Repository<GroupMember>;
+  let owner: User;
+  let group: Group;
+  let oldestPost: Post;
+  let middlePost: Post;
+  let newestGroupPost: Post;
+  let accessToken: string;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(GoogleStrategy)
+      .useValue({})
+      .overrideProvider(KakaoStrategy)
+      .useValue({})
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.init();
+
+    userRepository = app.get(getRepositoryToken(User));
+    postRepository = app.get(getRepositoryToken(Post));
+    contributorRepository = app.get(getRepositoryToken(PostContributor));
+    groupRepository = app.get(getRepositoryToken(Group));
+    groupMemberRepository = app.get(getRepositoryToken(GroupMember));
+    const jwtService = app.get(JwtService);
+
+    owner = await userRepository.save(
+      userRepository.create({
+        email: 'past-feed-owner@example.com',
+        nickname: 'past-feed-owner',
+        provider: 'kakao',
+        providerId: `past-feed-owner-${Date.now()}`,
+      }),
+    );
+    accessToken = jwtService.sign({ sub: owner.id });
+
+    group = await groupRepository.save(
+      groupRepository.create({
+        name: 'past-feed-group',
+        owner: { id: owner.id } as User,
+      }),
+    );
+    await groupMemberRepository.save(
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: owner.nickname,
+      }),
+    );
+
+    // 오래된 순으로 3개 — nextCursor가 eventAt 기준으로 정확히 끊기는지 보려면
+    // 서로 다른 시각이 필요하다.
+    oldestPost = await postRepository.save(
+      postRepository.create({
+        scope: PostScope.PERSONAL,
+        ownerUserId: owner.id,
+        title: 'Past feed oldest',
+        eventAt: new Date('2026-01-01T09:00:00+09:00'),
+      }),
+    );
+    middlePost = await postRepository.save(
+      postRepository.create({
+        scope: PostScope.PERSONAL,
+        ownerUserId: owner.id,
+        title: 'Past feed middle',
+        eventAt: new Date('2026-01-05T09:00:00+09:00'),
+      }),
+    );
+    newestGroupPost = await postRepository.save(
+      postRepository.create({
+        scope: PostScope.GROUP,
+        ownerUserId: owner.id,
+        groupId: group.id,
+        title: 'Past feed newest (group)',
+        eventAt: new Date('2026-01-10T09:00:00+09:00'),
+      }),
+    );
+
+    for (const post of [oldestPost, middlePost, newestGroupPost]) {
+      await contributorRepository.save(
+        contributorRepository.create({
+          postId: post.id,
+          userId: owner.id,
+          role: PostContributorRole.AUTHOR,
+        }),
+      );
+    }
+  });
+
+  afterAll(async () => {
+    const postIds = [
+      oldestPost?.id,
+      middlePost?.id,
+      newestGroupPost?.id,
+    ].filter((id): id is string => Boolean(id));
+    if (postIds.length > 0) {
+      await contributorRepository.delete({ postId: In(postIds) });
+      await postRepository.delete({ id: In(postIds) });
+    }
+    if (group?.id) {
+      await groupMemberRepository.delete({ groupId: group.id });
+      await groupRepository.delete({ id: group.id });
+    }
+    if (owner?.id) {
+      await userRepository.delete({ id: owner.id });
+    }
+    if (app) await app.close();
+  });
+
+  it('GET /feed/past should return posts newest-first and hand back a cursor when the page is full', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2 })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const body = res.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+      meta: { warnings: unknown[] };
+    };
+
+    expect(body.data.items.map((item) => item.postId)).toEqual([
+      newestGroupPost.id,
+      middlePost.id,
+    ]);
+    expect(body.data.nextCursor).toBeTruthy();
+  });
+
+  it('GET /feed/past should resume after the given cursor and return null nextCursor once exhausted', async () => {
+    const firstPage = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2 })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const cursor = (firstPage.body as { data: { nextCursor: string } }).data
+      .nextCursor;
+
+    const secondPage = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2, cursor })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const body = secondPage.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+    };
+
+    expect(body.data.items.map((item) => item.postId)).toEqual([oldestPost.id]);
+    expect(body.data.nextCursor).toBeNull();
+  });
+
+  it('GET /feed/groups/:groupId/past should only return that group past posts', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/feed/groups/${group.id}/past`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const body = res.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+    };
+
+    expect(body.data.items.map((item) => item.postId)).toEqual([
+      newestGroupPost.id,
+    ]);
+  });
+});

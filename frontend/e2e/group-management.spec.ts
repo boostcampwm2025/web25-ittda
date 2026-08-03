@@ -206,8 +206,15 @@ test.describe('멤버 관리 - 역할 변경', () => {
     const bCardOptimistic = page.locator('[data-testid="member-card"]').filter({ has: page.getByText(MEMBER_B_NICKNAME) });
     await expect(bCardOptimistic.locator('span').filter({ hasText: '뷰어' })).toBeVisible({ timeout: 8000 });
 
-    // 서버 반영 확인을 위해 reload 후 재검증
+    // 서버 반영 확인을 위해 reload 후 재검증.
+    // Next.js의 스트리밍 SSR은 Suspense 콘텐츠를 <template>으로 보냈다가
+    // 인라인 스크립트로 자리에 옮겨 끼우는데, reload() 직후(load 이벤트 시점)
+    // 그 스왑이 채 끝나지 않은 아주 짧은 순간에는 실제 카드와 아직 자리로
+    // 옮겨지지 않은 스트리밍 조각이 동시에 DOM에 존재해 멤버 카드가 일시적으로
+    // 2배로 잡힐 수 있다(요소 자체 버그가 아니라 프레임워크 스트리밍 아티팩트).
+    // networkidle까지 기다려 스왑이 끝난 뒤에 조회한다.
     await page.reload();
+    await page.waitForLoadState('networkidle');
     const bCardAfter = page.locator('[data-testid="member-card"]').filter({ has: page.getByText(MEMBER_B_NICKNAME) });
     await expect(bCardAfter).toBeVisible({ timeout: 8000 });
     await expect(bCardAfter.locator('span').filter({ hasText: '뷰어' })).toBeVisible({ timeout: 5000 });

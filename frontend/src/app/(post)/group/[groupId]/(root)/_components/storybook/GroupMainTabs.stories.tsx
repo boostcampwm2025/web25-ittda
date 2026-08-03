@@ -7,14 +7,35 @@ import { createMockRecordPreviews } from '@/lib/mocks/mock';
 const GROUP_ID = 'group-1';
 
 const mockMonthlyRecords = [
-  { month: '2026-06', count: 5, coverAssetId: null, latestTitle: '가족 나들이', latestLocation: '서울 성동구' },
-  { month: '2026-05', count: 3, coverAssetId: null, latestTitle: '생일 파티', latestLocation: null },
-  { month: '2026-04', count: 8, coverAssetId: null, latestTitle: '벚꽃 나들이', latestLocation: '여의도' },
+  {
+    month: '2026-06',
+    count: 5,
+    coverAssetId: null,
+    latestTitle: '가족 나들이',
+    latestLocation: '서울 성동구',
+  },
+  {
+    month: '2026-05',
+    count: 3,
+    coverAssetId: null,
+    latestTitle: '생일 파티',
+    latestLocation: null,
+  },
+  {
+    month: '2026-04',
+    count: 8,
+    coverAssetId: null,
+    latestTitle: '벚꽃 나들이',
+    latestLocation: '여의도',
+  },
 ];
 
 const mockFeedRecords = {
   success: true,
-  data: createMockRecordPreviews('2026-06-05').slice(0, 2),
+  data: {
+    items: createMockRecordPreviews('2026-06-05').slice(0, 2),
+    nextCursor: null,
+  },
   error: null,
 };
 
@@ -22,8 +43,13 @@ const mockRole = { role: 'ADMIN' };
 
 const currentYear = new Date().getFullYear().toString();
 
-function makeClient(members: { memberId: string; profileImageId: string | null }[], groupName: string) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+function makeClient(
+  members: { memberId: string; profileImageId: string | null }[],
+  groupName: string,
+) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
   client.setQueryData(['currentMembers', GROUP_ID], {
     groupName,
     groupMemberCount: members.length,
@@ -31,7 +57,10 @@ function makeClient(members: { memberId: string; profileImageId: string | null }
   });
   client.setQueryData(['group', GROUP_ID, 'me', 'role'], mockRole);
   // MonthRecords는 useParams().year || currentYear 를 queryKey에 포함함
-  client.setQueryData(['group', GROUP_ID, 'records', 'month', currentYear], mockMonthlyRecords);
+  client.setQueryData(
+    ['group', GROUP_ID, 'records', 'month', currentYear],
+    mockMonthlyRecords,
+  );
   return client;
 }
 
@@ -53,7 +82,9 @@ const clients = {
 };
 
 const feedHandlers = [
-  http.get('/api/feed/groups/:groupId', () => HttpResponse.json(mockFeedRecords)),
+  http.get('/api/feed/groups/:groupId/past', () =>
+    HttpResponse.json(mockFeedRecords),
+  ),
 ];
 
 const meta = {
@@ -89,7 +120,7 @@ export const FeedTab: Story = {
     docs: {
       description: {
         story: `
-피드 탭 — 주간 캘린더 + 날짜별 기록 목록.
+피드 탭 — 주간 캘린더(스크롤 위치 인덱스) + 연속 타임라인 피드.
 
 - **피드/보관함 탭**: 탭 클릭 시 URL의 \`tab\` 쿼리 파라미터가 변경되어 뷰가 전환됨 (보관함 탭은 ArchiveTab 스토리에서 확인)
 - **멤버 아바타**: 최대 4명 표시, 초과 시 +N 배지 (ManyMembers 스토리에서 확인)
@@ -111,7 +142,8 @@ export const ArchiveTab: Story = {
   parameters: {
     docs: {
       description: {
-        story: '보관함 탭 — 올해의 월별 기록 카드 목록. 월 카드를 클릭하면 해당 월의 기록 상세로 이동',
+        story:
+          '보관함 탭 — 올해의 월별 기록 카드 목록. 월 카드를 클릭하면 해당 월의 기록 상세로 이동',
       },
     },
     nextjs: {

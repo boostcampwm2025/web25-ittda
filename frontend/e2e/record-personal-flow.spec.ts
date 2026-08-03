@@ -139,7 +139,7 @@ test.describe('개인 기록 작성 → 상세 확인 → 홈 확인', () => {
     await page.goto('/');
 
     // 홈 피드에서 방금 작성한 기록 제목 확인
-    // HomeData → RecordList → 각 기록의 title 렌더링
+    // HomeData → RecordTimelineFeed → RecordItem에서 각 기록의 title 렌더링
     const recordCard = page
       .locator('div[class*="cursor-pointer"]')
       .filter({ has: page.getByRole('heading', { name: RECORD_TITLE }) })
@@ -147,7 +147,7 @@ test.describe('개인 기록 작성 → 상세 확인 → 홈 확인', () => {
     await expect(recordCard).toBeVisible({ timeout: 10000 });
 
     // 개인 기록은 홈에서 contributor 아바타/닉네임을 렌더링하지 않음
-    // RecordList: `record.groupId &&` 조건이 false → contributor 섹션 미렌더링
+    // RecordItem: `record.groupId &&` 조건이 false → contributor 섹션 미렌더링
     // "작성자" 레이블(h2)은 기록 상세에만 존재하고 홈 피드에는 없음
     await expect(page.getByRole('heading', { name: '작성자' })).not.toBeVisible();
   });
