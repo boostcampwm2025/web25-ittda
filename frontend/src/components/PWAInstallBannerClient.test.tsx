@@ -71,10 +71,8 @@ describe('PWAInstallBannerClient', () => {
     render(<PWAInstallBannerClient />);
 
     await waitFor(() => expect(mockIsPrivateMode).toHaveBeenCalled());
-    // 체크 진행 중에는 실제 배너 콘텐츠가 없어야 하지만,
-    // 코치마크가 감지할 수 있는 대기 마커는 DOM에 남아있어야 한다.
     expect(
-      screen.queryByText('잇다- 앱으로 설치하기'),
+      screen.queryByRole('button', { name: '앱 설치 안내 보기' }),
     ).not.toBeInTheDocument();
     expect(document.querySelector('[data-pwa-banner-pending]')).not.toBeNull();
   });
@@ -94,7 +92,7 @@ describe('PWAInstallBannerClient', () => {
     await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 
-  it.each(['/login', '/oauth/callback'])(
+  it.each(['/login', '/oauth/callback', '/invite'])(
     '%s 경로에서는 렌더링하지 않는다',
     async (pathname) => {
       setup({ pathname });
@@ -105,100 +103,85 @@ describe('PWAInstallBannerClient', () => {
     },
   );
 
-  it('정상 조건이면 배너를 렌더링한다', async () => {
+  it('정상 조건이면 플로팅 버튼을 렌더링한다', async () => {
     setup();
     render(<PWAInstallBannerClient />);
 
     expect(
-      await screen.findByText('잇다- 앱으로 설치하기'),
+      await screen.findByRole('button', { name: '앱 설치 안내 보기' }),
     ).toBeInTheDocument();
   });
 
-  it('설치 프롬프트가 accepted면 배너를 닫는다', async () => {
+  it('설치 프롬프트가 accepted면 버튼을 닫는다', async () => {
     const { promptInstall } = setup({
       promptInstall: vi.fn().mockResolvedValue('accepted'),
     });
     render(<PWAInstallBannerClient />);
-    const banner = await screen.findByText('잇다- 앱으로 설치하기');
+    const trigger = await screen.findByRole('button', {
+      name: '앱 설치 안내 보기',
+    });
 
-    await userEvent.click(banner);
+    await userEvent.click(trigger);
 
     expect(promptInstall).toHaveBeenCalledTimes(1);
     await waitFor(() =>
-      expect(screen.queryByText('잇다- 앱으로 설치하기')).toBeNull(),
+      expect(
+        screen.queryByRole('button', { name: '앱 설치 안내 보기' }),
+      ).toBeNull(),
     );
   });
 
   it('설치 프롬프트가 null(미지원 브라우저)이면 안내 모달을 연다', async () => {
     setup({ promptInstall: vi.fn().mockResolvedValue(null) });
     render(<PWAInstallBannerClient />);
-    const banner = await screen.findByText('잇다- 앱으로 설치하기');
+    const trigger = await screen.findByRole('button', {
+      name: '앱 설치 안내 보기',
+    });
 
-    await userEvent.click(banner);
+    await userEvent.click(trigger);
 
     expect(await screen.findByTestId('install-modal')).toBeInTheDocument();
   });
 
-  it('설치 프롬프트가 dismissed면 배너를 닫는다', async () => {
+  it('설치 프롬프트가 dismissed면 버튼을 닫는다', async () => {
     setup({ promptInstall: vi.fn().mockResolvedValue('dismissed') });
     render(<PWAInstallBannerClient />);
-    const banner = await screen.findByText('잇다- 앱으로 설치하기');
+    const trigger = await screen.findByRole('button', {
+      name: '앱 설치 안내 보기',
+    });
 
-    await userEvent.click(banner);
+    await userEvent.click(trigger);
 
     await waitFor(() =>
-      expect(screen.queryByText('잇다- 앱으로 설치하기')).toBeNull(),
+      expect(
+        screen.queryByRole('button', { name: '앱 설치 안내 보기' }),
+      ).toBeNull(),
     );
   });
 
-  it('닫기 버튼 클릭 시 로그인 유저는 설정 API로 dismissedUntil을 저장하고, 설치 프롬프트는 실행되지 않는다', async () => {
+  it('닫기 버튼 클릭 시 로그인 유저는 설정 API로 영구 저장하고, 설치 프롬프트는 실행되지 않는다', async () => {
     const { promptInstall } = setup({ userId: 'user-1' });
     render(<PWAInstallBannerClient />);
-    await screen.findByText('잇다- 앱으로 설치하기');
-
-    await userEvent.click(screen.getAllByRole('button')[0]);
-
-    expect(mockUpdateSettings).toHaveBeenCalledWith({
-      settings: { pwaBannerDismissedUntil: expect.any(Number) },
-    });
-    expect(mockSetCookie).not.toHaveBeenCalled();
-    expect(promptInstall).not.toHaveBeenCalled();
-  });
-
-  it('닫기 버튼 클릭 시 게스트는 쿠키에 dismissedUntil을 저장한다', async () => {
-    setup({ userId: null });
-    render(<PWAInstallBannerClient />);
-    await screen.findByText('잇다- 앱으로 설치하기');
-
-    await userEvent.click(screen.getAllByRole('button')[0]);
-
-    expect(mockSetCookie).toHaveBeenCalledWith(
-      'pwa-banner-dismissed-until',
-      expect.any(String),
-      { days: 14 },
-    );
-    expect(mockUpdateSettings).not.toHaveBeenCalled();
-  });
-
-  it('"다시 보지 않기" 클릭 시 로그인 유저는 설정 API로 저장한다', async () => {
-    setup({ userId: 'user-1' });
-    render(<PWAInstallBannerClient />);
+    await screen.findByRole('button', { name: '앱 설치 안내 보기' });
 
     await userEvent.click(
-      await screen.findByRole('button', { name: '다시 보지 않기' }),
+      screen.getByRole('button', { name: '앱 설치 안내 닫기' }),
     );
 
     expect(mockUpdateSettings).toHaveBeenCalledWith({
       settings: { pwaBannerNeverShow: true },
     });
+    expect(mockSetCookie).not.toHaveBeenCalled();
+    expect(promptInstall).not.toHaveBeenCalled();
   });
 
-  it('"다시 보지 않기" 클릭 시 게스트는 쿠키에 영구 저장한다', async () => {
+  it('닫기 버튼 클릭 시 게스트는 쿠키에 영구 저장한다', async () => {
     setup({ userId: null });
     render(<PWAInstallBannerClient />);
+    await screen.findByRole('button', { name: '앱 설치 안내 보기' });
 
     await userEvent.click(
-      await screen.findByRole('button', { name: '다시 보지 않기' }),
+      screen.getByRole('button', { name: '앱 설치 안내 닫기' }),
     );
 
     expect(mockSetCookie).toHaveBeenCalledWith(
@@ -206,5 +189,6 @@ describe('PWAInstallBannerClient', () => {
       'true',
       { days: 3650 },
     );
+    expect(mockUpdateSettings).not.toHaveBeenCalled();
   });
 });
