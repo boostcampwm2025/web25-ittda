@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUp } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useApiPost } from '@/hooks/useApi';
 import { GuestInfo } from '@/lib/types/profile';
@@ -67,6 +68,24 @@ export default function LoginContent({
   const { setGuestInfo, isLoggedIn, guestSessionId } = useAuthStore();
   const { mutateAsync: joinGroup } = useJoinGroup(inviteCode);
   const [isLoading, setIsLoading] = useState(false);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      setShowScrollTop(el.scrollTop > window.innerHeight * 0.75);
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const { mutate: guestLogin, isPending } = useApiPost<GuestInfo>(
     '/api/auth/guest',
     {
@@ -216,7 +235,7 @@ export default function LoginContent({
 
   const handleLoginGuest = async () => {
     setIsLoading(true);
-   await signOut({ redirect: false });
+    await signOut({ redirect: false });
     const existingSessionId = getCookie(guestCookieKey) || guestSessionId;
     if (existingSessionId) {
       try {
@@ -314,7 +333,10 @@ export default function LoginContent({
     };
 
   return (
-    <div className="relative left-1/2 -ml-[50vw] w-screen h-dvh overflow-y-auto snap-y snap-mandatory flex flex-col bg-white">
+    <div
+      ref={scrollContainerRef}
+      className="relative left-1/2 -ml-[50vw] w-screen h-dvh overflow-y-auto snap-y snap-mandatory flex flex-col bg-white"
+    >
       {/* 히어로: 흰 배경(고정, 다크모드 미적용) + 노션처럼 이미지 없이 중앙 정렬 */}
       <div className="relative w-full min-h-dvh shrink-0 snap-start flex flex-col overflow-hidden bg-white">
         {/* 좌상단 워드마크 */}
@@ -457,7 +479,16 @@ export default function LoginContent({
       {/* 기능 소개: 스크롤해야 보이는 영역 */}
       <ServiceIntro />
 
-      <div className="w-full bg-white flex justify-center py-10 shrink-0 snap-start">
+      <div className="w-full bg-white flex flex-col items-center gap-5 py-10 px-6 shrink-0 snap-start">
+        {/* 여기까지 내려온 사람이 로그인하려고 다시 맨 위로 스크롤할 필요 없도록 */}
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="inline-flex items-center gap-1.5 h-11 px-6 rounded-full bg-itta-black text-white text-sm font-semibold shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
+        >
+          로그인 하기
+          <ArrowUp className="w-4 h-4" />
+        </button>
         <p className="text-[11px] text-gray-400">
           © 2026 잇다-. ALL RIGHTS RESERVED.
         </p>
@@ -469,6 +500,21 @@ export default function LoginContent({
           height: 'max(2rem, env(safe-area-inset-bottom))',
         }}
       />
+
+      {/* 아래로 스크롤한 상태에서만 노출되는 맨 위로 이동 버튼 */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          aria-label="맨 위로 이동"
+          className="fixed right-4 md:right-6 bottom-6 z-30 flex items-center justify-center w-11 h-11 rounded-full bg-itta-black text-white shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+          style={{
+            bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
+          }}
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
     </div>
   );
 }
