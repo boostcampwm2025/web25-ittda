@@ -48,6 +48,11 @@ export interface RecordPreview {
   hasActiveEditDraft?: boolean;
 }
 
+export interface PaginatedRecordPreviewResponse {
+  items: RecordPreview[];
+  nextCursor: string | null;
+}
+
 export interface newGroupResponse {
   id: string;
   name: string;

@@ -3,13 +3,15 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LayoutGrid, Newspaper } from 'lucide-react';
 import WeekCalendar from '@/app/(main)/_components/WeekCalendar';
-import RecordList from '@/app/(main)/_components/RecordList';
+import RecordTimelineFeed from '@/app/(main)/_components/RecordTimelineFeed';
+import { RecordTimelineProvider } from '@/app/(main)/_components/RecordTimelineProvider';
 import MonthRecordsInfinite from '@/app/(post)/_components/MonthRecordsInfinite';
 import { Suspense } from 'react';
 import HomePageSkeleton from '@/app/(main)/_components/HomePageSkeleton';
 import WeekCalendarSkeleton from '@/app/(main)/_components/WeekCalendarSkeleton';
 import { useQuery } from '@tanstack/react-query';
 import { groupCurrentMembersOption } from '@/lib/api/group';
+import { formatDateISO } from '@/lib/date';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
 
@@ -100,19 +102,18 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
           />
         </div>
       ) : (
-        <div className="min-h-0 flex-1 flex flex-col gap-4 pb-bottom-nav">
-          <div className="-mx-4 sm:-mx-6">
-            <Suspense fallback={<WeekCalendarSkeleton />}>
-              <WeekCalendar
-                basePath={`/group/${groupId}`}
-                monthBasePath={`/group/${groupId}`}
-              />
+        <RecordTimelineProvider key={groupId} initialDate={formatDateISO()}>
+          <div className="min-h-0 flex-1 flex flex-col gap-4 pb-bottom-nav">
+            <div className="-mx-4 sm:-mx-6">
+              <Suspense fallback={<WeekCalendarSkeleton />}>
+                <WeekCalendar monthBasePath={`/group/${groupId}`} />
+              </Suspense>
+            </div>
+            <Suspense fallback={<HomePageSkeleton />}>
+              <RecordTimelineFeed groupId={groupId} imageLayout="responsive" />
             </Suspense>
           </div>
-          <Suspense fallback={<HomePageSkeleton />}>
-            <RecordList groupId={groupId} imageLayout="responsive" />
-          </Suspense>
-        </div>
+        </RecordTimelineProvider>
       )}
     </div>
   );
