@@ -29,12 +29,54 @@ export function useRecordCollaboration(
   const versionRef = useRef(initialVersion);
   const [isPublishing, setIsPublishing] = useState(false);
   const isNavigatingToRecordRef = useRef(false);
+  const pendingPatchQueueRef = useRef<string[]>([]);
+  const pendingPatchWaitersRef = useRef<Array<() => void>>([]);
+  const pendingPatchRejectedRef = useRef(false);
 
   useEffect(() => {
     if (initialVersion > versionRef.current) {
       versionRef.current = initialVersion;
     }
   }, [initialVersion]);
+
+  const resolvePendingPatchWaiters = useCallback(() => {
+    if (pendingPatchQueueRef.current.length > 0) {
+      return;
+    }
+    const waiters = pendingPatchWaitersRef.current;
+    pendingPatchWaitersRef.current = [];
+    waiters.forEach((resolve) => resolve());
+  }, []);
+
+  const waitForPendingPatches = useCallback((timeoutMs = 3000) => {
+    if (pendingPatchQueueRef.current.length === 0) {
+      return Promise.resolve(!pendingPatchRejectedRef.current);
+    }
+
+    return new Promise<boolean>((resolve) => {
+      let timer: NodeJS.Timeout | null = null;
+      const resolveWaiter = () => {
+        if (timer) {
+          clearTimeout(timer);
+        }
+        resolve(
+          !pendingPatchRejectedRef.current &&
+            pendingPatchQueueRef.current.length === 0,
+        );
+      };
+
+      pendingPatchWaitersRef.current.push(resolveWaiter);
+      timer = setTimeout(() => {
+        pendingPatchWaitersRef.current = pendingPatchWaitersRef.current.filter(
+          (waiter) => waiter !== resolveWaiter,
+        );
+        resolve(
+          !pendingPatchRejectedRef.current &&
+            pendingPatchQueueRef.current.length === 0,
+        );
+      }, timeoutMs);
+    });
+  }, []);
 
   // 임시 스트리밍 값
   const [streamingValues, setStreamingValues] = useState<
@@ -105,6 +147,15 @@ export function useRecordCollaboration(
       // 이미 처리한 버전이거나 오래된 버전이면 무시
       // (다른 유저 join 시 서버가 catch-up용 PATCH_COMMITTED를 broadcast하면
       //  versionRef가 퇴행하거나 이미 적용된 값으로 덮어써지는 것을 방지)
+      if (authorSessionId === mySessionIdRef.current) {
+        const serializedPatch = JSON.stringify(patch);
+        const pendingIndex =
+          pendingPatchQueueRef.current.indexOf(serializedPatch);
+        if (pendingIndex !== -1) {
+          pendingPatchQueueRef.current.splice(pendingIndex, 1);
+          resolvePendingPatchWaiters();
+        }
+      }
       if (version <= versionRef.current) return;
       versionRef.current = version;
       const commands = Array.isArray(patch) ? patch : [patch];
@@ -197,6 +248,9 @@ export function useRecordCollaboration(
     socket.on('PATCH_COMMITTED', handlePatchCommitted);
 
     const handlePatchRejectedStale = () => {
+      pendingPatchRejectedRef.current = true;
+      pendingPatchQueueRef.current = [];
+      resolvePendingPatchWaiters();
       toast.error(
         '다른 사용자의 편집으로 인해 버전이 갱신되었습니다. 페이지를 새로고침합니다.',
         {
@@ -275,7 +329,15 @@ export function useRecordCollaboration(
       socket.off('DRAFT_PUBLISHED', handleDraftPublished);
       socket.off('DRAFT_PUBLISH_ENDED', handleDraftPublishEnded);
     };
-  }, [socket, draftId, setBlocks, setTitle, router]);
+  }, [
+    socket,
+    draftId,
+    setBlocks,
+    setTitle,
+    router,
+    groupId,
+    resolvePendingPatchWaiters,
+  ]);
 
   const emitStream = useCallback(
     (blockId: string, partialValue: BlockValue) => {
@@ -305,13 +367,19 @@ export function useRecordCollaboration(
       };
 
       const sanitized = Array.isArray(patch) ? patch.map(sanitize) : sanitize(patch);
-      socket?.emit('PATCH_APPLY', {
+      if (!socket || !draftId) {
+        return;
+      }
+
+      pendingPatchRejectedRef.current = false;
+      pendingPatchQueueRef.current.push(JSON.stringify(sanitized));
+      socket.emit('PATCH_APPLY', {
         draftId,
         baseVersion: versionRef.current,
         patch: sanitized,
       });
     },
-    [socket, draftId, versionRef],
+    [socket, draftId],
   );
 
   const markNavigatingToRecord = () => {
@@ -326,6 +394,7 @@ export function useRecordCollaboration(
     streamingValues,
     emitStream,
     applyPatch,
+    waitForPendingPatches,
     versionRef,
     isPublishing,
     setIsPublishing,

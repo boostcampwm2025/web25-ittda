@@ -1,9 +1,14 @@
 import type { Repository } from 'typeorm';
 import type { ConfigService } from '@nestjs/config';
-import type { App } from 'firebase-admin/app';
+import { cert, initializeApp, type App } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { NotificationService } from './notification.service';
 import { FcmToken } from './entity/fcm-token.entity';
+
+jest.mock('firebase-admin/app', () => ({
+  cert: jest.fn((serviceAccount: unknown) => serviceAccount),
+  initializeApp: jest.fn(() => ({})),
+}));
 
 jest.mock('firebase-admin/messaging', () => ({
   getMessaging: jest.fn(),
@@ -34,6 +39,7 @@ describe('NotificationService', () => {
   let service: NotificationService;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     fcmTokenRepo = {
       upsert: jest.fn(),
       delete: jest.fn(),
@@ -49,6 +55,34 @@ describe('NotificationService', () => {
     );
     // onModuleInit()은 실제 서비스 계정 파일이 필요해 거치지 않고, 초기화된 것처럼 app을 직접 주입한다.
     (service as unknown as { app: App }).app = {} as App;
+  });
+
+  describe('onModuleInit', () => {
+    it('Base64 서비스 계정으로 Firebase를 초기화한다', () => {
+      const serviceAccount = {
+        projectId: 'project-1',
+        clientEmail: 'firebase@example.com',
+        privateKey: 'private-key',
+      };
+      const configService = {
+        get: jest.fn((key: string) =>
+          key === 'FIREBASE_SERVICE_ACCOUNT_BASE64'
+            ? Buffer.from(JSON.stringify(serviceAccount)).toString('base64')
+            : undefined,
+        ),
+      };
+      service = new NotificationService(
+        configService as unknown as ConfigService,
+        fcmTokenRepo as unknown as Repository<FcmToken>,
+      );
+
+      service.onModuleInit();
+
+      expect(cert).toHaveBeenCalledWith(serviceAccount);
+      expect(initializeApp).toHaveBeenCalledWith({
+        credential: serviceAccount,
+      });
+    });
   });
 
   describe('registerToken', () => {

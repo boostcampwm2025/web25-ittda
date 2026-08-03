@@ -1,8 +1,13 @@
 import { useCallback, useRef } from 'react';
 
-const isIOS = () =>
-  typeof navigator !== 'undefined' &&
-  /iPad|iPhone|iPod/.test(navigator.userAgent);
+const isIOS = () => {
+  if (typeof navigator === 'undefined') return false;
+  const iOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  // iPadOS 13+는 userAgent에 "iPad"가 없고 MacIntel로 표시됨
+  const iPadOS =
+    navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  return iOSDevice || iPadOS;
+};
 
 const isNativePlatform = () =>
   typeof window !== 'undefined' &&
@@ -20,6 +25,8 @@ export function useHaptic() {
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.id = '__haptic_trigger';
+    // iOS 18+ WebKit이 switch 타입 체크박스를 토글할 때만 햅틱을 발생시킴
+    input.setAttribute('switch', '');
     input.style.cssText =
       'position:fixed;opacity:0;pointer-events:none;width:0;height:0';
 

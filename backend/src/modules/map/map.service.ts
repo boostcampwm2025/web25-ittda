@@ -125,40 +125,67 @@ export class MapService {
       });
     }
 
-    const resultItems: MapPostItemDto[] = await Promise.all(
-      items.map(async (post) => {
-        const previewMediaIds = previewMediaMap.get(post.id) ?? [];
-
-        // Find location block for placeName/address
-        const locationBlock = await this.postRepository.manager.findOne(
-          PostBlock,
-          {
-            where: { postId: post.id, type: PostBlockType.LOCATION },
-          },
-        );
-
-        let placeDisplay: string | null = null;
-        if (locationBlock) {
-          const val = locationBlock.value as {
-            address?: string;
-            placeName?: string;
-          };
-          placeDisplay = val.placeName || val.address || null;
+    // Snippet extraction (first text block per post) — 검색 결과와 동일한 방식.
+    // post당 findOne을 따로 부르면 최대 limit개의 추가 쿼리가 나가므로,
+    // 이미지 블록과 동일하게 postIds 전체를 한 번에 조회해 맵으로 구성한다.
+    const firstTextBlockByPostId = new Map<string, PostBlock>();
+    if (postIds.length > 0) {
+      const textBlocks = await this.postBlockRepository.find({
+        where: { postId: In(postIds), type: PostBlockType.TEXT },
+        order: { postId: 'ASC', layoutRow: 'ASC', layoutCol: 'ASC' },
+      });
+      for (const block of textBlocks) {
+        if (!firstTextBlockByPostId.has(block.postId)) {
+          firstTextBlockByPostId.set(block.postId, block);
         }
+      }
+    }
 
-        return {
-          id: post.id,
-          lat: (post.location as Point).coordinates[1],
-          lng: (post.location as Point).coordinates[0],
-          title: post.title,
-          previewMediaIds,
-          createdAt: post.eventAt || post.createdAt,
-          tags: post.tags || [],
-          emotion: post.emotion ?? [],
-          placeName: placeDisplay,
+    // Location block for placeName/address — 위와 같은 이유로 배치 조회한다.
+    const locationBlockByPostId = new Map<string, PostBlock>();
+    if (postIds.length > 0) {
+      const locationBlocks = await this.postBlockRepository.find({
+        where: { postId: In(postIds), type: PostBlockType.LOCATION },
+        order: { postId: 'ASC', layoutRow: 'ASC', layoutCol: 'ASC' },
+      });
+      for (const block of locationBlocks) {
+        if (!locationBlockByPostId.has(block.postId)) {
+          locationBlockByPostId.set(block.postId, block);
+        }
+      }
+    }
+
+    const resultItems: MapPostItemDto[] = items.map((post) => {
+      const previewMediaIds = previewMediaMap.get(post.id) ?? [];
+
+      const locationBlock = locationBlockByPostId.get(post.id);
+
+      let placeDisplay: string | null = null;
+      if (locationBlock) {
+        const val = locationBlock.value as {
+          address?: string;
+          placeName?: string;
         };
-      }),
-    );
+        placeDisplay = val.placeName || val.address || null;
+      }
+
+      const firstTextBlock = firstTextBlockByPostId.get(post.id);
+
+      return {
+        id: post.id,
+        lat: (post.location as Point).coordinates[1],
+        lng: (post.location as Point).coordinates[0],
+        title: post.title,
+        previewMediaIds,
+        createdAt: post.eventAt || post.createdAt,
+        tags: post.tags || [],
+        emotion: post.emotion ?? [],
+        placeName: placeDisplay,
+        snippet: firstTextBlock
+          ? (firstTextBlock.value as { text: string }).text.substring(0, 100)
+          : undefined,
+      };
+    });
 
     let nextCursor: string | null = null;
     if (hasNextPage) {

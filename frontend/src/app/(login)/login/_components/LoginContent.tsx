@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { signOut } from 'next-auth/react';
 import { useApiPost } from '@/hooks/useApi';
 import { GuestInfo } from '@/lib/types/profile';
 import { getRedirectUri } from '@/lib/utils/getRedirectUri';
@@ -215,6 +216,7 @@ export default function LoginContent({
 
   const handleLoginGuest = async () => {
     setIsLoading(true);
+   await signOut({ redirect: false });
     const existingSessionId = getCookie(guestCookieKey) || guestSessionId;
     if (existingSessionId) {
       try {

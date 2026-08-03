@@ -36,7 +36,8 @@ export function useCoachmark({
   steps,
   enabled = true,
 }: UseCoachmarkOptions) {
-  const userId = useAuthStore((state) => state.userId);
+  const userType = useAuthStore((state) => state.userType);
+  const isSocialUser = userType === 'social';
   const [stepIndex, setStepIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const [announcementOpen, setAnnouncementOpen] = useState(false);
@@ -45,7 +46,7 @@ export function useCoachmark({
 
   const { data: profile, isLoading } = useQuery({
     ...userProfileOptions(),
-    enabled: !!userId && enabled,
+    enabled: isSocialUser && enabled,
   });
 
   const seenCoachmarks = Array.isArray(profile?.user?.settings?.seenCoachmarks)
@@ -86,7 +87,7 @@ export function useCoachmark({
 
   const isActive =
     enabled &&
-    !!userId &&
+    isSocialUser &&
     !isLoading &&
     !hasSeen &&
     !announcementOpen &&
@@ -136,7 +137,7 @@ export function useCoachmark({
 
   const finish = () => {
     setDismissed(true);
-    if (userId) {
+    if (isSocialUser) {
       const next = Array.from(new Set([...seenCoachmarks, flowKey]));
       updateSettings({ settings: { seenCoachmarks: next } });
     }

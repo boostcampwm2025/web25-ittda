@@ -55,6 +55,25 @@ describe('useAuthStore', () => {
     );
   });
 
+  it('소셜 로그인 상태에서 setGuestInfo를 호출하면 userId가 초기화된다', () => {
+    useAuthStore.setState({
+      userType: 'social',
+      userId: 'stale-user-id',
+      isLoggedIn: true,
+    });
+
+    useAuthStore.getState().setGuestInfo({
+      guest: true,
+      guestSessionId: 'session-1',
+      guestAccessToken: 'token-1',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+    });
+
+    const state = useAuthStore.getState();
+    expect(state.userType).toBe('guest');
+    expect(state.userId).toBeNull();
+  });
+
   it('게스트 상태에서 setLogin을 호출하면 소셜 계정으로 전환되고 게스트 정보가 지워진다', async () => {
     useAuthStore.getState().setGuestInfo({
       guest: true,
@@ -64,15 +83,13 @@ describe('useAuthStore', () => {
     });
     cookiesRemoveMock.mockClear();
 
-    useAuthStore
-      .getState()
-      .setLogin({
-        id: 'user-1',
-        email: 'a@test.com',
-        nickname: '홍길동',
-        profileImageId: null,
-        createdAt: '2024-01-01T00:00:00.000Z',
-      });
+    useAuthStore.getState().setLogin({
+      id: 'user-1',
+      email: 'a@test.com',
+      nickname: '홍길동',
+      profileImageId: null,
+      createdAt: '2024-01-01T00:00:00.000Z',
+    });
     await nextFrame();
 
     const state = useAuthStore.getState();
@@ -85,15 +102,13 @@ describe('useAuthStore', () => {
   });
 
   it('게스트 정보가 없는 상태에서 setLogin을 호출해도 소셜 로그인 상태가 된다', async () => {
-    useAuthStore
-      .getState()
-      .setLogin({
-        id: 'user-2',
-        email: 'b@test.com',
-        nickname: '이몽룡',
-        profileImageId: null,
-        createdAt: '2024-01-01T00:00:00.000Z',
-      });
+    useAuthStore.getState().setLogin({
+      id: 'user-2',
+      email: 'b@test.com',
+      nickname: '이몽룡',
+      profileImageId: null,
+      createdAt: '2024-01-01T00:00:00.000Z',
+    });
     await nextFrame();
 
     const state = useAuthStore.getState();

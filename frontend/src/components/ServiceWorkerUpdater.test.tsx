@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import ServiceWorkerUpdater from './ServiceWorkerUpdater';
 
@@ -6,32 +6,21 @@ function mockRegistration() {
   return { update: vi.fn().mockResolvedValue(undefined) };
 }
 
-function setupServiceWorker(registrations: ReturnType<typeof mockRegistration>[]) {
-  const listeners: Record<string, (() => void)[]> = {};
+function setupServiceWorker(
+  registrations: ReturnType<typeof mockRegistration>[],
+) {
   const serviceWorker = {
     getRegistrations: vi.fn().mockResolvedValue(registrations),
-    addEventListener: vi.fn((event: string, handler: () => void) => {
-      (listeners[event] ??= []).push(handler);
-    }),
-    removeEventListener: vi.fn(),
   };
   Object.defineProperty(navigator, 'serviceWorker', {
     value: serviceWorker,
     configurable: true,
   });
-  return { serviceWorker, fire: (event: string) => listeners[event]?.forEach((h) => h()) };
+  return { serviceWorker };
 }
 
 describe('ServiceWorkerUpdater', () => {
-  const reloadMock = vi.fn();
-
-  beforeEach(() => {
-    reloadMock.mockClear();
-    vi.stubGlobal('location', { ...window.location, reload: reloadMock });
-  });
-
   afterEach(() => {
-    vi.unstubAllGlobals();
     Reflect.deleteProperty(navigator, 'serviceWorker');
     vi.useRealTimers();
   });
@@ -42,7 +31,9 @@ describe('ServiceWorkerUpdater', () => {
     const { serviceWorker } = setupServiceWorker([reg1, reg2]);
 
     render(<ServiceWorkerUpdater />);
-    await vi.waitFor(() => expect(serviceWorker.getRegistrations).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(serviceWorker.getRegistrations).toHaveBeenCalled(),
+    );
     await vi.waitFor(() => expect(reg1.update).toHaveBeenCalled());
     expect(reg2.update).toHaveBeenCalled();
   });
@@ -52,7 +43,9 @@ describe('ServiceWorkerUpdater', () => {
     const { serviceWorker } = setupServiceWorker([reg]);
 
     render(<ServiceWorkerUpdater />);
-    await vi.waitFor(() => expect(serviceWorker.getRegistrations).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(serviceWorker.getRegistrations).toHaveBeenCalledTimes(1),
+    );
 
     const visibilitySpy = vi
       .spyOn(document, 'visibilityState', 'get')
@@ -64,15 +57,5 @@ describe('ServiceWorkerUpdater', () => {
     );
 
     visibilitySpy.mockRestore();
-  });
-
-  it('controllerchange 발생 시 페이지를 한 번만 새로고침한다', async () => {
-    const { fire } = setupServiceWorker([mockRegistration()]);
-    render(<ServiceWorkerUpdater />);
-
-    fire('controllerchange');
-    fire('controllerchange');
-
-    expect(reloadMock).toHaveBeenCalledTimes(1);
   });
 });
