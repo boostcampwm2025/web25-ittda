@@ -83,7 +83,12 @@ export default function BottomNavigation() {
   if (isGroupDetail) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-4 py-1 sm:px-8 sm:py-4 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
+    <nav
+      // 지도 페이지의 하단 드로어(useBottomSheetResize)가 collapsed 높이를
+      // 계산할 때 이 네비게이션바의 실제 높이만큼 겹치는 걸 감안해야 해서
+      // id로 노출한다 — WeekCalendar의 스크롤스파이 기준선과 같은 패턴.
+      id="bottom-navigation"
+      className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-4 py-1 sm:px-8 sm:py-4 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
       <AnimatePresence mode="wait" initial={false}>
         {effectiveGroupId ? (
           <motion.div

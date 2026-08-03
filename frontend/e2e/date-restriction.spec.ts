@@ -109,6 +109,9 @@ test.describe('미래 날짜 선택 불가', () => {
 
 const PAST_RECORD_TITLE = 'E2E 과거날짜 기록';
 
+// 홈이 "오늘 하루만 보여주는 목록"에서 "끊김 없는 스크롤 타임라인 + 주간
+// 달력은 스크롤 위치를 보여주는 인덱스"로 개편되면서, 과거 기록은 더 이상
+// 날짜를 탭해야만 나타나는 게 아니라 애초에 타임라인에 항상 포함되어 있다.
 test.describe('과거 날짜 기록 홈 노출', () => {
   let postId: string;
 
@@ -133,25 +136,29 @@ test.describe('과거 날짜 기록 홈 노출', () => {
       has: page.locator('span', { hasText: /^[일월화수목금토]$/ }),
     }).first();
 
-  test('과거 날짜로 저장한 기록은 오늘 날짜 홈에서 표시되지 않는다', async ({ page }) => {
+  test('어제 기록은 날짜를 탭하지 않아도 홈 타임라인에 곧바로 노출된다', async ({ page }) => {
     await page.goto('/');
 
     // WeekCalendar가 보이면 홈이 렌더링된 상태
     await expect(getWeekCalendar(page)).toBeVisible({ timeout: 5000 });
 
-    // 오늘 기록 목록에 과거 날짜 기록이 없어야 함
-    await expect(page.getByText(PAST_RECORD_TITLE)).not.toBeVisible();
+    // RecordTimelineFeed는 pastFeedInfiniteOptions로 날짜 구분 없이 최신순
+    // 무한스크롤을 그리므로, 아무 조작 없이도 어제 기록이 바로 보여야 한다.
+    await expect(page.getByText(PAST_RECORD_TITLE).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('홈 주간 달력에서 과거 날짜를 선택하면 해당 기록이 표시된다', async ({ page }) => {
+  test('홈 주간 달력에서 과거 날짜를 탭하면 해당 구간으로 스크롤되고 캘린더에도 선택 표시된다', async ({ page }) => {
     await page.goto('/');
 
     const weekCalendar = getWeekCalendar(page);
     await expect(weekCalendar).toBeVisible({ timeout: 5000 });
 
-    // 어제 날짜 버튼 찾기 (오늘이 일요일이면 어제는 이전 주)
+    // 어제 날짜 버튼 찾기 (오늘이 일요일이면 어제는 이전 주).
+    // button의 textContent는 요일명+일자 span이 공백 없이 이어 붙어(예: "일2")
+    // button 레벨 hasText 정규식(^2$)이 매치에 실패할 수 있어, 일자만 담은
+    // span을 has로 좁혀서 찾는다 — getWeekCalendar와 동일한 패턴.
     const yesterdayButton = weekCalendar.locator('button').filter({
-      hasText: new RegExp(`^${YESTERDAY_DAY}$`),
+      has: page.locator('span', { hasText: new RegExp(`^${YESTERDAY_DAY}$`) }),
     }).first();
 
     const isInCurrentWeek = await yesterdayButton.isVisible({ timeout: 3000 }).catch(() => false);
@@ -174,7 +181,15 @@ test.describe('과거 날짜 기록 홈 노출', () => {
 
     await yesterdayButton.click();
 
-    // 해당 날짜의 기록이 표시됨 (.first()로 이전 테스트 실행 잔여 데이터 허용)
+    // 탭 → 점프: RecordTimelineProvider.requestJump가 해당 날짜로 스무스
+    // 스크롤을 트리거하므로, 그 구간의 기록이 뷰포트에 보여야 한다
+    // (.first()로 이전 테스트 실행 잔여 데이터 허용).
     await expect(page.getByText(PAST_RECORD_TITLE).first()).toBeVisible({ timeout: 15000 });
+
+    // 스크롤이 캘린더에 되먹임되어(reportScrollActiveDate) 방금 탭한 날짜
+    // pip가 선택 상태(솔리드 배경)로 표시되는지 — 탭→스크롤뿐 아니라
+    // 스크롤→캘린더 동기화까지 실제로 맞물리는지 검증.
+    const selectedPip = yesterdayButton.locator('div').first();
+    await expect(selectedPip).toHaveClass(/bg-itta-black/, { timeout: 10000 });
   });
 });

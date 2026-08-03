@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, HelpCircle } from 'lucide-react';
+import { X } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from './PWAInstallModal';
 import { setCookie } from '@/lib/utils/cookie';
@@ -104,15 +104,17 @@ export default function PWAInstallBannerClient() {
           type="button"
           onClick={handleInstallClick}
           aria-label="앱 설치 안내 보기"
-          className="flex items-center justify-center w-12 h-12 rounded-full bg-itta-black text-white shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+          className="flex items-center justify-center w-12 h-12 rounded-full bg-white text-itta-black border border-gray-100 dark:bg-itta-black dark:text-white dark:border-transparent shadow-lg shadow-black/10 dark:shadow-black/40 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
         >
-          <HelpCircle className="w-5 h-5" />
+          {/* 버튼 배경 자체가 이미 원이라, HelpCircle 아이콘(물음표+원 이중 테두리)
+              대신 물음표 글자만 사용해 원이 겹치지 않게 한다. */}
+          <span className="text-xl font-bold leading-none">?</span>
         </button>
         <button
           type="button"
           onClick={handleClose}
           aria-label="앱 설치 안내 닫기"
-          className="absolute -top-0.5 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-gray-400 hover:bg-gray-500 text-white transition-colors"
+          className="absolute -top-0.5 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-gray-600 hover:bg-gray-700 text-white transition-colors"
         >
           <X className="w-3 h-3" />
         </button>
