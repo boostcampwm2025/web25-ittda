@@ -479,6 +479,19 @@ describe('FeedController past feed (e2e)', () => {
     expect(body.data.nextCursor).toBeNull();
   });
 
+  it('GET /feed/past should return 400 for a corrupted cursor instead of silently restarting from page one', async () => {
+    // 손상된 커서를 "커서 없음"으로 취급해 첫 페이지를 다시 내려주면,
+    // 클라이언트는 postId 기준 중복 제거로 목록이 안 늘어나는데 hasNextPage는
+    // 계속 true라 무한 재요청에 빠진다 — 조용히 재시작하지 않고 400으로
+    // 명확히 실패해야 한다.
+    await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ cursor: 'this-is-not-a-valid-cursor' })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
+      .expect(400);
+  });
+
   it('GET /feed/groups/:groupId/past should only return that group past posts', async () => {
     const res = await request(app.getHttpServer())
       .get(`/feed/groups/${group.id}/past`)
