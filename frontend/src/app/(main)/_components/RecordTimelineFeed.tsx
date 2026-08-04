@@ -59,6 +59,7 @@ export default function RecordTimelineFeed({
     isFetchingNextPage,
     isPending,
     isError,
+    refetch,
   } = useInfiniteQuery(pastFeedInfiniteOptions(groupId));
 
   const records = useMemo(() => {
@@ -247,6 +248,23 @@ export default function RecordTimelineFeed({
         {Array.from({ length: 3 }).map((_, i) => (
           <RecordItemSkeleton key={i} />
         ))}
+      </div>
+    );
+  }
+
+  if (isError && records.length === 0) {
+    return (
+      <div className="py-12 flex flex-col items-center gap-3 text-center">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+          기록을 불러오지 못했어요
+        </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold text-white bg-itta-black"
+        >
+          다시 시도
+        </button>
       </div>
     );
   }
