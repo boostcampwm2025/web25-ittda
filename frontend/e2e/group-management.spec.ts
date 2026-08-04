@@ -15,7 +15,9 @@ test.describe('그룹 홈 탭 및 popover 메뉴', () => {
   let inviteCode: string;
 
   test.beforeAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctx = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const page = await ctx.newPage();
     const group = await createTestGroup(page, 'E2E 그룹 탭 테스트');
     groupId = group.id;
@@ -24,7 +26,9 @@ test.describe('그룹 홈 탭 및 popover 메뉴', () => {
   });
 
   test.afterAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctx = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const page = await ctx.newPage();
     await deleteTestGroup(page, groupId);
     await ctx.close();
@@ -32,67 +36,111 @@ test.describe('그룹 홈 탭 및 popover 메뉴', () => {
 
   test('그룹 홈에서 피드/보관함 탭을 전환할 수 있다', async ({ page }) => {
     await page.goto(`/group/${groupId}`);
-    await expect(page.getByRole('button', { name: '피드' })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: '피드' })).toBeVisible({
+      timeout: 8000,
+    });
 
     // 보관함 탭 전환 (router.replace는 history.replaceState라 waitForURL 대신 waitForFunction으로 URL 직접 polling)
     await page.getByRole('button', { name: '보관함' }).click();
-    await page.waitForFunction(() => window.location.search.includes('tab=archive'), { timeout: 8000 });
+    await page.waitForFunction(
+      () => window.location.search.includes('tab=archive'),
+      { timeout: 8000 },
+    );
 
     // 피드 탭 복귀
     await page.getByRole('button', { name: '피드' }).click();
-    await page.waitForFunction(() => !window.location.search.includes('tab=archive'), { timeout: 8000 });
+    await page.waitForFunction(
+      () => !window.location.search.includes('tab=archive'),
+      { timeout: 8000 },
+    );
   });
 
-  test('Admin은 Popover에서 그룹 정보 수정, 멤버 관리, 나의 그룹 프로필, 그룹 나가기 버튼이 모두 표시된다', async ({ page }) => {
+  test('Admin은 Popover에서 그룹 정보 수정, 멤버 관리, 나의 그룹 프로필, 그룹 나가기 버튼이 모두 표시된다', async ({
+    page,
+  }) => {
     await page.goto(`/group/${groupId}`);
-    await expect(page.getByRole('button', { name: '피드' })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: '피드' })).toBeVisible({
+      timeout: 8000,
+    });
 
     await page.getByRole('button', { name: '그룹 메뉴' }).click();
 
-    await expect(page.getByRole('button', { name: '그룹 정보 수정' })).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('button', { name: '멤버 관리' })).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('button', { name: '나의 그룹 프로필' })).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('button', { name: '그룹 나가기' })).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByRole('button', { name: '그룹 정보 수정' }),
+    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: '멤버 관리' })).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(
+      page.getByRole('button', { name: '나의 그룹 프로필' }),
+    ).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: '그룹 나가기' })).toBeVisible(
+      { timeout: 5000 },
+    );
   });
 
-  test('EDITOR 멤버는 Popover에서 그룹 정보 수정, 멤버 관리 버튼이 표시되지 않는다', async ({ browser }) => {
+  test('EDITOR 멤버는 Popover에서 그룹 정보 수정, 멤버 관리 버튼이 표시되지 않는다', async ({
+    browser,
+  }) => {
     const ctxB = await createGuestSession(browser);
     const pageB = await ctxB.newPage();
     try {
       await joinTestGroup(pageB, inviteCode);
       await pageB.goto(`/group/${groupId}`);
-      await expect(pageB.getByRole('button', { name: '피드' })).toBeVisible({ timeout: 8000 });
+      await expect(pageB.getByRole('button', { name: '피드' })).toBeVisible({
+        timeout: 8000,
+      });
 
       await pageB.getByRole('button', { name: '그룹 메뉴' }).click();
 
-      await expect(pageB.getByRole('button', { name: '그룹 정보 수정' })).not.toBeVisible({ timeout: 3000 });
-      await expect(pageB.getByRole('button', { name: '멤버 관리' })).not.toBeVisible({ timeout: 3000 });
+      await expect(
+        pageB.getByRole('button', { name: '그룹 정보 수정' }),
+      ).not.toBeVisible({ timeout: 3000 });
+      await expect(
+        pageB.getByRole('button', { name: '멤버 관리' }),
+      ).not.toBeVisible({ timeout: 3000 });
       // 모든 멤버에게 표시되는 항목
-      await expect(pageB.getByRole('button', { name: '나의 그룹 프로필' })).toBeVisible({ timeout: 3000 });
-      await expect(pageB.getByRole('button', { name: '그룹 나가기' })).toBeVisible({ timeout: 3000 });
+      await expect(
+        pageB.getByRole('button', { name: '나의 그룹 프로필' }),
+      ).toBeVisible({ timeout: 3000 });
+      await expect(
+        pageB.getByRole('button', { name: '그룹 나가기' }),
+      ).toBeVisible({ timeout: 3000 });
     } finally {
       await ctxB.close();
     }
   });
 
-  test('그룹 정보 수정 버튼 클릭 시 /edit 페이지로 이동한다', async ({ page }) => {
+  test('그룹 정보 수정 버튼 클릭 시 /edit 페이지로 이동한다', async ({
+    page,
+  }) => {
     await page.goto(`/group/${groupId}`);
-    await expect(page.getByRole('button', { name: '피드' })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: '피드' })).toBeVisible({
+      timeout: 8000,
+    });
 
     await page.getByRole('button', { name: '그룹 메뉴' }).click();
     await page.getByRole('button', { name: '그룹 정보 수정' }).click();
 
-    await expect(page).toHaveURL(new RegExp(`/group/${groupId}/edit`), { timeout: 5000 });
+    await expect(page).toHaveURL(new RegExp(`/group/${groupId}/edit`), {
+      timeout: 5000,
+    });
   });
 
-  test('멤버 관리 버튼 클릭 시 /edit/members 페이지로 이동한다', async ({ page }) => {
+  test('멤버 관리 버튼 클릭 시 /edit/members 페이지로 이동한다', async ({
+    page,
+  }) => {
     await page.goto(`/group/${groupId}`);
-    await expect(page.getByRole('button', { name: '피드' })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole('button', { name: '피드' })).toBeVisible({
+      timeout: 8000,
+    });
 
     await page.getByRole('button', { name: '그룹 메뉴' }).click();
     await page.getByRole('button', { name: '멤버 관리' }).click();
 
-    await expect(page).toHaveURL(new RegExp(`/group/${groupId}/edit/members`), { timeout: 5000 });
+    await expect(page).toHaveURL(new RegExp(`/group/${groupId}/edit/members`), {
+      timeout: 5000,
+    });
   });
 });
 
@@ -107,7 +155,9 @@ test.describe('그룹 정보 수정 페이지 - 그룹 이름 변경', () => {
   const UPDATED_NAME = 'E2E 이름수정 후';
 
   test.beforeAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctx = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const page = await ctx.newPage();
     const group = await createTestGroup(page, ORIGINAL_NAME);
     groupId = group.id;
@@ -116,13 +166,17 @@ test.describe('그룹 정보 수정 페이지 - 그룹 이름 변경', () => {
   });
 
   test.afterAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctx = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const page = await ctx.newPage();
     await deleteTestGroup(page, groupId);
     await ctx.close();
   });
 
-  test('Admin이 그룹 이름을 수정하면 저장 후 변경된 이름이 표시된다', async ({ page }) => {
+  test('Admin이 그룹 이름을 수정하면 저장 후 변경된 이름이 표시된다', async ({
+    page,
+  }) => {
     await page.goto(`/group/${groupId}/edit`);
 
     await page.getByRole('button', { name: /편집/ }).click();
@@ -133,21 +187,29 @@ test.describe('그룹 정보 수정 페이지 - 그룹 이름 변경', () => {
     await nameInput.fill(UPDATED_NAME);
 
     await page.getByRole('button', { name: /저장/ }).click();
-    await expect(page.getByText('그룹 이름이 변경되었습니다.')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('그룹 이름이 변경되었습니다.')).toBeVisible({
+      timeout: 5000,
+    });
     await expect(nameInput).toHaveValue(UPDATED_NAME, { timeout: 5000 });
   });
 
-  test('Admin이 그룹 이름을 변경하면 다른 멤버가 그룹 홈에 접속할 때 변경된 이름이 표시된다', async ({ browser }) => {
+  test('Admin이 그룹 이름을 변경하면 다른 멤버가 그룹 홈에 접속할 때 변경된 이름이 표시된다', async ({
+    browser,
+  }) => {
     const ctxB = await createGuestSession(browser);
     const pageB = await ctxB.newPage();
     try {
       await joinTestGroup(pageB, inviteCode);
       // 그룹 홈 헤더의 그룹 이름 확인 (GroupHeaderActions의 span)
       await pageB.goto(`/group/${groupId}`);
-      await expect(pageB.locator('span').filter({ hasText: UPDATED_NAME }).first()).toBeVisible({ timeout: 8000 });
+      await expect(
+        pageB.locator('span').filter({ hasText: UPDATED_NAME }).first(),
+      ).toBeVisible({ timeout: 8000 });
       // /shared 카드에서도 확인
       await pageB.goto('/shared');
-      await expect(pageB.getByRole('button', { name: UPDATED_NAME })).toBeVisible({ timeout: 8000 });
+      await expect(
+        pageB.getByRole('button', { name: UPDATED_NAME }),
+      ).toBeVisible({ timeout: 8000 });
     } finally {
       await ctxB.close();
     }
@@ -165,7 +227,9 @@ test.describe('멤버 관리 - 역할 변경', () => {
   let ctxBRef: import('@playwright/test').BrowserContext | null = null;
 
   test.beforeAll(async ({ browser }) => {
-    const ctxA = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctxA = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const pageA = await ctxA.newPage();
     const group = await createTestGroup(pageA, 'E2E 역할 변경 테스트');
     groupId = group.id;
@@ -183,28 +247,42 @@ test.describe('멤버 관리 - 역할 변경', () => {
   test.afterAll(async ({ browser }) => {
     await ctxBRef?.close();
     ctxBRef = null;
-    const ctx = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctx = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const page = await ctx.newPage();
     await deleteTestGroup(page, groupId);
     await ctx.close();
   });
 
-  test('Admin이 EDITOR 멤버의 역할을 뷰어로 변경할 수 있다', async ({ page }) => {
+  test('Admin이 EDITOR 멤버의 역할을 뷰어로 변경할 수 있다', async ({
+    page,
+  }) => {
     await page.goto(`/group/${groupId}/edit/members`);
-    await expect(page.getByText(MEMBER_B_NICKNAME)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(MEMBER_B_NICKNAME)).toBeVisible({
+      timeout: 8000,
+    });
 
-    const bCard = page.locator('[data-testid="member-card"]').filter({ has: page.getByText(MEMBER_B_NICKNAME) });
+    const bCard = page
+      .locator('[data-testid="member-card"]')
+      .filter({ has: page.getByText(MEMBER_B_NICKNAME) });
     await bCard.getByRole('button', { name: '편집자' }).click();
 
-    await expect(page.getByText(`${MEMBER_B_NICKNAME}님의 권한 변경`)).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByText(`${MEMBER_B_NICKNAME}님의 권한 변경`),
+    ).toBeVisible({ timeout: 5000 });
 
     // 뷰어 역할 선택
     await page.getByRole('button', { name: '뷰어' }).first().click();
     await page.getByRole('button', { name: '닫기' }).click();
 
     // '닫기'는 역할 변경 API를 트리거함 → API 완료 후 낙관적 업데이트 대기
-    const bCardOptimistic = page.locator('[data-testid="member-card"]').filter({ has: page.getByText(MEMBER_B_NICKNAME) });
-    await expect(bCardOptimistic.locator('span').filter({ hasText: '뷰어' })).toBeVisible({ timeout: 8000 });
+    const bCardOptimistic = page
+      .locator('[data-testid="member-card"]')
+      .filter({ has: page.getByText(MEMBER_B_NICKNAME) });
+    await expect(
+      bCardOptimistic.locator('span').filter({ hasText: '뷰어' }),
+    ).toBeVisible({ timeout: 8000 });
 
     // 서버 반영 확인을 위해 reload 후 재검증.
     // Next.js의 스트리밍 SSR은 Suspense 콘텐츠를 <template>으로 보냈다가
@@ -212,12 +290,26 @@ test.describe('멤버 관리 - 역할 변경', () => {
     // 그 스왑이 채 끝나지 않은 아주 짧은 순간에는 실제 카드와 아직 자리로
     // 옮겨지지 않은 스트리밍 조각이 동시에 DOM에 존재해 멤버 카드가 일시적으로
     // 2배로 잡힐 수 있다(요소 자체 버그가 아니라 프레임워크 스트리밍 아티팩트).
-    // networkidle까지 기다려 스왑이 끝난 뒤에 조회한다.
+    // networkidle은 Sentry replay(샘플링된 세션에서 백그라운드로 세그먼트를
+    // 계속 업로드함)처럼 계속 살아있는 네트워크 활동이 있으면 안 걸릴 수 있어
+    // 시간 기반 대기 대신 "카드가 정확히 1개"라는 실제 불변조건을 검증한다.
+    // 다만 toHaveCount(1)을 단 한 번만 확인하면, 스왑 아티팩트가 나타나기
+    // *직전*의 우연한 순간(아직 1개)에 통과해버리고 바로 다음 단정에서 막
+    // 나타난 중복을 잡을 수 있다 — 실측 결과 아티팩트는 reload 후 약
+    // 200~400ms 지점에서 짧게 나타났다가 그 뒤로는 다시 안 나타나므로,
+    // 짧은 간격을 두고 두 번 연속 1개임을 확인해 "우연히 1개인 순간"이
+    // 아니라 실제로 안정화됐는지 검증한다.
     await page.reload();
-    await page.waitForLoadState('networkidle');
-    const bCardAfter = page.locator('[data-testid="member-card"]').filter({ has: page.getByText(MEMBER_B_NICKNAME) });
+    const bCardAfter = page
+      .locator('[data-testid="member-card"]')
+      .filter({ has: page.getByText(MEMBER_B_NICKNAME) });
+    await expect(bCardAfter).toHaveCount(1, { timeout: 8000 });
+    await page.waitForTimeout(500);
+    await expect(bCardAfter).toHaveCount(1, { timeout: 8000 });
     await expect(bCardAfter).toBeVisible({ timeout: 8000 });
-    await expect(bCardAfter.locator('span').filter({ hasText: '뷰어' })).toBeVisible({ timeout: 5000 });
+    await expect(
+      bCardAfter.locator('span').filter({ hasText: '뷰어' }),
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test('VIEWER로 변경된 멤버는 그룹 홈에서 초대 버튼이 표시되지 않는다', async () => {
@@ -226,9 +318,13 @@ test.describe('멤버 관리 - 역할 변경', () => {
     const pageB = await ctxBRef.newPage();
     try {
       await pageB.goto(`/group/${groupId}`);
-      await expect(pageB.getByRole('button', { name: '피드' })).toBeVisible({ timeout: 8000 });
+      await expect(pageB.getByRole('button', { name: '피드' })).toBeVisible({
+        timeout: 8000,
+      });
       // 초대 버튼이 없어야 함
-      await expect(pageB.getByRole('button', { name: '멤버 초대' })).not.toBeVisible({ timeout: 5000 });
+      await expect(
+        pageB.getByRole('button', { name: '멤버 초대' }),
+      ).not.toBeVisible({ timeout: 5000 });
     } finally {
       await pageB.close();
     }
@@ -247,7 +343,9 @@ test.describe('멤버 관리 - 멤버 내보내기', () => {
   let ctxBRef: import('@playwright/test').BrowserContext | null = null;
 
   test.beforeAll(async ({ browser }) => {
-    const ctxA = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctxA = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const pageA = await ctxA.newPage();
     const group = await createTestGroup(pageA, GROUP_NAME);
     groupId = group.id;
@@ -265,25 +363,41 @@ test.describe('멤버 관리 - 멤버 내보내기', () => {
   test.afterAll(async ({ browser }) => {
     await ctxBRef?.close();
     ctxBRef = null;
-    const ctx = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctx = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const page = await ctx.newPage();
     await deleteTestGroup(page, groupId);
     await ctx.close();
   });
 
-  test('Admin이 멤버를 내보내면 멤버 목록에서 해당 멤버가 사라진다', async ({ page }) => {
+  test('Admin이 멤버를 내보내면 멤버 목록에서 해당 멤버가 사라진다', async ({
+    page,
+  }) => {
     await page.goto(`/group/${groupId}/edit/members`);
-    await expect(page.getByText(MEMBER_B_NICKNAME)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(MEMBER_B_NICKNAME)).toBeVisible({
+      timeout: 8000,
+    });
 
     // B의 내보내기 버튼 클릭 (aria-label로 식별)
-    await page.getByRole('button', { name: `${MEMBER_B_NICKNAME} 내보내기` }).click();
+    await page
+      .getByRole('button', { name: `${MEMBER_B_NICKNAME} 내보내기` })
+      .click();
 
     // 확인 drawer
-    await expect(page.getByText(`정말 '${MEMBER_B_NICKNAME}'님을 그룹에서 내보내시겠습니까?`)).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByText(
+        `정말 '${MEMBER_B_NICKNAME}'님을 그룹에서 내보내시겠습니까?`,
+      ),
+    ).toBeVisible({ timeout: 5000 });
     await page.getByRole('button', { name: '내보내기' }).click();
 
     // B가 목록에서 사라짐 (drawer 제목과 멤버 카드 모두 있을 수 있으므로 member-card 기준으로 확인)
-    await expect(page.locator('[data-testid="member-card"]').filter({ has: page.getByText(MEMBER_B_NICKNAME, { exact: true }) })).not.toBeVisible({ timeout: 8000 });
+    await expect(
+      page
+        .locator('[data-testid="member-card"]')
+        .filter({ has: page.getByText(MEMBER_B_NICKNAME, { exact: true }) }),
+    ).not.toBeVisible({ timeout: 8000 });
   });
 
   test('내보내진 멤버는 /shared에서 해당 그룹을 볼 수 없다', async () => {
@@ -291,7 +405,9 @@ test.describe('멤버 관리 - 멤버 내보내기', () => {
     const pageB = await ctxBRef.newPage();
     try {
       await pageB.goto('/shared');
-      await expect(pageB.getByRole('button', { name: GROUP_NAME })).not.toBeVisible({ timeout: 8000 });
+      await expect(
+        pageB.getByRole('button', { name: GROUP_NAME }),
+      ).not.toBeVisible({ timeout: 8000 });
     } finally {
       await pageB.close();
     }
@@ -305,7 +421,9 @@ test.describe('그룹 정보 수정 페이지 - 그룹 삭제 버튼 접근', ()
   let inviteCode: string;
 
   test.beforeAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctx = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const page = await ctx.newPage();
     const group = await createTestGroup(page, 'E2E 삭제버튼 접근 테스트');
     groupId = group.id;
@@ -314,13 +432,17 @@ test.describe('그룹 정보 수정 페이지 - 그룹 삭제 버튼 접근', ()
   });
 
   test.afterAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+    const ctx = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const page = await ctx.newPage();
     await deleteTestGroup(page, groupId);
     await ctx.close();
   });
 
-  test('Admin은 그룹 삭제하기 버튼이 활성화 상태로 표시된다', async ({ page }) => {
+  test('Admin은 그룹 삭제하기 버튼이 활성화 상태로 표시된다', async ({
+    page,
+  }) => {
     await page.goto(`/group/${groupId}/edit`);
 
     const deleteBtn = page.getByRole('button', { name: '그룹 삭제하기' });
@@ -328,7 +450,9 @@ test.describe('그룹 정보 수정 페이지 - 그룹 삭제 버튼 접근', ()
     await expect(deleteBtn).not.toBeDisabled();
   });
 
-  test('EDITOR 멤버는 /edit 접근 시 /edit/profile로 리다이렉트된다', async ({ browser }) => {
+  test('EDITOR 멤버는 /edit 접근 시 /edit/profile로 리다이렉트된다', async ({
+    browser,
+  }) => {
     const ctxB = await createGuestSession(browser);
     const pageB = await ctxB.newPage();
     try {
@@ -336,19 +460,29 @@ test.describe('그룹 정보 수정 페이지 - 그룹 삭제 버튼 접근', ()
       await pageB.goto(`/group/${groupId}/edit`);
 
       // 서버 컴포넌트에서 ADMIN이 아닌 경우 /edit/profile로 리다이렉트함
-      await expect(pageB).toHaveURL(new RegExp(`/group/${groupId}/edit/profile`), { timeout: 8000 });
+      await expect(pageB).toHaveURL(
+        new RegExp(`/group/${groupId}/edit/profile`),
+        { timeout: 8000 },
+      );
     } finally {
       await ctxB.close();
     }
   });
 
-  test('VIEWER 멤버는 /edit 접근 시 /edit/profile로 리다이렉트된다', async ({ browser }) => {
-    const ctxA = await browser.newContext({ storageState: path.join(__dirname, '.auth/guest.json') });
+  test('VIEWER 멤버는 /edit 접근 시 /edit/profile로 리다이렉트된다', async ({
+    browser,
+  }) => {
+    const ctxA = await browser.newContext({
+      storageState: path.join(__dirname, '.auth/guest.json'),
+    });
     const pageA = await ctxA.newPage();
 
-    const inviteRes = await pageA.request.post(`/api/groups/${groupId}/invites`, {
-      data: { permission: 'VIEWER', expiresInSeconds: 86400 },
-    });
+    const inviteRes = await pageA.request.post(
+      `/api/groups/${groupId}/invites`,
+      {
+        data: { permission: 'VIEWER', expiresInSeconds: 86400 },
+      },
+    );
     const inviteBody = await inviteRes.json();
     const viewerCode = inviteBody.data?.code;
     await ctxA.close();
@@ -361,7 +495,10 @@ test.describe('그룹 정보 수정 페이지 - 그룹 삭제 버튼 접근', ()
         await pageB.goto(`/group/${groupId}/edit`);
 
         // 서버 컴포넌트에서 ADMIN이 아닌 경우 /edit/profile로 리다이렉트함
-        await expect(pageB).toHaveURL(new RegExp(`/group/${groupId}/edit/profile`), { timeout: 8000 });
+        await expect(pageB).toHaveURL(
+          new RegExp(`/group/${groupId}/edit/profile`),
+          { timeout: 8000 },
+        );
       }
     } finally {
       await ctxB.close();
