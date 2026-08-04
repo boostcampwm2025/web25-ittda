@@ -55,24 +55,31 @@ export function decodeFeedCursor(
 ): DecodedFeedCursor | null {
   if (!cursor) return null;
 
-  let parsed: { eventAt?: string; id?: string };
+  let parsed: unknown;
   try {
     const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-    parsed = JSON.parse(decoded) as { eventAt?: string; id?: string };
+    parsed = JSON.parse(decoded);
   } catch {
     throw new BadRequestException('Invalid feed cursor.');
   }
 
-  if (!parsed.eventAt || !parsed.id) {
+  if (
+    !parsed ||
+    typeof parsed !== 'object' ||
+    Array.isArray(parsed) ||
+    typeof (parsed as Record<string, unknown>).eventAt !== 'string' ||
+    typeof (parsed as Record<string, unknown>).id !== 'string'
+  ) {
     throw new BadRequestException('Invalid feed cursor.');
   }
 
-  const date = new Date(parsed.eventAt);
+  const { eventAt, id } = parsed as { eventAt: string; id: string };
+  const date = new Date(eventAt);
   if (Number.isNaN(date.getTime())) {
     throw new BadRequestException('Invalid feed cursor.');
   }
 
-  return { eventAt: date, id: parsed.id };
+  return { eventAt: date, id };
 }
 
 export function dayRange(day: string, tz: string): DayRange {
