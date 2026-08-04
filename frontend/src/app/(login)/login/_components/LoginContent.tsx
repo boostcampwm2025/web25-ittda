@@ -79,12 +79,16 @@ export default function LoginContent({
     const handleScroll = () => {
       setShowScrollTop(el.scrollTop > window.innerHeight * 0.75);
     };
+    handleScroll();
     el.addEventListener('scroll', handleScroll, { passive: true });
     return () => el.removeEventListener('scroll', handleScroll);
   }, []);
 
   const scrollToTop = () => {
-    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollContainerRef.current?.scrollTo({
+      top: 0,
+      behavior: shouldReduceMotion ? 'auto' : 'smooth',
+    });
   };
   const { mutate: guestLogin, isPending } = useApiPost<GuestInfo>(
     '/api/auth/guest',
@@ -235,7 +239,13 @@ export default function LoginContent({
 
   const handleLoginGuest = async () => {
     setIsLoading(true);
-    await signOut({ redirect: false });
+    try {
+      await signOut({ redirect: false });
+    } catch {
+      setIsLoading(false);
+      toast.error('네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+      return;
+    }
     const existingSessionId = getCookie(guestCookieKey) || guestSessionId;
     if (existingSessionId) {
       try {
