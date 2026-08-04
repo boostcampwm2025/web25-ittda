@@ -67,7 +67,6 @@ describe('Cover Reset API (e2e)', () => {
     group = await groupRepository.save(
       groupRepository.create({
         name: 'cover-reset-group',
-        owner: { id: user.id } as User,
       }),
     );
 

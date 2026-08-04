@@ -76,13 +76,16 @@ export class FeedGroupQueryService {
     cursor?: string,
     limit = 10,
   ) {
-    const cursorDate = decodeFeedCursor(cursor);
+    const decodedCursor = decodeFeedCursor(cursor);
 
     const postsQb = this.postRepo.createQueryBuilder('p');
     postsQb.where('p.scope = :scope', { scope: PostScope.GROUP });
     postsQb.andWhere('p.groupId = :groupId', { groupId });
-    if (cursorDate) {
-      postsQb.andWhere('p.eventAt < :cursorDate', { cursorDate });
+    if (decodedCursor) {
+      postsQb.andWhere(
+        '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND p.id < :cursorId))',
+        { cursorEventAt: decodedCursor.eventAt, cursorId: decodedCursor.id },
+      );
     }
 
     postsQb.orderBy('p.eventAt', 'DESC').addOrderBy('p.id', 'DESC');
@@ -115,7 +118,7 @@ export class FeedGroupQueryService {
     const lastPost = posts[posts.length - 1];
     const nextCursor =
       posts.length === limit && lastPost?.eventAt
-        ? encodeFeedCursor(new Date(lastPost.eventAt))
+        ? encodeFeedCursor(new Date(lastPost.eventAt), lastPost.id)
         : null;
 
     return { cards, warnings, nextCursor };

@@ -33,19 +33,37 @@ type BuildFeedCardsOptions = {
   draftRepo?: Repository<PostDraft>;
 };
 
-// 지난 기록 무한스크롤용 커서: 마지막 항목의 eventAt(ISO 문자열)을 base64로 인코딩.
-// month-cursor.ts의 월 단위 커서와 달리 레코드 단위라 임의의 ISO 타임스탬프를 그대로 담는다.
-export function encodeFeedCursor(eventAt: Date): string {
-  return Buffer.from(eventAt.toISOString(), 'utf-8').toString('base64');
+export interface DecodedFeedCursor {
+  eventAt: Date;
+  id: string;
 }
 
-export function decodeFeedCursor(cursor?: string | null): Date | null {
+// 지난 기록 무한스크롤용 커서: 마지막 항목의 eventAt + id를 base64로 인코딩.
+// 정렬이 eventAt DESC, id DESC 복합 정렬이라, eventAt만으로 자르면 같은
+// eventAt을 가진 게시글들 사이 경계에서 커서 뒤쪽 항목이 통째로 스킵될 수 있다
+// (eventAt < cursor 조건이 "같은 eventAt이지만 아직 안 보낸" 항목까지 걸러버림).
+// id까지 커서에 담아 정렬 기준과 동일한 튜플 비교로 잘라야 안전하다.
+export function encodeFeedCursor(eventAt: Date, id: string): string {
+  return Buffer.from(
+    JSON.stringify({ eventAt: eventAt.toISOString(), id }),
+    'utf-8',
+  ).toString('base64');
+}
+
+export function decodeFeedCursor(
+  cursor?: string | null,
+): DecodedFeedCursor | null {
   if (!cursor) return null;
 
   try {
     const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-    const date = new Date(decoded);
-    return Number.isNaN(date.getTime()) ? null : date;
+    const parsed = JSON.parse(decoded) as { eventAt?: string; id?: string };
+    if (!parsed.eventAt || !parsed.id) return null;
+
+    const date = new Date(parsed.eventAt);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return { eventAt: date, id: parsed.id };
   } catch {
     return null;
   }
