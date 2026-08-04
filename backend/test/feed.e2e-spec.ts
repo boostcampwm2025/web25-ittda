@@ -92,7 +92,6 @@ describe('FeedController (e2e)', () => {
     group = await groupRepository.save(
       groupRepository.create({
         name: 'feed-group',
-        owner: { id: owner.id } as User,
       }),
     );
     await groupMemberRepository.save(
@@ -367,7 +366,6 @@ describe('FeedController past feed (e2e)', () => {
     group = await groupRepository.save(
       groupRepository.create({
         name: 'past-feed-group',
-        owner: { id: owner.id } as User,
       }),
     );
     await groupMemberRepository.save(
@@ -494,5 +492,122 @@ describe('FeedController past feed (e2e)', () => {
     expect(body.data.items.map((item) => item.postId)).toEqual([
       newestGroupPost.id,
     ]);
+  });
+});
+
+// eventAt이 동일한 게시글이 페이지 경계에 걸릴 때, eventAt만으로 커서를 자르면
+// (p.eventAt < cursor) 그 경계 뒤쪽의 동일 eventAt 게시글이 영영 안 나오는
+// 문제가 있었다 — id까지 튜플로 비교해야 정렬(eventAt DESC, id DESC)과
+// 일관되게 자를 수 있다.
+describe('FeedController past feed cursor tie-break (e2e)', () => {
+  let app: INestApplication<App>;
+  let userRepository: Repository<User>;
+  let postRepository: Repository<Post>;
+  let contributorRepository: Repository<PostContributor>;
+  let owner: User;
+  let samePosts: Post[];
+  let accessToken: string;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(GoogleStrategy)
+      .useValue({})
+      .overrideProvider(KakaoStrategy)
+      .useValue({})
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.init();
+
+    userRepository = app.get(getRepositoryToken(User));
+    postRepository = app.get(getRepositoryToken(Post));
+    contributorRepository = app.get(getRepositoryToken(PostContributor));
+    const jwtService = app.get(JwtService);
+
+    owner = await userRepository.save(
+      userRepository.create({
+        email: 'past-feed-tiebreak-owner@example.com',
+        nickname: 'past-feed-tiebreak-owner',
+        provider: 'kakao',
+        providerId: `past-feed-tiebreak-owner-${Date.now()}`,
+      }),
+    );
+    accessToken = jwtService.sign({ sub: owner.id });
+
+    const sharedEventAt = new Date('2026-03-01T09:00:00+09:00');
+    samePosts = [];
+    for (let i = 0; i < 3; i++) {
+      const post = await postRepository.save(
+        postRepository.create({
+          scope: PostScope.PERSONAL,
+          ownerUserId: owner.id,
+          title: `Tie-break post ${i}`,
+          eventAt: sharedEventAt,
+        }),
+      );
+      await contributorRepository.save(
+        contributorRepository.create({
+          postId: post.id,
+          userId: owner.id,
+          role: PostContributorRole.AUTHOR,
+        }),
+      );
+      samePosts.push(post);
+    }
+  });
+
+  afterAll(async () => {
+    const postIds = samePosts.map((p) => p.id);
+    if (postIds.length > 0) {
+      await contributorRepository.delete({ postId: In(postIds) });
+      await postRepository.delete({ id: In(postIds) });
+    }
+    if (owner?.id) {
+      await userRepository.delete({ id: owner.id });
+    }
+    if (app) await app.close();
+  });
+
+  it('동일 eventAt 게시글이 페이지 경계에 걸려도 다음 페이지에서 누락되지 않는다', async () => {
+    const allIds = samePosts.map((p) => p.id).sort();
+
+    const firstPage = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2 })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const firstBody = firstPage.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+    };
+    expect(firstBody.data.items).toHaveLength(2);
+    expect(firstBody.data.nextCursor).toBeTruthy();
+
+    const secondPage = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2, cursor: firstBody.data.nextCursor })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const secondBody = secondPage.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+    };
+    expect(secondBody.data.items).toHaveLength(1);
+    expect(secondBody.data.nextCursor).toBeNull();
+
+    const seenIds = [
+      ...firstBody.data.items.map((i) => i.postId),
+      ...secondBody.data.items.map((i) => i.postId),
+    ].sort();
+    expect(seenIds).toEqual(allIds);
   });
 });

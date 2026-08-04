@@ -7,7 +7,7 @@ import { PostContributor } from '../post/entity/post-contributor.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Group } from '../group/entity/group.entity';
 import { PostDraft } from '../post/entity/post-draft.entity';
-import { decodeFeedCursor } from './feed.helpers';
+import { decodeFeedCursor, encodeFeedCursor } from './feed.helpers';
 
 type PostQueryBuilder = {
   where: jest.Mock;
@@ -67,20 +67,25 @@ describe('FeedQueryService.getPastFeedForUser', () => {
     expect(qb.take).toHaveBeenCalledWith(5);
   });
 
-  it('커서가 있으면 해당 시각 이전 기록만 조회하도록 조건을 건다', async () => {
-    const cursor = Buffer.from('2026-01-01T00:00:00.000Z', 'utf-8').toString(
-      'base64',
+  it('커서가 있으면 해당 시각+id 이전 기록만 조회하도록 튜플 비교 조건을 건다', async () => {
+    const cursor = encodeFeedCursor(
+      new Date('2026-01-01T00:00:00.000Z'),
+      'p-cursor',
     );
     const qb = buildService([]);
 
     await service.getPastFeedForUser('user-1', cursor, 5);
 
-    expect(qb.andWhere).toHaveBeenCalledWith('p.eventAt < :cursorDate', {
-      cursorDate: decodeFeedCursor(cursor),
-    });
+    expect(qb.andWhere).toHaveBeenCalledWith(
+      '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND p.id < :cursorId))',
+      {
+        cursorEventAt: decodeFeedCursor(cursor)?.eventAt,
+        cursorId: 'p-cursor',
+      },
+    );
   });
 
-  it('결과가 limit만큼 꽉 차면 마지막 항목 기준 nextCursor를 반환한다', async () => {
+  it('결과가 limit만큼 꽉 차면 마지막 항목의 eventAt+id 기준 nextCursor를 반환한다', async () => {
     const posts: Partial<Post>[] = [
       { id: 'p1', eventAt: new Date('2026-02-01T00:00:00.000Z'), tags: [] },
       { id: 'p2', eventAt: new Date('2026-01-31T00:00:00.000Z'), tags: [] },
@@ -90,9 +95,10 @@ describe('FeedQueryService.getPastFeedForUser', () => {
     const result = await service.getPastFeedForUser('user-1', undefined, 2);
 
     expect(result.nextCursor).not.toBeNull();
-    expect(decodeFeedCursor(result.nextCursor)).toEqual(
-      new Date('2026-01-31T00:00:00.000Z'),
-    );
+    expect(decodeFeedCursor(result.nextCursor)).toEqual({
+      eventAt: new Date('2026-01-31T00:00:00.000Z'),
+      id: 'p2',
+    });
   });
 
   it('결과가 limit보다 적으면 더 볼 게 없다는 뜻으로 nextCursor는 null이다', async () => {
