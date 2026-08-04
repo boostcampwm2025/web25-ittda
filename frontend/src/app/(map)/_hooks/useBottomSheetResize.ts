@@ -23,11 +23,11 @@ function computeSnapPoints(
   // 높이를 고려하지 못했고, 그 결과 collapsed 상태에서 리스트 전체가
   // 네비게이션바 밑에 완전히 가려져 탭 자체가 안 되는 문제가 있었다.
   const baseCollapsed = HEADER_RESERVE + navHeight + PEEK_ALLOWANCE;
-  return {
-    collapsed: baseCollapsed + topOffset,
-    half: innerHeight * 0.5,
-    full: innerHeight * 0.8,
-  };
+  const availableHeight = Math.max(0, innerHeight - topOffset);
+  const collapsed = Math.min(baseCollapsed + topOffset, availableHeight);
+  const half = Math.max(collapsed, availableHeight * 0.5);
+  const full = Math.max(half, availableHeight * 0.8);
+  return { collapsed, half, full };
 }
 
 function measureNavHeight() {
@@ -44,11 +44,7 @@ export function useBottomSheetResize({
     if (typeof window === 'undefined') {
       return { collapsed: 170, half: 500, full: 900 };
     }
-    return computeSnapPoints(
-      window.innerHeight,
-      topOffset,
-      measureNavHeight(),
-    );
+    return computeSnapPoints(window.innerHeight, topOffset, measureNavHeight());
   });
 
   // topOffset(PWA 배너 표시 여부 등) 변화에 맞춰 재계산 — SSR 마크업이 이미
