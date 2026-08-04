@@ -74,7 +74,10 @@ export function useBottomSheetResize({
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
-    setHeight(snapPoints.collapsed);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHeight((currentHeight) =>
+      Math.min(snapPoints.full, Math.max(snapPoints.collapsed, currentHeight)),
+    );
   }, [snapPoints]);
 
   const startY = useRef(0);
