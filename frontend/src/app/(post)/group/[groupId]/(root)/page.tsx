@@ -3,11 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import {
-  pastFeedInfiniteOptions,
-  recordPreviewListOptions,
-} from '@/lib/api/records';
-import { formatDateISO } from '@/lib/date';
+import { pastFeedInfiniteOptions } from '@/lib/api/records';
 import { Suspense } from 'react';
 import GroupMainTabs from './_components/GroupMainTabs';
 import Coachmark from '@/components/Coachmark';
@@ -19,17 +15,10 @@ interface GroupPageProps {
 
 export default async function GroupPage({ params }: GroupPageProps) {
   const { groupId } = await params;
-  const today = formatDateISO();
   const queryClient = new QueryClient();
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
-    await Promise.all([
-      queryClient.prefetchQuery(
-        recordPreviewListOptions(today, 'groups', groupId),
-      ),
-      // RecordTimelineFeed로 전환되기 전까지 임시로 병행 사용(전환 단계 검증용).
-      queryClient.prefetchInfiniteQuery(pastFeedInfiniteOptions(groupId)),
-    ]);
+    await queryClient.prefetchInfiniteQuery(pastFeedInfiniteOptions(groupId));
   }
 
   return (
