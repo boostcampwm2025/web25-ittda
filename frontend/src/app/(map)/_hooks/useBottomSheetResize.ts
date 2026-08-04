@@ -50,9 +50,24 @@ export function useBottomSheetResize({
   // topOffset(PWA 배너 표시 여부 등) 변화에 맞춰 재계산 — SSR 마크업이 이미
   // 붙어있는 상태라 마운트 시점에도 네비게이션바 실측이 바로 가능하다.
   useEffect(() => {
-    setSnapPoints(
-      computeSnapPoints(window.innerHeight, topOffset, measureNavHeight()),
-    );
+    const updateSnapPoints = () =>
+      setSnapPoints(
+        computeSnapPoints(window.innerHeight, topOffset, measureNavHeight()),
+      );
+
+    updateSnapPoints();
+    window.addEventListener('resize', updateSnapPoints);
+
+    const navigation = document.getElementById('bottom-navigation');
+    const observer = navigation
+      ? new ResizeObserver(updateSnapPoints)
+      : undefined;
+    observer?.observe(navigation!);
+
+    return () => {
+      window.removeEventListener('resize', updateSnapPoints);
+      observer?.disconnect();
+    };
   }, [topOffset]);
 
   const [height, setHeight] = useState(150);
