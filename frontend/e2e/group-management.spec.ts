@@ -43,14 +43,14 @@ test.describe('그룹 홈 탭 및 popover 메뉴', () => {
     // 보관함 탭 전환 (router.replace는 history.replaceState라 waitForURL 대신 waitForFunction으로 URL 직접 polling)
     await page.getByRole('button', { name: '보관함' }).click();
     await page.waitForFunction(
-      () => window.location.search.includes('tab=archive'),
+      () => new URL(window.location.href).searchParams.get('tab') === 'archive',
       { timeout: 8000 },
     );
 
     // 피드 탭 복귀
     await page.getByRole('button', { name: '피드' }).click();
     await page.waitForFunction(
-      () => !window.location.search.includes('tab=archive'),
+      () => new URL(window.location.href).searchParams.get('tab') !== 'archive',
       { timeout: 8000 },
     );
   });
@@ -122,7 +122,7 @@ test.describe('그룹 홈 탭 및 popover 메뉴', () => {
     await page.getByRole('button', { name: '그룹 메뉴' }).click();
     await page.getByRole('button', { name: '그룹 정보 수정' }).click();
 
-    await expect(page).toHaveURL(new RegExp(`/group/${groupId}/edit`), {
+    await expect(page).toHaveURL(new RegExp(`/group/${groupId}/edit$`), {
       timeout: 5000,
     });
   });
@@ -138,9 +138,10 @@ test.describe('그룹 홈 탭 및 popover 메뉴', () => {
     await page.getByRole('button', { name: '그룹 메뉴' }).click();
     await page.getByRole('button', { name: '멤버 관리' }).click();
 
-    await expect(page).toHaveURL(new RegExp(`/group/${groupId}/edit/members`), {
-      timeout: 5000,
-    });
+    await expect(page).toHaveURL(
+      new RegExp(`/group/${groupId}/edit/members$`),
+      { timeout: 5000 },
+    );
   });
 });
 
@@ -461,7 +462,7 @@ test.describe('그룹 정보 수정 페이지 - 그룹 삭제 버튼 접근', ()
 
       // 서버 컴포넌트에서 ADMIN이 아닌 경우 /edit/profile로 리다이렉트함
       await expect(pageB).toHaveURL(
-        new RegExp(`/group/${groupId}/edit/profile`),
+        new RegExp(`/group/${groupId}/edit/profile$`),
         { timeout: 8000 },
       );
     } finally {
@@ -496,7 +497,7 @@ test.describe('그룹 정보 수정 페이지 - 그룹 삭제 버튼 접근', ()
 
         // 서버 컴포넌트에서 ADMIN이 아닌 경우 /edit/profile로 리다이렉트함
         await expect(pageB).toHaveURL(
-          new RegExp(`/group/${groupId}/edit/profile`),
+          new RegExp(`/group/${groupId}/edit/profile$`),
           { timeout: 8000 },
         );
       }
