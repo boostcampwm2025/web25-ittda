@@ -27,6 +27,7 @@
     "@capacitor/clipboard": "^7.0.4",
     "@capacitor/core": "^7.0.0",
     "@capacitor/haptics": "^7.0.5",
+    "@capacitor/local-notifications": "^7.0.7",
     "@capacitor/network": "^7.0.4",
     "@capacitor/push-notifications": "^7.0.7",
     "@capacitor/share": "^7.0.4",
