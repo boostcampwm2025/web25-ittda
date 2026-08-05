@@ -48,6 +48,39 @@ if (typeof window !== 'undefined') {
             );
           },
         );
+
+        PushNotifications.addListener(
+          'pushNotificationReceived',
+          async (notification) => {
+            const { LocalNotifications } =
+              await import('@capacitor/local-notifications');
+            await LocalNotifications.schedule({
+              notifications: [
+                {
+                  id: Date.now() & 0x7fffffff,
+                  title: notification.title ?? '잇다 알림',
+                  body: notification.body ?? '',
+                  extra: notification.data,
+                },
+              ],
+            }).catch(() => {});
+          },
+        );
+      })
+      .catch(() => {});
+
+    import('@capacitor/local-notifications')
+      .then(({ LocalNotifications }) => {
+        // 위에서 직접 띄운 로컬 알림을 탭했을 때도, 실제 푸시를 탭했을 때와
+        // 같은 라우팅 로직을 타도록 handleNotificationAction을 재사용한다.
+        LocalNotifications.addListener(
+          'localNotificationActionPerformed',
+          (action) => {
+            handleNotificationAction(
+              action.notification.extra as Record<string, string> | undefined,
+            );
+          },
+        );
       })
       .catch(() => {});
   }
