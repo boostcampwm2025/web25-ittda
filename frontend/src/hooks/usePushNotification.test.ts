@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
 
 const registerFcmTokenMock = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api/notification', () => ({
@@ -18,7 +19,21 @@ vi.mock('@capacitor/push-notifications', () => ({
   PushNotifications: pushNotifications,
 }));
 
-import { registerAndroidToken } from './usePushNotification';
+const onMessageMock = vi.hoisted(() => vi.fn());
+vi.mock('firebase/messaging', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('firebase/messaging')>();
+  return { ...actual, onMessage: onMessageMock };
+});
+
+const getFirebaseMessagingMock = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/firebase', () => ({
+  getFirebaseMessaging: getFirebaseMessagingMock,
+}));
+
+import {
+  registerAndroidToken,
+  usePushNotification,
+} from './usePushNotification';
 
 function captureListeners() {
   const listeners: Record<string, Listener> = {};
@@ -60,7 +75,9 @@ describe('registerAndroidToken', () => {
     const listeners = captureListeners();
 
     const promise = registerAndroidToken();
-    await vi.waitFor(() => expect(listeners.registration).toBeTypeOf('function'));
+    await vi.waitFor(() =>
+      expect(listeners.registration).toBeTypeOf('function'),
+    );
     await listeners.registration({ value: 'token-1' });
     const result = await promise;
 
@@ -79,7 +96,9 @@ describe('registerAndroidToken', () => {
     const listeners = captureListeners();
 
     const promise = registerAndroidToken();
-    await vi.waitFor(() => expect(listeners.registration).toBeTypeOf('function'));
+    await vi.waitFor(() =>
+      expect(listeners.registration).toBeTypeOf('function'),
+    );
     await listeners.registration({ value: 'token-1' });
     const result = await promise;
 
@@ -121,5 +140,98 @@ describe('registerAndroidToken', () => {
     expect(result).toBe(false);
     expect(registerFcmTokenMock).not.toHaveBeenCalled();
     expect(pushNotifications.removeAllListeners).toHaveBeenCalled();
+  });
+});
+
+describe('usePushNotification 포그라운드 알림', () => {
+  const showNotification = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    onMessageMock.mockReturnValue(() => {});
+    getFirebaseMessagingMock.mockResolvedValue({});
+
+    Object.defineProperty(global, 'Notification', {
+      value: { permission: 'granted', requestPermission: vi.fn() },
+      writable: true,
+      configurable: true,
+    });
+
+    Object.defineProperty(global.navigator, 'serviceWorker', {
+      value: {
+        register: vi.fn().mockResolvedValue({
+          active: true,
+          pushManager: { getSubscription: vi.fn().mockResolvedValue(null) },
+        }),
+        getRegistration: vi.fn((scope: string) =>
+          scope === '/firebase-cloud-messaging-push-scope'
+            ? Promise.resolve({ showNotification })
+            : Promise.resolve(undefined),
+        ),
+      },
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  it('enabled=true면 firebase onMessage를 구독한다', async () => {
+    renderHook(() => usePushNotification(true));
+
+    await vi.waitFor(() => expect(onMessageMock).toHaveBeenCalled());
+  });
+
+  it('enabled=false면 구독하지 않는다', () => {
+    renderHook(() => usePushNotification(false));
+
+    expect(onMessageMock).not.toHaveBeenCalled();
+  });
+
+  // 탭이 열려 있을 때 온 메시지도 firebase-messaging-sw.js의
+  // onBackgroundMessage와 완전히 같은 옵션으로 표시돼야 한다(과제 요구사항:
+  // 활성화/비활성화 수신 상태 통일). 옵션이 어긋나면 이 테스트가 잡아낸다.
+  it('포그라운드 메시지를 받으면 SW의 onBackgroundMessage와 동일한 옵션으로 알림을 띄운다', async () => {
+    renderHook(() => usePushNotification(true));
+    await vi.waitFor(() => expect(onMessageMock).toHaveBeenCalled());
+
+    const callback = onMessageMock.mock.calls[0][1] as (
+      payload: unknown,
+    ) => void;
+    callback({
+      data: {
+        title: '이다 프론트',
+        body: '새 기록이 작성되었습니다.',
+        imageUrl: 'https://example.com/photo.png',
+        groupId: 'group-1',
+      },
+    });
+
+    await vi.waitFor(() => expect(showNotification).toHaveBeenCalled());
+    expect(showNotification).toHaveBeenCalledWith('이다 프론트', {
+      body: '새 기록이 작성되었습니다.',
+      icon: 'https://example.com/photo.png',
+      badge: '/web-app-icon-192x192.png',
+      data: {
+        title: '이다 프론트',
+        body: '새 기록이 작성되었습니다.',
+        imageUrl: 'https://example.com/photo.png',
+        groupId: 'group-1',
+      },
+    });
+  });
+
+  it('imageUrl이 없으면 기본 앱 아이콘으로 대체한다', async () => {
+    renderHook(() => usePushNotification(true));
+    await vi.waitFor(() => expect(onMessageMock).toHaveBeenCalled());
+
+    const callback = onMessageMock.mock.calls[0][1] as (
+      payload: unknown,
+    ) => void;
+    callback({ data: { title: '이다 프론트', body: '본문' } });
+
+    await vi.waitFor(() => expect(showNotification).toHaveBeenCalled());
+    expect(showNotification).toHaveBeenCalledWith(
+      '이다 프론트',
+      expect.objectContaining({ icon: '/web-app-icon-192x192.png' }),
+    );
   });
 });

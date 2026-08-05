@@ -5,12 +5,14 @@ import {
   register as fcmRegister,
   unregister,
   onRegistered,
+  onMessage,
 } from 'firebase/messaging';
-import type { Messaging } from 'firebase/messaging';
+import type { Messaging, MessagePayload } from 'firebase/messaging';
 import { getFirebaseMessaging } from '@/lib/firebase';
 import { registerFcmToken } from '@/lib/api/notification';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+const FCM_SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 
 const isNativePlatform = () =>
   typeof window !== 'undefined' &&
@@ -81,7 +83,7 @@ async function getAndRegisterWebFcmToken() {
 
   const swReg = await navigator.serviceWorker.register(
     '/firebase-messaging-sw.js',
-    { scope: '/firebase-cloud-messaging-push-scope' },
+    { scope: FCM_SW_SCOPE },
   );
 
   if (!swReg.active) {
@@ -140,6 +142,24 @@ export async function requestAndRegisterWebToken() {
   await getAndRegisterWebFcmToken();
 }
 
+function showForegroundNotification(payload: MessagePayload) {
+  if (!('serviceWorker' in navigator)) return;
+  if (Notification.permission !== 'granted') return;
+
+  const title = payload.data?.title ?? '잇다 알림';
+  const body = payload.data?.body ?? '';
+
+  navigator.serviceWorker.getRegistration(FCM_SW_SCOPE).then((registration) => {
+    if (!registration) return;
+    registration.showNotification(title, {
+      body,
+      icon: payload.data?.imageUrl || '/web-app-icon-192x192.png',
+      badge: '/web-app-icon-192x192.png',
+      data: payload.data ?? {},
+    });
+  });
+}
+
 export function usePushNotification(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
@@ -149,5 +169,27 @@ export function usePushNotification(enabled: boolean) {
       ? registerAndroidToken
       : registerWebToken;
     register().catch(() => {});
+  }, [enabled]);
+
+  // 포그라운드 알림 — 탭이 활성 상태여도 백그라운드와 동일하게 알림이
+  // 뜨도록 한다. 네이티브(Capacitor) 안드로이드는 자체 푸시 플러그인으로
+  // 별도 처리되므로 여기선 웹(PWA/브라우저)에서만 등록한다.
+  useEffect(() => {
+    if (!enabled) return;
+    if (typeof window === 'undefined') return;
+    if (isNativePlatform()) return;
+
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    getFirebaseMessaging().then((messaging) => {
+      if (!messaging || cancelled) return;
+      unsubscribe = onMessage(messaging, showForegroundNotification);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [enabled]);
 }

@@ -49,12 +49,13 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   // 백엔드에서 웹 토큰에는 data-only 메시지를 보냄 (notification 필드 없음).
   // Firebase 자동 표시 없이 여기서만 알림을 표시하므로 중복 없음.
-  // data에 title/body/postId/groupId 등이 모두 포함됨.
+  // icon(프로필/그룹 사진)이 없으면 기본 앱 아이콘으로 대체.
   const title = payload.data?.title ?? '잇다 알림';
   const body = payload.data?.body ?? '';
   self.registration.showNotification(title, {
     body,
-    icon: '/web-app-icon-192x192.png',
+    icon: payload.data?.imageUrl || '/web-app-icon-192x192.png',
+    badge: '/web-app-icon-192x192.png',
     data: payload.data ?? {},
   });
 });
