@@ -119,6 +119,7 @@ describe('네이티브 안드로이드 포그라운드 알림', () => {
       PushNotifications: {
         addListener: vi.fn((event: string, cb: (payload: unknown) => void) => {
           pushListeners[event] = cb;
+          return Promise.resolve({ remove: vi.fn() });
         }),
       },
     }));
@@ -127,6 +128,7 @@ describe('네이티브 안드로이드 포그라운드 알림', () => {
         schedule,
         addListener: vi.fn((event: string, cb: (payload: unknown) => void) => {
           localListeners[event] = cb;
+          return Promise.resolve({ remove: vi.fn() });
         }),
       },
     }));
