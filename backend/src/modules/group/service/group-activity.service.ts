@@ -6,12 +6,14 @@ import { GroupActivityLog } from '../entity/group-activity-log.entity';
 import { GroupActivityActor } from '../entity/group-activity-actor.entity';
 import { GroupActivityType } from '@/enums/group-activity-type.enum';
 import { GroupMember } from '../entity/group_member.entity';
+import { Group } from '../entity/group.entity';
 import {
   GroupActivityActorDto,
   GroupActivityItemDto,
   PaginatedGroupActivityResponseDto,
 } from '../dto/group-activity.dto';
 import { NotificationService } from '@/modules/notification/notification.service';
+import { MediaService } from '@/modules/media/media.service';
 
 type RecordActivityInput = {
   groupId: string;
@@ -21,56 +23,71 @@ type RecordActivityInput = {
   meta?: Record<string, unknown> | null;
 };
 
-function buildActivityNotification(
-  actorName: string,
+// 알림 본문 — 카카오톡 그룹 알림처럼 "발신자 이름" 줄 + "내용" 줄 2줄
+// 구성(\n으로 구분). 행위자를 지목하지 않는 유형(멤버 내보내기·그룹 이름
+// 변경)은 이름 줄 없이 내용 한 줄만 — 기존에도 "누가 했는지" 문구에서
+// 드러내지 않던 것과 같은 이유(관리자 행위를 굳이 노출하지 않음).
+function buildActivityBody(
   type: GroupActivityType,
-  meta?: Record<string, unknown> | null,
-): { title: string; body: string } | null {
+  meta: Record<string, unknown> | null | undefined,
+  actorDisplayName: string | null,
+): string | null {
   const postTitle = ((meta?.title ?? meta?.afterTitle ?? '') as string) || '';
   const titlePart = postTitle ? ` "${postTitle}"` : '';
+  const withName = (content: string) =>
+    actorDisplayName ? `${actorDisplayName}\n${content}` : content;
 
   switch (type) {
     case GroupActivityType.POST_CREATE:
-      return {
-        title: '새 기록',
-        body: `${actorName}님이 새 기록${titlePart}을(를) 작성했습니다.`,
-      };
+      return withName(`새 기록${titlePart}이 작성되었습니다.`);
     case GroupActivityType.POST_COLLAB_COMPLETE:
     case GroupActivityType.POST_EDIT_COMPLETE:
     case GroupActivityType.POST_UPDATE:
-      return {
-        title: '기록 수정',
-        body: `${actorName}님이${titlePart} 기록을 수정했습니다.`,
-      };
+      return withName(`기록${titlePart}이 수정되었습니다.`);
     case GroupActivityType.POST_DELETE:
-      return {
-        title: '기록 삭제',
-        body: `${actorName}님이${titlePart} 기록을 삭제했습니다.`,
-      };
+      return withName(`기록${titlePart}이 삭제되었습니다.`);
     case GroupActivityType.MEMBER_JOIN:
-      return {
-        title: '새 멤버',
-        body: `${actorName}님이 그룹에 참여했습니다.`,
-      };
+      return withName('그룹에 참여했습니다.');
     case GroupActivityType.MEMBER_LEAVE:
-      return {
-        title: '멤버 탈퇴',
-        body: `${actorName}님이 그룹에서 나갔습니다.`,
-      };
+      return withName('그룹에서 나갔습니다.');
     case GroupActivityType.MEMBER_REMOVE:
-      return {
-        title: '멤버 내보내기',
-        body: '그룹에서 멤버가 내보내졌습니다.',
-      };
+      return '그룹에서 멤버가 내보내졌습니다.';
     case GroupActivityType.GROUP_NAME_UPDATE:
-      return {
-        title: '그룹 이름 변경',
-        body: `그룹 이름이 "${(meta?.afterName as string) ?? '알 수 없음'}"(으)로 변경되었습니다.`,
-      };
+      return `그룹 이름이 "${(meta?.afterName as string) ?? '알 수 없음'}"(으)로 변경되었습니다.`;
     default:
       return null;
   }
 }
+
+// 알림에 "누구"를 드러낼지 결정하는 기준(이름 줄 + 아이콘 사진 둘 다).
+// 본문에 특정 인물을 지목하던(기존에 "OO님이"가 들어가던) 유형만 행위자
+// 이름·프로필을 쓰고, 그룹 차원 이벤트(멤버 내보내기·그룹 이름 변경)는
+// 실행자가 있어도 — 기존 문구가 이미 그랬듯 — 누가 했는지 드러내지 않고
+// 그룹 이름/사진만 쓴다.
+const ACTOR_ATTRIBUTED_TYPES = new Set<GroupActivityType>([
+  GroupActivityType.POST_CREATE,
+  GroupActivityType.POST_COLLAB_COMPLETE,
+  GroupActivityType.POST_EDIT_COMPLETE,
+  GroupActivityType.POST_UPDATE,
+  GroupActivityType.POST_DELETE,
+  GroupActivityType.MEMBER_JOIN,
+  GroupActivityType.MEMBER_LEAVE,
+]);
+
+// dispatchNotification의 조기 종료(recipients/group 조회 전 return)를 위한
+// "알림을 만드는 활동 타입" 집합 — buildActivityBody의 switch와 반드시
+// 같은 목록을 유지해야 한다(default: null인 나머지는 여기 없음).
+const NOTIFYING_TYPES = new Set<GroupActivityType>([
+  GroupActivityType.POST_CREATE,
+  GroupActivityType.POST_COLLAB_COMPLETE,
+  GroupActivityType.POST_EDIT_COMPLETE,
+  GroupActivityType.POST_UPDATE,
+  GroupActivityType.POST_DELETE,
+  GroupActivityType.MEMBER_JOIN,
+  GroupActivityType.MEMBER_LEAVE,
+  GroupActivityType.MEMBER_REMOVE,
+  GroupActivityType.GROUP_NAME_UPDATE,
+]);
 
 @Injectable()
 export class GroupActivityService {
@@ -83,7 +100,10 @@ export class GroupActivityService {
     private readonly actorRepo: Repository<GroupActivityActor>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepo: Repository<GroupMember>,
+    @InjectRepository(Group)
+    private readonly groupRepo: Repository<Group>,
     private readonly notificationService: NotificationService,
+    private readonly mediaService: MediaService,
   ) {}
 
   async recordActivity(input: RecordActivityInput): Promise<void> {
@@ -123,26 +143,7 @@ export class GroupActivityService {
     input: RecordActivityInput,
     actorIds: string[],
   ): Promise<void> {
-    const actorMembers =
-      actorIds.length > 0
-        ? await this.groupMemberRepo.find({
-            where: { groupId: input.groupId, userId: In(actorIds) },
-            relations: { user: true },
-          })
-        : [];
-
-    const first = actorMembers[0];
-    const baseName = first?.nicknameInGroup ?? first?.user?.nickname ?? '멤버';
-    const extraCount = actorIds.length - 1;
-    const actorDisplayName =
-      extraCount > 0 ? `${baseName} 외 ${extraCount}명` : baseName;
-
-    const notification = buildActivityNotification(
-      actorDisplayName,
-      input.type,
-      input.meta,
-    );
-    if (!notification) return;
+    if (!NOTIFYING_TYPES.has(input.type)) return;
 
     const recipients = await this.groupMemberRepo.find({
       where:
@@ -159,17 +160,66 @@ export class GroupActivityService {
     const recipientIds = recipients.map((m) => m.userId);
     if (recipientIds.length === 0) return;
 
+    const group = await this.groupRepo.findOne({
+      where: { id: input.groupId },
+      select: ['id', 'name', 'coverMediaId'],
+    });
+    if (!group) return;
+
+    // title 자리에 "그룹 이름"을 노출 — 카카오톡이 채팅방 이름을 제목으로
+    // 쓰는 것과 같은 방식. 이름 줄 + 아이콘 사진 모두 이 actorMembers로
+    // 결정한다.
+    const actorMembers =
+      actorIds.length > 0
+        ? await this.groupMemberRepo.find({
+            where: { groupId: input.groupId, userId: In(actorIds) },
+            relations: { user: true },
+          })
+        : [];
+    const first = actorMembers[0];
+    const attributeActor = ACTOR_ATTRIBUTED_TYPES.has(input.type);
+
+    const actorDisplayName = attributeActor
+      ? (() => {
+          const baseName =
+            first?.nicknameInGroup ?? first?.user?.nickname ?? '멤버';
+          const extraCount = actorIds.length - 1;
+          return extraCount > 0 ? `${baseName} 외 ${extraCount}명` : baseName;
+        })()
+      : null;
+
+    const body = buildActivityBody(input.type, input.meta, actorDisplayName);
+    if (!body) return;
+
+    const iconMediaId = attributeActor
+      ? (first?.profileMediaId ?? first?.user?.profileImageId ?? null)
+      : null;
+    const imageUrl = await this.resolveIconUrl(
+      iconMediaId ?? group.coverMediaId ?? null,
+    );
+
     const hasPost = input.refId && input.type !== GroupActivityType.POST_DELETE;
 
-    await this.notificationService.sendToUsers(
-      recipientIds,
-      notification.title,
-      notification.body,
-      {
-        groupId: input.groupId,
-        ...(hasPost ? { postId: input.refId as string } : {}),
-      },
-    );
+    await this.notificationService.sendToUsers(recipientIds, group.name, body, {
+      groupId: input.groupId,
+      ...(hasPost ? { postId: input.refId as string } : {}),
+      ...(imageUrl ? { imageUrl } : {}),
+    });
+  }
+
+  // 프로필/그룹 사진을 FCM 알림 아이콘용 URL로 변환. presigned URL은
+  // 발송 직후(SW가 showNotification을 호출하는 시점) 바로 쓰이므로
+  // 5분 TTL로도 충분하다 — 표시 시점에 다시 fetch하지 않고 브라우저가
+  // 그 시점에 한 번 렌더링해 캐시하기 때문.
+  private async resolveIconUrl(mediaId: string | null): Promise<string | null> {
+    if (!mediaId) return null;
+    try {
+      const result = await this.mediaService.resolveUrlPublic(mediaId);
+      return result.ok ? result.url : null;
+    } catch (e) {
+      this.logger.warn(`알림 아이콘 URL 조회 실패 (mediaId=${mediaId})`, e);
+      return null;
+    }
   }
 
   async getGroupActivities(

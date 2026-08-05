@@ -153,7 +153,33 @@ describe('NotificationService', () => {
           token: 'android-token-1',
           notification: { title: '제목', body: '본문' },
           data: { postId: 'post-1' },
-          webpush: { notification: { icon: '/web-app-icon-192x192.png' } },
+        },
+      ]);
+    });
+
+    it('data에 imageUrl이 있으면 안드로이드 notification.imageUrl로도 실어 보낸다', async () => {
+      fcmTokenRepo.find.mockResolvedValue([
+        { token: 'android-token-1', platform: 'android' },
+      ]);
+      sendEach.mockResolvedValue({ responses: [{ success: true }] });
+
+      await service.sendToUsers(['user-1'], '제목', '본문', {
+        postId: 'post-1',
+        imageUrl: 'https://example.com/profile.png',
+      });
+
+      expect(sendEach).toHaveBeenCalledWith([
+        {
+          token: 'android-token-1',
+          notification: {
+            title: '제목',
+            body: '본문',
+            imageUrl: 'https://example.com/profile.png',
+          },
+          data: {
+            postId: 'post-1',
+            imageUrl: 'https://example.com/profile.png',
+          },
         },
       ]);
     });
