@@ -86,6 +86,22 @@ export function ActivityMessage({ activity }: { activity: GroupActivityItem }) {
           {actor.suffix}이 <TitleText text={title} /> 기록을 삭제했습니다.
         </>
       );
+    case 'POST_SHARE':
+      return (
+        <>
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 새 기록 <TitleText text={title} />
+          을(를) 공유했습니다.
+        </>
+      );
+    case 'POST_UNSHARE':
+      return (
+        <>
+          <Highlight>{actor.name}</Highlight>
+          {actor.suffix}이 <TitleText text={title} /> 기록 공유를
+          취소했습니다.
+        </>
+      );
     case 'MEMBER_JOIN':
       return (
         <>

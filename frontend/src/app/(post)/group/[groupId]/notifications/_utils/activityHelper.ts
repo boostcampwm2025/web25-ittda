@@ -12,6 +12,7 @@ import {
   Image as ImageIcon,
   FileText,
   Pencil,
+  Share2,
 } from 'lucide-react';
 import { GroupActivityItem } from '@/lib/types/group';
 
@@ -54,6 +55,16 @@ export const getActivityTypeTheme = (type: string) => {
       icon: Trash2,
       bgColor: 'bg-red-100 dark:bg-red-900/60',
       iconColor: 'text-red-600 dark:text-red-400',
+    },
+    POST_SHARE: {
+      icon: Share2,
+      bgColor: 'bg-teal-100 dark:bg-teal-900/60',
+      iconColor: 'text-teal-600 dark:text-teal-400',
+    },
+    POST_UNSHARE: {
+      icon: Share2,
+      bgColor: 'bg-gray-100 dark:bg-gray-700/60',
+      iconColor: 'text-gray-500 dark:text-gray-400',
     },
     MEMBER_JOIN: {
       icon: UserPlus,

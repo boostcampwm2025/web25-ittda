@@ -27,10 +27,16 @@ const RecordDetailHeaderActions = dynamic(
 
 interface RecordDetailProps {
   recordId: string;
+  groupId?: string;
 }
 
-export default function RecordDetail({ recordId }: RecordDetailProps) {
-  const { data: record } = useSuspenseQuery(recordDetailOptions(recordId));
+export default function RecordDetail({
+  recordId,
+  groupId,
+}: RecordDetailProps) {
+  const { data: record } = useSuspenseQuery(
+    recordDetailOptions(recordId, groupId),
+  );
 
   // 블록을 row별로 그룹화
   const rowMap = new Map<number, Block[]>();
@@ -140,9 +146,9 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                     className="w-full h-full object-cover rounded-full"
                     wrapperClassName="w-full h-full"
                     assetId={
-                      record.groupId
-                        ? contributor.groupProfileImageId || '/profile_base.png'
-                        : contributor.profileImageId || '/profile_base.png'
+                      contributor.groupProfileImageId ||
+                      contributor.profileImageId ||
+                      '/profile_base.png'
                     }
                     alt={`${contributor.groupNickname || contributor.nickname || 'anonymous'}의 프로필`}
                   />
