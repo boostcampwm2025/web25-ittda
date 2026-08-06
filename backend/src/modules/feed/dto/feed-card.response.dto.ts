@@ -113,6 +113,10 @@ export class FeedCardResponseDto {
     description: '해당 게시글의 공동 수정 드래프트가 열려있는지 여부',
   })
   hasActiveEditDraft?: boolean;
+  @ApiPropertyOptional({
+    description: '개인 글이 이 그룹에 공유되어 노출된 카드인지 여부',
+  })
+  isSharedPost?: boolean;
   constructor(init: FeedCardResponseDto) {
     Object.assign(this, init);
   }

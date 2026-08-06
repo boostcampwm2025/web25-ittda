@@ -11,6 +11,7 @@ import { Post } from '../post/entity/post.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { PostDraft } from '../post/entity/post-draft.entity';
+import { PostGroupShare } from '../post/entity/post-group-share.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Group } from '../group/entity/group.entity';
 import { GroupModule } from '../group/group.module';
@@ -22,6 +23,7 @@ import { GroupModule } from '../group/group.module';
       PostBlock,
       PostContributor,
       PostDraft,
+      PostGroupShare,
       GroupMember,
       Group,
     ]),
