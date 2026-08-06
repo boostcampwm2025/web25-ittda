@@ -13,15 +13,20 @@ import { randomBaseImage } from '@/lib/image';
 
 interface RecordPageProps {
   params: Promise<{ recordId: string }>;
+  searchParams: Promise<{ groupId?: string }>;
 }
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: RecordPageProps): Promise<Metadata> {
   const { recordId } = await params;
+  const { groupId } = await searchParams;
 
   try {
-    const record = await getCachedRecordDetail(recordId);
+    // groupId까지 동일한 인자로 호출해야 아래 RecordPage 본문의 React
+    // cache()가 같은 호출로 인식해서 중복 요청 없이 재사용된다.
+    const record = await getCachedRecordDetail(recordId, groupId);
 
     // 첫 번째 텍스트 블록에서 설명 추출 (최대 150자)
     const textBlock = record.blocks.find((block) => block.type === 'TEXT');
@@ -89,22 +94,29 @@ export async function generateMetadata({
   }
 }
 
-export default async function RecordPage({ params }: RecordPageProps) {
+export default async function RecordPage({
+  params,
+  searchParams,
+}: RecordPageProps) {
   const { recordId } = await params;
+  const { groupId } = await searchParams;
 
   const queryClient = new QueryClient();
   try {
     // generateMetadata에서 getCachedRecordDetail을 이미 호출했다면 React cache()로 중복 요청 없이 재사용됨.
     // setQueryData로 서버 데이터를 클라이언트 QueryClient에 이식해 useSuspenseQuery가 바로 캐시를 찾게 함.
-    const data = await getCachedRecordDetail(recordId);
-    queryClient.setQueryData(recordDetailOptions(recordId).queryKey, data);
+    const data = await getCachedRecordDetail(recordId, groupId);
+    queryClient.setQueryData(
+      recordDetailOptions(recordId, groupId).queryKey,
+      data,
+    );
   } catch {
     // 에러는 RecordDetail 클라이언트 컴포넌트의 ErrorBoundary에서 처리
   }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <RecordDetailContent recordId={recordId} />
+      <RecordDetailContent recordId={recordId} groupId={groupId} />
     </HydrationBoundary>
   );
 }

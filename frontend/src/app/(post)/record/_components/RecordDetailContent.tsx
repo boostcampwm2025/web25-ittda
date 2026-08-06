@@ -5,17 +5,19 @@ import RecordDetailSkeleton from './RecordDetailSkeleton';
 
 interface RecordDetailContentProps {
   recordId: string;
+  groupId?: string;
 }
 
 export default function RecordDetailContent({
   recordId,
+  groupId,
 }: RecordDetailContentProps) {
   return (
     <ErrorHandlingWrapper
       fallbackComponent={RecordErrorFallback}
       suspenseFallback={<RecordDetailSkeleton />}
     >
-      <RecordDetail recordId={recordId} />
+      <RecordDetail recordId={recordId} groupId={groupId} />
     </ErrorHandlingWrapper>
   );
 }
