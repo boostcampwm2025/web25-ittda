@@ -24,6 +24,7 @@ import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
+import { PostGroupShare } from '@/modules/post/entity/post-group-share.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMonthCover } from '@/modules/group/entity/group-month-cover.entity';
@@ -75,6 +76,8 @@ export class MediaService {
     private readonly postRepository: Repository<Post>,
     @InjectRepository(PostContributor)
     private readonly postContributorRepository: Repository<PostContributor>,
+    @InjectRepository(PostGroupShare)
+    private readonly postGroupShareRepository: Repository<PostGroupShare>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepository: Repository<GroupMember>,
     @InjectRepository(Group)
@@ -785,23 +788,46 @@ export class MediaService {
       where: postIds.map((id) => ({ id })),
       select: { id: true, groupId: true },
     });
-    const groupIds = Array.from(
+
+    // 그룹 글: post.groupId로 소속 그룹 확인.
+    const nativeGroupIds = Array.from(
       new Set(posts.map((post) => post.groupId).filter(Boolean) as string[]),
     );
-    if (groupIds.length === 0) return new Set<string>();
+    // 개인 글: post_group_shares로 "이 그룹에 공유됐는지" 별도 확인
+    // (post.groupId가 항상 null이라 위 조회로는 잡히지 않음).
+    const sharedCandidatePostIds = posts
+      .filter((post) => !post.groupId)
+      .map((post) => post.id);
 
-    const members = await this.groupMemberRepository.find({
-      where: groupIds.map((groupId) => ({ groupId, userId: requesterId })),
-      select: { groupId: true },
-    });
+    const [members, sharedPostIds] = await Promise.all([
+      nativeGroupIds.length > 0
+        ? this.groupMemberRepository.find({
+            where: nativeGroupIds.map((groupId) => ({
+              groupId,
+              userId: requesterId,
+            })),
+            select: { groupId: true },
+          })
+        : Promise.resolve([]),
+      sharedCandidatePostIds.length > 0
+        ? this.getSharedPostIdsAccessibleToUser(
+            requesterId,
+            sharedCandidatePostIds,
+          )
+        : Promise.resolve(new Set<string>()),
+    ]);
     const allowedGroupIds = new Set(members.map((member) => member.groupId));
-    if (allowedGroupIds.size === 0) return new Set<string>();
 
-    const allowedPostIds = new Set(
-      posts
-        .filter((post) => post.groupId && allowedGroupIds.has(post.groupId))
-        .map((post) => post.id),
-    );
+    const allowedPostIds = new Set<string>();
+    posts.forEach((post) => {
+      if (post.groupId && allowedGroupIds.has(post.groupId)) {
+        allowedPostIds.add(post.id);
+      } else if (!post.groupId && sharedPostIds.has(post.id)) {
+        allowedPostIds.add(post.id);
+      }
+    });
+    if (allowedPostIds.size === 0) return new Set<string>();
+
     const allowed = new Set<string>();
     links.forEach((link) => {
       if (allowedPostIds.has(link.postId)) {
@@ -809,6 +835,26 @@ export class MediaService {
       }
     });
     return allowed;
+  }
+
+  // 개인 글이 requesterId가 속한 그룹 중 하나 이상에 공유됐는지 확인.
+  private async getSharedPostIdsAccessibleToUser(
+    requesterId: string,
+    postIds: string[],
+  ): Promise<Set<string>> {
+    const rows = await this.postGroupShareRepository
+      .createQueryBuilder('pgs')
+      .innerJoin(
+        GroupMember,
+        'gm',
+        'gm.group_id = pgs.group_id AND gm.deleted_at IS NULL',
+      )
+      .select('DISTINCT pgs.post_id', 'postId')
+      .where('pgs.post_id IN (:...postIds)', { postIds })
+      .andWhere('pgs.deleted_at IS NULL')
+      .andWhere('gm.user_id = :userId', { userId: requesterId })
+      .getRawMany<{ postId: string }>();
+    return new Set(rows.map((row) => row.postId));
   }
 
   private async getContributorMediaAccess(

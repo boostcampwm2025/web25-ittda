@@ -9,6 +9,7 @@ import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
+import { PostGroupShare } from '@/modules/post/entity/post-group-share.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { User } from '@/modules/user/entity/user.entity';
 import { UserMonthCover } from '@/modules/user/entity/user-month-cover.entity';
@@ -24,6 +25,7 @@ import { GroupMonthCover } from '@/modules/group/entity/group-month-cover.entity
       PostMedia,
       Post,
       PostContributor,
+      PostGroupShare,
       GroupMember,
       User,
       UserMonthCover,

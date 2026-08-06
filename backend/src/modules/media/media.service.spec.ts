@@ -8,6 +8,7 @@ import { PostDraft } from '@/modules/post/entity/post-draft.entity';
 import { PostMedia } from '@/modules/post/entity/post-media.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 import { PostContributor } from '@/modules/post/entity/post-contributor.entity';
+import { PostGroupShare } from '@/modules/post/entity/post-group-share.entity';
 import { GroupMember } from '@/modules/group/entity/group_member.entity';
 import { Group } from '@/modules/group/entity/group.entity';
 import { GroupMonthCover } from '@/modules/group/entity/group-month-cover.entity';
@@ -121,6 +122,7 @@ describe('MediaService', () => {
       postMediaRepository as unknown as Repository<PostMedia>,
       {} as Repository<Post>,
       {} as Repository<PostContributor>,
+      {} as Repository<PostGroupShare>,
       groupMemberRepository as unknown as Repository<GroupMember>,
       groupRepository as unknown as Repository<Group>,
       groupMonthCoverRepository as unknown as Repository<GroupMonthCover>,
