@@ -3,8 +3,8 @@
 import BlockContent from '@/components/BlockContent';
 import { Block } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
-import { Users, User } from 'lucide-react';
-import { memo, useMemo } from 'react';
+import { BookOpen, Plus, Users, User, Share2 } from 'lucide-react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { RecordPreview } from '@/lib/types/recordResponse';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
@@ -54,13 +54,13 @@ const RecordItem = memo(function RecordItem({
     >
       <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <h4 className="text-[14px] sm:text-[16px] font-bold truncate dark:text-white text-itta-black">
-              {record.title}
-            </h4>
+          <h4 className="text-[14px] sm:text-[16px] font-bold truncate dark:text-white text-itta-black">
+            {record.title}
+          </h4>
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-1">
             {record.scope === 'GROUP' ? (
-              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shrink-0">
+              <>
+                <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                   <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   <span>그룹</span>
                 </div>
@@ -73,9 +73,16 @@ const RecordItem = memo(function RecordItem({
                     </span>
                   </div>
                 )}
-              </div>
+
+                {record.isSharedPost && (
+                  <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
+                    <Share2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    <span>공유됨</span>
+                  </div>
+                )}
+              </>
             ) : (
-              <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 shrink-0">
+              <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                 <User className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 <span>개인</span>
               </div>

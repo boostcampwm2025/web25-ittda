@@ -229,8 +229,11 @@ export interface RecordDetailResponse {
   updatedAt: string;
   blocks: Block[];
   contributors: Contributor[];
+  permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null;
   hasActiveEditDraft?: boolean;
   shareToken?: string | null;
+  isSharedPost?: boolean;
+  sharedGroups?: { groupId: string; groupName: string }[];
 }
 
 // 지도 리스트 아이템
