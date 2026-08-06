@@ -2,6 +2,7 @@
 
 import Back from '@/components/Back';
 import SocialShareDrawer from '@/components/SocialShareDrawer';
+import GroupShareDrawer from '@/components/GroupShareDrawer';
 import {
   Drawer,
   DrawerClose,
@@ -25,7 +26,8 @@ import { AlertCircle, Link2, Link2Off, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { groupMyRoleOptions } from '@/lib/api/group';
+import { groupListOptions, groupMyRoleOptions } from '@/lib/api/group';
+import { postGroupShareOptions } from '@/lib/api/records';
 import { refreshSharedData } from '@/lib/actions/revalidate';
 
 interface RecordDetailHeaderActionsProps {
@@ -39,8 +41,18 @@ export default function RecordDetailHeaderActions({
   const [currentUrl, setCurrentUrl] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [groupShareOpen, setGroupShareOpen] = useState(false);
   const shareToken = record.shareToken ?? null;
   const { userId } = useAuthStore();
+
+  const { data: shareableGroups = [] } = useQuery({
+    ...groupListOptions(),
+    enabled: groupShareOpen,
+  });
+  const { data: sharedGroups = [] } = useQuery({
+    ...postGroupShareOptions(record.id),
+    enabled: groupShareOpen,
+  });
 
   const { mutate: createShareLink, isPending: isCreatingShare } = useApiPost<{
     shareToken: string;
@@ -77,6 +89,9 @@ export default function RecordDetailHeaderActions({
   });
 
   const isViewer = roleData?.role === 'VIEWER';
+  // 공유받은 개인 글은 그룹원도 조회는 가능하지만, 원작성자만 공유/수정/삭제할 수 있다.
+  const isPersonalNonOwner =
+    record.scope === 'PERSONAL' && record.permission !== 'OWNER';
 
   const textBlock = record.blocks.find((block) => block.type === 'TEXT');
   const content =
@@ -167,8 +182,12 @@ export default function RecordDetailHeaderActions({
       <div className="relative">
         <Popover>
           <PopoverTrigger
-            disabled={isViewer}
-            className="cursor-pointer p-1 active:scale-90 transition-transform text-gray-400"
+            disabled={isViewer || isPersonalNonOwner}
+            className={`p-1 transition-transform text-gray-400 ${
+              isViewer || isPersonalNonOwner
+                ? 'opacity-40 cursor-not-allowed'
+                : 'cursor-pointer active:scale-90'
+            }`}
           >
             <MoreHorizontal className="w-6 h-6" />
           </PopoverTrigger>
@@ -200,6 +219,14 @@ export default function RecordDetailHeaderActions({
               >
                 <Link2 className="w-3.5 h-3.5" />
                 공유 링크 생성
+              </PopoverClose>
+            )}
+            {record.scope === 'PERSONAL' && (
+              <PopoverClose
+                onClick={() => setGroupShareOpen(true)}
+                className="cursor-pointer w-full text-left px-5 py-3.5 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
+              >
+                그룹에 공유
               </PopoverClose>
             )}
             <PopoverClose
@@ -269,6 +296,16 @@ export default function RecordDetailHeaderActions({
           image: image?.mediaIds?.[0] ?? null,
         }}
       />
+
+      {record.scope === 'PERSONAL' && (
+        <GroupShareDrawer
+          postId={record.id}
+          open={groupShareOpen}
+          onOpenChange={setGroupShareOpen}
+          groups={shareableGroups}
+          initialSelectedGroupIds={sharedGroups.map((g) => g.groupId)}
+        />
+      )}
     </>
   );
 }

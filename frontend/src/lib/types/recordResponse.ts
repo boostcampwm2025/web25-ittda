@@ -46,6 +46,7 @@ export interface RecordPreview {
   rating: RatingValue['rating'] | null;
   blocks: Block[];
   hasActiveEditDraft?: boolean;
+  isSharedPost?: boolean;
 }
 
 export interface PaginatedRecordPreviewResponse {
