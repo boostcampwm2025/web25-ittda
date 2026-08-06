@@ -35,11 +35,15 @@ export default function GroupShareDrawer({
   const [selected, setSelected] = useState<string[]>(initialSelectedGroupIds);
   const queryClient = useQueryClient();
 
-  // 드로어가 열릴 때마다 서버에서 방금 불러온 현재 공유 상태로 동기화한다.
+  // 드로어가 열려있는 동안 서버에서 불러온 현재 공유 상태로 동기화한다.
+  // open 전환 시점에는 아직 조회(enabled: open)가 끝나지 않아
+  // initialSelectedGroupIds가 빈 배열일 수 있어서, open만이 아니라
+  // initialSelectedGroupIds가 실제로 바뀌는 시점(=조회 완료)에도 반응해야
+  // 뒤늦게 도착한 데이터로 체크 상태가 갱신된다.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setSelected(initialSelectedGroupIds);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, initialSelectedGroupIds]);
 
   const invalidateAfterChange = () => {
     queryClient.invalidateQueries({

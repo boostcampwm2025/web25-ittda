@@ -24,7 +24,7 @@ import { PopoverClose } from '@radix-ui/react-popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Link2, Link2Off, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { groupListOptions, groupMyRoleOptions } from '@/lib/api/group';
 import { postGroupShareOptions } from '@/lib/api/records';
@@ -53,6 +53,11 @@ export default function RecordDetailHeaderActions({
     ...postGroupShareOptions(record.id),
     enabled: groupShareOpen,
   });
+
+  const sharedGroupIds = useMemo(
+    () => sharedGroups.map((g) => g.groupId),
+    [sharedGroups],
+  );
 
   const { mutate: createShareLink, isPending: isCreatingShare } = useApiPost<{
     shareToken: string;
@@ -303,7 +308,7 @@ export default function RecordDetailHeaderActions({
           open={groupShareOpen}
           onOpenChange={setGroupShareOpen}
           groups={shareableGroups}
-          initialSelectedGroupIds={sharedGroups.map((g) => g.groupId)}
+          initialSelectedGroupIds={sharedGroupIds}
         />
       )}
     </>
