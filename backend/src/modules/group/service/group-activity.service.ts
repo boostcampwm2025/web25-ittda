@@ -46,6 +46,10 @@ function buildActivityBody(
       return withName(`기록${titlePart}이 수정되었습니다.`);
     case GroupActivityType.POST_DELETE:
       return withName(`기록${titlePart}이 삭제되었습니다.`);
+    case GroupActivityType.POST_SHARE:
+      return withName(`새 기록${titlePart}이 공유되었습니다.`);
+    case GroupActivityType.POST_UNSHARE:
+      return withName(`기록${titlePart} 공유가 취소되었습니다.`);
     case GroupActivityType.MEMBER_JOIN:
       return withName('그룹에 참여했습니다.');
     case GroupActivityType.MEMBER_LEAVE:
@@ -70,6 +74,7 @@ const ACTOR_ATTRIBUTED_TYPES = new Set<GroupActivityType>([
   GroupActivityType.POST_EDIT_COMPLETE,
   GroupActivityType.POST_UPDATE,
   GroupActivityType.POST_DELETE,
+  GroupActivityType.POST_SHARE,
   GroupActivityType.MEMBER_JOIN,
   GroupActivityType.MEMBER_LEAVE,
 ]);
@@ -83,6 +88,7 @@ const NOTIFYING_TYPES = new Set<GroupActivityType>([
   GroupActivityType.POST_EDIT_COMPLETE,
   GroupActivityType.POST_UPDATE,
   GroupActivityType.POST_DELETE,
+  GroupActivityType.POST_SHARE,
   GroupActivityType.MEMBER_JOIN,
   GroupActivityType.MEMBER_LEAVE,
   GroupActivityType.MEMBER_REMOVE,
