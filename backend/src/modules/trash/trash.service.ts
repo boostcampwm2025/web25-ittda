@@ -95,8 +95,8 @@ export class TrashService {
       .delete()
       .from(Post)
       .where('deletedAt IS NOT NULL') // soft-delete 된 것 중
-      .andWhere('deletedAt <= NOW() - INTERVAL 30 DAY') // 30일 이상 지난 것만
-      // INTERVAL 30 DAY는 postgresql 전용 데이터 타입 연산자
+      .andWhere("deletedAt <= NOW() - INTERVAL '30 days'") // 30일 이상 지난 것만
+      // PostgreSQL의 INTERVAL 리터럴은 기간 값을 작은따옴표로 감싸야 함
       .execute();
 
     this.logger.log(
