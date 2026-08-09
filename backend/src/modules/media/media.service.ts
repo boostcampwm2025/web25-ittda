@@ -985,17 +985,13 @@ export class MediaService {
     ] = await Promise.all([
       this.postMediaRepository
         .createQueryBuilder('pm')
-        .innerJoin(Post, 'p', 'p.id = pm.postId')
         .select('pm.mediaId', 'mediaId')
         .where('pm.mediaId IN (:...mediaIds)', { mediaIds })
-        .andWhere('p.deletedAt IS NULL')
         .getRawMany<{ mediaId: string }>(),
       this.postDraftMediaRepository
         .createQueryBuilder('pdm')
-        .innerJoin(PostDraft, 'pd', 'pd.id = pdm.draftId')
         .select('pdm.mediaId', 'mediaId')
         .where('pdm.mediaId IN (:...mediaIds)', { mediaIds })
-        .andWhere('pd.isActive = true')
         .getRawMany<{ mediaId: string }>(),
       this.userRepository.find({
         where: { profileImageId: In(mediaIds) },

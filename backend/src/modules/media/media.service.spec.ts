@@ -211,6 +211,29 @@ describe('MediaService', () => {
     expect(mediaAssetRepository.delete).not.toHaveBeenCalled();
   });
 
+  it('keeps assets referenced by post media, including trashed posts', async () => {
+    mediaAssetRepository.find.mockResolvedValue([
+      { id: 'asset-1', storageKey: 'media/user-1/asset-1' },
+    ]);
+    postMediaQueryBuilder.getRawMany.mockResolvedValue([
+      { mediaId: 'asset-1' },
+    ]);
+    mediaAssetRepository.update.mockResolvedValue({ affected: 1 });
+
+    await (
+      service as unknown as {
+        processPendingMediaDeletionCandidates: (
+          mediaIds: string[],
+        ) => Promise<void>;
+      }
+    ).processPendingMediaDeletionCandidates(['asset-1']);
+
+    expect(postMediaQueryBuilder.innerJoin).not.toHaveBeenCalled();
+    expect(postMediaQueryBuilder.andWhere).not.toHaveBeenCalled();
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(mediaAssetRepository.delete).not.toHaveBeenCalled();
+  });
+
   it('keeps the row and records retry metadata when storage deletion fails', async () => {
     mediaAssetRepository.find.mockResolvedValue([
       { id: 'asset-1', storageKey: 'media/user-1/asset-1' },
