@@ -68,6 +68,11 @@ export class PostGroupShareService {
       }
     }
 
+    // 활동 로그/알림은 실제로 새로 공유된 그룹에 대해서만 발생해야 한다 —
+    // 이미 공유된 그룹까지 포함해서 호출하면(재시도 등) row는 안 만들면서
+    // 알림만 중복으로 나가는 문제가 생긴다.
+    let newGroupIds: string[] = [];
+
     await this.postRepository.manager.transaction(async (manager) => {
       const shareRepo = manager.getRepository(PostGroupShare);
       const groupRepo = manager.getRepository(Group);
@@ -79,7 +84,7 @@ export class PostGroupShareService {
       const alreadySharedGroupIds = new Set(
         existingShares.map((s) => s.groupId),
       );
-      const newGroupIds = uniqueGroupIds.filter(
+      newGroupIds = uniqueGroupIds.filter(
         (groupId) => !alreadySharedGroupIds.has(groupId),
       );
 
@@ -98,7 +103,7 @@ export class PostGroupShareService {
     });
 
     await Promise.all(
-      uniqueGroupIds.map((groupId) =>
+      newGroupIds.map((groupId) =>
         this.groupActivityService.recordActivity({
           groupId,
           type: GroupActivityType.POST_SHARE,

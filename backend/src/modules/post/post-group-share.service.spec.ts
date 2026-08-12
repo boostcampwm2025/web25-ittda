@@ -185,8 +185,7 @@ describe('PostGroupShareService', () => {
 
       expect(txShareRepo.save).not.toHaveBeenCalled();
       expect(txGroupRepo.update).not.toHaveBeenCalled();
-      // 이미 공유된 그룹이어도 활동 로그/알림은 재확인 목적으로 계속 기록한다.
-      expect(groupActivityService.recordActivity).toHaveBeenCalledTimes(1);
+      expect(groupActivityService.recordActivity).not.toHaveBeenCalled();
     });
   });
 
