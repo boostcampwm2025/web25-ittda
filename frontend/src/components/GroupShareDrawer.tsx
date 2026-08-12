@@ -145,13 +145,14 @@ export default function GroupShareDrawer({
               const wasAlreadyShared = initialSelectedGroupIds.includes(
                 group.groupId,
               );
+              const canToggle = !isViewer || wasAlreadyShared;
               return (
                 <button
                   key={group.groupId}
-                  onClick={() => !isViewer && toggleGroup(group.groupId)}
-                  disabled={isViewer}
+                  onClick={() => canToggle && toggleGroup(group.groupId)}
+                  disabled={!canToggle}
                   className={`flex items-center gap-4 py-3 px-2 rounded-xl sm:rounded-2xl transition-all ${
-                    isViewer
+                    !canToggle
                       ? 'opacity-50 cursor-not-allowed dark:bg-white/5 bg-gray-50'
                       : 'active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10 bg-gray-50 hover:bg-gray-100'
                   }`}
