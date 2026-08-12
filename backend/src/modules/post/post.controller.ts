@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post as HttpPost,
   Query,
@@ -67,7 +68,8 @@ export class PostController {
   async getOne(
     @User() user: MyJwtPayload,
     @Param('id') id: string,
-    @Query('groupId') groupId?: string,
+    @Query('groupId', new ParseUUIDPipe({ version: '4', optional: true }))
+    groupId?: string,
   ): Promise<PostDetailDto> {
     const requesterId = user?.sub;
     if (!requesterId) {
