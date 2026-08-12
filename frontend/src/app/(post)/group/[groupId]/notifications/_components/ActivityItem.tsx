@@ -32,7 +32,8 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
         activity.type === 'POST_CREATE' ||
         activity.type === 'POST_UPDATE' ||
         activity.type === 'POST_COLLAB_COMPLETE' ||
-        activity.type === 'POST_EDIT_COMPLETE'
+        activity.type === 'POST_EDIT_COMPLETE' ||
+        activity.type === 'POST_SHARE'
       ) {
         router.push(`/record/${activity.refId}`);
       } else if (activity.type === 'POST_COLLAB_START') {
@@ -47,7 +48,8 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
       activity.type === 'POST_UPDATE' ||
       activity.type === 'POST_COLLAB_COMPLETE' ||
       activity.type === 'POST_EDIT_COMPLETE' ||
-      activity.type === 'POST_COLLAB_START');
+      activity.type === 'POST_COLLAB_START' ||
+      activity.type === 'POST_SHARE');
 
   return (
     <div
