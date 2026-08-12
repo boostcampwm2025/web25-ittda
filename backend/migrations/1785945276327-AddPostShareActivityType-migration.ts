@@ -20,6 +20,9 @@ export class AddPostShareActivityType1785945276327 implements MigrationInterface
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
+      `DELETE FROM "group_activity_logs" WHERE "type" = 'POST_SHARE'`,
+    );
+    await queryRunner.query(
       `CREATE TYPE "public"."group_activity_logs_type_enum_old" AS ENUM('POST_COLLAB_START', 'POST_EDIT_START', 'POST_COLLAB_COMPLETE', 'POST_EDIT_COMPLETE', 'POST_CREATE', 'POST_UPDATE', 'POST_DELETE', 'MEMBER_JOIN', 'MEMBER_LEAVE', 'MEMBER_REMOVE', 'MEMBER_ROLE_CHANGE', 'GROUP_COVER_UPDATE', 'GROUP_NAME_UPDATE', 'MEMBER_NICKNAME_CHANGE', 'GROUP_MONTH_COVER_UPDATE', 'GROUP_CREATE')`,
     );
     await queryRunner.query(
