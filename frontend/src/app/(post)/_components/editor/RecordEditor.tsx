@@ -245,6 +245,8 @@ export default function PostEditor({
     title: string;
     blocks: RecordBlock[];
   } | null>(null);
+
+  const hasSavedRef = useRef(false);
   // 개인 글과 그룹별 글의 임시저장을 분리하기 위한 키
   const draftStorageKey = getDraftKey(groupId);
   const { saveDraft, loadDraft, clearDraft } = useLocalDraft(draftStorageKey);
@@ -314,7 +316,10 @@ export default function PostEditor({
     },
     onSuccess: () => {
       setIsSaving(false);
-      if (isPersonalNew) clearDraftAndPhotos();
+      if (isPersonalNew) {
+        hasSavedRef.current = true;
+        clearDraftAndPhotos();
+      }
     },
   });
 
@@ -410,6 +415,8 @@ export default function PostEditor({
   // 자동저장: 마지막 변경 3초 후 localStorage(텍스트) + IndexedDB(사진) 저장
   useEffect(() => {
     if (!isPersonalNew || !initializedStateRef.current) return;
+    // 이미 저장에 성공했으면 이후 상태 변화와 무관하게 영구히 중단
+    if (hasSavedRef.current) return;
     // 저장 진행 중에는 타이머를 취소해 race condition 방지
     if (isSaving || isPublishing) return;
     if (
@@ -707,7 +714,9 @@ export default function PostEditor({
       flushEmitStream();
       const isSynced = await waitForPendingPatches(3000);
       if (!isSynced) {
-        toast.info('편집 내용을 동기화하는 중입니다. 잠시 후 다시 저장해 주세요.');
+        toast.info(
+          '편집 내용을 동기화하는 중입니다. 잠시 후 다시 저장해 주세요.',
+        );
         return;
       }
     }
@@ -1192,7 +1201,9 @@ export default function PostEditor({
                 blocks.filter((b) => b.type === 'content').length
               }
               handleDragEnd={handleDragEnd}
-              tutorialId={index === 0 ? 'tutorial-editor-drag-blocks' : undefined}
+              tutorialId={
+                index === 0 ? 'tutorial-editor-drag-blocks' : undefined
+              }
             />
           ))}
         </div>
