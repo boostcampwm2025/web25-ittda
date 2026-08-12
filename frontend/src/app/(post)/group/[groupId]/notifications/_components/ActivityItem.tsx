@@ -52,15 +52,8 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
       activity.type === 'POST_COLLAB_START' ||
       activity.type === 'POST_SHARE');
 
-  return (
-    <div
-      onClick={hasClickAction ? handleClick : undefined}
-      className={`flex gap-3 py-4 ${
-        hasClickAction
-          ? 'cursor-pointer hover:bg-gray-50/50 dark:hover:bg-white/5 active:bg-gray-100/50 dark:active:bg-white/10 transition-colors'
-          : ''
-      }`}
-    >
+  const content = (
+    <>
       {/* 프로필 이미지와 타입 아이콘 */}
       <div className="shrink-0 relative self-start w-10 h-10">
         {firstActor?.profileImageId ? (
@@ -109,6 +102,20 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
           })}
         </span>
       </div>
-    </div>
+    </>
   );
+
+  if (hasClickAction) {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        className="flex gap-3 py-4 w-full text-left rounded-xl cursor-pointer hover:bg-gray-50/50 dark:hover:bg-white/5 active:bg-gray-100/50 dark:active:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-itta-point"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div className="flex gap-3 py-4">{content}</div>;
 }

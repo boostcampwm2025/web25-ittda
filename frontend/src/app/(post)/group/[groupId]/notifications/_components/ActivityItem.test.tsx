@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ActivityItem } from './ActivityItem';
 import type { GroupActivityItem } from '@/lib/types/group';
@@ -34,9 +34,25 @@ describe('ActivityItem', () => {
       />,
     );
 
-    const item = document.querySelector('.cursor-pointer');
-    expect(item).not.toBeNull();
-    await user.click(item!);
+    await user.click(screen.getByRole('button'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith(
+      '/record/post-1?groupId=group-1',
+    );
+  });
+
+  it('키보드로 포커스 후 Enter를 눌러도 이동한다', async () => {
+    const user = userEvent.setup();
+    render(
+      <ActivityItem
+        activity={buildActivity({ type: 'POST_SHARE' })}
+        groupId="group-1"
+      />,
+    );
+
+    const button = screen.getByRole('button');
+    button.focus();
+    await user.keyboard('{Enter}');
 
     expect(mockRouter.push).toHaveBeenCalledWith(
       '/record/post-1?groupId=group-1',
@@ -52,10 +68,19 @@ describe('ActivityItem', () => {
       />,
     );
 
-    const item = document.querySelector('.cursor-pointer');
-    expect(item).not.toBeNull();
-    await user.click(item!);
+    await user.click(screen.getByRole('button'));
 
     expect(mockRouter.push).toHaveBeenCalledWith('/record/post-1');
+  });
+
+  it('클릭 불가능한 활동(MEMBER_JOIN)은 버튼이 아닌 일반 텍스트로 렌더링된다', () => {
+    render(
+      <ActivityItem
+        activity={buildActivity({ type: 'MEMBER_JOIN', refId: null })}
+        groupId="group-1"
+      />,
+    );
+
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });
