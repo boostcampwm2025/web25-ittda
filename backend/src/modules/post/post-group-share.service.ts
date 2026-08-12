@@ -163,7 +163,14 @@ export class PostGroupShareService {
       throw new ForbiddenException('Only the owner can unshare this post.');
     }
 
-    await this.postGroupShareRepository.softDelete({ postId, groupId });
+    const result = await this.postGroupShareRepository.softDelete({
+      postId,
+      groupId,
+      deletedAt: IsNull(),
+    });
+    // 이미 취소됐거나 애초에 공유된 적 없는 그룹이면 아무것도 안 바뀐 것 —
+    // 활동 로그를 남기지 않고 조용히 종료한다.
+    if (!result.affected) return;
 
     // 공유 취소는 알림을 보내지 않는다(NOTIFYING_TYPES에 미포함) — 다만
     // 그룹 활동 로그에는 남겨서 "왜 이 글이 안 보이게 됐는지" 나중에라도

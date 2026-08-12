@@ -1,4 +1,4 @@
-import type { Repository } from 'typeorm';
+import { IsNull, type Repository } from 'typeorm';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PostGroupShareService } from './post-group-share.service';
 import { Post } from './entity/post.entity';
@@ -40,7 +40,10 @@ describe('PostGroupShareService', () => {
         ),
       },
     };
-    postGroupShareRepo = { find: jest.fn(), softDelete: jest.fn() };
+    postGroupShareRepo = {
+      find: jest.fn(),
+      softDelete: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
     groupRepo = { find: jest.fn().mockResolvedValue([]) };
     groupMemberRepo = { find: jest.fn().mockResolvedValue([]) };
     groupActivityService = {
@@ -240,6 +243,7 @@ describe('PostGroupShareService', () => {
       expect(postGroupShareRepo.softDelete).toHaveBeenCalledWith({
         postId: 'post-1',
         groupId: 'group-1',
+        deletedAt: IsNull(),
       });
       expect(groupActivityService.recordActivity).toHaveBeenCalledWith({
         groupId: 'group-1',
@@ -248,6 +252,19 @@ describe('PostGroupShareService', () => {
         refId: 'post-1',
         meta: { title: '제목' },
       });
+    });
+
+    it('이미 취소됐거나 애초에 공유된 적 없는 그룹이면 활동 로그를 남기지 않는다', async () => {
+      postRepo.findOne.mockResolvedValue({
+        id: 'post-1',
+        ownerUserId: 'user-1',
+        title: '제목',
+      });
+      postGroupShareRepo.softDelete.mockResolvedValue({ affected: 0 });
+
+      await service.unshareFromGroup('post-1', 'user-1', 'group-1');
+
+      expect(groupActivityService.recordActivity).not.toHaveBeenCalled();
     });
   });
 
