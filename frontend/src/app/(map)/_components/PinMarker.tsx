@@ -44,6 +44,9 @@ export const PinMarker = ({
       zIndex={isSelected ? 500 : undefined}
     >
       <div
+        // 클러스터 마커(CustomClusterRenderer)가 대표 사진을 고를 때 이 값들을
+        data-preview-media-id={post.previewMediaIds?.[0] ?? ''}
+        data-created-at={post.createdAt}
         className={cn(
           'flex justify-center items-center relative rounded-full rounded-br-none transform rotate-45 overflow-hidden transition-all duration-300',
           hasThumbnail ? 'bg-secondary' : 'bg-white',
