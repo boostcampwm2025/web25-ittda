@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import type { Repository, EntityManager } from 'typeorm';
+import { In, type Repository, type EntityManager } from 'typeorm';
 
 import { MediaService } from './media.service';
 import { MediaAsset, MediaAssetStatus } from './entity/media-asset.entity';
@@ -230,6 +230,14 @@ describe('MediaService', () => {
 
     expect(postMediaQueryBuilder.innerJoin).not.toHaveBeenCalled();
     expect(postMediaQueryBuilder.andWhere).not.toHaveBeenCalled();
+    expect(mediaAssetRepository.update).toHaveBeenCalledWith(
+      { id: In(['asset-1']) },
+      {
+        deleteRequestedAt: null,
+        deleteRetryCount: 0,
+        lastDeleteError: null,
+      },
+    );
     expect(s3Send).not.toHaveBeenCalled();
     expect(mediaAssetRepository.delete).not.toHaveBeenCalled();
   });
