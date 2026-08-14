@@ -1,0 +1,75 @@
+name: Deploy Dev Backend to Railway
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'backend/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/deploy-backend-railway-dev.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-railway-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: myh020118/ittda-backend
+
+jobs:
+  deploy:
+    name: Build, Push, and Deploy Dev Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Generate image tag
+        id: image
+        shell: bash
+        run: |
+          TAG="$(git rev-parse --short=12 HEAD)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "url=docker.io/${IMAGE_NAME}:$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: myh020118
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.image.outputs.tag }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Redeploy Railway service from latest image
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ vars.RAILWAY_SERVICE_ID }}
+        run: |
+          docker run --rm \
+            -e RAILWAY_TOKEN \
+            ghcr.io/railwayapp/cli:4.58.0 \
+            redeploy \
+            --service "$RAILWAY_SERVICE_ID" \
+            --from-source \
+            --yes
