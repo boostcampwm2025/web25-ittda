@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import type { Repository, EntityManager } from 'typeorm';
+import { In, type Repository, type EntityManager } from 'typeorm';
 
 import { MediaService } from './media.service';
 import { MediaAsset, MediaAssetStatus } from './entity/media-asset.entity';
@@ -201,6 +201,37 @@ describe('MediaService', () => {
 
     expect(mediaAssetRepository.update).toHaveBeenCalledWith(
       expect.any(Object),
+      {
+        deleteRequestedAt: null,
+        deleteRetryCount: 0,
+        lastDeleteError: null,
+      },
+    );
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(mediaAssetRepository.delete).not.toHaveBeenCalled();
+  });
+
+  it('keeps assets referenced by post media, including trashed posts', async () => {
+    mediaAssetRepository.find.mockResolvedValue([
+      { id: 'asset-1', storageKey: 'media/user-1/asset-1' },
+    ]);
+    postMediaQueryBuilder.getRawMany.mockResolvedValue([
+      { mediaId: 'asset-1' },
+    ]);
+    mediaAssetRepository.update.mockResolvedValue({ affected: 1 });
+
+    await (
+      service as unknown as {
+        processPendingMediaDeletionCandidates: (
+          mediaIds: string[],
+        ) => Promise<void>;
+      }
+    ).processPendingMediaDeletionCandidates(['asset-1']);
+
+    expect(postMediaQueryBuilder.innerJoin).not.toHaveBeenCalled();
+    expect(postMediaQueryBuilder.andWhere).not.toHaveBeenCalled();
+    expect(mediaAssetRepository.update).toHaveBeenCalledWith(
+      { id: In(['asset-1']) },
       {
         deleteRequestedAt: null,
         deleteRetryCount: 0,
