@@ -5,7 +5,6 @@ import {
   Req,
   UseGuards,
   Res,
-  UnauthorizedException,
   ForbiddenException,
   NotFoundException,
   Body,
@@ -30,6 +29,10 @@ import type { OAuthUserType } from './auth.type';
 import { KakaoAuthGuard } from './guards/kakao-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { DevTokenRequestDto } from './dto/dev-token.dto';
+import {
+  AUTH_ERROR_CODES,
+  AuthUnauthorizedException,
+} from '@/common/exceptions/auth-unauthorized.exception';
 
 interface AuthenticatedRequest extends Request {
   user: { sub: string; email?: string };
@@ -197,7 +200,10 @@ export class AuthController {
     const oldToken = req.cookies?.refreshToken as string | undefined;
 
     if (!oldToken) {
-      throw new UnauthorizedException('No refresh token');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_NOT_FOUND,
+        'Refresh token is required',
+      );
     }
 
     try {

@@ -6,6 +6,10 @@ import { toast } from 'sonner';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 import { getBackendOrigin } from '@/lib/config/backend';
+import {
+  getSocketErrorAction,
+  SOCKET_ERROR_ACTIONS,
+} from '@/lib/utils/socketErrorPolicy';
 
 interface SocketStore {
   socket: Socket | null;
@@ -98,42 +102,22 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     });
 
     socket.on('exception', async (data: SocketExceptionResponse) => {
-      // message가 없는 빈 exception은 무시
-      if (!data?.message) return;
+      const action = getSocketErrorAction(data?.code);
 
-      if (data.message === 'Draft is full.') {
+      if (action === SOCKET_ERROR_ACTIONS.SHOW_DRAFT_FULL) {
         toast.warning('참여 인원이 가득 찼어요.');
         return;
       }
-      // draftId mismatch는 stale LEAVE_DRAFT(React StrictMode cleanup 등)로 인한 오탐이므로 무시.
-      if (data.message === 'draftId mismatch.') {
-        return;
-      }
-      if (data.message === 'Invalid access token.') {
+
+      if (action === SOCKET_ERROR_ACTIONS.REFRESH_AUTH) {
         await handleAuthError();
         return;
       }
 
-      // 예상된 WS 예외 — 조용히 무시
-      const expectedMessages = [
-        'Group membership is required.',
-        'Insufficient permission.',
-        'groupId must be a UUID.',
-        'groupId mismatch.',
-        'draftId must be a UUID.',
-        'draftId is required.',
-        'actorId is invalid.',
-        'payload is required.',
-        'lockKey is invalid.',
-        'Lock owner only.',
-        'Session is not initialized.',
-        'Draft not found.',
-        'User not found.',
-      ];
-      if (expectedMessages.includes(data.message)) return;
+      if (action === SOCKET_ERROR_ACTIONS.IGNORE) return;
 
       // 예상치 못한 내부 오류만 Sentry + 로그
-      Sentry.captureMessage(`소켓 서버 예외: ${data.message}`, {
+      Sentry.captureMessage(`소켓 서버 예외: ${data.code}`, {
         level: 'error',
         tags: { context: 'socket', operation: 'server_exception' },
         extra: { serverData: data },

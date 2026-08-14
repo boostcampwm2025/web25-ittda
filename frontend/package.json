@@ -8,6 +8,7 @@
     "dev:backend:dev": "NEXT_PUBLIC_BACKEND_TARGET=dev next dev",
     "build": "next build",
     "start": "next start",
+    "test": "vitest run --project unit",
     "lint": "eslint",
     "lint:fix": "eslint",
     "storybook": "storybook dev -p 6006",

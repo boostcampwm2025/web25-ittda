@@ -5,8 +5,8 @@ import { groupMyRoleOptions } from '@/lib/api/group';
 import { useRouter } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { useEffect } from 'react';
-import { toast } from 'sonner';
-import { getErrorMessage, ApiError } from '@/lib/utils/errorHandler';
+import { ApiError } from '@/lib/utils/errorHandler';
+import { showErrorToast } from '@/lib/utils/errorToast';
 
 interface GroupAccessGuardProps {
   groupId: string;
@@ -26,7 +26,7 @@ export default function GroupAccessGuard({
       if (apiError?.code === 'NOT_FOUND') {
         notFound();
       }
-      toast.error(getErrorMessage(error));
+      showErrorToast(error);
       router.replace('/shared');
     }
   }, [isError, error, router]);

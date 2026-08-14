@@ -7,6 +7,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { redirect } from 'next/navigation';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { ERROR_CODES, hasErrorCode } from '@/lib/utils/errorHandler';
 
 interface AddPostPageProps {
   params: Promise<{
@@ -54,12 +55,7 @@ export default async function PostDraftPage({
       };
     } catch (error) {
       // Draft를 찾지 못한 경우 (이미 발행되었거나 삭제됨)
-      const isNotFound =
-        error &&
-        typeof error === 'object' &&
-        'message' in error &&
-        (error.message === 'Draft not found' ||
-          String(error.message).includes('Draft not found'));
+      const isNotFound = hasErrorCode(error, ERROR_CODES.NOT_FOUND);
 
       if (isNotFound) {
         // Draft를 찾지 못한 경우

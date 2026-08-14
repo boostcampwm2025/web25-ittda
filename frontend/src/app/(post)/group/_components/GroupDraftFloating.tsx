@@ -16,7 +16,7 @@ import {
   GroupDraftListItem,
   GroupDraftListSnapshot,
 } from '@/lib/types/recordCollaboration';
-import { getErrorMessage } from '@/lib/utils/errorHandler';
+import { showErrorToast } from '@/lib/utils/errorToast';
 import {
   Popover,
   PopoverContent,
@@ -73,10 +73,10 @@ export default function GroupDraftFloatingButton({
     if (!canCreateDraft) return;
     try {
       const result = await getNewPostDraft();
-      if (result.error) return toast.error(getErrorMessage(result.error));
+      if (result.error) return showErrorToast(result.error);
       if (result.data?.redirectUrl) router.push(result.data.redirectUrl);
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      showErrorToast(error);
     }
   };
 

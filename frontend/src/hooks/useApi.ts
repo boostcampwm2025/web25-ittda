@@ -67,7 +67,7 @@ export function useApiQuery<TData = unknown>(
     },
     select: (response) => {
       if (!response.success) {
-        throw new Error(response.error.message);
+        throw createApiError(response);
       }
       return response.data;
     },
