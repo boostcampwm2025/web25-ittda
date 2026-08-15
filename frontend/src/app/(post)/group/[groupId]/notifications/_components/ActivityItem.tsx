@@ -59,14 +59,14 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
       }`}
     >
       {/* 프로필 이미지와 타입 아이콘 */}
-      <div className="shrink-0 relative self-start">
+      <div className="shrink-0 relative self-start w-10 h-10">
         {firstActor?.profileImageId ? (
           <AssetImage
             assetId={firstActor.profileImageId}
             alt={firstActor.groupNickname || firstActor.nickname || ''}
             width={40}
             height={40}
-            className="w-10 h-10 rounded-full"
+            className="w-full h-full rounded-full object-cover"
             wrapperClassName="w-full h-full"
           />
         ) : (
@@ -75,7 +75,7 @@ export function ActivityItem({ activity, groupId }: ActivityItemProps) {
             alt="프로필"
             width={40}
             height={40}
-            className="w-10 h-10 rounded-full"
+            className="w-full h-full rounded-full object-cover"
           />
         )}
         {/* 활동 타입 뱃지 */}
