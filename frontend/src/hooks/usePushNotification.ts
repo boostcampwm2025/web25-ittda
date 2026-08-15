@@ -30,27 +30,40 @@ export async function registerAndroidToken(): Promise<boolean> {
   const result = await PushNotifications.requestPermissions();
   if (result.receive !== 'granted') return false;
 
+  let registrationHandle: { remove: () => Promise<void> } | undefined;
+  let registrationErrorHandle: { remove: () => Promise<void> } | undefined;
+  const cleanup = () =>
+    Promise.all([
+      registrationHandle?.remove(),
+      registrationErrorHandle?.remove(),
+    ]);
+
   return await Promise.race([
     new Promise<boolean>((resolve) => {
-      PushNotifications.addListener(
-        'registration',
-        async ({ value: token }) => {
-          const success = await registerFcmToken(token, 'android')
-            .then(() => true)
-            .catch(() => false);
-          await PushNotifications.removeAllListeners();
-          resolve(success);
-        },
-      );
-      PushNotifications.addListener('registrationError', async () => {
-        await PushNotifications.removeAllListeners();
-        resolve(false);
-      });
-      PushNotifications.register();
+      (async () => {
+        registrationHandle = await PushNotifications.addListener(
+          'registration',
+          async ({ value: token }) => {
+            const success = await registerFcmToken(token, 'android')
+              .then(() => true)
+              .catch(() => false);
+            await cleanup();
+            resolve(success);
+          },
+        );
+        registrationErrorHandle = await PushNotifications.addListener(
+          'registrationError',
+          async () => {
+            await cleanup();
+            resolve(false);
+          },
+        );
+        PushNotifications.register();
+      })();
     }),
     new Promise<boolean>((resolve) =>
-      setTimeout(() => {
-        PushNotifications.removeAllListeners();
+      setTimeout(async () => {
+        await cleanup();
         resolve(false);
       }, 10000),
     ),
