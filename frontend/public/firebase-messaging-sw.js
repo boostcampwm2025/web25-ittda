@@ -11,7 +11,7 @@ self.addEventListener('activate', (event) =>
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const { groupId, postId } = event.notification.data ?? {};
-  const url =
+  const path =
     postId && groupId
       ? `/record/${postId}?scope=group&groupId=${groupId}`
       : postId
@@ -19,6 +19,7 @@ self.addEventListener('notificationclick', (event) => {
         : groupId
           ? `/group/${groupId}`
           : '/shared';
+  const url = new URL(path, self.location.origin).href;
 
   // clients.navigate()/postMessage()/BroadcastChannel은 모두 SW가 해당 클라이언트를
   // 제어할 때만 동작함. Firebase SW 스코프(/firebase-cloud-messaging-push-scope)는
@@ -52,7 +53,7 @@ messaging.onBackgroundMessage((payload) => {
   // icon(프로필/그룹 사진)이 없으면 기본 앱 아이콘으로 대체.
   const title = payload.data?.title ?? '잇다 알림';
   const body = payload.data?.body ?? '';
-  self.registration.showNotification(title, {
+  return self.registration.showNotification(title, {
     body,
     icon: payload.data?.imageUrl || '/web-app-icon-192x192.png',
     badge: '/web-app-icon-192x192.png',
