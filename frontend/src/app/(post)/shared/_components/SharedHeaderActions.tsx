@@ -20,6 +20,7 @@ import {
   ListFilter,
   Plus,
   SortAsc,
+  Ticket,
   Users,
   X,
 } from 'lucide-react';
@@ -43,6 +44,9 @@ export default function SharedHeaderActions() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [inviteCodeInput, setInviteCodeInput] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -107,6 +111,15 @@ export default function SharedHeaderActions() {
 
   const groupNicknameError = getGroupNameError();
 
+  const handleJoinByCode = () => {
+    const code = inviteCodeInput.trim().toLowerCase();
+    if (!code) return;
+    setShowJoinModal(false);
+    setInviteCodeInput('');
+    // /invite 페이지가 코드 조회·에러 처리·가입까지 전부 담당하므로 그대로 위임
+    router.push(`/invite?inviteCode=${encodeURIComponent(code)}`);
+  };
+
   return (
     <>
       <Drawer>
@@ -166,6 +179,73 @@ export default function SharedHeaderActions() {
                 </button>
               </DrawerClose>
             ))}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={showJoinModal} onOpenChange={setShowJoinModal}>
+        <DrawerTrigger
+          onClick={() => setShowJoinModal(true)}
+          className="cursor-pointer p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500"
+        >
+          <Ticket className="w-4 h-4 sm:w-5 sm:h-5" />
+        </DrawerTrigger>
+        <DrawerContent className="w-full px-4 sm:px-8 pt-4 pb-10">
+          <div className="flex justify-between items-center mb-3">
+            <DrawerHeader className="pl-2 flex-1">
+              <DrawerTitle className="flex flex-col justify-center items-start pl-0">
+                <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                  JOIN GROUP
+                </span>
+                <span className="text-base sm:text-xl dark:text-white text-itta-black">
+                  코드로 참여하기
+                </span>
+              </DrawerTitle>
+            </DrawerHeader>
+            <DrawerClose
+              onClick={() => setShowJoinModal(false)}
+              className="cursor-pointer p-2 text-gray-400"
+            >
+              <X className="w-6 h-6" />
+            </DrawerClose>
+          </div>
+
+          <div className="space-y-2 px-2">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              초대 코드
+            </label>
+            <input
+              type="text"
+              placeholder="예: a1b2c3d4"
+              value={inviteCodeInput}
+              onChange={(e) => setInviteCodeInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleJoinByCode();
+              }}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="w-full border-b-2 bg-transparent py-2.5 sm:py-3 text-base sm:text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
+            />
+            <p className="text-[10px] text-gray-400 px-1">
+              * 초대 링크의 코드 부분(inviteCode)을 입력해주세요.
+            </p>
+          </div>
+
+          <div className="pt-6 px-2">
+            <button
+              onClick={handleJoinByCode}
+              disabled={!inviteCodeInput.trim()}
+              className={cn(
+                'w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2',
+                inviteCodeInput.trim()
+                  ? 'bg-[#10B981] text-white active:scale-95 cursor-pointer'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+              )}
+            >
+              <Ticket className="w-4 h-4" />
+              참여하기
+            </button>
           </div>
         </DrawerContent>
       </Drawer>
