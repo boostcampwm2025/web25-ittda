@@ -11,7 +11,6 @@ type Listener = (data: unknown) => void | Promise<void>;
 const pushNotifications = vi.hoisted(() => ({
   requestPermissions: vi.fn(),
   addListener: vi.fn(),
-  removeAllListeners: vi.fn(),
   register: vi.fn(),
 }));
 
@@ -35,20 +34,25 @@ import {
   usePushNotification,
 } from './usePushNotification';
 
+type Handle = { remove: ReturnType<typeof vi.fn> };
+
 function captureListeners() {
   const listeners: Record<string, Listener> = {};
+  const handles: Record<string, Handle> = {};
   pushNotifications.addListener.mockImplementation(
     (event: string, cb: Listener) => {
       listeners[event] = cb;
+      const handle: Handle = { remove: vi.fn().mockResolvedValue(undefined) };
+      handles[event] = handle;
+      return Promise.resolve(handle);
     },
   );
-  return listeners;
+  return { listeners, handles };
 }
 
 describe('registerAndroidToken', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    pushNotifications.removeAllListeners.mockResolvedValue(undefined);
     registerFcmTokenMock.mockResolvedValue(undefined);
   });
 
@@ -68,11 +72,11 @@ describe('registerAndroidToken', () => {
     expect(pushNotifications.addListener).not.toHaveBeenCalled();
   });
 
-  it('registration 이벤트가 오면 토큰을 등록하고 리스너를 정리한 뒤 true를 반환한다', async () => {
+  it('registration 이벤트가 오면 토큰을 등록하고 자신의 리스너만 정리한 뒤 true를 반환한다', async () => {
     pushNotifications.requestPermissions.mockResolvedValue({
       receive: 'granted',
     });
-    const listeners = captureListeners();
+    const { listeners, handles } = captureListeners();
 
     const promise = registerAndroidToken();
     await vi.waitFor(() =>
@@ -83,7 +87,10 @@ describe('registerAndroidToken', () => {
 
     expect(result).toBe(true);
     expect(registerFcmTokenMock).toHaveBeenCalledWith('token-1', 'android');
-    expect(pushNotifications.removeAllListeners).toHaveBeenCalled();
+    // 플러그인 전체가 아니라 이 함수가 등록한 두 리스너의 핸들만 정리해야
+    // AndroidNotificationHandler의 pushNotificationReceived 리스너가 살아있다.
+    expect(handles.registration.remove).toHaveBeenCalled();
+    expect(handles.registrationError.remove).toHaveBeenCalled();
   });
 
   // 회귀 테스트: registerFcmToken이 실패해도 registration 리스너가 이를 삼켜서
@@ -93,7 +100,7 @@ describe('registerAndroidToken', () => {
       receive: 'granted',
     });
     registerFcmTokenMock.mockRejectedValue(new Error('network error'));
-    const listeners = captureListeners();
+    const { listeners, handles } = captureListeners();
 
     const promise = registerAndroidToken();
     await vi.waitFor(() =>
@@ -103,14 +110,15 @@ describe('registerAndroidToken', () => {
     const result = await promise;
 
     expect(result).toBe(false);
-    expect(pushNotifications.removeAllListeners).toHaveBeenCalled();
+    expect(handles.registration.remove).toHaveBeenCalled();
+    expect(handles.registrationError.remove).toHaveBeenCalled();
   });
 
-  it('registrationError가 오면 토큰 등록 없이 리스너를 정리하고 false를 반환한다', async () => {
+  it('registrationError가 오면 토큰 등록 없이 자신의 리스너만 정리하고 false를 반환한다', async () => {
     pushNotifications.requestPermissions.mockResolvedValue({
       receive: 'granted',
     });
-    const listeners = captureListeners();
+    const { listeners, handles } = captureListeners();
 
     const promise = registerAndroidToken();
     await vi.waitFor(() =>
@@ -121,17 +129,18 @@ describe('registerAndroidToken', () => {
 
     expect(result).toBe(false);
     expect(registerFcmTokenMock).not.toHaveBeenCalled();
-    expect(pushNotifications.removeAllListeners).toHaveBeenCalled();
+    expect(handles.registration.remove).toHaveBeenCalled();
+    expect(handles.registrationError.remove).toHaveBeenCalled();
   });
 
   // 회귀 테스트: registration/registrationError가 끝까지 안 오면 예전엔 Promise가
   // 영원히 대기해서 리스너가 계속 쌓였다 — 이제 10초 타임아웃으로 강제 정리된다.
-  it('아무 이벤트도 안 오면 10초 후 타임아웃으로 리스너를 정리하고 false를 반환한다', async () => {
+  it('아무 이벤트도 안 오면 10초 후 타임아웃으로 자신의 리스너를 정리하고 false를 반환한다', async () => {
     vi.useFakeTimers();
     pushNotifications.requestPermissions.mockResolvedValue({
       receive: 'granted',
     });
-    captureListeners();
+    const { handles } = captureListeners();
 
     const promise = registerAndroidToken();
     await vi.advanceTimersByTimeAsync(10000);
@@ -139,7 +148,8 @@ describe('registerAndroidToken', () => {
 
     expect(result).toBe(false);
     expect(registerFcmTokenMock).not.toHaveBeenCalled();
-    expect(pushNotifications.removeAllListeners).toHaveBeenCalled();
+    expect(handles.registration.remove).toHaveBeenCalled();
+    expect(handles.registrationError.remove).toHaveBeenCalled();
   });
 });
 
