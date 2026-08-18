@@ -8,6 +8,7 @@ import Coachmark from '@/components/Coachmark';
 import { HOME_COACHMARK_STEPS } from './_components/homeCoachmarkSteps';
 import { RecordTimelineProvider } from './_components/RecordTimelineProvider';
 import { formatDateISO } from '@/lib/date';
+import ScrollToTopButton from '@/components/ScrollToTopButton';
 
 export async function generateMetadata() {
   return {
@@ -32,10 +33,6 @@ export async function generateMetadata() {
 export default function HomePage() {
   return (
     <div className="flex flex-col">
-      {/* AnnouncementModal은 서버에서 공지 표시 여부를 비동기로 판단하는 동안
-          아무것도 렌더링하지 않으면(fallback=null) 코치마크가 "공지 없음"으로
-          착각하고 먼저 떴다가, 판단이 끝나며 공지가 나타나면 밀려서 깜빡인다.
-          PWA 배너와 같은 방식으로 판단 중임을 알리는 마커를 남겨둔다. */}
       <Suspense
         fallback={
           <div data-announcement-pending className="hidden" aria-hidden />
@@ -54,6 +51,7 @@ export default function HomePage() {
           </Suspense>
         </div>
       </RecordTimelineProvider>
+      <ScrollToTopButton />
     </div>
   );
 }
