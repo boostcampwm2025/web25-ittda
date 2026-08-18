@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import {
   ArgumentsHost,
   Catch,
@@ -33,9 +33,8 @@ export class AllHttpExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
-    const requestId = this.getRequestId(request);
+    const requestId = this.getRequestId();
     const status = this.getStatus(exception);
     const error = this.normalizeError(exception, status);
 
@@ -112,16 +111,10 @@ export class AllHttpExceptionFilter implements ExceptionFilter {
     return SAFE_MESSAGES[status] ?? '요청을 처리할 수 없습니다.';
   }
 
-  private getRequestId(request: Request): string {
-    const requestId = request.headers['x-request-id'];
-
-    if (
-      typeof requestId === 'string' &&
-      /^[A-Za-z0-9._:-]{1,128}$/.test(requestId)
-    ) {
-      return requestId;
-    }
-
+  // 클라이언트가 보낸 x-request-id를 그대로 신뢰하면, 임의 값(예: 실제 다른
+  // 요청의 ID)을 재사용해 예외 로그를 다른 요청과 뒤섞을 수 있다. 프런트도
+  // 이 헤더를 보내지 않으므로 서버가 항상 직접 발급한다.
+  private getRequestId(): string {
     return `req_${randomUUID()}`;
   }
 
