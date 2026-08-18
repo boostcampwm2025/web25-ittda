@@ -151,6 +151,69 @@ describe('registerAndroidToken', () => {
     expect(handles.registration.remove).toHaveBeenCalled();
     expect(handles.registrationError.remove).toHaveBeenCalled();
   });
+
+  // 회귀 테스트: addListener 자체가 reject하면 예전엔 아무도 안 잡아서
+  // unhandled rejection이 됐다 — 이제 실패로 확정되어 false를 반환한다.
+  it('리스너 등록 자체가 실패하면 false를 반환하고 register()를 호출하지 않는다', async () => {
+    pushNotifications.requestPermissions.mockResolvedValue({
+      receive: 'granted',
+    });
+    pushNotifications.addListener.mockRejectedValue(new Error('setup failed'));
+
+    const result = await registerAndroidToken();
+
+    expect(result).toBe(false);
+    expect(pushNotifications.register).not.toHaveBeenCalled();
+  });
+
+  // 회귀 테스트: register()가 reject하면 예전엔 아무도 안 잡아서
+  // unhandled rejection이 됐다 — 이제 실패로 확정되고 이미 붙인 리스너도 정리된다.
+  it('register() 호출이 실패하면 false를 반환하고 이미 등록한 리스너를 정리한다', async () => {
+    pushNotifications.requestPermissions.mockResolvedValue({
+      receive: 'granted',
+    });
+    const { handles } = captureListeners();
+    pushNotifications.register.mockRejectedValue(
+      new Error('native register failed'),
+    );
+
+    const result = await registerAndroidToken();
+
+    expect(result).toBe(false);
+    expect(handles.registration.remove).toHaveBeenCalled();
+    expect(handles.registrationError.remove).toHaveBeenCalled();
+  });
+
+  // 회귀 테스트: 타임아웃이 먼저 확정된 뒤 addListener('registration')가 뒤늦게
+  // resolve되면, 예전엔 그 handle로 registrationError까지 마저 등록하고
+  // register()를 호출해버렸다(이미 false를 반환한 뒤인데도). 이제는 늦게 도착한
+  // handle을 즉시 제거하고 이후 단계로 진행하지 않는다.
+  it('타임아웃 확정 후 뒤늦게 도착한 handle은 즉시 제거하고 register()를 호출하지 않는다', async () => {
+    vi.useFakeTimers();
+    pushNotifications.requestPermissions.mockResolvedValue({
+      receive: 'granted',
+    });
+
+    const lateHandle: Handle = { remove: vi.fn().mockResolvedValue(undefined) };
+    let resolveSetup!: (handle: Handle) => void;
+    pushNotifications.addListener.mockImplementation(
+      () =>
+        new Promise<Handle>((resolve) => {
+          resolveSetup = resolve;
+        }),
+    );
+
+    const promise = registerAndroidToken();
+    await vi.advanceTimersByTimeAsync(10000);
+    const result = await promise;
+
+    expect(result).toBe(false);
+    expect(lateHandle.remove).not.toHaveBeenCalled();
+
+    resolveSetup(lateHandle);
+    await vi.waitFor(() => expect(lateHandle.remove).toHaveBeenCalled());
+    expect(pushNotifications.register).not.toHaveBeenCalled();
+  });
 });
 
 describe('usePushNotification 포그라운드 알림', () => {
