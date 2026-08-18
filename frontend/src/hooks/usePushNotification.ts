@@ -32,42 +32,67 @@ export async function registerAndroidToken(): Promise<boolean> {
 
   let registrationHandle: { remove: () => Promise<void> } | undefined;
   let registrationErrorHandle: { remove: () => Promise<void> } | undefined;
+  let settled = false;
+
+  // .remove() 실패는 무시 — best-effort 정리라 실패해도 settle() 흐름을 막으면 안 됨.
   const cleanup = () =>
     Promise.all([
       registrationHandle?.remove(),
       registrationErrorHandle?.remove(),
-    ]);
+    ]).catch(() => {});
 
-  return await Promise.race([
-    new Promise<boolean>((resolve) => {
-      (async () => {
-        registrationHandle = await PushNotifications.addListener(
+  return new Promise<boolean>((resolve) => {
+    const settle = async (success: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      await cleanup();
+      resolve(success);
+    };
+
+    const timeoutId = setTimeout(() => {
+      void settle(false);
+    }, 10000);
+
+    (async () => {
+      try {
+        const handle = await PushNotifications.addListener(
           'registration',
           async ({ value: token }) => {
+            if (settled) return;
             const success = await registerFcmToken(token, 'android')
               .then(() => true)
               .catch(() => false);
-            await cleanup();
-            resolve(success);
+            await settle(success);
           },
         );
-        registrationErrorHandle = await PushNotifications.addListener(
+
+        if (settled) {
+          await handle.remove().catch(() => {});
+          return;
+        }
+        registrationHandle = handle;
+
+        const errorHandle = await PushNotifications.addListener(
           'registrationError',
           async () => {
-            await cleanup();
-            resolve(false);
+            if (settled) return;
+            await settle(false);
           },
         );
-        PushNotifications.register();
-      })();
-    }),
-    new Promise<boolean>((resolve) =>
-      setTimeout(async () => {
-        await cleanup();
-        resolve(false);
-      }, 10000),
-    ),
-  ]);
+        if (settled) {
+          await errorHandle.remove().catch(() => {});
+          return;
+        }
+        registrationErrorHandle = errorHandle;
+
+        await PushNotifications.register();
+      } catch {
+        // addListener/register가 reject하면(unhandled rejection 방지) 실패로 확정.
+        await settle(false);
+      }
+    })();
+  });
 }
 
 // onRegistered 콜백을 await 가능한 형태로 변환
