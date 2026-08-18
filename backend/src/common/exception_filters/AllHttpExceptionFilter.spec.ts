@@ -125,7 +125,9 @@ describe('AllHttpExceptionFilter', () => {
   // 이제는 클라이언트가 뭘 보내든 서버가 항상 직접 발급한다.
   it('클라이언트가 보낸 요청 ID는 신뢰하지 않고 항상 새로 발급한다', () => {
     const filter = new AllHttpExceptionFilter();
-    const { host, getResponseBody } = createHost('req_client-supplied-id');
+    const { host, response, getResponseBody } = createHost(
+      'req_client-supplied-id',
+    );
 
     filter.catch(new BadRequestException(), host);
 
@@ -134,5 +136,9 @@ describe('AllHttpExceptionFilter', () => {
     };
     expect(body.error.requestId).not.toBe('req_client-supplied-id');
     expect(body.error.requestId).toMatch(/^req_[0-9a-f-]{36}$/);
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'X-Request-Id',
+      body.error.requestId,
+    );
   });
 });
