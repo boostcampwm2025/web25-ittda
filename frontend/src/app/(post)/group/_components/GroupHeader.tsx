@@ -25,6 +25,7 @@ export default async function GroupHeader({
 
   return (
     <header
+      id="group-header-sticky"
       data-stacked-header
       className="sticky top-0 pt-3 z-50 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-2 transition-all duration-300 dark:bg-[#121212] bg-white"
     >

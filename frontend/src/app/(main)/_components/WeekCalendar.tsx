@@ -16,8 +16,14 @@ import { useHideOnScroll } from '@/hooks/useHideOnScroll';
 
 export default function WeekCalendar({
   monthBasePath = '/my',
+  className,
+  stickyTopClassName,
+  stickyTopPx,
 }: {
   monthBasePath?: string;
+  className?: string;
+  stickyTopClassName?: string;
+  stickyTopPx?: number;
 }) {
   const router = useRouter();
   const { activeDate, requestJump } = useRecordTimeline();
@@ -150,8 +156,10 @@ export default function WeekCalendar({
         // 같은 useHideOnScroll 신호를 구독하므로 늘 같은 타이밍에 맞아떨어진다.
         'sticky z-40 overflow-hidden transition-[top] duration-300 ease-out',
         'bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl',
-        hidden ? 'top-0' : 'top-16 sm:top-18',
+        stickyTopClassName ?? (hidden ? 'top-0' : 'top-16 sm:top-18'),
+        className,
       )}
+      style={stickyTopPx !== undefined ? { top: stickyTopPx } : undefined}
     >
       <div className="px-4 py-2 sm:px-6 flex items-center gap-1 group cursor-pointer self-start">
         <span
