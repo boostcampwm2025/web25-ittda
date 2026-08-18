@@ -103,13 +103,11 @@ export default function RecordTimelineFeed({
   );
 
   const syncActiveDate = useCallback(() => {
-    // 기준선은 WeekCalendar가 실제로 화면을 가리는 하단 경계 — 헤더가
-    // 보였다 숨었다 하고 브레이크포인트별로 캘린더 높이가 달라서 고정값을
-    // 쓰면 구분선이 이미 화면에 드러났는데도 한참 뒤에야(캘린더 밑에서
-    // 거의 다 가려질 때) 활성 날짜로 인식되는 문제가 있었다.
-    const calendarEl = document.getElementById('week-calendar-sticky');
-    const referenceY = calendarEl
-      ? calendarEl.getBoundingClientRect().bottom
+    const stickyBoundaryEl =
+      document.getElementById('streak-stats-sticky') ??
+      document.getElementById('week-calendar-sticky');
+    const referenceY = stickyBoundaryEl
+      ? stickyBoundaryEl.getBoundingClientRect().bottom
       : 96;
     let closestKey: string | null = null;
     let closestDistance = Infinity;
