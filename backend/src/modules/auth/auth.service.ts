@@ -210,7 +210,7 @@ export class AuthService {
     if (!refreshToken) {
       throw new AuthUnauthorizedException(
         AUTH_ERROR_CODES.SESSION_INVALID,
-        '이미 로그아웃되었거나 유효하지 않은 세션입니다.',
+        'No refresh token found during logout',
       );
     }
 

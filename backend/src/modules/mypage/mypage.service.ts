@@ -43,7 +43,7 @@ export class MyPageService {
     if (!user) {
       throw new AuthUnauthorizedException(
         AUTH_ERROR_CODES.USER_NOT_FOUND,
-        '사용자를 찾을 수 없습니다.',
+        'User not found by id',
       );
     }
     return user;
@@ -92,7 +92,7 @@ export class MyPageService {
       if (!user) {
         throw new AuthUnauthorizedException(
           AUTH_ERROR_CODES.USER_NOT_FOUND,
-          '사용자를 찾을 수 없습니다.',
+          'User not found by id during profile update',
         );
       }
 
