@@ -212,6 +212,7 @@ describe('registerAndroidToken', () => {
 
     resolveSetup(lateHandle);
     await vi.waitFor(() => expect(lateHandle.remove).toHaveBeenCalled());
+    expect(pushNotifications.addListener).toHaveBeenCalledTimes(1);
     expect(pushNotifications.register).not.toHaveBeenCalled();
   });
 });
