@@ -15,6 +15,7 @@ import { groupCurrentMembersOption } from '@/lib/api/group';
 import { formatDateISO } from '@/lib/date';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
+import ScrollToTopButton from '@/components/ScrollToTopButton';
 
 interface GroupMainTabsProps {
   groupId: string;
@@ -140,6 +141,7 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
           </div>
         </RecordTimelineProvider>
       )}
+      <ScrollToTopButton />
     </div>
   );
 }

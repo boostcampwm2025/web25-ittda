@@ -19,6 +19,8 @@ import { createApiError } from '@/lib/utils/errorHandler';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 import { isInAppBrowser } from '@/lib/utils/browserDetect';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
+import FloatingScrollButton from '@/components/FloatingScrollButton';
 import ServiceIntro from './ServiceIntro';
 
 const isNativePlatform = () =>
@@ -70,26 +72,8 @@ export default function LoginContent({
   const [isLoading, setIsLoading] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-
-    const handleScroll = () => {
-      setShowScrollTop(el.scrollTop > window.innerHeight * 0.75);
-    };
-    handleScroll();
-    el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    scrollContainerRef.current?.scrollTo({
-      top: 0,
-      behavior: shouldReduceMotion ? 'auto' : 'smooth',
-    });
-  };
+  const { show: showScrollTop, scrollToTop } =
+    useScrollToTop(scrollContainerRef);
   const { mutate: guestLogin, isPending } = useApiPost<GuestInfo>(
     '/api/auth/guest',
     {
@@ -512,19 +496,14 @@ export default function LoginContent({
       />
 
       {/* 아래로 스크롤한 상태에서만 노출되는 맨 위로 이동 버튼 */}
-      {showScrollTop && (
-        <button
-          type="button"
-          onClick={scrollToTop}
-          aria-label="맨 위로 이동"
-          className="fixed right-4 md:right-6 bottom-6 z-30 flex items-center justify-center w-11 h-11 rounded-full bg-itta-black text-white shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
-          style={{
-            bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
-          }}
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      )}
+      <FloatingScrollButton
+        show={showScrollTop}
+        onClick={scrollToTop}
+        className="bottom-6"
+        style={{
+          bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
+        }}
+      />
     </div>
   );
 }

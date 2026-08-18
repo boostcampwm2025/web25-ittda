@@ -1,38 +1,36 @@
 'use client';
 
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { CSSProperties } from 'react';
 
 interface FloatingScrollButtonProps {
   show: boolean;
-  direction: 'up' | 'down';
   onClick: () => void;
+  className?: string;
+  style?: CSSProperties;
 }
 
 export default function FloatingScrollButton({
   show,
-  direction,
   onClick,
+  className,
+  style,
 }: FloatingScrollButtonProps) {
   if (!show) return null;
 
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-label="맨 위로 이동"
       className={cn(
-        'fixed right-8 bg-white border border-itta-gray2 rounded-full p-3 shadow-lg',
-        'hover:bg-itta-gray1/30 transition-all duration-300 ease-out z-30',
-        'hover:scale-110 active:scale-95',
-        show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
-        direction === 'up' ? 'bottom-8' : 'bottom-20',
+        'fixed right-4 md:right-6 z-30 flex items-center justify-center w-11 h-11 rounded-full bg-itta-black text-white shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95',
+        className,
       )}
-      aria-label={direction === 'up' ? '맨 위로 가기' : '맨 아래로 가기'}
+      style={style}
     >
-      {direction === 'up' ? (
-        <ArrowUp className="w-6 h-6 text-itta-black" />
-      ) : (
-        <ArrowDown className="w-6 h-6 text-itta-black" />
-      )}
+      <ArrowUp className="w-5 h-5" />
     </button>
   );
 }
