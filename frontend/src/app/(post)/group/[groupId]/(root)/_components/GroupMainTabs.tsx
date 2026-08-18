@@ -8,7 +8,7 @@ import RecordTimelineFeed from '@/app/(main)/_components/RecordTimelineFeed';
 import { RecordTimelineProvider } from '@/app/(main)/_components/RecordTimelineProvider';
 import MonthRecordsInfinite from '@/app/(post)/_components/MonthRecordsInfinite';
 import { Suspense } from 'react';
-import HomePageSkeleton from '@/app/(main)/_components/HomePageSkeleton';
+import { RecordItemSkeleton } from '@/app/(main)/_components/HomePageSkeleton';
 import WeekCalendarSkeleton from '@/app/(main)/_components/WeekCalendarSkeleton';
 import { useQuery } from '@tanstack/react-query';
 import { groupCurrentMembersOption } from '@/lib/api/group';
@@ -135,7 +135,15 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
                 stickyTopPx={groupHeaderHeight}
               />
             </Suspense>
-            <Suspense fallback={<HomePageSkeleton />}>
+            <Suspense
+              fallback={
+                <div className="space-y-3 sm:space-y-4 w-full">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <RecordItemSkeleton key={i} />
+                  ))}
+                </div>
+              }
+            >
               <RecordTimelineFeed groupId={groupId} imageLayout="responsive" />
             </Suspense>
           </div>
