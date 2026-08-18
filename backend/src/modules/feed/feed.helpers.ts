@@ -75,7 +75,7 @@ export function decodeFeedCursor(
 
   const { eventAt, id } = parsed as { eventAt: string; id: string };
   const date = new Date(eventAt);
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(date.getTime()) || date.toISOString() !== eventAt) {
     throw new BadRequestException('Invalid feed cursor.');
   }
 
