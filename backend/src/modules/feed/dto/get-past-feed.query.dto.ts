@@ -6,9 +6,10 @@ import { Type } from 'class-transformer';
 export class GetPastFeedQueryDto {
   @ApiProperty({
     description:
-      '지난 기록 무한스크롤용 커서 (Base64 인코딩된 마지막 항목의 eventAt ISO 문자열)',
+      '지난 기록 무한스크롤용 커서 (마지막 항목의 eventAt ISO 문자열과 id를 담은 JSON을 Base64로 인코딩한 값)',
     required: false,
-    example: 'MjAyNi0wMS0yOFQxODo1OTozNC4wMDBa',
+    example:
+      'eyJldmVudEF0IjoiMjAyNi0wMS0yOFQxODo1OTozNC4wMDBaIiwiaWQiOiJiNmUyYTZkMC02ZTFhLTRhM2YtOWIyYS05YjZjOWY4ZTNhMTEifQ==',
   })
   @IsString()
   @IsOptional()
