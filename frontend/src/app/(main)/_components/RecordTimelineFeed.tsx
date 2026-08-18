@@ -155,6 +155,15 @@ export default function RecordTimelineFeed({
 
   // 페이지네이션 트리거 — MonthRecordsInfinite와 동일한 패턴.
   const paginationObserverRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(
+    () => () => {
+      paginationObserverRef.current?.disconnect();
+      paginationObserverRef.current = null;
+    },
+    [],
+  );
+
   const lastRowRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isFetchingNextPage) return;
