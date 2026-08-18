@@ -149,7 +149,7 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
           </div>
         </RecordTimelineProvider>
       )}
-      <ScrollToTopButton />
+      <ScrollToTopButton stackedAboveDraftButton />
     </div>
   );
 }
