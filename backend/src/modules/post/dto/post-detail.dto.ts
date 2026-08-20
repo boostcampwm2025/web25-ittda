@@ -36,6 +36,8 @@ export class PostDetailDto {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsUUID()
   groupId?: string | null;
+  @ApiPropertyOptional({ description: '그룹 이름 (그룹 글일 때만 제공)' })
+  groupName?: string | null;
   @ApiProperty()
   title: string;
   @ApiProperty()

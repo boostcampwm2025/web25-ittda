@@ -224,6 +224,7 @@ export interface RecordDetailResponse {
   scope: RecordScope;
   ownerUserId: string;
   groupId: string | null;
+  groupName?: string | null;
   title: string;
   createdAt: string;
   updatedAt: string;

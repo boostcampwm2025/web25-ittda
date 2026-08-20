@@ -47,6 +47,7 @@ export interface RecordPreview {
   blocks: Block[];
   hasActiveEditDraft?: boolean;
   isSharedPost?: boolean;
+  sharedGroups?: { groupId: string; groupName: string }[];
 }
 
 export interface PaginatedRecordPreviewResponse {
