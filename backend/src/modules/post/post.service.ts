@@ -280,19 +280,25 @@ export class PostService {
 
     // 기여자 닉네임/프로필을 어느 그룹 기준으로 보여줄지 결정한다.
     // - GROUP scope 글: 그 글이 속한 그룹.
-    // - 공유된 PERSONAL 글: 호출자가 넘긴 viewGroupId — 단, 실제로 그 글이
-    //   그 그룹에 공유돼 있는지 검증해서, 무관한 그룹의 닉네임/프로필이
-    //   새는 것을 막는다.
+    // - 공유된 PERSONAL 글: 호출자가 넘긴 viewGroupId — 단, (1) 요청자가 실제로 그 그룹의 멤버이고
+    // (2) 그 글이 실제로 그 그룹에 공유돼 있는지까지 둘 다 검증해서, 요청자가 속하지 않은 임의의 그룹 ID를
+    // 넘겨 그 그룹의 이름/닉네임/프로필이 새는 것을 막는다.
     let contributorGroupId: string | null = null;
     let isSharedToViewGroup = false;
     if (post.scope === PostScope.GROUP && post.groupId) {
       contributorGroupId = post.groupId;
     } else if (post.scope === PostScope.PERSONAL && viewGroupId) {
-      isSharedToViewGroup = await this.postGroupShareService.isSharedToGroup(
-        postId,
-        viewGroupId,
-      );
-      if (isSharedToViewGroup) contributorGroupId = viewGroupId;
+      const requesterMembership = await this.groupMemberRepository.findOne({
+        where: { groupId: viewGroupId, userId: requesterId },
+        select: { userId: true },
+      });
+      if (requesterMembership) {
+        isSharedToViewGroup = await this.postGroupShareService.isSharedToGroup(
+          postId,
+          viewGroupId,
+        );
+        if (isSharedToViewGroup) contributorGroupId = viewGroupId;
+      }
     }
 
     const groupMemberMap = new Map<
