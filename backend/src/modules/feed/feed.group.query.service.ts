@@ -72,7 +72,94 @@ export class FeedGroupQueryService {
     ]);
 
     const posts = await postsQb.getMany();
+    const sharedContext = await this.resolveSharedContext(groupId, posts);
 
+    return buildFeedCards(
+      posts,
+      this.postBlockRepo,
+      this.postContributorRepo,
+      this.groupMemberRepo,
+      this.logger,
+      userId,
+      {
+        draftRepo: this.postDraftRepo,
+        sharedContext,
+      },
+    );
+  }
+
+  // getGroupFeed와 동일한 그룹 스코프 필터를 쓰되, 하루 단위 대신 eventAt
+  // 커서로 계속 더 과거로 페이지네이션하는 "지난 기록" 무한스크롤 피드.
+  async getPastFeedForGroup(
+    groupId: string,
+    userId: string,
+    cursor?: string,
+    limit = 10,
+  ) {
+    const decodedCursor = decodeFeedCursor(cursor);
+
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    // getGroupFeed와 동일하게 "이 그룹 소속 글" OR "이 그룹에 공유된 개인 글"을
+    // 함께 조회해야 한다 — 이 조건이 빠져 있어서 공유된 개인 글이 그룹
+    // 무한스크롤 피드에는 전혀 안 뜨던 버그가 있었다(day 뷰에서만 보임).
+    postsQb.where(
+      new Brackets((qb) => {
+        qb.where('p.scope = :groupScope AND p.groupId = :groupId', {
+          groupScope: PostScope.GROUP,
+          groupId,
+        }).orWhere(
+          `EXISTS (SELECT 1 FROM post_group_shares pgs WHERE pgs.post_id = p.id AND pgs.group_id = :groupId AND pgs.deleted_at IS NULL)`,
+        );
+      }),
+    );
+    if (decodedCursor) {
+      postsQb.andWhere(
+        '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND p.id < :cursorId))',
+        { cursorEventAt: decodedCursor.eventAt, cursorId: decodedCursor.id },
+      );
+    }
+
+    postsQb.orderBy('p.eventAt', 'DESC').addOrderBy('p.id', 'DESC');
+    postsQb.take(limit);
+
+    postsQb.select([
+      'p.id',
+      'p.scope',
+      'p.groupId',
+      'p.ownerUserId',
+      'p.eventAt',
+      'p.createdAt',
+      'p.updatedAt',
+      'p.title',
+      'p.tags',
+      'p.emotion',
+      'p.rating',
+    ]);
+
+    const posts = await postsQb.getMany();
+    const sharedContext = await this.resolveSharedContext(groupId, posts);
+    const { cards, warnings } = await buildFeedCards(
+      posts,
+      this.postBlockRepo,
+      this.postContributorRepo,
+      this.groupMemberRepo,
+      this.logger,
+      userId,
+      { draftRepo: this.postDraftRepo, sharedContext },
+    );
+
+    const lastPost = posts[posts.length - 1];
+    const nextCursor =
+      posts.length === limit && lastPost?.eventAt
+        ? encodeFeedCursor(new Date(lastPost.eventAt), lastPost.id)
+        : null;
+
+    return { cards, warnings, nextCursor };
+  }
+
+  // 조회된 posts 중 이 그룹에 공유된 개인 글을 가려내 buildFeedCards의
+  // sharedContext로 넘길 형태로 만든다. getGroupFeed/getPastFeedForGroup 공용.
+  private async resolveSharedContext(groupId: string, posts: Post[]) {
     const personalPostIds = posts
       .filter((p) => p.scope === PostScope.PERSONAL)
       .map((p) => p.id);
@@ -92,77 +179,6 @@ export class FeedGroupQueryService {
           })
         : null;
 
-    return buildFeedCards(
-      posts,
-      this.postBlockRepo,
-      this.postContributorRepo,
-      this.groupMemberRepo,
-      this.logger,
-      userId,
-      {
-        draftRepo: this.postDraftRepo,
-        sharedContext: {
-          groupId,
-          groupName: group?.name ?? null,
-          sharedPostIds,
-        },
-      },
-    );
-  }
-
-  // getGroupFeed와 동일한 그룹 스코프 필터를 쓰되, 하루 단위 대신 eventAt
-  // 커서로 계속 더 과거로 페이지네이션하는 "지난 기록" 무한스크롤 피드.
-  async getPastFeedForGroup(
-    groupId: string,
-    userId: string,
-    cursor?: string,
-    limit = 10,
-  ) {
-    const decodedCursor = decodeFeedCursor(cursor);
-
-    const postsQb = this.postRepo.createQueryBuilder('p');
-    postsQb.where('p.scope = :scope', { scope: PostScope.GROUP });
-    postsQb.andWhere('p.groupId = :groupId', { groupId });
-    if (decodedCursor) {
-      postsQb.andWhere(
-        '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND p.id < :cursorId))',
-        { cursorEventAt: decodedCursor.eventAt, cursorId: decodedCursor.id },
-      );
-    }
-
-    postsQb.orderBy('p.eventAt', 'DESC').addOrderBy('p.id', 'DESC');
-    postsQb.take(limit);
-
-    postsQb.select([
-      'p.id',
-      'p.groupId',
-      'p.ownerUserId',
-      'p.eventAt',
-      'p.createdAt',
-      'p.updatedAt',
-      'p.title',
-      'p.tags',
-      'p.emotion',
-      'p.rating',
-    ]);
-
-    const posts = await postsQb.getMany();
-    const { cards, warnings } = await buildFeedCards(
-      posts,
-      this.postBlockRepo,
-      this.postContributorRepo,
-      this.groupMemberRepo,
-      this.logger,
-      userId,
-      { draftRepo: this.postDraftRepo },
-    );
-
-    const lastPost = posts[posts.length - 1];
-    const nextCursor =
-      posts.length === limit && lastPost?.eventAt
-        ? encodeFeedCursor(new Date(lastPost.eventAt), lastPost.id)
-        : null;
-
-    return { cards, warnings, nextCursor };
+    return { groupId, groupName: group?.name ?? null, sharedPostIds };
   }
 }
