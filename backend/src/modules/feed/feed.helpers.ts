@@ -1,11 +1,12 @@
 // src/modules/feed/feed.helpers.ts
 import { BadRequestException, Logger } from '@nestjs/common';
-import { In, LessThanOrEqual, Repository } from 'typeorm';
+import { In, IsNull, LessThanOrEqual, Repository } from 'typeorm';
 import { DateTime } from 'luxon';
 
 import { PostBlock } from '../post/entity/post-block.entity';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { PostDraft } from '../post/entity/post-draft.entity';
+import { PostGroupShare } from '../post/entity/post-group-share.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Group } from '../group/entity/group.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
@@ -40,6 +41,7 @@ type BuildFeedCardsOptions = {
   // 오버라이드하기 위한 컨텍스트. permission/hasActiveEditDraft는 계속 원본
   // p.groupId(=null) 기준으로 계산되게 둬서 그룹원에게 편집 권한이 새지 않게 한다.
   sharedContext?: SharedContext;
+  sharedGroupsByPostId?: Map<string, { groupId: string; groupName: string }[]>;
 };
 
 export interface DecodedFeedCursor {
@@ -91,6 +93,26 @@ export function decodeFeedCursor(
   return { eventAt: date, id };
 }
 
+export async function getSharedGroupsByPostIds(
+  postGroupShareRepo: Repository<PostGroupShare>,
+  postIds: string[],
+): Promise<Map<string, { groupId: string; groupName: string }[]>> {
+  const map = new Map<string, { groupId: string; groupName: string }[]>();
+  if (postIds.length === 0) return map;
+
+  const shares = await postGroupShareRepo.find({
+    where: { postId: In(postIds), deletedAt: IsNull() },
+    relations: ['group'],
+    order: { createdAt: 'DESC' },
+  });
+  shares.forEach((share) => {
+    const list = map.get(share.postId) ?? [];
+    list.push({ groupId: share.groupId, groupName: share.group.name });
+    map.set(share.postId, list);
+  });
+  return map;
+}
+
 export function dayRange(day: string, tz: string): DayRange {
   const dateOnly = DateTime.fromISO(day, { zone: 'UTC' });
   if (!dateOnly.isValid) throw new BadRequestException('Invalid date');
@@ -119,6 +141,7 @@ export async function buildFeedCards(
     groupRepo,
     draftRepo,
     sharedContext,
+    sharedGroupsByPostId,
   } = options;
   const requesterId = userId ?? '';
   const postIds = posts.map((p) => p.id);
@@ -322,6 +345,7 @@ export async function buildFeedCards(
     const loc = locationByPostId.get(p.id) ?? null;
     const time = timeByPostId.get(p.id) ?? null;
     const isSharedCard = Boolean(sharedContext?.sharedPostIds.has(p.id));
+    const ownSharedGroups = sharedGroupsByPostId?.get(p.id);
     const effectiveGroupId = isSharedCard
       ? sharedContext!.groupId
       : (p.groupId ?? null);
@@ -357,7 +381,8 @@ export async function buildFeedCards(
         scope,
         groupId: effectiveGroupId,
         groupName: effectiveGroupName,
-        isSharedPost: isSharedCard,
+        isSharedPost: isSharedCard || Boolean(ownSharedGroups?.length),
+        sharedGroups: ownSharedGroups,
         eventAt: new Date(p.eventAt),
         createdAt: new Date(p.createdAt),
         updatedAt: new Date(p.updatedAt),

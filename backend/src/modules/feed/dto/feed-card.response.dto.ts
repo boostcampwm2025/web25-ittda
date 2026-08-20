@@ -114,9 +114,23 @@ export class FeedCardResponseDto {
   })
   hasActiveEditDraft?: boolean;
   @ApiPropertyOptional({
-    description: '개인 글이 이 그룹에 공유되어 노출된 카드인지 여부',
+    description:
+      '개인 글이 그룹에 공유되어 노출된 카드이거나(그룹 피드), 공유된 개인 글 본인 카드인지(개인 피드) 여부',
   })
   isSharedPost?: boolean;
+  @ApiPropertyOptional({
+    description:
+      '이 글이 공유된 그룹 목록 (본인 개인 피드에서만 채워짐 — 그룹 피드에서는 다른 그룹 공유 여부가 새지 않도록 비워둠)',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        groupId: { type: 'string', format: 'uuid' },
+        groupName: { type: 'string' },
+      },
+    },
+  })
+  sharedGroups?: { groupId: string; groupName: string }[];
   constructor(init: FeedCardResponseDto) {
     Object.assign(this, init);
   }

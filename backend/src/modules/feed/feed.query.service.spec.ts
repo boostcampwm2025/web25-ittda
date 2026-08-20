@@ -4,6 +4,7 @@ import { FeedQueryService } from './feed.query.service';
 import { Post } from '../post/entity/post.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
 import { PostContributor } from '../post/entity/post-contributor.entity';
+import { PostGroupShare } from '../post/entity/post-group-share.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Group } from '../group/entity/group.entity';
 import { PostDraft } from '../post/entity/post-draft.entity';
@@ -47,6 +48,7 @@ describe('FeedQueryService.getPastFeedForUser', () => {
       postRepo as unknown as Repository<Post>,
       emptyFindRepo() as unknown as Repository<PostBlock>,
       emptyFindRepo() as unknown as Repository<PostContributor>,
+      emptyFindRepo() as unknown as Repository<PostGroupShare>,
       emptyFindRepo() as unknown as Repository<GroupMember>,
       emptyFindRepo() as unknown as Repository<Group>,
       emptyFindRepo() as unknown as Repository<PostDraft>,
