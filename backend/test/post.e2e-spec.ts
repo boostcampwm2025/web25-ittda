@@ -83,6 +83,7 @@ describe('PostController (e2e)', () => {
       await postDraftRepository.delete({ ownerActorId: owner.id });
       await groupRepository.delete({ name: '활동 그룹' });
       await groupRepository.delete({ name: 'draft 그룹' });
+      await groupRepository.delete({ name: '공유 뱃지 테스트 그룹' });
       await userRepository.delete({ id: owner.id });
     }
     if (otherUser?.id) {
@@ -841,5 +842,70 @@ describe('PostController (e2e)', () => {
     expect(badBody.message.join(' ')).toContain(
       'rating must be a number with at most one decimal place',
     );
+  });
+
+  it('GET /posts/:id?groupId= should expose isSharedPost/sharedGroups scoped to the viewed group for non-owner group members', async () => {
+    const group = await groupRepository.save(
+      groupRepository.create({ name: '공유 뱃지 테스트 그룹' }),
+    );
+    await groupMemberRepository.save([
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: owner.nickname,
+      }),
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: otherUser.id,
+        role: GroupRoleEnum.EDITOR,
+        nicknameInGroup: otherUser.nickname,
+      }),
+    ]);
+
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '공유될 개인 글',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '공유 테스트 본문' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
+    };
+
+    const createRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(201);
+    const created = createRes.body as { id: string };
+
+    await request(app.getHttpServer())
+      .post(`/posts/${created.id}/group-shares`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ groupIds: [group.id] })
+      .expect(201);
+
+    const detailRes = await request(app.getHttpServer())
+      .get(`/posts/${created.id}?groupId=${group.id}`)
+      .set('Authorization', `Bearer ${otherAccessToken}`)
+      .expect(200);
+
+    expect(detailRes.body).toMatchObject({
+      isSharedPost: true,
+      sharedGroups: [{ groupId: group.id, groupName: '공유 뱃지 테스트 그룹' }],
+    });
   });
 });
