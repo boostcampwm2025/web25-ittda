@@ -54,6 +54,14 @@ export default function RecordDetail({ recordId, groupId }: RecordDetailProps) {
     .flatMap(([, blocks]) => blocks)
     .find((b) => b.type === 'IMAGE')?.id;
 
+  const viewedSharedGroup =
+    groupId && record.scope === 'PERSONAL'
+      ? record.sharedGroups?.find((group) => group.groupId === groupId)
+      : undefined;
+  const isGroup = record.scope === 'GROUP' || Boolean(viewedSharedGroup);
+  const displayGroupName =
+    record.scope === 'GROUP' ? record.groupName : viewedSharedGroup?.groupName;
+
   return (
     <div className="flex flex-col flex-1 -mt-6 transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
       <header className="-mx-4 sm:-mx-6 sticky top-0 z-50 backdrop-blur-md px-2 sm:px-4 py-2 sm:p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
@@ -67,8 +75,8 @@ export default function RecordDetail({ recordId, groupId }: RecordDetailProps) {
           </h1>
           <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-1.5">
             <RecordScopeBadges
-              isGroup={record.scope === 'GROUP'}
-              groupName={record.groupName}
+              isGroup={isGroup}
+              groupName={displayGroupName}
               isSharedPost={record.isSharedPost}
               sharedGroups={record.sharedGroups}
             />
