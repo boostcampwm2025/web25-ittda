@@ -84,6 +84,8 @@ describe('PostController (e2e)', () => {
       await groupRepository.delete({ name: '활동 그룹' });
       await groupRepository.delete({ name: 'draft 그룹' });
       await groupRepository.delete({ name: '공유 뱃지 테스트 그룹' });
+      await groupRepository.delete({ name: '그룹 A - 정당한 접근' });
+      await groupRepository.delete({ name: '그룹 B - 접근 권한 없음' });
       await userRepository.delete({ id: owner.id });
     }
     if (otherUser?.id) {
@@ -907,5 +909,93 @@ describe('PostController (e2e)', () => {
       isSharedPost: true,
       sharedGroups: [{ groupId: group.id, groupName: '공유 뱃지 테스트 그룹' }],
     });
+  });
+
+  it('GET /posts/:id?groupId= should not leak group context for a group the requester is not a member of', async () => {
+    const groupA = await groupRepository.save(
+      groupRepository.create({ name: '그룹 A - 정당한 접근' }),
+    );
+    const groupB = await groupRepository.save(
+      groupRepository.create({ name: '그룹 B - 접근 권한 없음' }),
+    );
+    await groupMemberRepository.save([
+      groupMemberRepository.create({
+        groupId: groupA.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: 'owner-in-A',
+      }),
+      groupMemberRepository.create({
+        groupId: groupA.id,
+        userId: otherUser.id,
+        role: GroupRoleEnum.EDITOR,
+        nicknameInGroup: otherUser.nickname,
+      }),
+      // owner만 그룹 B의 멤버다 — otherUser는 그룹 B에 속하지 않는다.
+      groupMemberRepository.create({
+        groupId: groupB.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: 'owner-in-B',
+      }),
+    ]);
+
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '두 그룹에 공유될 개인 글',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '공유 테스트 본문' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
+    };
+
+    const createRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(201);
+    const created = createRes.body as { id: string };
+
+    // 그룹 A와 그룹 B 둘 다에 공유 — otherUser는 그룹 A의 멤버라 열람
+    // 권한은 있지만, 그룹 B의 멤버는 아니다.
+    await request(app.getHttpServer())
+      .post(`/posts/${created.id}/group-shares`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ groupIds: [groupA.id, groupB.id] })
+      .expect(201);
+
+    // otherUser가 자신이 속하지 않은 그룹 B의 ID를 직접 쿼리로 넘겨서 조회.
+    const detailRes = await request(app.getHttpServer())
+      .get(`/posts/${created.id}?groupId=${groupB.id}`)
+      .set('Authorization', `Bearer ${otherAccessToken}`)
+      .expect(200);
+
+    const body = detailRes.body as {
+      sharedGroups?: { groupId: string; groupName: string }[];
+      contributors: { userId: string; groupNickname: string | null }[];
+    };
+
+    // 그룹 A를 통한 열람 자체는 정상이지만, 요청에 실어 보낸 그룹 B의
+    // 이름/컨텍스트는 노출되면 안 된다.
+    expect(body.sharedGroups ?? []).not.toContainEqual(
+      expect.objectContaining({ groupId: groupB.id }),
+    );
+    const ownerContributor = body.contributors.find(
+      (c) => c.userId === owner.id,
+    );
+    expect(ownerContributor?.groupNickname).toBeNull();
   });
 });
