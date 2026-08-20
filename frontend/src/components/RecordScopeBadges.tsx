@@ -69,6 +69,13 @@ export default function RecordScopeBadges({
         <span>개인</span>
       </Badge>
 
+      {isSharedPost && !sharedGroups?.length && (
+        <Badge className="bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
+          <Share2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+          <span>공유됨</span>
+        </Badge>
+      )}
+
       {sharedGroups?.map((group) => (
         <Badge
           key={group.groupId}
