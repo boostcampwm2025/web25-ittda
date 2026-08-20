@@ -8,6 +8,7 @@ import Back from '@/components/Back';
 import BlockContent from '@/components/BlockContent';
 import { cn } from '@/lib/utils';
 import AssetImage from '@/components/AssetImage';
+import RecordScopeBadges from '@/components/RecordScopeBadges';
 
 // SSR에서 렌더링하지 않음: Radix Popover의 useId가 서버-클라이언트 간 렌더 트리 순서 차이로
 // aria-controls 불일치(하이드레이션 에러)를 일으키기 때문.
@@ -30,10 +31,7 @@ interface RecordDetailProps {
   groupId?: string;
 }
 
-export default function RecordDetail({
-  recordId,
-  groupId,
-}: RecordDetailProps) {
+export default function RecordDetail({ recordId, groupId }: RecordDetailProps) {
   const { data: record } = useSuspenseQuery(
     recordDetailOptions(recordId, groupId),
   );
@@ -67,6 +65,14 @@ export default function RecordDetail({
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
             {record.title}
           </h1>
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-1.5">
+            <RecordScopeBadges
+              isGroup={record.scope === 'GROUP'}
+              groupName={record.groupName}
+              isSharedPost={record.isSharedPost}
+              sharedGroups={record.sharedGroups}
+            />
+          </div>
           {record.hasActiveEditDraft && (
             <p className="mt-1 text-xs font-medium text-gray-400 dark:text-gray-500">
               공동 수정 중...

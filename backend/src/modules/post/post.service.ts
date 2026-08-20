@@ -284,14 +284,15 @@ export class PostService {
     //   그 그룹에 공유돼 있는지 검증해서, 무관한 그룹의 닉네임/프로필이
     //   새는 것을 막는다.
     let contributorGroupId: string | null = null;
+    let isSharedToViewGroup = false;
     if (post.scope === PostScope.GROUP && post.groupId) {
       contributorGroupId = post.groupId;
     } else if (post.scope === PostScope.PERSONAL && viewGroupId) {
-      const isShared = await this.postGroupShareService.isSharedToGroup(
+      isSharedToViewGroup = await this.postGroupShareService.isSharedToGroup(
         postId,
         viewGroupId,
       );
-      if (isShared) contributorGroupId = viewGroupId;
+      if (isSharedToViewGroup) contributorGroupId = viewGroupId;
     }
 
     const groupMemberMap = new Map<
@@ -353,8 +354,11 @@ export class PostService {
       hasActiveEditDraft = Boolean(activeEditDraft);
     }
 
-    // 공유 대상 그룹 목록은 원작성자에게만 노출한다 — 그룹 A의 그룹원이
-    // 이 글이 그룹 B에도 공유됐다는 사실까지 알 필요는 없다.
+    // 공유 대상 그룹 "전체 목록"은 원작성자에게만 노출한다 — 그룹 A의
+    // 그룹원이 이 글이 그룹 B에도 공유됐다는 사실까지 알 필요는 없다.
+    // 다만 지금 보고 있는 그 그룹(viewGroupId) 하나에 대해서는, 그룹원도
+    // "이 글이 우리 그룹에 공유됐다"는 뱃지를 볼 수 있어야 한다 — 이미
+    // 그 그룹 피드에서 봤기 때문에 새로 새는 정보가 아니다.
     let isSharedPost = false;
     let sharedGroups: { groupId: string; groupName: string }[] | undefined;
     if (post.scope === PostScope.PERSONAL) {
@@ -364,6 +368,15 @@ export class PostService {
           requesterId,
         );
         isSharedPost = sharedGroups.length > 0;
+      } else if (viewGroupId && isSharedToViewGroup) {
+        const viewGroup = await this.groupRepository.findOne({
+          where: { id: viewGroupId },
+          select: ['id', 'name'],
+        });
+        sharedGroups = viewGroup
+          ? [{ groupId: viewGroupId, groupName: viewGroup.name }]
+          : [];
+        isSharedPost = true;
       } else {
         isSharedPost =
           await this.postGroupShareService.isPostSharedWithUserViaAnyGroup(
@@ -378,6 +391,8 @@ export class PostService {
       scope: post.scope,
       ownerUserId: post.ownerUserId,
       groupId: post.groupId ?? null,
+      groupName:
+        post.scope === PostScope.GROUP ? (post.group?.name ?? null) : null,
       title: post.title,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,

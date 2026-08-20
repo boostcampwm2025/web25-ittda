@@ -3,11 +3,12 @@
 import BlockContent from '@/components/BlockContent';
 import { Block } from '@/lib/types/record';
 import { cn } from '@/lib/utils';
-import { BookOpen, Plus, Users, User, Share2 } from 'lucide-react';
+import { BookOpen, Plus } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { RecordPreview } from '@/lib/types/recordResponse';
 import AssetImage from '@/components/AssetImage';
 import Image from 'next/image';
+import RecordScopeBadges from '@/components/RecordScopeBadges';
 
 type ImageLayout = 'carousel' | 'tile' | 'responsive';
 
@@ -58,35 +59,12 @@ const RecordItem = memo(function RecordItem({
             {record.title}
           </h4>
           <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-1">
-            {record.scope === 'GROUP' ? (
-              <>
-                <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                  <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  <span>그룹</span>
-                </div>
-
-                {/* 그룹명 전용 뱃지 (동그란 점 포함) */}
-                {record.groupName && (
-                  <div className="px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-                    <span className="truncate max-w-15 sm:max-w-17.5 inline-block align-bottom">
-                      {record.groupName}
-                    </span>
-                  </div>
-                )}
-
-                {record.isSharedPost && (
-                  <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
-                    <Share2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    <span>공유됨</span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                <User className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                <span>개인</span>
-              </div>
-            )}
+            <RecordScopeBadges
+              isGroup={record.scope === 'GROUP'}
+              groupName={record.groupName}
+              isSharedPost={record.isSharedPost}
+              sharedGroups={record.sharedGroups}
+            />
           </div>
           {record.hasActiveEditDraft && (
             <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-gray-400 dark:text-gray-500">
