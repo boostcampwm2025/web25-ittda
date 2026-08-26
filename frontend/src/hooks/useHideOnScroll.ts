@@ -22,15 +22,14 @@ function _handleScroll() {
         _hidden = false;
         _subscribers.forEach((fn) => fn());
       }
-      _lastY = y;
     } else if (Math.abs(delta) > 4) {
       const next = delta > 0;
       if (next !== _hidden) {
         _hidden = next;
         _subscribers.forEach((fn) => fn());
       }
-      _lastY = y;
     }
+    _lastY = y;
     _ticking = false;
   });
 }
