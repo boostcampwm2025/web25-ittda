@@ -13,16 +13,32 @@ export default function StreakStats() {
   const [weekCalendarHeight, setWeekCalendarHeight] = useState(0);
 
   useLayoutEffect(() => {
-    const calendarEl = document.getElementById('week-calendar-sticky');
-    if (!calendarEl) return;
+    let cancelled = false;
+    let rafId: number | undefined;
+    let observer: ResizeObserver | undefined;
+    let attempts = 0;
 
-    const updateHeight = () =>
-      setWeekCalendarHeight(calendarEl.getBoundingClientRect().height);
-    updateHeight();
+    const attach = () => {
+      if (cancelled) return;
+      const calendarEl = document.getElementById('week-calendar-sticky');
+      if (!calendarEl) {
+        if (attempts++ < 120) rafId = requestAnimationFrame(attach);
+        return;
+      }
 
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(calendarEl);
-    return () => observer.disconnect();
+      const updateHeight = () =>
+        setWeekCalendarHeight(calendarEl.getBoundingClientRect().height);
+      updateHeight();
+      observer = new ResizeObserver(updateHeight);
+      observer.observe(calendarEl);
+    };
+    attach();
+
+    return () => {
+      cancelled = true;
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+      observer?.disconnect();
+    };
   }, []);
 
   return (
@@ -32,7 +48,7 @@ export default function StreakStats() {
         { '--week-calendar-h': `${weekCalendarHeight}px` } as CSSProperties
       }
       className={cn(
-        'sticky z-30 flex w-full p-2 sm:p-3 transition-[top] duration-300 ease-out',
+        'sticky z-30 flex w-full p-2 sm:p-3',
         'bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl',
         hidden
           ? 'top-(--week-calendar-h)'
