@@ -3,6 +3,7 @@ import { getCachedGroupCurrentMembers } from '@/lib/api/group';
 import { GroupMembersResponse } from '@/lib/types/groupResponse';
 import { createMockGroupMembers } from '@/lib/mocks/mock';
 import RetryFallback from '@/components/RetryFallback';
+import StackedNativeHeader from '@/components/StackedNativeHeader';
 
 export default async function GroupHeader({
   className,
@@ -24,9 +25,8 @@ export default async function GroupHeader({
   }
 
   return (
-    <header
+    <StackedNativeHeader
       id="group-header-sticky"
-      data-stacked-header
       className="sticky top-0 pt-3 z-50 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-2 transition-all duration-300 dark:bg-[#121212] bg-white"
     >
       {groupInfo ? (
@@ -34,6 +34,6 @@ export default async function GroupHeader({
       ) : (
         <RetryFallback fallback="/shared" className="mb-3" />
       )}
-    </header>
+    </StackedNativeHeader>
   );
 }
