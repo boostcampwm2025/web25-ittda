@@ -144,17 +144,9 @@ export default function WeekCalendar({
 
   return (
     <div
-      // RecordTimelineFeed의 스크롤스파이가 "지금 화면에 실제로 보이는
-      // 콘텐츠가 어디부터 시작하는지"를 알아야 하는데, 이 캘린더의 높이가
-      // 헤더 표시 여부/브레이크포인트에 따라 계속 바뀌므로 고정값 대신 이
-      // 엘리먼트의 실제 하단 경계를 직접 측정하게 id로 노출한다.
       id="week-calendar-sticky"
       className={cn(
-        // 캘린더는 Header처럼 화면 밖으로 사라지지 않고 항상 보인다 —
-        // 대신 Header가 보일 땐 그 밑(top-16)에, Header가 스크롤로 숨으면
-        // 그 자리(top-0)까지 같이 따라 올라가 화면을 더 넓게 쓴다. Header와
-        // 같은 useHideOnScroll 신호를 구독하므로 늘 같은 타이밍에 맞아떨어진다.
-        'sticky z-40 overflow-hidden transition-[top] duration-300 ease-out',
+        'sticky z-40 overflow-hidden',
         'bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl',
         stickyTopClassName ?? (hidden ? 'top-0' : 'top-16 sm:top-18'),
         className,
