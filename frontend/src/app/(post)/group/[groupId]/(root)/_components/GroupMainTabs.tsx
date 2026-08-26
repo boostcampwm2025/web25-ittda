@@ -36,16 +36,32 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
   const [groupHeaderHeight, setGroupHeaderHeight] = useState(0);
 
   useLayoutEffect(() => {
-    const header = document.getElementById('group-header-sticky');
-    if (!header) return;
+    let cancelled = false;
+    let rafId: number | undefined;
+    let observer: ResizeObserver | undefined;
+    let attempts = 0;
 
-    const updateHeight = () =>
-      setGroupHeaderHeight(header.getBoundingClientRect().height);
-    updateHeight();
+    const attach = () => {
+      if (cancelled) return;
+      const header = document.getElementById('group-header-sticky');
+      if (!header) {
+        if (attempts++ < 120) rafId = requestAnimationFrame(attach);
+        return;
+      }
 
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(header);
-    return () => observer.disconnect();
+      const updateHeight = () =>
+        setGroupHeaderHeight(header.getBoundingClientRect().height);
+      updateHeight();
+      observer = new ResizeObserver(updateHeight);
+      observer.observe(header);
+    };
+    attach();
+
+    return () => {
+      cancelled = true;
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+      observer?.disconnect();
+    };
   }, []);
 
   return (
