@@ -35,18 +35,19 @@ function _handleScroll() {
 }
 
 function _subscribe(onStoreChange: () => void) {
-  let resetHidden = false;
+  let didChange = false;
   if (_subscribers.size === 0) {
     _lastY = window.scrollY;
-    if (_lastY < 16 && _hidden) {
-      _hidden = false;
-      resetHidden = true;
+    const shouldBeHidden = _lastY >= 16;
+    if (shouldBeHidden !== _hidden) {
+      _hidden = shouldBeHidden;
+      didChange = true;
     }
     window.addEventListener('scroll', _handleScroll, { passive: true });
   }
   _subscribers.add(onStoreChange);
-  // 구독 등록 전에 hidden이 리셋됐다면 새 구독자에게 즉시 알림
-  if (resetHidden) {
+  // 구독 등록 전에 hidden이 바뀌었다면 새 구독자에게 즉시 알림
+  if (didChange) {
     onStoreChange();
   }
   return () => {
