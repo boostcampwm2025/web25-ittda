@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { LayoutGrid, Newspaper } from 'lucide-react';
 import WeekCalendar from '@/app/(main)/_components/WeekCalendar';
 import RecordTimelineFeed from '@/app/(main)/_components/RecordTimelineFeed';
@@ -30,43 +30,57 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
   const members = membersData?.members ?? [];
 
   // sticky 요소는 다른 sticky 요소와 자동으로 겹치지 않게 쌓이지 않는다 —
-  // 이 캘린더를 GroupHeader 바로 아래에 고정하려면 GroupHeader의 실제
-  // 높이를 top으로 직접 넘겨야 한다. 그룹 이름 줄바꿈/반응형 브레이크포인트/
-  // 네이티브 safe-area에 따라 높이가 바뀌므로 ResizeObserver로 추적한다.
   const [groupHeaderHeight, setGroupHeaderHeight] = useState(0);
+  const [memberRowHeight, setMemberRowHeight] = useState(0);
+  const [gapAboveCalendar, setGapAboveCalendar] = useState(0);
+  const memberRowRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     let cancelled = false;
     let rafId: number | undefined;
-    let observer: ResizeObserver | undefined;
+    let headerObserver: ResizeObserver | undefined;
+    let memberRowObserver: ResizeObserver | undefined;
     let attempts = 0;
 
     const attach = () => {
       if (cancelled) return;
       const header = document.getElementById('group-header-sticky');
-      if (!header) {
+      const memberRow = memberRowRef.current;
+      if (!header || !memberRow) {
         if (attempts++ < 120) rafId = requestAnimationFrame(attach);
         return;
       }
 
-      const updateHeight = () =>
+      setGapAboveCalendar(
+        memberRow.getBoundingClientRect().top -
+          header.getBoundingClientRect().bottom,
+      );
+
+      const updateHeaderHeight = () =>
         setGroupHeaderHeight(header.getBoundingClientRect().height);
-      updateHeight();
-      observer = new ResizeObserver(updateHeight);
-      observer.observe(header);
+      updateHeaderHeight();
+      headerObserver = new ResizeObserver(updateHeaderHeight);
+      headerObserver.observe(header);
+
+      const updateMemberRowHeight = () =>
+        setMemberRowHeight(memberRow.getBoundingClientRect().height);
+      updateMemberRowHeight();
+      memberRowObserver = new ResizeObserver(updateMemberRowHeight);
+      memberRowObserver.observe(memberRow);
     };
     attach();
 
     return () => {
       cancelled = true;
       if (rafId !== undefined) cancelAnimationFrame(rafId);
-      observer?.disconnect();
+      headerObserver?.disconnect();
+      memberRowObserver?.disconnect();
     };
   }, []);
 
   return (
     <div className="h-full flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div ref={memberRowRef} className="flex items-center justify-between">
         <div className="flex -space-x-2">
           {members.slice(0, 4).map((m) => (
             <div
@@ -148,7 +162,9 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
                 monthBasePath={`/group/${groupId}`}
                 className="-mx-4 sm:-mx-6"
                 stickyTopClassName="top-0"
-                stickyTopPx={groupHeaderHeight}
+                stickyTopPx={
+                  groupHeaderHeight + gapAboveCalendar + memberRowHeight + 16
+                }
               />
             </Suspense>
             <Suspense
