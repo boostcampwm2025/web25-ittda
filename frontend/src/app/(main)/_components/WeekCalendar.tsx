@@ -150,7 +150,6 @@ export default function WeekCalendar({
     <div
       id="week-calendar-sticky"
       className={cn(
-        'overflow-hidden',
         sticky && [
           'sticky z-40',
           blurred
