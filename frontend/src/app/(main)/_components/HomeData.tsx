@@ -8,7 +8,6 @@ import { userRecordPatternOptions } from '@/lib/api/profile';
 import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
 import ErrorFallback from '@/components/ErrorFallback';
 import HomePageSkeleton from './HomePageSkeleton';
-import StreakStats from './StreakStats';
 import RecordTimelineFeed from './RecordTimelineFeed';
 
 export default async function HomeData() {
@@ -36,12 +35,9 @@ export default async function HomeData() {
         fallbackComponent={ErrorFallback}
         suspenseFallback={<HomePageSkeleton />}
       >
-        <div className="flex flex-col">
-          <StreakStats />
-          <div className="w-full px-5 space-y-6 pt-7 pb-bottom-nav transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9]">
-            <div className="w-full flex flex-col gap-6">
-              <RecordTimelineFeed imageLayout="responsive" />
-            </div>
+        <div className="w-full px-5 space-y-6 pt-7 pb-bottom-nav transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9]">
+          <div className="w-full flex flex-col gap-6">
+            <RecordTimelineFeed imageLayout="responsive" />
           </div>
         </div>
       </ErrorHandlingWrapper>

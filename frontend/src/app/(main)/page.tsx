@@ -1,6 +1,8 @@
 import WeekCalendar from './_components/WeekCalendar';
 import HomeData from './_components/HomeData';
-import HomePageSkeleton from './_components/HomePageSkeleton';
+import HomePageSkeleton, {
+  StreakStatsSkeleton,
+} from './_components/HomePageSkeleton';
 import { Suspense } from 'react';
 import AnnouncementModal from '@/components/AnnouncementModal';
 import WeekCalendarSkeleton from './_components/WeekCalendarSkeleton';
@@ -9,6 +11,8 @@ import { HOME_COACHMARK_STEPS } from './_components/homeCoachmarkSteps';
 import { RecordTimelineProvider } from './_components/RecordTimelineProvider';
 import { formatDateISO } from '@/lib/date';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
+import HomeCalendarStreakSticky from './_components/HomeCalendarStreakSticky';
+import StreakStats from './_components/StreakStats';
 
 export async function generateMetadata() {
   return {
@@ -42,9 +46,14 @@ export default function HomePage() {
       </Suspense>
       <Coachmark flowKey="home" steps={HOME_COACHMARK_STEPS} />
       <RecordTimelineProvider initialDate={formatDateISO()}>
-        <Suspense fallback={<WeekCalendarSkeleton />}>
-          <WeekCalendar />
-        </Suspense>
+        <HomeCalendarStreakSticky>
+          <Suspense fallback={<WeekCalendarSkeleton />}>
+            <WeekCalendar sticky={false} />
+          </Suspense>
+          <Suspense fallback={<StreakStatsSkeleton />}>
+            <StreakStats />
+          </Suspense>
+        </HomeCalendarStreakSticky>
         <div className="flex-1 flex flex-col min-h-0">
           <Suspense fallback={<HomePageSkeleton />}>
             <HomeData />
