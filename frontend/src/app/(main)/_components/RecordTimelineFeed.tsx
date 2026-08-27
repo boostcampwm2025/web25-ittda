@@ -281,7 +281,7 @@ export default function RecordTimelineFeed({
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 w-full">
+    <div className="space-y-3 sm:space-y-4 w-full pb-bottom-nav">
       {rows.map((row, index) => {
         const isLastRow = index === rows.length - 1;
         const refProp = isLastRow ? lastRowRef : undefined;
