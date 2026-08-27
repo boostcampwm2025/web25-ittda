@@ -29,7 +29,7 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
   const { data: membersData } = useQuery(groupCurrentMembersOption(groupId));
   const members = membersData?.members ?? [];
 
-  const [groupHeaderHeight, setGroupHeaderHeight] = useState(0);
+  const [calendarTop, setCalendarTop] = useState(0);
 
   // TEMP DEBUG — 원인 진단용, 확인 끝나면 제거할 것
   const [debugText, setDebugText] = useState('');
@@ -37,24 +37,44 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
     const update = () => {
       const gh = document.getElementById('group-header-sticky');
       const cal = document.getElementById('week-calendar-sticky');
+      const mr = document.getElementById('member-row-debug');
       const ghRect = gh?.getBoundingClientRect();
       const calRect = cal?.getBoundingClientRect();
+      const mrRect = mr?.getBoundingClientRect();
       const ghCS = gh ? getComputedStyle(gh) : null;
+      const mrCS = mr ? getComputedStyle(mr) : null;
       setDebugText(
-        `state=${groupHeaderHeight} realH=${ghRect?.height.toFixed(0)} ghBottom=${ghRect?.bottom.toFixed(0)} calTop=${calRect?.top.toFixed(0)} ` +
-          `pt=${ghCS?.paddingTop} mt=${ghCS?.marginTop} stacked=${gh?.getAttribute('data-stacked-header')} y=${window.scrollY}`,
+        `gh: h=${ghRect?.height.toFixed(0)} bottom=${ghRect?.bottom.toFixed(0)} pt=${ghCS?.paddingTop} mt=${ghCS?.marginTop} stacked=${gh?.getAttribute('data-stacked-header')} | ` +
+          `mr: top=${mrRect?.top.toFixed(0)} bottom=${mrRect?.bottom.toFixed(0)} h=${mrRect?.height.toFixed(0)} display=${mrCS?.display} members=${members.length} | ` +
+          `cal: top=${calRect?.top.toFixed(0)} calendarTop=${calendarTop} | y=${window.scrollY}`,
       );
     };
     update();
     const id = setInterval(update, 300);
     return () => clearInterval(id);
-  }, [groupHeaderHeight]);
+  }, [calendarTop, members.length]);
 
   useLayoutEffect(() => {
     let cancelled = false;
     let rafId: number | undefined;
     let observer: ResizeObserver | undefined;
+    let ticking = false;
     let attempts = 0;
+
+    const measure = () => {
+      const header = document.getElementById('group-header-sticky');
+      if (!header) return;
+      setCalendarTop(header.getBoundingClientRect().bottom);
+    };
+
+    const onScrollOrResize = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        measure();
+        ticking = false;
+      });
+    };
 
     const attach = () => {
       if (cancelled) return;
@@ -64,11 +84,11 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
         return;
       }
 
-      const updateHeight = () =>
-        setGroupHeaderHeight(header.getBoundingClientRect().height);
-      updateHeight();
-      observer = new ResizeObserver(updateHeight);
+      measure();
+      observer = new ResizeObserver(measure);
       observer.observe(header);
+      window.addEventListener('scroll', onScrollOrResize, { passive: true });
+      window.addEventListener('resize', onScrollOrResize);
     };
     attach();
 
@@ -76,6 +96,8 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
       cancelled = true;
       if (rafId !== undefined) cancelAnimationFrame(rafId);
       observer?.disconnect();
+      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('resize', onScrollOrResize);
     };
   }, []);
 
@@ -100,7 +122,7 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
         {debugText}
       </div>
       <div className="flex items-center justify-between">
-        <div className="flex -space-x-2">
+        <div id="member-row-debug" className="flex -space-x-2">
           {members.slice(0, 4).map((m) => (
             <div
               key={m.memberId}
@@ -181,7 +203,7 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
                 monthBasePath={`/group/${groupId}`}
                 className="-mx-4 sm:-mx-6"
                 stickyTopClassName="top-0"
-                stickyTopPx={groupHeaderHeight}
+                stickyTopPx={calendarTop}
                 blurred={false}
               />
             </Suspense>

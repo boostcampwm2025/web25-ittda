@@ -16,7 +16,9 @@ export default function HomeCalendarStreakSticky({
       className={cn(
         'sticky z-40 overflow-hidden',
         'bg-white dark:bg-[#121212]',
-        hidden ? 'top-0' : 'top-16 sm:top-18',
+        hidden
+          ? 'top-0'
+          : 'top-[calc(4rem+var(--cap-status-bar-height,env(safe-area-inset-top)))] sm:top-[calc(4.5rem+var(--cap-status-bar-height,env(safe-area-inset-top)))]',
       )}
     >
       {children}
