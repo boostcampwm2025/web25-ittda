@@ -240,6 +240,13 @@ export default function RootLayout({
                       document.documentElement.style.setProperty('--cap-status-bar-height', h + 'px');
                     }
                   } catch (_) {}
+                  // env(safe-area-inset-bottom)도 같은 이유로 0인 기기 대비
+                  try {
+                    const nb = window.AndroidBridge?.getNavigationBarHeightDp?.();
+                    if (nb > 0) {
+                      document.documentElement.style.setProperty('--cap-nav-bar-height', nb + 'px');
+                    }
+                  } catch (_) {}
                 }
                 } catch (e) {}
               })();
