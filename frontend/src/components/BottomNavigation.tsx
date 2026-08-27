@@ -80,7 +80,10 @@ export default function BottomNavigation() {
     !isAdmin;
 
   useLayoutEffect(() => {
-    if (!showNav || isGroupDetail) return;
+    if (!showNav || isGroupDetail) {
+      document.documentElement.style.removeProperty('--nav-content-height');
+      return;
+    }
 
     const el = document.getElementById('bottom-navigation');
     if (!el) return;
@@ -96,7 +99,10 @@ export default function BottomNavigation() {
 
     const observer = new ResizeObserver(update);
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--nav-content-height');
+    };
   }, [showNav, isGroupDetail]);
 
   if (!showNav) return null;
