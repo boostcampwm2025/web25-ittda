@@ -64,6 +64,11 @@ public class MainActivity extends BridgeActivity {
         if (resourceId > 0) {
             statusBarHeightPx = getResources().getDimensionPixelSize(resourceId);
         }
+        // 네비게이션 바 높이도 동일하게 동기 초기화 (getNavigationBarHeightDp() 대비)
+        int navBarResourceId = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
+        if (navBarResourceId > 0) {
+            navigationBarHeightPx = getResources().getDimensionPixelSize(navBarResourceId);
+        }
 
         addStatusBarCover(isDarkMode);
 
@@ -142,6 +147,7 @@ public class MainActivity extends BridgeActivity {
 
     // 상태바 높이 (px): insets 콜백에서 설정, JS bridge에서 읽음
     private volatile int statusBarHeightPx = 0;
+    private volatile int navigationBarHeightPx = 0;
 
     // iOS addStatusBarCover()에 대응: 상태바 높이만큼 View를 DecorView 최상단에 추가
     private void addStatusBarCover(boolean isDarkMode) {
@@ -174,6 +180,17 @@ public class MainActivity extends BridgeActivity {
                 String js = "document.documentElement.style.setProperty('--cap-status-bar-height','" + dp + "px');";
                 getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(js, null));
             }
+
+            // 같은 insets 콜백에서 하단 네비게이션 바 높이도 함께 처리(위와 동일한 이유/패턴)
+            int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            if (navBarHeight > 0) {
+                navigationBarHeightPx = navBarHeight;
+                float navDensity = getResources().getDisplayMetrics().density;
+                float navDp = navBarHeight / navDensity;
+                String navJs = "document.documentElement.style.setProperty('--cap-nav-bar-height','" + navDp + "px');";
+                getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(navJs, null));
+            }
+
             return insets;
         });
     }
@@ -232,6 +249,13 @@ public class MainActivity extends BridgeActivity {
         public float getStatusBarHeightDp() {
             if (statusBarHeightPx <= 0) return 0f;
             return statusBarHeightPx / getResources().getDisplayMetrics().density;
+        }
+
+        // 네비게이션 바 높이를 CSS dp 단위로 반환 (env(safe-area-inset-bottom) 미지원 시 fallback용)
+        @JavascriptInterface
+        public float getNavigationBarHeightDp() {
+            if (navigationBarHeightPx <= 0) return 0f;
+            return navigationBarHeightPx / getResources().getDisplayMetrics().density;
         }
     }
 }
