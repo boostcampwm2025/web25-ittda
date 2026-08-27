@@ -19,11 +19,15 @@ export default function WeekCalendar({
   className,
   stickyTopClassName,
   stickyTopPx,
+  sticky = true,
+  blurred = true,
 }: {
   monthBasePath?: string;
   className?: string;
   stickyTopClassName?: string;
   stickyTopPx?: number;
+  sticky?: boolean;
+  blurred?: boolean;
 }) {
   const router = useRouter();
   const { activeDate, requestJump } = useRecordTimeline();
@@ -146,12 +150,19 @@ export default function WeekCalendar({
     <div
       id="week-calendar-sticky"
       className={cn(
-        'sticky z-40 overflow-hidden',
-        'bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl',
-        stickyTopClassName ?? (hidden ? 'top-0' : 'top-16 sm:top-18'),
+        'overflow-hidden',
+        sticky && [
+          'sticky z-40',
+          blurred
+            ? 'bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl'
+            : 'bg-white dark:bg-[#121212]',
+          stickyTopClassName ?? (hidden ? 'top-0' : 'top-16 sm:top-18'),
+        ],
         className,
       )}
-      style={stickyTopPx !== undefined ? { top: stickyTopPx } : undefined}
+      style={
+        sticky && stickyTopPx !== undefined ? { top: stickyTopPx } : undefined
+      }
     >
       <div className="px-4 py-2 sm:px-6 flex items-center gap-1 group cursor-pointer self-start">
         <span
