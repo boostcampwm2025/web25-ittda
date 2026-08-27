@@ -181,7 +181,7 @@ export default function WeekCalendar({
       </div>
       {/* 지금 스크롤로 보고 있는 날짜를 보여주는 얇은 인덱스 — 탭하면 그
             지점으로 스크롤, 스크롤하면 반대로 여기 활성 표시가 따라온다. */}
-      <div className="relative h-16 border-b dark:border-white/5 border-gray-100">
+      <div className="relative h-16 overflow-x-hidden border-b dark:border-white/5 border-gray-100">
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={currentWeekStart.toISOString()}
