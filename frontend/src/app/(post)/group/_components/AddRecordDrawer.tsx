@@ -46,7 +46,7 @@ export function AddRecordDrawer({
 
     if (refetchedData?.redirectUrl) {
       onOpenChange(false);
-      router.replace(refetchedData.redirectUrl);
+      router.push(refetchedData.redirectUrl);
     } else {
       // 리다이렉트 URL 누락은 백엔드 응답 문제일 가능성
       const error = new Error(
@@ -71,7 +71,8 @@ export function AddRecordDrawer({
 
   const handleIndividualRecord = () => {
     onOpenChange(false);
-    router.replace(`/add?groupId=${groupId}`);
+    // 위 handleGroupRecord와 같은 이유로 replace 대신 push 사용.
+    router.push(`/add?groupId=${groupId}`);
   };
 
   return (
