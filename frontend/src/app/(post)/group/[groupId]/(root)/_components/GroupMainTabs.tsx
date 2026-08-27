@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { LayoutGrid, Newspaper } from 'lucide-react';
 import WeekCalendar from '@/app/(main)/_components/WeekCalendar';
 import RecordTimelineFeed from '@/app/(main)/_components/RecordTimelineFeed';
@@ -30,29 +30,6 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
   const members = membersData?.members ?? [];
 
   const [calendarTop, setCalendarTop] = useState(0);
-
-  // TEMP DEBUG — 원인 진단용, 확인 끝나면 제거할 것
-  const [debugText, setDebugText] = useState('');
-  useEffect(() => {
-    const update = () => {
-      const gh = document.getElementById('group-header-sticky');
-      const cal = document.getElementById('week-calendar-sticky');
-      const mr = document.getElementById('member-row-debug');
-      const ghRect = gh?.getBoundingClientRect();
-      const calRect = cal?.getBoundingClientRect();
-      const mrRect = mr?.getBoundingClientRect();
-      const ghCS = gh ? getComputedStyle(gh) : null;
-      const mrCS = mr ? getComputedStyle(mr) : null;
-      setDebugText(
-        `gh: h=${ghRect?.height.toFixed(0)} bottom=${ghRect?.bottom.toFixed(0)} pt=${ghCS?.paddingTop} mt=${ghCS?.marginTop} stacked=${gh?.getAttribute('data-stacked-header')} | ` +
-          `mr: top=${mrRect?.top.toFixed(0)} bottom=${mrRect?.bottom.toFixed(0)} h=${mrRect?.height.toFixed(0)} display=${mrCS?.display} members=${members.length} | ` +
-          `cal: top=${calRect?.top.toFixed(0)} calendarTop=${calendarTop} | y=${window.scrollY}`,
-      );
-    };
-    update();
-    const id = setInterval(update, 300);
-    return () => clearInterval(id);
-  }, [calendarTop, members.length]);
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -103,26 +80,8 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
 
   return (
     <div className="h-full flex flex-col gap-4 ">
-      {/* TEMP DEBUG — 원인 진단용, 확인 끝나면 제거할 것 */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 99999,
-          background: 'red',
-          color: 'white',
-          fontSize: 9,
-          padding: 4,
-          wordBreak: 'break-all',
-          pointerEvents: 'none',
-        }}
-      >
-        {debugText}
-      </div>
       <div className="flex items-center justify-between">
-        <div id="member-row-debug" className="flex -space-x-2">
+        <div className="flex -space-x-2">
           {members.slice(0, 4).map((m) => (
             <div
               key={m.memberId}
