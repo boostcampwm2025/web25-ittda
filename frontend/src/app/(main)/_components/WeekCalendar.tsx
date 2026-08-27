@@ -155,7 +155,8 @@ export default function WeekCalendar({
           blurred
             ? 'bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl'
             : 'bg-white dark:bg-[#121212]',
-          stickyTopClassName ?? (hidden ? 'top-0' : 'top-16 sm:top-18'),
+          stickyTopPx === undefined &&
+            (stickyTopClassName ?? (hidden ? 'top-0' : 'top-16 sm:top-18')),
         ],
         className,
       )}

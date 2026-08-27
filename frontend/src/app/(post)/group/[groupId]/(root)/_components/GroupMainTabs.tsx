@@ -202,7 +202,6 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
               <WeekCalendar
                 monthBasePath={`/group/${groupId}`}
                 className="-mx-4 sm:-mx-6"
-                stickyTopClassName="top-0"
                 stickyTopPx={calendarTop}
                 blurred={false}
               />
