@@ -25,7 +25,7 @@ export default function WeekCalendar({
   monthBasePath?: string;
   className?: string;
   stickyTopClassName?: string;
-  stickyTopPx?: number;
+  stickyTopPx?: number | string;
   sticky?: boolean;
   blurred?: boolean;
 }) {
