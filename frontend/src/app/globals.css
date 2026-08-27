@@ -102,12 +102,14 @@ html.dark {
   --radius: 0.625rem;
   --polar-grid-stroke: #f1f5f9;
 
-  /* Navigation heights */
+  --nav-content-height: 5rem;
   --bottom-nav-height: calc(
-    7rem + env(safe-area-inset-bottom, 0px)
+    var(--nav-content-height) +
+      var(--cap-nav-bar-height, env(safe-area-inset-bottom, 0px)) + 1.5rem
   ); /* 모바일 */
   --bottom-nav-height-sm: calc(
-    8rem + env(safe-area-inset-bottom, 0px)
+    var(--nav-content-height) +
+      var(--cap-nav-bar-height, env(safe-area-inset-bottom, 0px)) + 2rem
   ); /* 데스크톱 */
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
