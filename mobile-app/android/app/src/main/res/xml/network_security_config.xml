@@ -2,7 +2,7 @@
 <network-security-config>
     <!-- 로컬 개발: 사설 IP 대역 HTTP 허용 -->
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">172.30.1.39</domain>
+        <domain includeSubdomains="false">172.30.1.14</domain>
         <domain includeSubdomains="false">192.168.0.1</domain>
         <domain includeSubdomains="false">10.0.0.1</domain>
     </domain-config>
