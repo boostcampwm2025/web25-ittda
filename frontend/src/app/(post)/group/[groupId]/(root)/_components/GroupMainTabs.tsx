@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { LayoutGrid, Newspaper } from 'lucide-react';
 import WeekCalendar from '@/app/(main)/_components/WeekCalendar';
 import RecordTimelineFeed from '@/app/(main)/_components/RecordTimelineFeed';
@@ -30,6 +30,25 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
   const members = membersData?.members ?? [];
 
   const [groupHeaderHeight, setGroupHeaderHeight] = useState(0);
+
+  // TEMP DEBUG — 원인 진단용, 확인 끝나면 제거할 것
+  const [debugText, setDebugText] = useState('');
+  useEffect(() => {
+    const update = () => {
+      const gh = document.getElementById('group-header-sticky');
+      const cal = document.getElementById('week-calendar-sticky');
+      const ghRect = gh?.getBoundingClientRect();
+      const calRect = cal?.getBoundingClientRect();
+      const ghCS = gh ? getComputedStyle(gh) : null;
+      setDebugText(
+        `state=${groupHeaderHeight} realH=${ghRect?.height.toFixed(0)} ghBottom=${ghRect?.bottom.toFixed(0)} calTop=${calRect?.top.toFixed(0)} ` +
+          `pt=${ghCS?.paddingTop} mt=${ghCS?.marginTop} stacked=${gh?.getAttribute('data-stacked-header')} y=${window.scrollY}`,
+      );
+    };
+    update();
+    const id = setInterval(update, 300);
+    return () => clearInterval(id);
+  }, [groupHeaderHeight]);
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -61,7 +80,25 @@ export default function GroupMainTabs({ groupId }: GroupMainTabsProps) {
   }, []);
 
   return (
-    <div className="h-full flex flex-col gap-4">
+    <div className="h-full flex flex-col gap-4 ">
+      {/* TEMP DEBUG — 원인 진단용, 확인 끝나면 제거할 것 */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 99999,
+          background: 'red',
+          color: 'white',
+          fontSize: 9,
+          padding: 4,
+          wordBreak: 'break-all',
+          pointerEvents: 'none',
+        }}
+      >
+        {debugText}
+      </div>
       <div className="flex items-center justify-between">
         <div className="flex -space-x-2">
           {members.slice(0, 4).map((m) => (
