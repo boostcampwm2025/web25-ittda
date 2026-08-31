@@ -1,61 +1,52 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { Suspense, useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TagDashboard from '../TagDashboard';
-import { ProfileTag } from '@/lib/types/profile';
-import { useEffect } from 'react';
+import { TagStatSummary } from '@/lib/types/profile';
+import { Tag } from '@/lib/types/record';
 
-const mockTags: ProfileTag = {
-  recent: [
-    { name: '아침', count: 1 },
-    { name: '좋은글', count: 1 },
-    { name: '점심', count: 1 },
-    { name: '커피', count: 1 },
-    { name: '식사', count: 1 },
-  ],
-  frequent: [
-    { name: '산책', count: 12 },
-    { name: '성수동', count: 8 },
-    { name: '맛집', count: 7 },
-    { name: '가족', count: 5 },
-    { name: '주말', count: 4 },
-  ],
-  all: [
-    { name: '산책', count: 12 },
-    { name: '성수동', count: 8 },
-    { name: '맛집', count: 7 },
-    { name: '가족', count: 5 },
-    { name: '아침', count: 1 },
-    { name: '좋은글', count: 1 },
-    { name: '점심', count: 1 },
-    { name: '커피', count: 1 },
-    { name: '식사', count: 1 },
-    { name: '주말', count: 4 },
-    { name: '독서', count: 3 },
-    { name: '영화', count: 6 },
-    { name: '데이트', count: 9 },
-    { name: '운동', count: 2 },
-    { name: '여행', count: 11 },
-  ],
+// TagDashboard는 props 없이 내부에서 useSuspenseQuery(userProfileTagSummaryOptions(10))만 사용한다.
+// queryKey: ['profile', 'tags', 'summary', 10]
+// Tag 타입: { tag: string; count: number }
+
+// 최근 사용: 시간 역순 (count 순이 아님) → 자주 사용 탭으로 전환 시 count 순 정렬이 눈에 보임
+const mockRecentTags: Tag[] = [
+  { tag: '주말', count: 4 },
+  { tag: '맛집', count: 7 },
+  { tag: '가족', count: 5 },
+  { tag: '성수동', count: 8 },
+  { tag: '산책', count: 12 },
+];
+
+const mockFrequentTags: Tag[] = [
+  { tag: '산책', count: 12 },
+  { tag: '성수동', count: 8 },
+  { tag: '맛집', count: 7 },
+  { tag: '가족', count: 5 },
+  { tag: '주말', count: 4 },
+];
+
+const mockTagSummary: TagStatSummary = {
+  recentTags: mockRecentTags,
+  frequentTags: mockFrequentTags,
 };
 
-const emptyTags: ProfileTag = {
-  recent: [],
-  frequent: [],
-  all: [],
+const emptyTagSummary: TagStatSummary = {
+  recentTags: [],
+  frequentTags: [],
 };
 
-const fewTags: ProfileTag = {
-  recent: [
-    { name: '산책', count: 3 },
-    { name: '맛집', count: 2 },
-  ],
-  frequent: [
-    { name: '산책', count: 3 },
-    { name: '맛집', count: 2 },
-  ],
-  all: [
-    { name: '산책', count: 3 },
-    { name: '맛집', count: 2 },
-  ],
+function makeClient(summary: TagStatSummary) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  client.setQueryData(['profile', 'tags', 'summary', 10], summary);
+  return client;
+}
+
+const clients = {
+  default: makeClient(mockTagSummary),
+  empty: makeClient(emptyTagSummary),
 };
 
 const meta = {
@@ -63,149 +54,75 @@ const meta = {
   component: TagDashboard,
   parameters: {
     layout: 'padded',
-  },
-  tags: ['autodocs'],
-  argTypes: {
-    tags: {
-      description: '프로필 태그 데이터 (recent, frequent, all)',
+    docs: {
+      description: {
+        component:
+          '프로필 페이지의 태그 통계 대시보드 컴포넌트입니다. 최근 사용/자주 사용 탭으로 태그를 분류하여 표시하며, 조합 검색 드로어로 여러 태그를 선택해 기록을 필터링할 수 있습니다. "모두 보기"를 통해 태그 전체 보기 페이지(/profile/all-tags)로 이동합니다.',
+      },
     },
   },
-  decorators: [
-    (Story) => (
-      <div className="max-w-md mx-auto p-5 bg-[#F9F9F9] dark:bg-[#121212]">
-        <Story />
-      </div>
-    ),
-  ],
+  tags: ['autodocs'],
 } satisfies Meta<typeof TagDashboard>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    tags: mockTags,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '기본 태그 대시보드 - 최근 사용 / 자주 사용 탭 전환 가능',
-      },
-    },
-  },
-};
-
-export const RecentTab: Story = {
-  args: {
-    tags: mockTags,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '최근 사용 태그 탭 (기본 선택)',
-      },
-    },
-  },
-};
-
-// 자주 사용 탭이 자동으로 클릭되도록 래퍼 컴포넌트 생성
-function TagDashboardWithFrequentTab({ tags }: { tags: ProfileTag }) {
-  useEffect(() => {
-    // DOM이 렌더링된 후 자주 사용 버튼 클릭
-    const timer = setTimeout(() => {
-      const buttons = document.querySelectorAll('button');
-      const frequentButton = Array.from(buttons).find(
-        (button) => button.textContent === '자주 사용',
-      );
-      if (frequentButton) {
-        (frequentButton as HTMLButtonElement).click();
-      }
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  return <TagDashboard tags={tags} />;
-}
-
-export const FrequentTab: Story = {
-  args: {
-    tags: mockTags,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          '자주 사용 태그 탭 - 사용 횟수가 많은 순으로 정렬. Docs 모드에서도 자동으로 탭이 전환됩니다.',
-      },
-    },
-  },
-  render: (args) => <TagDashboardWithFrequentTab {...args} />,
-};
-
-export const EmptyTags: Story = {
-  args: {
-    tags: emptyTags,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '태그가 없는 경우 - "사용된 태그가 없습니다" 메시지 표시',
-      },
-    },
-  },
-};
-
-export const FewTags: Story = {
-  args: {
-    tags: fewTags,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '태그가 적은 경우 (2개)',
-      },
-    },
-  },
-};
-
-export const DarkMode: Story = {
-  args: {
-    tags: mockTags,
-  },
-  parameters: {
-    backgrounds: { default: 'dark' },
-    docs: {
-      description: {
-        story: '다크 모드 태그 대시보드',
-      },
-    },
-  },
   decorators: [
     (Story) => (
-      <div className="dark">
-        <div className="max-w-md mx-auto p-5 bg-[#121212]">
-          <Story />
+      <QueryClientProvider client={clients.default}>
+        <div className="max-w-2xl mx-auto p-5 bg-[#F9F9F9] dark:bg-[#121212]">
+          <Suspense fallback={<div className="h-20 animate-pulse rounded-xl bg-gray-100 dark:bg-white/5" />}>
+            <Story />
+          </Suspense>
         </div>
-      </div>
+      </QueryClientProvider>
     ),
   ],
-};
-
-export const WithComboSearch: Story = {
-  args: {
-    tags: mockTags,
-  },
   parameters: {
     docs: {
       description: {
         story: `
-태그 대시보드 기능:
-- **탭 전환**: 최근 사용 / 자주 사용 태그 전환
-- **조합 검색**: Drawer로 여러 태그 선택 후 검색
-- **모두 보기**: /profile/all-tags 페이지로 이동
-- **태그 표시**: 최대 5개까지 표시, 각 태그의 사용 횟수 표시
+기본 태그 대시보드 — 최근 사용 탭으로 시작
+- **탭 전환**: 최근 사용 / 자주 사용 버튼 클릭으로 태그 목록 전환
+- **조합 검색 버튼**: 클릭 시 드로어가 열리며 여러 태그를 선택해 기록 필터링 가능
+- **모두 보기 버튼**: /profile/all-tags 페이지로 이동
+- **태그 표시**: 최대 5개, 각 태그 우측에 사용 횟수 표시
         `,
+      },
+    },
+  },
+};
+
+function FrequentTabWrapper() {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(
+        (b) => b.textContent === '자주 사용',
+      );
+      btn?.click();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+  return <TagDashboard />;
+}
+
+export const EmptyTags: Story = {
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={clients.empty}>
+        <div className="max-w-2xl mx-auto p-5 bg-[#F9F9F9] dark:bg-[#121212]">
+          <Suspense fallback={<div className="h-20 animate-pulse rounded-xl bg-gray-100 dark:bg-white/5" />}>
+            <Story />
+          </Suspense>
+        </div>
+      </QueryClientProvider>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story: '태그가 없는 경우 — "아직 사용한 태그가 없어요" 메시지 표시',
       },
     },
   },

@@ -21,26 +21,42 @@ interface Props {
 export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
   const MAX_VISIBLE = 3;
 
-  // URL 변환
   const mediaIds = photos.mediaIds || [];
-  const { data: resolvedData } = useMediaResolveMulti(mediaIds, draftId);
+  const tempUrls = photos.tempUrls || [];
+  const { data: resolvedData, isLoading } = useMediaResolveMulti(
+    mediaIds,
+    draftId,
+  );
 
-  // resolve 된 url
   const urlMap = new Map(
     resolvedData?.items.map((item) => [item.mediaId, item.url]),
   );
 
-  // 전체 사진
-  const allPhotos = [
-    ...(photos.tempUrls || []),
-    ...(mediaIds.map((id) => urlMap.get(id)).filter(Boolean) as string[]),
-  ];
-
-  const totalCount = allPhotos.length;
+  // mediaId 개수 기준으로 총 사진 수 계산 (로딩 중에도 개수 유지)
+  const totalCount = mediaIds.length > 0 ? mediaIds.length : tempUrls.length;
   const hasMore = totalCount > MAX_VISIBLE;
 
-  // 사진이 하나도 없는 경우
-  if (totalCount === 0)
+  // tempUrls는 mediaIds 뒤쪽(tail)에 추가된 새 사진의 미리보기와 대응된다.
+  // (기록 수정 등 기존 mediaIds에는 대응하는 tempUrl이 없을 수 있음)
+  const tempUrlOffset = mediaIds.length - tempUrls.length;
+
+  // URL 결정: tempUrl 우선, 없으면 resolved URL, 둘 다 없으면 null(스켈레톤)
+  const photoSlots =
+    mediaIds.length > 0
+      ? mediaIds.slice(0, MAX_VISIBLE).map((id, i) => ({
+          key: id,
+          url:
+            (i >= tempUrlOffset ? tempUrls[i - tempUrlOffset] : undefined) ||
+            urlMap.get(id) ||
+            null,
+        }))
+      : tempUrls.slice(0, MAX_VISIBLE).map((url, i) => ({
+          key: `temp-${i}`,
+          url,
+        }));
+
+  // 사진이 하나도 없고 로딩 중도 아닌 경우
+  if (totalCount === 0 && !isLoading)
     return (
       <div className="flex items-center gap-2 w-full py-1 group">
         <FieldDefaultButton onClick={onClick}>
@@ -57,20 +73,26 @@ export const PhotoField = ({ photos, onClick, onRemove, draftId }: Props) => {
       onClick={onClick}
     >
       <div className="flex -space-x-4 overflow-hidden py-1">
-        {allPhotos.slice(0, MAX_VISIBLE).map((url, idx) => (
+        {photoSlots.map(({ key, url }, idx) => (
           <div
-            key={`${url}-${idx}`}
-            className="relative w-14 h-14 rounded-2xl border-4 border-white dark:border-[#121212] overflow-hidden shadow-sm transition-transform group-hover:translate-x-1"
+            key={`${key}-${idx}`}
+            className="relative w-14 h-14 rounded-2xl border-4 border-white dark:border-[#121212] overflow-hidden shadow-sm transition-transform group-hover:translate-x-1 bg-gray-100 dark:bg-white/10"
             style={{ zIndex: 10 - idx }}
           >
-            <Image
-              src={url}
-              width={56}
-              height={56}
-              className="w-full h-full object-cover rounded-2xl"
-              alt={`첨부 사진 ${url}`}
-              unoptimized={true}
-            />
+            {url ? (
+              <Image
+                src={url}
+                width={56}
+                height={56}
+                className="w-full h-full object-cover"
+                alt={`첨부 사진 ${idx + 1}`}
+                unoptimized={true}
+                style={{ imageOrientation: 'from-image' }}
+              />
+            ) : (
+              // URL 아직 로딩 중 — 스켈레톤
+              <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-white/20 rounded-2xl" />
+            )}
             {idx === MAX_VISIBLE - 1 && hasMore && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                 <span className="text-white text-xs font-black">

@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { LocationValue } from '@/lib/types/recordField';
 import Back from '@/components/Back';
-import LocationPermissionChecker from '@/components/LocationPermissionChecker';
 
 export default function LocationPickerPage() {
   const router = useRouter();
@@ -29,18 +28,24 @@ export default function LocationPickerPage() {
   };
 
   return (
-    <div className="w-full h-screen flex flex-col bg-white">
-      <LocationPermissionChecker />
-      <header className="dark:bg-[#121212]/90 bg-white/90 backdrop-blur-xl transition-all duration-500 sticky top-0 z-50 max-w-4xl w-full px-6 py-4 mx-auto flex items-center justify-between">
-        <Back />
-        <h1 className="font-semibold">장소 선택</h1>
-        <div className="w-6" /> {/* 가운데 정렬용 */}
-      </header>
+    <div className="fixed inset-0 w-full h-screen flex flex-col bg-white">
+      <div
+        className="w-full flex flex-col"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        <header className="dark:bg-[#121212] bg-white backdrop-blur-xl transition-all duration-500 sticky top-0 z-50 max-w-4xl w-full px-4 sm:px-6 py-3 sm:py-4 mx-auto flex items-center justify-between">
+          <Back fallback="/search" />
+          <h1 className="font-semibold text-sm sm:text-base dark:text-white">
+            장소 선택
+          </h1>
+          <div className="w-5 sm:w-6" /> {/* 가운데 정렬용 */}
+        </header>
+      </div>
       <main className="flex-1 overflow-hidden">
         <LocationPicker
           mode={isSearchMode ? 'search' : 'post'}
           onSelect={handleSelect}
-          className="h-full md:h-full"
+          className="h-full"
         />
       </main>
     </div>

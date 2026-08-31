@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">잇다</string>
+    <string name="title_activity_main">잇다</string>
+    <string name="package_name">com.ittda.app</string>
+    <string name="custom_url_scheme">com.ittda.app</string>
+</resources>

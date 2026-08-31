@@ -9,6 +9,7 @@ import { Calendar, ChevronDown, Clock } from 'lucide-react';
 import { FieldDeleteButton } from './FieldDeleteButton';
 import { cn } from '@/lib/utils';
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import { DateValue, TextValue, TimeValue } from '@/lib/types/record';
 
 interface DateProps {
@@ -86,6 +87,7 @@ export const ContentField = ({
   onLockedClick,
 }: ContentProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imeProps = useIMEInput(onChange);
   const isInternalFocus = useRef(false);
 
   useEffect(() => {
@@ -111,13 +113,28 @@ export const ContentField = ({
 
   const adjustHeight = useCallback(() => {
     const target = textareaRef.current;
-    // 현재 텍스트 크기에 맞게 높이 조절
-    if (target) {
-      requestAnimationFrame(() => {
+    if (!target) return;
+    // height: auto 로 먼저 줄이면 스크롤 컨테이너가 위로 점프하는 문제가 발생.
+    // scrollHeight는 overflow:hidden 상태에서도 콘텐츠 전체 높이를 반환하므로
+    // 현재 높이보다 커질 때만 늘리고, 줄어들 때는 height: auto 후 재측정.
+    requestAnimationFrame(() => {
+      const newHeight = target.scrollHeight;
+      if (newHeight > target.offsetHeight) {
+        // 콘텐츠가 늘어난 경우: 높이만 확장 후 커서가 보이도록 스크롤
+        target.style.height = `${newHeight}px`;
+        // 커서 위치를 뷰포트 안으로 부드럽게 스크롤
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        // 콘텐츠가 줄어든 경우: 스크롤 위치 저장 후 복원
+        const scrollEl = target.closest('[data-radix-scroll-area-viewport]') ??
+          target.parentElement?.closest('[style*="overflow"]') ??
+          document.scrollingElement;
+        const savedScroll = scrollEl?.scrollTop ?? 0;
         target.style.height = 'auto';
         target.style.height = `${target.scrollHeight}px`;
-      });
-    }
+        if (scrollEl) scrollEl.scrollTop = savedScroll;
+      }
+    });
   }, []);
 
   // value 변경될 때 높이 조절
@@ -168,13 +185,14 @@ export const ContentField = ({
         <textarea
           ref={textareaRef}
           spellCheck="false"
+          rows={1}
           placeholder="어떤 기억이 있으신가요?"
           value={value.text}
           disabled={isLocked}
           onFocus={handleFocusWrapper}
           onBlur={handleBlur}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full min-h-30 border-none focus:ring-0 outline-none text-md leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
+          {...imeProps}
+          className="w-full h-auto border-none focus:ring-0 outline-none text-base leading-relaxed tracking-tight resize-none p-1 overflow-hidden bg-transparent text-itta-black dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-500"
         />
       </div>
       {!isLastContentBlock && (

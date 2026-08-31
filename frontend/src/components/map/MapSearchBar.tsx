@@ -4,6 +4,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useState } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import Input from '../Input';
 import { Search, MapPin, Loader2, X } from 'lucide-react';
 
@@ -29,6 +30,7 @@ export function MapSearchBar({
 }: MapSearchBarProps) {
   const [query, setQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const queryImeProps = useIMEInput(setQuery);
 
   // 검색 실행 함수
   const triggerSearch = () => {
@@ -60,11 +62,11 @@ export function MapSearchBar({
             <Input.Field
               placeholder={placeholder}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              {...queryImeProps}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') triggerSearch();
               }}
-              className="dark:text-white"
+              className="dark:text-white flex-1 min-w-0 mobile-input"
             />
             <Input.Right>
               <button
@@ -92,7 +94,7 @@ export function MapSearchBar({
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0 bg-white dark:bg-[#1E1E1E] shadow-2xl border-none rounded-xl overflow-hidden mt-2 z-100"
+        className="w-(--radix-popover-trigger-width) p-0 bg-white dark:bg-[#1E1E1E] shadow-2xl border-none rounded-xl overflow-hidden sm:mt-2 z-100"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="max-h-60 overflow-y-auto">
@@ -105,14 +107,15 @@ export function MapSearchBar({
                 setShowResults(false);
                 setQuery(p.name || '');
               }}
-              className="w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-white/5 border-b dark:border-white/10 last:border-0 flex items-center gap-3 transition-colors"
+              className="w-full p-3 sm:p-4 text-left hover:bg-gray-50 dark:hover:bg-white/5 border-b dark:border-white/10 last:border-0 flex items-center gap-2 sm:gap-3 transition-colors"
             >
-              <MapPin size={14} className="text-itta-point" />
+              <MapPin size={12} className="text-itta-point sm:hidden" />
+              <MapPin size={14} className="text-itta-point hidden sm:block" />
               <div className="min-w-0">
-                <p className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                <p className="font-bold text-[13px] sm:text-sm text-gray-900 dark:text-white truncate">
                   {p.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
                   {p.formatted_address}
                 </p>
               </div>

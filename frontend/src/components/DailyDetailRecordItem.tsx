@@ -85,7 +85,7 @@ export default function DailyDetailRecordItem({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="w-3.5 h-3.5 text-gray-400" />
-            <span className="text-[13px] font-medium text-gray-600 dark:text-gray-300 uppercase">
+            <span className="text-[11px] sm:text-[13px] font-medium text-gray-600 dark:text-gray-300 uppercase">
               {time || '시간 정보 없음'}
             </span>
           </div>
@@ -127,6 +127,7 @@ export default function DailyDetailRecordItem({
                         width={32}
                         height={32}
                         className="w-full h-full object-cover rounded-full"
+                        wrapperClassName="w-full h-full"
                         assetId={m.groupProfileImageId}
                         alt={`${m.groupNickname || m.nickname}의 프로필`}
                       />
@@ -182,9 +183,9 @@ export default function DailyDetailRecordItem({
                   // Span 2인 경우: 전체 너비
                   return (
                     <div key={rowNumber} className="w-full">
-                      {sortedBlocks.map((block) => (
+                      {sortedBlocks.map((block, idx) => (
                         <BlockContent
-                          key={`${record.postId}-${block.id}`}
+                          key={`${record.postId}-${rowNumber}-${block.id ?? idx}`}
                           block={block}
                         />
                       ))}
@@ -197,9 +198,9 @@ export default function DailyDetailRecordItem({
                       key={rowNumber}
                       className="flex justify-between items-center gap-3 w-full overflow-hidden"
                     >
-                      {sortedBlocks.map((block) => (
+                      {sortedBlocks.map((block, idx) => (
                         <div
-                          key={block.id}
+                          key={`${record.postId}-${rowNumber}-${block.id ?? idx}`}
                           className={cn(
                             'min-w-0 shrink',
                             block.layout.col === 2 ? 'text-right' : 'text-left',
@@ -227,7 +228,7 @@ export default function DailyDetailRecordItem({
               <AlertCircle className="w-8 h-8" />
             </div>
             <div className="space-y-3">
-              <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
+              <DrawerTitle className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                 {`'${record.title}'`}
                 <br />
                 기록을 삭제할까요?
@@ -239,12 +240,12 @@ export default function DailyDetailRecordItem({
           </DrawerHeader>
 
           <div className="flex gap-4">
-            <DrawerClose className="cursor-pointer flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
+            <DrawerClose className="cursor-pointer flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
               취소
             </DrawerClose>
             <button
               onClick={handleDelete}
-              className="flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
+              className="flex-2 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
             >
               삭제하기
             </button>

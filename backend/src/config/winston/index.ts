@@ -23,9 +23,10 @@ export const createLoggerOptions = (
   options: CreateLoggerOptions = {},
 ): LoggerOptions => {
   const level = options.level ?? resolveLogLevel();
+  const nodeEnv = process.env.NODE_ENV;
   const consoleLevel =
     options.consoleLevel ??
-    (process.env.NODE_ENV === 'production' ? level : 'debug');
+    (nodeEnv === 'production' || nodeEnv === 'test' ? level : 'debug');
 
   return {
     level,

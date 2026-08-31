@@ -10,7 +10,7 @@
 export const getImageDimensions = (
   file: File,
 ): Promise<{ width: number; height: number }> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
 
     img.onload = () => {
@@ -19,6 +19,11 @@ export const getImageDimensions = (
 
       // 사용이 끝난 Object URL을 해제 = 메모리 누수 방지
       URL.revokeObjectURL(img.src);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error(`이미지 로드 실패: ${file.name}`));
     };
 
     // 파일 객체를 브라우저에서 접근 가능한 임시 URL로 변환

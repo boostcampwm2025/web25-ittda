@@ -18,16 +18,17 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "cross-env NODE_ENV=test jest --config ./test/jest-e2e.json",
+    "test:e2e:debug": "cross-env NODE_ENV=test LOG_LEVEL=debug jest --config ./test/jest-e2e.json",
     "seed": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./src/seed/seed.ts",
     "seed:reset": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./src/seed/seed-reset.ts",
-    "db:mig:gen": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations/$MIGRATION_NAME -d ./src/data-source.ts",
+    "db:mig:gen": "cross-env NODE_ENV=local sh -c 'NAME=${1:-${MIGRATION_NAME:-$npm_config_name}}; if [ -z \"$NAME\" ]; then echo \"Usage: pnpm -C backend db:mig:gen -- <migration-name>\"; exit 1; fi; ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations/$NAME -d ./src/data-source.ts' --",
     "db:mig:create": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
     "db:mig:run": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:mig:run:prod": "cross-env NODE_ENV=production ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:mig:run:test": "cross-env NODE_ENV=test ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:mig:revert": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
     "db:mig:show": "cross-env NODE_ENV=local ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d ./src/data-source.ts",
-    "db:mig:gen:test": "cross-env NODE_ENV=test ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations/$MIGRATION_NAME -d ./src/data-source.ts",
+    "db:mig:gen:test": "cross-env NODE_ENV=test sh -c 'NAME=${1:-${MIGRATION_NAME:-$npm_config_name}}; if [ -z \"$NAME\" ]; then echo \"Usage: pnpm -C backend db:mig:gen:test -- <migration-name>\"; exit 1; fi; ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./migrations/$NAME -d ./src/data-source.ts' --",
     "db:mig:create:test": "cross-env NODE_ENV=test ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
     "db:mig:revert:test": "cross-env NODE_ENV=test ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
     "db:mig:show:test": "cross-env NODE_ENV=test ts-node --project ./tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d ./src/data-source.ts"
@@ -51,6 +52,7 @@
     "class-validator": "^0.14.3",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
+    "firebase-admin": "^14.1.0",
     "logform": "^2.7.0",
     "luxon": "^3.7.2",
     "nest-winston": "^1.10.2",
@@ -123,6 +125,12 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
+    "coverageReporters": [
+      "text",
+      "json",
+      "json-summary",
+      "lcov"
+    ],
     "testEnvironment": "node"
   }
 }

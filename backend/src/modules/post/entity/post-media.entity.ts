@@ -6,6 +6,7 @@ import {
   Index,
   CreateDateColumn,
   JoinColumn,
+  Check,
 } from 'typeorm';
 import { Post } from './post.entity';
 import { PostBlock } from './post-block.entity';
@@ -17,6 +18,11 @@ export enum PostMediaKind {
 }
 
 @Entity('post_media')
+@Check(
+  'chk_post_media_kind',
+  `((kind = 'THUMBNAIL' AND block_id IS NULL AND sort_order IS NULL) OR
+    (kind = 'BLOCK' AND block_id IS NOT NULL AND sort_order IS NOT NULL))`,
+)
 @Index(['postId']) // post_id는 post와 조인할 때 자주 사용
 @Index(['mediaId']) // media_id도 media_assets와 조인할 때 필수
 @Index(['post', 'kind'])

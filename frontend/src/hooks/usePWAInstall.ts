@@ -14,14 +14,25 @@ export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isCheckComplete, setIsCheckComplete] = useState(false);
 
   useEffect(() => {
     const checkInstallation = async () => {
+      // Capacitor 네이티브 앱에서는 배너 불필요
+      if (
+        (
+          window as unknown as {
+            Capacitor?: { isNativePlatform?: () => boolean };
+          }
+        ).Capacitor?.isNativePlatform?.()
+      ) {
+        setIsInstalled(true);
+        return true;
+      }
+
       // 1. display-mode로 확인
       if (window.matchMedia('(display-mode: standalone)').matches) {
-        requestAnimationFrame(() => {
-          setIsInstalled(true);
-        });
+        setIsInstalled(true);
         return true;
       }
 
@@ -37,9 +48,7 @@ export function usePWAInstall() {
           ).getInstalledRelatedApps();
 
           if (relatedApps.length > 0) {
-            requestAnimationFrame(() => {
-              setIsInstalled(true);
-            });
+            setIsInstalled(true);
             return true;
           }
         } catch (error) {
@@ -59,14 +68,18 @@ export function usePWAInstall() {
     };
 
     // beforeinstallprompt 이벤트 리스너
+    // e.preventDefault()를 호출하면 주소창 설치 아이콘까지 숨겨지므로 호출하지 않음
+    // 핸들러를 비동기 체크 완료 전에 등록해야 이벤트를 놓치지 않음
     const handler = (e: Event) => {
-      e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
+    window.addEventListener('beforeinstallprompt', handler);
+
     checkInstallation().then((installed) => {
-      if (!installed) {
-        window.addEventListener('beforeinstallprompt', handler);
+      setIsCheckComplete(true);
+      if (installed) {
+        window.removeEventListener('beforeinstallprompt', handler);
       }
     });
 
@@ -123,6 +136,7 @@ export function usePWAInstall() {
   return {
     deferredPrompt,
     isInstalled,
+    isCheckComplete,
     promptInstall,
     isIOS,
     isSafari,

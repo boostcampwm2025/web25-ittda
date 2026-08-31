@@ -25,5 +25,5 @@ export const MULTI_INSTANCE_LIMITS: Partial<Record<FieldType, number>> = {
   content: 4,
   table: 4,
   media: 4,
-  photos: 10,
+  photos: 5,
 };

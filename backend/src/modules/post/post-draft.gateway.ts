@@ -10,7 +10,8 @@ import {
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger, OnModuleDestroy, UseFilters, UseGuards } from '@nestjs/common';
+import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { Server, Socket } from 'socket.io';
@@ -45,9 +46,14 @@ import type {
     credentials: true,
   },
 })
+@UseFilters(AllWsExceptionFilter)
 @UseGuards(WsJwtGuard)
 export class PostDraftGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
+  implements
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnGatewayInit,
+    OnModuleDestroy
 {
   private readonly logger = new Logger(PostDraftGateway.name);
   private static readonly PRESENCE_TTL_MS = 60_000;
@@ -92,8 +98,19 @@ export class PostDraftGateway
       clearInterval(this.groupDraftRefreshTimer);
     }
     this.groupDraftRefreshTimer = setInterval(() => {
-      void this.broadcastGroupDraftSnapshots();
+      void this.broadcastSubscribedGroupDraftSnapshots();
     }, PostDraftGateway.GROUP_DRAFT_REFRESH_MS);
+  }
+
+  onModuleDestroy() {
+    if (this.presenceSweepTimer) {
+      clearInterval(this.presenceSweepTimer);
+      this.presenceSweepTimer = undefined;
+    }
+    if (this.groupDraftRefreshTimer) {
+      clearInterval(this.groupDraftRefreshTimer);
+      this.groupDraftRefreshTimer = undefined;
+    }
   }
 
   @SubscribeMessage('JOIN_DRAFT')
@@ -119,10 +136,8 @@ export class PostDraftGateway
     if (!existingMember && memberCount >= PostDraftGateway.DRAFT_JOIN_LIMIT) {
       throw new WsException('Draft is full.');
     }
-    const { displayName, role, profileImageId } = await this.resolveMemberInfo(
-      actorId,
-      draftId,
-    );
+    const { displayName, role, profileImageId, draftVersion } =
+      await this.resolveMemberInfo(actorId, draftId);
     const member: PresenceMember = {
       sessionId,
       displayName,
@@ -163,7 +178,7 @@ export class PostDraftGateway
       sessionId,
       members: this.presenceService.getMembersArray(draftId),
       locks: this.lockService.getLocks(draftId),
-      version: 0,
+      version: draftVersion,
     });
 
     socket.to(room).emit('PRESENCE_JOINED', { member });
@@ -346,6 +361,8 @@ export class PostDraftGateway
     if (payload.draftId === undefined || payload.draftId === null) {
       throw new WsException('draftId is required.');
     }
+    // socketData.draftId가 없으면 이미 퇴장했거나 아직 입장 전 — stale cleanup 메시지이므로 무시
+    if (!socketData.draftId) return;
     if (payload.draftId !== socketData.draftId) {
       throw new WsException('draftId mismatch.');
     }
@@ -414,6 +431,23 @@ export class PostDraftGateway
     });
   }
 
+  invalidateDrafts(draftIds: string[], reason: string) {
+    const uniqueDraftIds = Array.from(new Set(draftIds));
+
+    uniqueDraftIds.forEach((draftId) => {
+      this.lockService.clearDraft(draftId);
+      this.presenceService.clearDraft(draftId);
+      this.broadcastDraftInvalidated(draftId, reason);
+    });
+  }
+
+  async refreshGroupDraftSnapshots(groupIds: string[]) {
+    const uniqueGroupIds = Array.from(new Set(groupIds));
+    await Promise.all(
+      uniqueGroupIds.map((groupId) => this.emitGroupDraftSnapshot(groupId)),
+    );
+  }
+
   private getDraftRoom(draftId: string) {
     return `draft:${draftId}`;
   }
@@ -474,11 +508,9 @@ export class PostDraftGateway
     this.groupDraftSubscribers.set(groupId, new Set([socketId]));
   }
 
-  private async broadcastGroupDraftSnapshots() {
+  private async broadcastSubscribedGroupDraftSnapshots() {
     const groupIds = Array.from(this.groupDraftSubscribers.keys());
-    await Promise.all(
-      groupIds.map((groupId) => this.emitGroupDraftSnapshot(groupId)),
-    );
+    await this.refreshGroupDraftSnapshots(groupIds);
   }
 
   private async emitGroupDraftSnapshot(groupId: string, socket?: Socket) {
@@ -594,7 +626,7 @@ export class PostDraftGateway
   private async resolveMemberInfo(actorId: string, draftId: string) {
     const draft = await this.postDraftRepository.findOne({
       where: { id: draftId, isActive: true },
-      select: { id: true, groupId: true },
+      select: { id: true, groupId: true, version: true },
     });
     if (!draft) {
       throw new WsException('Draft not found.');
@@ -625,6 +657,7 @@ export class PostDraftGateway
       displayName,
       role: member.role,
       profileImageId,
+      draftVersion: draft.version,
     };
   }
 

@@ -6,9 +6,9 @@ export default function MyRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="w-full flex flex-col gap-6">
+    <main className="w-full flex flex-col gap-4 sm:gap-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight dark:text-white text-[#222222]">
+        <h2 className="text-lg sm:text-xl font-bold tracking-tight dark:text-white text-[#222222]">
           내 기록함
         </h2>
         <DateSelectorDrawer

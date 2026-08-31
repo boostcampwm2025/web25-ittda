@@ -32,17 +32,23 @@ export default function ProfileEditHeaderActions({
   };
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/95 bg-white/95">
-      <Back />
-      <h2 className="text-sm font-bold dark:text-white text-itta-black">
+    <header className="sticky top-0 z-50 backdrop-blur-md px-4 py-3 sm:p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/95 bg-white/95">
+      <Back fallback="/" />
+      <h2 className="text-[13px] sm:text-sm font-bold dark:text-white text-itta-black">
         {title}
       </h2>
-      <button
-        onClick={handleSave}
-        className="cursor-pointer font-bold text-sm active:scale-95 transition-all min-w-8"
-      >
-        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : '저장'}
-      </button>
+      <div className="relative flex items-center justify-end min-w-8">
+        {isPending ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <button
+            onClick={handleSave}
+            className="cursor-pointer font-bold text-[13px] sm:text-sm active:scale-95 transition-all"
+          >
+            저장
+          </button>
+        )}
+      </div>
     </header>
   );
 }

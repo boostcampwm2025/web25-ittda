@@ -2,6 +2,7 @@
 
 import Back from '@/components/Back';
 import SocialShareDrawer from '@/components/SocialShareDrawer';
+import GroupShareDrawer from '@/components/GroupShareDrawer';
 import {
   Drawer,
   DrawerClose,
@@ -9,23 +10,25 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { Popover } from '@/components/ui/popover';
-import { useApiDelete } from '@/hooks/useApi';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { useApiDelete, useApiPost } from '@/hooks/useApi';
 import { useEditPostDraft } from '@/hooks/useGrouprRecord';
 import { ImageValue, RecordDetailResponse } from '@/lib/types/record';
 import { ApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
-import {
-  PopoverClose,
-  PopoverContent,
-  PopoverTrigger,
-} from '@radix-ui/react-popover';
+import { PopoverClose } from '@radix-ui/react-popover';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, MoreHorizontal } from 'lucide-react';
+import { AlertCircle, Link2, Link2Off, MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { groupMyRoleOptions } from '@/lib/api/group';
+import { groupListOptions, groupMyRoleOptions } from '@/lib/api/group';
+import { postGroupShareOptions } from '@/lib/api/records';
+import { refreshSharedData } from '@/lib/actions/revalidate';
 
 interface RecordDetailHeaderActionsProps {
   record: RecordDetailResponse;
@@ -38,7 +41,47 @@ export default function RecordDetailHeaderActions({
   const [currentUrl, setCurrentUrl] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [groupShareOpen, setGroupShareOpen] = useState(false);
+  const shareToken = record.shareToken ?? null;
   const { userId } = useAuthStore();
+
+  const { data: shareableGroups = [] } = useQuery({
+    ...groupListOptions(),
+    enabled: groupShareOpen,
+  });
+  const { data: sharedGroups = [] } = useQuery({
+    ...postGroupShareOptions(record.id),
+    enabled: groupShareOpen,
+  });
+
+  const sharedGroupIds = useMemo(
+    () => sharedGroups.map((g) => g.groupId),
+    [sharedGroups],
+  );
+
+  const { mutate: createShareLink, isPending: isCreatingShare } = useApiPost<{
+    shareToken: string;
+    shareUrl: string;
+  }>(`/api/posts/${record.id}/share`, {
+    onSuccess: (res) => {
+      if (res.data?.shareToken) {
+        setShareOpen(true);
+        queryClient.invalidateQueries({ queryKey: ['record', record.id] });
+      }
+    },
+    onError: () => toast.error('공유 링크 생성에 실패했습니다.'),
+  });
+
+  const { mutate: revokeShareLink, isPending: isRevokingShare } = useApiDelete(
+    `/api/posts/${record.id}/share`,
+    {
+      onSuccess: () => {
+        toast.success('공유 링크가 해제되었어요.');
+        queryClient.invalidateQueries({ queryKey: ['record', record.id] });
+      },
+      onError: () => toast.error('공유 링크 해제에 실패했습니다.'),
+    },
+  );
   const { mutateAsync: startGroupEdit } = useEditPostDraft(
     record.groupId || '',
     record.id,
@@ -51,36 +94,52 @@ export default function RecordDetailHeaderActions({
   });
 
   const isViewer = roleData?.role === 'VIEWER';
+  // 공유받은 개인 글은 그룹원도 조회는 가능하지만, 원작성자만 공유/수정/삭제할 수 있다.
+  const isPersonalNonOwner =
+    record.scope === 'PERSONAL' && record.permission !== 'OWNER';
 
   const textBlock = record.blocks.find((block) => block.type === 'TEXT');
   const content =
     textBlock && 'text' in textBlock.value ? textBlock.value.text : '';
   const image = record.blocks.find((block) => block.type === 'IMAGE')
     ?.value as ImageValue;
-  // 마운트 시점에 window 주소 가져오기
   useEffect(() => {
     requestAnimationFrame(() => {
       setCurrentUrl(`${window.location.origin}/record/${record.id}`);
     });
   }, [record.id]);
 
+  const shareUrl = shareToken
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${shareToken}`
+    : currentUrl;
+
   // TEXT 타입 블록에서 내용 추출
   const shareData = {
     id: record.id,
     title: record.title,
     text: content,
-    url: currentUrl,
+    url: shareUrl,
   };
 
   const queryClient = useQueryClient();
   const { mutate: deleteRecord } = useApiDelete(`/api/posts/${record.id}`, {
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('기록이 삭제되었습니다.');
-      queryClient.invalidateQueries({ queryKey: ['records'] });
+      queryClient.invalidateQueries({ queryKey: ['my', 'records'] });
 
-      setTimeout(() => {
-        router.back();
-      }, 1000);
+      if (record.groupId) {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ['group', record.groupId, 'records'],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ['shared'],
+          }),
+          refreshSharedData(),
+        ]);
+      }
+
+      router.back();
     },
     onError: (error: ApiError) => {
       if (error.code && error.code === 'NOT_FOUND') {
@@ -110,8 +169,12 @@ export default function RecordDetailHeaderActions({
     }
   };
 
-  const handleShare = async () => {
-    setShareOpen(true);
+  const handleShare = () => {
+    if (shareToken) {
+      setShareOpen(true);
+    } else {
+      createShareLink({});
+    }
   };
 
   const handleDelete = () => {
@@ -120,19 +183,23 @@ export default function RecordDetailHeaderActions({
 
   return (
     <>
-      <Back />
+      <Back fallback="/" />
       <div className="relative">
         <Popover>
           <PopoverTrigger
-            disabled={isViewer}
-            className="cursor-pointer p-1 active:scale-90 transition-transform text-gray-400"
+            disabled={isViewer || isPersonalNonOwner}
+            className={`p-1 transition-transform text-gray-400 ${
+              isViewer || isPersonalNonOwner
+                ? 'opacity-40 cursor-not-allowed'
+                : 'cursor-pointer active:scale-90'
+            }`}
           >
             <MoreHorizontal className="w-6 h-6" />
           </PopoverTrigger>
           <PopoverContent
             align="end"
             sideOffset={8}
-            className="z-20 min-w-45 rounded-2xl shadow-2xl border p-2 animate-in fade-in zoom-in-95 duration-200 dark:bg-[#1E1E1E] dark:border-white/10 bg-white border-gray-100"
+            className="min-w-45 rounded-2xl shadow-2xl border p-2 animate-in fade-in zoom-in-95 duration-200 dark:bg-[#1E1E1E] dark:border-white/10 bg-white border-gray-100"
           >
             <PopoverClose
               onClick={handleShare}
@@ -140,6 +207,33 @@ export default function RecordDetailHeaderActions({
             >
               공유하기
             </PopoverClose>
+            {shareToken ? (
+              <PopoverClose
+                onClick={() => revokeShareLink({})}
+                disabled={isRevokingShare}
+                className="cursor-pointer w-full text-left px-5 py-3.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
+              >
+                <Link2Off className="w-3.5 h-3.5" />
+                공유 링크 해제
+              </PopoverClose>
+            ) : (
+              <PopoverClose
+                onClick={() => createShareLink({})}
+                disabled={isCreatingShare}
+                className="cursor-pointer w-full text-left px-5 py-3.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                공유 링크 생성
+              </PopoverClose>
+            )}
+            {record.scope === 'PERSONAL' && (
+              <PopoverClose
+                onClick={() => setGroupShareOpen(true)}
+                className="cursor-pointer w-full text-left px-5 py-3.5 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
+              >
+                그룹에 공유
+              </PopoverClose>
+            )}
             <PopoverClose
               className="cursor-pointer w-full text-left px-5 py-3.5 rounded-xl text-xs font-semibold transition-colors dark:text-gray-300 dark:hover:bg-white/5 text-gray-600 hover:bg-gray-50"
               onClick={handleEdit}
@@ -207,6 +301,16 @@ export default function RecordDetailHeaderActions({
           image: image?.mediaIds?.[0] ?? null,
         }}
       />
+
+      {record.scope === 'PERSONAL' && (
+        <GroupShareDrawer
+          postId={record.id}
+          open={groupShareOpen}
+          onOpenChange={setGroupShareOpen}
+          groups={shareableGroups}
+          initialSelectedGroupIds={sharedGroupIds}
+        />
+      )}
     </>
   );
 }

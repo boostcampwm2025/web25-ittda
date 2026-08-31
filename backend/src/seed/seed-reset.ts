@@ -54,7 +54,7 @@ async function run() {
       if (devUser) {
         await txMemberRepo.delete({ userId: devUser.id });
       }
-      await txGroupRepo.delete({ owner: { id: owner.id } });
+      await txGroupRepo.delete({ name: 'seed-group' });
       await txUserRepo.delete({ id: owner.id });
       if (devUser) {
         await txUserRepo.delete({ id: devUser.id });
@@ -71,7 +71,7 @@ async function run() {
       where: { ownerActorId: owner.id },
     });
     const remainingGroups = await groupRepo.count({
-      where: { owner: { id: owner.id } },
+      where: { name: 'seed-group' },
     });
     const remainingMembers = await memberRepo.count({
       where: { userId: owner.id },

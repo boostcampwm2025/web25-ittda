@@ -5,6 +5,11 @@ import { SocketExceptionResponse } from '@/lib/types/recordCollaboration';
 import { toast } from 'sonner';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { getBackendOrigin } from '@/lib/config/backend';
+import {
+  getSocketErrorAction,
+  SOCKET_ERROR_ACTIONS,
+} from '@/lib/utils/socketErrorPolicy';
 
 interface SocketStore {
   socket: Socket | null;
@@ -44,7 +49,7 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
 
       return;
     }
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || '', {
+    const socket = io(getBackendOrigin(), {
       transports: ['websocket'],
       withCredentials: true,
       auth: {
@@ -97,26 +102,22 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     });
 
     socket.on('exception', async (data: SocketExceptionResponse) => {
-      if (data.message === 'Draft is full.') {
+      const action = getSocketErrorAction(data?.code);
+
+      if (action === SOCKET_ERROR_ACTIONS.SHOW_DRAFT_FULL) {
         toast.warning('참여 인원이 가득 찼어요.');
         return;
       }
-      if (data.message === 'Invalid access token.' || data.status === 'error') {
+
+      if (action === SOCKET_ERROR_ACTIONS.REFRESH_AUTH) {
         await handleAuthError();
         return;
       }
-      if (data.message === 'draftId mismatch.') {
-        toast.warning('동기화 오류가 발생하여 이전 화면으로 이동합니다.', {
-          duration: 1500,
-        });
 
-        setTimeout(() => {
-          window.history.back();
-        }, 1500);
-        return;
-      }
+      if (action === SOCKET_ERROR_ACTIONS.IGNORE) return;
 
-      Sentry.captureMessage(`소켓 서버 예외: ${data.message}`, {
+      // 예상치 못한 내부 오류만 Sentry + 로그
+      Sentry.captureMessage(`소켓 서버 예외: ${data.code}`, {
         level: 'error',
         tags: { context: 'socket', operation: 'server_exception' },
         extra: { serverData: data },

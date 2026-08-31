@@ -82,18 +82,19 @@ export const useAuthStore = create<State & Action>()(
       },
 
       setGuestInfo: (guest) => {
-        requestAnimationFrame(() => {
-          set({
-            guestAccessToken: guest.guestAccessToken,
-            guestSessionId: guest.guestSessionId,
-            guestSessionExpiresAt: guest.guestSessionId,
-            userType: 'guest',
-            isLoggedIn: true,
-          });
-
-          setGuestCookie(guestCookieKey, guest.guestSessionId);
-          setGuestCookie(guestTokenKey, guest.guestAccessToken);
+        // window.location.href 이동 전에 쿠키와 Zustand 상태가 반드시 저장되어야 함.
+        // requestAnimationFrame 안에서 처리하면 페이지 언로드 시 실행되지 않아
+        // 다음 페이지에서 토큰을 읽지 못해 소켓 연결 불가 → 실시간 기능 전체 불작동.
+        set({
+          guestAccessToken: guest.guestAccessToken,
+          guestSessionId: guest.guestSessionId,
+          guestSessionExpiresAt: guest.guestSessionId,
+          userType: 'guest',
+          userId: null,
+          isLoggedIn: true,
         });
+        setGuestCookie(guestCookieKey, guest.guestSessionId);
+        setGuestCookie(guestTokenKey, guest.guestAccessToken);
       },
 
       logout: () => {
@@ -110,6 +111,6 @@ export const useAuthStore = create<State & Action>()(
         Cookies.remove(guestTokenKey);
       },
     }),
-    { name: 'auth-storage' },
+    { name: 'auth-storage', skipHydration: true },
   ),
 );

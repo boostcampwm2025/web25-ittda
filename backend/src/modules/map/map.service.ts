@@ -6,6 +6,7 @@ import { Post } from '@/modules/post/entity/post.entity';
 import { PostBlock } from '@/modules/post/entity/post-block.entity';
 import { PostBlockType } from '@/enums/post-block-type.enum';
 import { BlockValueMap } from '@/modules/post/types/post-block.types';
+import { DateTime } from 'luxon';
 import {
   MapPostsQueryDto,
   PaginatedMapPostsResponseDto,
@@ -70,10 +71,14 @@ export class MapService {
 
     // Filters
     if (from) {
-      query.andWhere('post.eventAt >= :from', { from });
+      query.andWhere('post.eventAt >= :from', {
+        from: this.normalizeDateBoundary(from, 'start'),
+      });
     }
     if (to) {
-      query.andWhere('post.eventAt <= :to', { to });
+      query.andWhere('post.eventAt <= :to', {
+        to: this.normalizeDateBoundary(to, 'end'),
+      });
     }
     if (tags) {
       const tagList = tags.split(',').map((t) => t.trim());
@@ -98,7 +103,7 @@ export class MapService {
     const items = posts.slice(0, limit);
 
     const postIds = items.map((post) => post.id);
-    const thumbnailMap = new Map<string, string | null>();
+    const previewMediaMap = new Map<string, string[]>();
     if (postIds.length > 0) {
       const imageBlocks = await this.postBlockRepository.find({
         where: {
@@ -112,47 +117,75 @@ export class MapService {
         },
       });
       imageBlocks.forEach((block) => {
-        if (thumbnailMap.has(block.postId)) return;
         const val = block.value as BlockValueMap[typeof PostBlockType.IMAGE];
-        const mediaId = val.mediaIds?.[0] ?? null;
-        thumbnailMap.set(block.postId, mediaId);
+        const mediaIds = val.mediaIds ?? [];
+        const existing = previewMediaMap.get(block.postId) ?? [];
+        const merged = [...existing, ...mediaIds].slice(0, 5);
+        previewMediaMap.set(block.postId, merged);
       });
     }
 
-    const resultItems: MapPostItemDto[] = await Promise.all(
-      items.map(async (post) => {
-        const thumbnailMediaId = thumbnailMap.get(post.id) ?? null;
-
-        // Find location block for placeName/address
-        const locationBlock = await this.postRepository.manager.findOne(
-          PostBlock,
-          {
-            where: { postId: post.id, type: PostBlockType.LOCATION },
-          },
-        );
-
-        let placeDisplay: string | null = null;
-        if (locationBlock) {
-          const val = locationBlock.value as {
-            address?: string;
-            placeName?: string;
-          };
-          placeDisplay = val.placeName || val.address || null;
+    // Snippet extraction (first text block per post) — 검색 결과와 동일한 방식.
+    // post당 findOne을 따로 부르면 최대 limit개의 추가 쿼리가 나가므로,
+    // 이미지 블록과 동일하게 postIds 전체를 한 번에 조회해 맵으로 구성한다.
+    const firstTextBlockByPostId = new Map<string, PostBlock>();
+    if (postIds.length > 0) {
+      const textBlocks = await this.postBlockRepository.find({
+        where: { postId: In(postIds), type: PostBlockType.TEXT },
+        order: { postId: 'ASC', layoutRow: 'ASC', layoutCol: 'ASC' },
+      });
+      for (const block of textBlocks) {
+        if (!firstTextBlockByPostId.has(block.postId)) {
+          firstTextBlockByPostId.set(block.postId, block);
         }
+      }
+    }
 
-        return {
-          id: post.id,
-          lat: (post.location as Point).coordinates[1],
-          lng: (post.location as Point).coordinates[0],
-          title: post.title,
-          thumbnailMediaId,
-          createdAt: post.eventAt || post.createdAt,
-          tags: post.tags || [],
-          emotion: post.emotion ?? [],
-          placeName: placeDisplay,
+    // Location block for placeName/address — 위와 같은 이유로 배치 조회한다.
+    const locationBlockByPostId = new Map<string, PostBlock>();
+    if (postIds.length > 0) {
+      const locationBlocks = await this.postBlockRepository.find({
+        where: { postId: In(postIds), type: PostBlockType.LOCATION },
+        order: { postId: 'ASC', layoutRow: 'ASC', layoutCol: 'ASC' },
+      });
+      for (const block of locationBlocks) {
+        if (!locationBlockByPostId.has(block.postId)) {
+          locationBlockByPostId.set(block.postId, block);
+        }
+      }
+    }
+
+    const resultItems: MapPostItemDto[] = items.map((post) => {
+      const previewMediaIds = previewMediaMap.get(post.id) ?? [];
+
+      const locationBlock = locationBlockByPostId.get(post.id);
+
+      let placeDisplay: string | null = null;
+      if (locationBlock) {
+        const val = locationBlock.value as {
+          address?: string;
+          placeName?: string;
         };
-      }),
-    );
+        placeDisplay = val.placeName || val.address || null;
+      }
+
+      const firstTextBlock = firstTextBlockByPostId.get(post.id);
+
+      return {
+        id: post.id,
+        lat: (post.location as Point).coordinates[1],
+        lng: (post.location as Point).coordinates[0],
+        title: post.title,
+        previewMediaIds,
+        createdAt: post.eventAt || post.createdAt,
+        tags: post.tags || [],
+        emotion: post.emotion ?? [],
+        placeName: placeDisplay,
+        snippet: firstTextBlock
+          ? (firstTextBlock.value as { text: string }).text.substring(0, 100)
+          : undefined,
+      };
+    });
 
     let nextCursor: string | null = null;
     if (hasNextPage) {
@@ -193,5 +226,19 @@ export class MapService {
   private encodeCursor(eventAt: Date, id: string): string {
     const value = `${eventAt.toISOString()}|${id}`;
     return Buffer.from(value).toString('base64');
+  }
+
+  // 날짜만 있는 문자열(YYYY-MM-DD)을 하루의 시작/끝 시각으로 정규화
+  // search.service.ts의 normalizeDateOnlyBoundary와 동일한 방식
+  private normalizeDateBoundary(
+    value: string,
+    boundary: 'start' | 'end',
+  ): string {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const dt = DateTime.fromISO(value, { zone: 'Asia/Seoul' });
+    return (
+      (boundary === 'start' ? dt.startOf('day') : dt.endOf('day')).toISO() ??
+      value
+    );
   }
 }

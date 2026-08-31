@@ -38,6 +38,14 @@ import { extractMetaFromBlocks } from './validator/meta.extractor';
 import { resolveEventAtFromBlocks } from './validator/event-at.resolver';
 import { GroupActivityService } from '@/modules/group/service/group-activity.service';
 
+type GroupDraftSnapshot = Pick<
+  CreatePostDto,
+  'title' | 'blocks' | 'groupId' | 'scope'
+>;
+type PublishBlockOverride = NonNullable<
+  PublishDraftDto['blocksOverride']
+>[number];
+
 @Injectable()
 export class PostPublishService {
   private readonly logger = new Logger(PostPublishService.name);
@@ -55,7 +63,7 @@ export class PostPublishService {
     groupId: string,
     payload: PublishDraftDto,
   ) {
-    const { draftId, draftVersion } = payload;
+    const { draftId, draftVersion, titleOverride, blocksOverride } = payload;
     if (!this.draftStateService.startPublishing(draftId)) {
       throw new ConflictException('Draft is already publishing.');
     }
@@ -81,7 +89,7 @@ export class PostPublishService {
             lock: { mode: 'pessimistic_write' },
           });
           if (!draft) throw new NotFoundException('Draft not found');
-          if (draft.version !== draftVersion) {
+          if (draftVersion !== draft.version) {
             throw new ConflictException('Draft version mismatch.');
           }
 
@@ -112,6 +120,7 @@ export class PostPublishService {
             draft.snapshot,
             groupId,
           );
+          this.applyPublishOverrides(snapshot, titleOverride, blocksOverride);
 
           const snapshotBlocks = snapshot.blocks;
           ownerActorId = draft.ownerActorId;
@@ -237,7 +246,7 @@ export class PostPublishService {
     postId: string,
     payload: PublishDraftDto,
   ) {
-    const { draftId, draftVersion } = payload;
+    const { draftId, draftVersion, titleOverride, blocksOverride } = payload;
     if (!this.draftStateService.startPublishing(draftId)) {
       throw new ConflictException('Draft is already publishing.');
     }
@@ -265,7 +274,7 @@ export class PostPublishService {
           lock: { mode: 'pessimistic_write' },
         });
         if (!draft) throw new NotFoundException('Draft not found');
-        if (draft.version !== draftVersion) {
+        if (draftVersion !== draft.version) {
           throw new ConflictException('Draft version mismatch.');
         }
         draftOwnerId = draft.ownerActorId;
@@ -301,6 +310,8 @@ export class PostPublishService {
         }
 
         const snapshot = this.parseGroupDraftSnapshot(draft.snapshot, groupId);
+        this.applyPublishOverrides(snapshot, titleOverride, blocksOverride);
+
         afterTitle = snapshot.title;
 
         validatePostTitle(snapshot.title);
@@ -484,7 +495,7 @@ export class PostPublishService {
   private parseGroupDraftSnapshot(
     snapshot: unknown,
     groupId: string,
-  ): Pick<CreatePostDto, 'title' | 'blocks' | 'groupId' | 'scope'> {
+  ): GroupDraftSnapshot {
     const candidate = snapshot as Partial<CreatePostDto> | null | undefined;
     if (
       !candidate ||
@@ -497,10 +508,49 @@ export class PostPublishService {
     if (candidate.groupId && candidate.groupId !== groupId) {
       throw new BadRequestException('groupId mismatch.');
     }
-    return candidate as Pick<
-      CreatePostDto,
-      'title' | 'blocks' | 'groupId' | 'scope'
-    >;
+    return candidate as GroupDraftSnapshot;
+  }
+
+  private applyPublishOverrides(
+    snapshot: GroupDraftSnapshot,
+    titleOverride?: string,
+    blocksOverride?: PublishDraftDto['blocksOverride'],
+  ) {
+    if (titleOverride && titleOverride.trim()) {
+      snapshot.title = titleOverride.trim();
+    }
+
+    // publish 직전의 최신 클라이언트 블록 배열을 최종본으로 사용한다.
+    // 버전 일치 검사를 통과한 경우에만 허용해 오래된 스냅샷의 블록 복원을 막는다.
+    if (!blocksOverride) {
+      return;
+    }
+
+    const prevBlocks = snapshot.blocks;
+    snapshot.blocks = blocksOverride.map((override) =>
+      this.mergePublishOverrideBlock(prevBlocks, override),
+    ) as typeof snapshot.blocks;
+  }
+
+  private mergePublishOverrideBlock(
+    prevBlocks: GroupDraftSnapshot['blocks'],
+    override: PublishBlockOverride,
+  ) {
+    const existing = prevBlocks.find((block) => block.id === override.id);
+    if (existing) {
+      return {
+        ...existing,
+        value: override.value as unknown as typeof existing.value,
+        layout: override.layout as unknown as typeof existing.layout,
+      };
+    }
+
+    return {
+      id: override.id,
+      type: override.type,
+      value: override.value,
+      layout: override.layout,
+    };
   }
 
   private buildBlockMediaEntries(

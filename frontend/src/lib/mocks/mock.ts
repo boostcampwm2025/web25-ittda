@@ -176,6 +176,7 @@ export const createMockRecordPreviews = (date: string): RecordPreview[] => [
       },
     ],
     groupId: 'group-123',
+    groupName: '고3 전우들',
     title: '홍대 버스킹 구경',
     eventAt: `${date}T19:00:00Z`,
     createdAt: `${date}T21:00:00Z`,
@@ -265,6 +266,8 @@ export const createMockGroupList = (): GroupListResponse => ({
         placeName: '성수동',
       },
       permission: 'ADMIN',
+      notificationMuted: false,
+      hasUnread: false,
     },
     {
       groupId: 'group-2',
@@ -286,6 +289,8 @@ export const createMockGroupList = (): GroupListResponse => ({
         placeName: '협재 해수욕장',
       },
       permission: 'ADMIN',
+      notificationMuted: false,
+      hasUnread: false,
     },
     {
       groupId: 'group-3',
@@ -307,6 +312,8 @@ export const createMockGroupList = (): GroupListResponse => ({
         placeName: '강남역 모임장소',
       },
       permission: 'ADMIN',
+      notificationMuted: false,
+      hasUnread: false,
     },
   ],
 });
@@ -634,7 +641,6 @@ export const createMockGroupSettings = (id: string): GroupEditResponse => ({
     groupId: id,
     name: '우리들의 기록',
     createdAt: '2025-12-01T03:12:00Z',
-    ownerUserId: 'uuid',
     cover: {
       assetId: '/profile-ex.jpeg',
       sourcePostId: 'uuid',

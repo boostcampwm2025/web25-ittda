@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { getBackendApiBaseUrl } from '@/lib/config/backend';
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
@@ -8,7 +9,7 @@ export async function POST() {
 
   if (session?.accessToken) {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/logout`, {
+      await fetch(`${getBackendApiBaseUrl()}/auth/logout`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.accessToken}`,

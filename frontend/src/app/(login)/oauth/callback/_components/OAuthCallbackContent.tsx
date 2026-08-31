@@ -3,6 +3,7 @@
 import LoginContent from '@/app/(login)/login/_components/LoginContent';
 import { useJoinGroup } from '@/hooks/useGroupInvite';
 import { userProfileOptions } from '@/lib/api/profile';
+import type { UserProfileResponse } from '@/lib/types/profileResponse';
 import { deleteCookie, getCookie } from '@/lib/utils/cookie';
 import { createApiError } from '@/lib/utils/errorHandler';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -18,15 +19,22 @@ interface OAuthCallbackContentProps {
   code: string | undefined;
   error: string | undefined;
   callback?: string | undefined;
+  platform?: string | undefined;
 }
 
 export default function OAuthCallbackContent({
   code,
   error,
   callback,
+  platform,
 }: OAuthCallbackContentProps) {
   const router = useRouter();
-  const inviteCode = getCookie('invite-code') || '';
+  const inviteCode =
+    getCookie('invite-code') ||
+    (typeof window !== 'undefined'
+      ? sessionStorage.getItem('invite-code')
+      : null) ||
+    '';
   const queryClient = useQueryClient();
   const setLogin = useAuthStore((state) => state.setLogin);
   const setSocialLogin = useAuthStore((state) => state.setSocialLogin);
@@ -34,6 +42,13 @@ export default function OAuthCallbackContent({
   const hasRun = useRef(false);
 
   useEffect(() => {
+    // Android 앱에서 Chrome Custom Tab을 통해 돌아온 경우:
+    // 웹에서 로그인을 처리하지 않고 앱의 커스텀 스킴으로 핸드오프
+    if (platform === 'android' && code) {
+      window.location.href = `ittda://oauth/callback?code=${encodeURIComponent(code)}`;
+      return;
+    }
+
     // OAuth 인증 코드가 없으면 로그인 페이지로
     if (!code) {
       router.push('/login?error=invalid_callback');
@@ -61,11 +76,9 @@ export default function OAuthCallbackContent({
         router.push('/login?error=login_failed');
       } else {
         // 유저 프로필 조회 및 캐시 저장
-        let userId: string | null = null;
+        let profileData: UserProfileResponse | null = null;
         try {
-          const profileData =
-            await queryClient.fetchQuery(userProfileOptions());
-          userId = profileData.userId;
+          profileData = await queryClient.fetchQuery(userProfileOptions());
           const userInfo = {
             id: profileData.userId,
             email: profileData.user.email ?? 'example.com',
@@ -102,11 +115,13 @@ export default function OAuthCallbackContent({
             inviteGroupId = response.data.groupId;
             if (!inviteGroupId) createApiError(response);
             deleteCookie('invite-code');
+            sessionStorage.removeItem('invite-code');
             toast.success(`그룹에 참여되었습니다!`);
           } catch (error) {
             // 그룹 가입 실패 시에도 로그인은 계속 진행
             toast.error('그룹 가입에 실패했습니다. 나중에 다시 시도해주세요.');
             deleteCookie('invite-code'); // 실패한 초대 코드 제거
+            sessionStorage.removeItem('invite-code');
 
             Sentry.captureException(error, {
               level: 'warning',
@@ -133,31 +148,15 @@ export default function OAuthCallbackContent({
           ? `/group/${inviteGroupId}`
           : finalCallback || '/';
 
-        // 온보딩 체크 (userId별로 저장)
-        if (userId) {
-          const hasSeenOnboarding = localStorage.getItem(
-            `has_seen_onboarding_${userId}`,
-          );
-          if (hasSeenOnboarding === 'true') {
-            // window.location.replace를 사용하여 즉시 리디렉션
-            window.location.replace(redirectPath);
-          } else {
-            // 온보딩을 안 본 경우 온보딩으로 (리디렉션 경로를 callback으로 전달)
-            window.location.replace(
-              `/onboarding?callback=${encodeURIComponent(redirectPath)}`,
-            );
-          }
-        } else {
-          // userId를 가져오지 못한 경우에도 기본적으로 최종 경로로 이동
-          window.location.replace(redirectPath);
-        }
+        // window.location.replace를 사용하여 즉시 리디렉션
+        window.location.replace(redirectPath);
         return; // 리디렉션 후 추가 실행 방지
       }
     };
 
     handleLogin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, platform]);
 
   return <LoginContent error={error} />;
 }

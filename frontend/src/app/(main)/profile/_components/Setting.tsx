@@ -10,18 +10,23 @@ import {
 } from '@/components/ui/drawer';
 import {
   AlertCircle,
+  Bell,
   ChevronRight,
   Download,
+  FileText,
   LogIn,
   LogOut,
+  Megaphone,
+  MessageSquare,
   Moon,
   Sun,
   UserX,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from '@/components/PWAInstallModal';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -29,6 +34,17 @@ import { useApiDelete, useApiPost } from '@/hooks/useApi';
 import { toast } from 'sonner';
 import { signOut } from 'next-auth/react';
 import * as Sentry from '@sentry/nextjs';
+import { removeFcmToken } from '@/lib/api/notification';
+import {
+  registerAndroidToken,
+  requestAndRegisterWebToken,
+} from '@/hooks/usePushNotification';
+
+const isNativePlatform = () =>
+  typeof window !== 'undefined' &&
+  !!(
+    window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor?.isNativePlatform?.();
 
 export default function Setting() {
   const router = useRouter();
@@ -38,6 +54,16 @@ export default function Setting() {
   const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
     usePWAInstall();
   const [showInstructions, setShowInstructions] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBlocked, setPushBlocked] = useState(false);
+  // 연속으로 토글했을 때 먼저 시작된(느린) 요청이 나중에 끝나면서 최신 상태를
+  // 덮어쓰지 않도록, 매 호출마다 증가시켜 "이 완료가 아직 최신 요청인지" 판별한다.
+  const pushRequestIdRef = useRef(0);
+  // 서버로 나가는 등록/삭제 요청을 순서대로 실행하기 위한 체인.
+  // isStale()은 완료 후의 "UI 반영"만 막을 뿐 네트워크 요청 자체는 막지 않아서,
+  // 겹쳐 실행되면 늦게 도착한 예전 요청(예: disable의 삭제)이 최신 요청(예:
+  // enable의 등록) 이후에 서버에 반영되며 서버 상태가 뒤집힐 수 있었다.
+  const pushMutationChainRef = useRef<Promise<void>>(Promise.resolve());
 
   const { mutate: logout } = useApiPost('/api/auth/logout', {
     onSuccess: async () => {
@@ -81,6 +107,32 @@ export default function Setting() {
     return () => cancelAnimationFrame(raId);
   }, []);
 
+  useEffect(() => {
+    // 하이드레이션 시작 시점의 요청 번호를 기억해뒀다가, 완료 시점에 그 사이
+    // 토글이 일어나 번호가 바뀌었다면(=더 최신 상태가 있다면) 이 결과는 버린다.
+    const requestId = pushRequestIdRef.current;
+    (async () => {
+      if (isNativePlatform()) {
+        try {
+          const { PushNotifications } =
+            await import('@capacitor/push-notifications');
+          const { receive } = await PushNotifications.checkPermissions();
+          if (pushRequestIdRef.current !== requestId) return;
+          const disabled =
+            localStorage.getItem('push_notifications_disabled') === 'true';
+          setPushEnabled(receive === 'granted' && !disabled);
+          setPushBlocked(receive === 'denied');
+        } catch {}
+      } else if ('Notification' in window) {
+        if (pushRequestIdRef.current !== requestId) return;
+        const disabled =
+          localStorage.getItem('push_notifications_disabled') === 'true';
+        setPushEnabled(Notification.permission === 'granted' && !disabled);
+        setPushBlocked(Notification.permission === 'denied');
+      }
+    })();
+  }, []);
+
   // Hydration 불일치를 방지하기 위해 마운트되기 전에는 아무것도 렌더링하지 않음
   if (!mounted) {
     return null;
@@ -101,6 +153,126 @@ export default function Setting() {
   const toggleDarkMode = () => {
     const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
+  };
+
+  const handleTogglePush = async () => {
+    const requestId = ++pushRequestIdRef.current;
+    const isStale = () => pushRequestIdRef.current !== requestId;
+    const platform = isNativePlatform() ? 'android' : 'web';
+    const wasEnabled = pushEnabled;
+
+    // 낙관적 업데이트: UI는 즉시 반영. 서버 요청은 아래에서 순서대로 실행한다.
+    setPushEnabled(!wasEnabled);
+
+    // 이전 토글의 서버 요청이 완전히 끝난 뒤에만 이번 요청을 시작한다 — 겹쳐서
+    // 보내면 늦게 도착하는 쪽이 순서와 무관하게 최종 서버 상태를 결정해버린다.
+    const previousMutation = pushMutationChainRef.current;
+    const thisMutation = previousMutation.catch(() => {}).then(async () => {
+      if (wasEnabled) {
+        try {
+          await removeFcmToken(platform);
+        } catch {
+          if (isStale()) return;
+          setPushEnabled(true); // 롤백
+          toast.error('알림 해제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+          return;
+        }
+        if (isStale()) return; // 그 사이 더 최신 토글이 시작됨 — 이 완료는 무시
+        try {
+          localStorage.setItem('push_notifications_disabled', 'true');
+        } catch (error) {
+          // 서버 토큰 삭제는 이미 성공했으므로 토글은 되돌리지 않는다.
+          Sentry.captureException(error, {
+            tags: {
+              context: 'notification',
+              operation: 'push-disable-persist',
+            },
+          });
+        }
+        return;
+      }
+
+      try {
+        if (isNativePlatform()) {
+          const registered = await registerAndroidToken();
+          const { PushNotifications } =
+            await import('@capacitor/push-notifications');
+          const { receive } = await PushNotifications.checkPermissions();
+          if (isStale()) return;
+          if (receive === 'granted' && !registered) {
+            // 권한은 허용됐지만 서버에 토큰 등록이 실패한 경우 — 바깥 catch로
+            // 넘겨서 기존 실패 처리(롤백/마커 저장/Sentry/토스트)를 그대로 탄다.
+            throw new Error('FCM 토큰 서버 등록 실패');
+          }
+          if (receive === 'granted') {
+            // 토큰 등록은 이미 성공했으므로, 마커 제거가 실패해도 켜진 상태는 유지한다.
+            try {
+              localStorage.removeItem('push_notifications_disabled');
+            } catch (error) {
+              Sentry.captureException(error, {
+                tags: {
+                  context: 'notification',
+                  operation: 'push-enable-persist',
+                },
+              });
+            }
+            setPushBlocked(false);
+          } else {
+            setPushEnabled(false); // 롤백
+            setPushBlocked(true);
+            const { NativeSettings, AndroidSettings } =
+              await import('capacitor-native-settings');
+            await NativeSettings.openAndroid({
+              option: AndroidSettings.AppNotification,
+            }).catch(() => {});
+          }
+        } else {
+          await requestAndRegisterWebToken();
+          if (isStale()) return;
+          if (Notification.permission === 'granted') {
+            // 토큰 등록은 이미 성공했으므로, 마커 제거가 실패해도 켜진 상태는 유지한다.
+            try {
+              localStorage.removeItem('push_notifications_disabled');
+            } catch (error) {
+              Sentry.captureException(error, {
+                tags: {
+                  context: 'notification',
+                  operation: 'push-enable-persist',
+                },
+              });
+            }
+            setPushBlocked(false);
+          } else {
+            setPushEnabled(false); // 롤백
+            setPushBlocked(Notification.permission === 'denied');
+            if (Notification.permission === 'denied') {
+              toast.info('설정에서 알림 권한을 허용해 주세요.');
+            }
+          }
+        }
+      } catch (error) {
+        if (isStale()) return;
+        setPushEnabled(false); // 롤백
+        try {
+          localStorage.setItem('push_notifications_disabled', 'true');
+        } catch {}
+        Sentry.captureException(error, {
+          tags: {
+            context: 'notification',
+            operation: 'push-enable',
+            platform: isNativePlatform() ? 'android' : 'web',
+          },
+        });
+        toast.error('알림 설정 변경에 실패했습니다.');
+      }
+    });
+
+    pushMutationChainRef.current = thisMutation;
+    await thisMutation;
+  };
+
+  const handleContact = () => {
+    router.push('/inquiry');
   };
 
   const handleInstallClick = async () => {
@@ -127,24 +299,24 @@ export default function Setting() {
         isMacOS={isMacOS}
       />
 
-      <div className="rounded-2xl p-6 shadow-xs border space-y-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
+      <div className="rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs border space-y-4 sm:space-y-5 transition-colors duration-300 dark:bg-[#1E1E1E] dark:border-white/5 bg-white border-gray-100">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg transition-colors dark:bg-purple-500/10 dark:text-purple-400 bg-yellow-50 text-yellow-500">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 rounded-lg transition-colors dark:bg-purple-500/10 dark:text-purple-400 bg-yellow-50 text-yellow-500">
               {currentTheme === 'dark' ? (
-                <Moon className="w-4 h-4" />
+                <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               ) : (
-                <Sun className="w-4 h-4" />
+                <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </div>
-            <span className="text-sm font-bold dark:text-gray-200 text-itta-black">
-              다크 모드
+            <span className="text-xs sm:text-sm font-bold dark:text-gray-200 text-itta-black">
+              {currentTheme === 'dark' ? '다크 모드' : '라이트 모드'}
             </span>
           </div>
           <button
             onClick={toggleDarkMode}
             className={cn(
-              'cursor-pointer w-11 h-6 rounded-full relative transition-all duration-300',
+              'cursor-pointer w-10 h-5 sm:w-11 sm:h-6 rounded-full relative transition-all duration-300',
               !mounted
                 ? 'bg-gray-200'
                 : currentTheme === 'dark'
@@ -154,34 +326,102 @@ export default function Setting() {
           >
             <div
               className={cn(
-                'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out',
+                'absolute top-0.5 left-0.5 sm:top-1 sm:left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out',
                 mounted && currentTheme === 'dark' && 'translate-x-5',
               )}
             />
           </button>
         </div>
 
-        <div className="pt-2 border-t dark:border-white/5 border-gray-50">
+        {('Notification' in window || isNativePlatform()) && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-lg transition-colors dark:bg-blue-500/10 dark:text-blue-400 bg-blue-50 text-blue-500">
+                  <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+                <span className="text-xs sm:text-sm font-bold dark:text-gray-200 text-itta-black">
+                  푸시 알림
+                </span>
+              </div>
+              <button
+                onClick={handleTogglePush}
+                className={cn(
+                  'cursor-pointer w-10 h-5 sm:w-11 sm:h-6 rounded-full relative transition-all duration-300',
+                  pushEnabled ? 'bg-blue-500' : 'bg-gray-200',
+                )}
+              >
+                <div
+                  className={cn(
+                    'absolute top-0.5 left-0.5 sm:top-1 sm:left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out',
+                    pushEnabled && 'translate-x-5',
+                  )}
+                />
+              </button>
+            </div>
+            {pushBlocked && (
+              <p className="flex items-center gap-1 text-[11px] sm:text-xs text-red-500 dark:text-red-400 pl-8 sm:pl-9">
+                <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                알림이 차단되어 있어요. 기기 설정에서 허용해 주세요.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="pt-1.5 sm:pt-2 border-t dark:border-white/5 border-gray-50">
           <button
             onClick={handleWithdrawal}
             className="w-full flex items-center justify-between py-2 group"
           >
-            <span className="text-sm font-bold dark:text-gray-400 text-itta-black">
+            <span className="text-xs sm:text-sm font-bold dark:text-gray-400 text-itta-black">
               버전 정보
             </span>
-            <span className="text-xs font-bold text-gray-300 group-hover:text-gray-400">
+            <span className="text-[11px] sm:text-xs font-bold text-gray-300 group-hover:text-gray-400">
               v1.0.0
             </span>
           </button>
+          <Link
+            href="/announcements"
+            className="w-full flex items-center justify-between py-2 group"
+          >
+            <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+              <Megaphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+              공지사항
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
+          </Link>
+          <button
+            onClick={handleContact}
+            className="cursor-pointer w-full flex items-center justify-between py-2 group"
+          >
+            <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+              문의하기
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
+          </button>
+          <Link
+            href="/privacy-policy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-between py-2 group"
+          >
+            <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+              개인정보처리방침
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
+          </Link>
           {!isInstalled && (
             <button
               onClick={handleInstallClick}
               className="cursor-pointer w-full flex items-center justify-between py-2 group"
             >
-              <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
-                <Download className="w-4 h-4 text-gray-400" />앱 설치하기
+              <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+                앱 설치하기
               </span>
-              <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
             </button>
           )}
           {guestSessionId && (
@@ -189,11 +429,11 @@ export default function Setting() {
               onClick={handleLogin}
               className="cursor-pointer w-full flex items-center justify-between py-2 group"
             >
-              <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
-                <LogIn className="w-4 h-4 text-gray-400" />
+              <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+                <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                 로그인
               </span>
-              <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
             </button>
           )}
           {!guestSessionId && userId && (
@@ -202,45 +442,45 @@ export default function Setting() {
                 onClick={handleLogout}
                 className="cursor-pointer w-full flex items-center justify-between py-2 group"
               >
-                <span className="text-sm font-bold text-gray-500 flex items-center gap-2">
-                  <LogOut className="w-4 h-4 text-gray-400" />
+                <span className="text-xs sm:text-sm font-bold text-gray-500 flex items-center gap-1.5 sm:gap-2">
+                  <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                   로그아웃
                 </span>
-                <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
               </button>
 
               <Drawer>
                 <DrawerTrigger className="cursor-pointer w-full flex items-center justify-between py-2 group text-red-400">
-                  <span className="text-sm font-bold flex items-center gap-2">
-                    <UserX className="w-4 h-4 text-red-400" />
+                  <span className="text-xs sm:text-sm font-bold flex items-center gap-1.5 sm:gap-2">
+                    <UserX className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
                     탈퇴하기
                   </span>
-                  <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-gray-400" />
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-200 group-hover:text-gray-400" />
                 </DrawerTrigger>
-                <DrawerContent className="px-8 pt-4 pb-12">
+                <DrawerContent className="px-6 sm:px-8 pt-4 pb-10 sm:pb-12">
                   <DrawerHeader>
-                    <div className="flex flex-col items-center text-center space-y-4 mb-10">
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
-                        <AlertCircle className="w-8 h-8" />
+                    <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center dark:bg-red-500/10 dark:text-red-500 bg-red-50 text-red-500">
+                        <AlertCircle className="w-7 h-7 sm:w-8 sm:h-8" />
                       </div>
                       <div className="space-y-1">
-                        <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
+                        <DrawerTitle className="text-lg sm:text-xl font-bold dark:text-white text-itta-black">
                           정말 탈퇴하시겠습니까?
                         </DrawerTitle>
-                        <p className="text-sm text-gray-400 font-medium">
+                        <p className="text-xs sm:text-sm text-gray-400 font-medium">
                           기록된 모든 추억이 사라집니다.
                         </p>
                       </div>
                     </div>
                   </DrawerHeader>
 
-                  <div className="flex gap-4">
-                    <DrawerClose className="cursor-pointer flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
+                  <div className="flex gap-3 sm:gap-4">
+                    <DrawerClose className="cursor-pointer flex-1 py-3 sm:py-4 rounded-2xl text-xs sm:text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
                       취소
                     </DrawerClose>
                     <DrawerClose
                       onClick={handleWithdrawal}
-                      className="cursor-pointer flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
+                      className="cursor-pointer flex-2 py-3 sm:py-4 rounded-2xl text-xs sm:text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
                     >
                       탈퇴하기
                     </DrawerClose>

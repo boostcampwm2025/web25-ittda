@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import Image from 'next/image';
-import { ReactNode, useState } from 'react';
+import { memo, ReactNode, useCallback, useState } from 'react';
 import { useGroupEdit } from './GroupEditContext';
 import { cn } from '@/lib/utils';
 import { useApiDelete, useApiPatch } from '@/hooks/useApi';
@@ -26,6 +26,95 @@ import { GroupEditResponse, GroupMember } from '@/lib/types/groupResponse';
 import { GroupRoleType } from '@/lib/types/group';
 import { useQueryClient } from '@tanstack/react-query';
 import AssetImage from '@/components/AssetImage';
+import { toast } from 'sonner';
+
+// 개별 멤버 카드 컴포넌트 - 콜백 최적화
+const MemberCard = memo(function MemberCard({
+  member,
+  me,
+  onOpenRoleDrawer,
+  onConfirmRemove,
+}: {
+  member: GroupMember;
+  me: GroupEditResponse['me'];
+  onOpenRoleDrawer: (member: GroupMember) => void;
+  onConfirmRemove: (userId: string, name: string, nicknameInGroup: string) => void;
+}) {
+  const canManage = me.userId !== member.userId && me.role === 'ADMIN';
+
+  const handleRoleClick = useCallback(() => {
+    if (canManage) {
+      onOpenRoleDrawer(member);
+    }
+  }, [canManage, onOpenRoleDrawer, member]);
+
+  const handleRemoveClick = useCallback(() => {
+    onConfirmRemove(member.userId, member.name, member.nicknameInGroup || '');
+  }, [onConfirmRemove, member.userId, member.name, member.nicknameInGroup]);
+
+  return (
+    <div data-testid="member-card" className="flex items-center justify-between p-3 rounded-2xl border transition-colors dark:bg-white/5 dark:border-white/5 bg-gray-50 border-black/2">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <div className="w-10 h-10 rounded-full border">
+          {member.profileImage?.assetId ? (
+            <AssetImage
+              width={40}
+              height={40}
+              assetId={member.profileImage.assetId}
+              alt={`${member.nicknameInGroup} 멤버의 프로필`}
+              className="w-full h-full rounded-full bg-white object-cover"
+              wrapperClassName="w-full h-full"
+            />
+          ) : (
+            <Image
+              width={40}
+              height={40}
+              src={'/profile_base.png'}
+              alt={`${member.nicknameInGroup} 멤버의 프로필`}
+              className="w-full h-full rounded-full bg-white object-cover"
+            />
+          )}
+        </div>
+        <div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[13px] font-bold dark:text-gray-200 text-itta-black">
+              {member.nicknameInGroup || member.name}
+            </span>
+            {member.role === 'ADMIN' && (
+              <ShieldCheck className="w-3 h-3 text-[#10B981]" />
+            )}
+          </div>
+          <button
+            onClick={handleRoleClick}
+            className="cursor-pointer flex items-center gap-1 group transition-all dark:text-gray-500 dark:hover:text-gray-300 text-gray-400 hover:text-gray-600"
+          >
+            <span className="text-[10px] text-gray-400">
+              {member.role === 'ADMIN'
+                ? '관리자'
+                : member.role === 'VIEWER'
+                  ? '뷰어'
+                  : '편집자'}
+            </span>
+
+            {canManage && (
+              <ChevronRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {canManage && (
+        <button
+          onClick={handleRemoveClick}
+          aria-label={`${member.nicknameInGroup || member.name} 내보내기`}
+          className="cursor-pointer p-2 rounded-xl transition-colors dark:hover:bg-red-500/10 dark:text-gray-500 hover:bg-red-50 text-gray-400"
+        >
+          <UserMinus className="w-4 h-4 hover:text-red-500" />
+        </button>
+      )}
+    </div>
+  );
+});
 
 interface GroupMemberManagementProps {
   groupId: string;
@@ -39,6 +128,11 @@ interface Role {
   desc: string;
   icon: ReactNode;
 }
+
+type RemoveMemberVariables = {
+  userId: string;
+  name: string;
+};
 
 const ROLE: Role[] = [
   {
@@ -61,7 +155,7 @@ const ROLE: Role[] = [
   },
 ];
 
-export default function GroupMemberManagement({
+const GroupMemberManagement = memo(function GroupMemberManagement({
   groupId,
   className,
   me,
@@ -73,15 +167,22 @@ export default function GroupMemberManagement({
   const [deleteMember, setDeleteMember] = useState<{
     userId: string;
     name: string;
+    nicknameInGroup: string;
   } | null>(null);
   const [editingMember, setEditingMember] = useState<GroupMember | null>(null);
   const [tempRole, setTempRole] = useState<GroupRoleType | null>(null);
 
-  const { mutate: removeMember } = useApiDelete(
-    `/api/${groupId}/members/${deleteMember?.userId}`,
+  const { mutate: removeMember } = useApiDelete<
+    unknown,
+    RemoveMemberVariables
+  >(
+    ({ userId }) => `/api/groups/${groupId}/members/${userId}`,
     {
       onSuccess: () => {
-        setMembers(members.filter((m) => m.userId !== deleteMember?.userId));
+        toast.success(`${deleteMember?.nicknameInGroup || deleteMember?.name}을 내보냈습니다.`);
+        setMembers((prev) =>
+          prev.filter((m) => m.userId !== deleteMember?.userId),
+        );
         setDeleteMember(null);
       },
     },
@@ -107,36 +208,37 @@ export default function GroupMemberManagement({
     },
   );
 
-  const confirmRemoveMember = (userId: string, name: string) => {
+  const confirmRemoveMember = useCallback((userId: string, name: string, nicknameInGroup: string) => {
     setShowDeleteDrawer(true);
-    setDeleteMember({ userId, name });
-  };
+    setDeleteMember({ userId, name, nicknameInGroup });
+  }, []);
 
-  const handleRemoveMember = () => {
+  const handleRemoveMember = useCallback(() => {
     if (deleteMember) {
-      removeMember({});
+      removeMember(deleteMember);
     }
-  };
+    setShowDeleteDrawer(false);
+  }, [deleteMember, removeMember]);
 
-  const resetDeleteMember = () => {
+  const resetDeleteMember = useCallback(() => {
     setDeleteMember(null);
-  };
+  }, []);
 
-  const openRoleDrawer = (member: GroupMember) => {
+  const openRoleDrawer = useCallback((member: GroupMember) => {
     setEditingMember(member);
     setTempRole(member.role); // 열 때 현재 멤버의 역할을 초기값으로 설정
     setShowRoleDrawer(true);
-  };
+  }, []);
 
-  const handleRoleSelect = (role: GroupRoleType) => {
+  const handleRoleSelect = useCallback((role: GroupRoleType) => {
     setTempRole(role);
-  };
+  }, []);
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = useCallback(() => {
     if (!editingMember || !tempRole) return;
 
     updateRole({ role: tempRole });
-  };
+  }, [editingMember, tempRole, updateRole]);
 
   return (
     <section className="space-y-4">
@@ -147,73 +249,20 @@ export default function GroupMemberManagement({
       </div>
 
       <div className="space-y-2">
-        {members.map((member) => (
-          <div
-            key={member.userId}
-            className="flex items-center justify-between p-3 rounded-2xl border transition-colors dark:bg-white/5 dark:border-white/5 bg-gray-50 border-black/2"
-          >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-10 h-10 rounded-full border">
-                {member.profileImage?.assetId ? (
-                  <AssetImage
-                    width={40}
-                    height={40}
-                    assetId={member.profileImage.assetId}
-                    alt={`${member.nicknameInGroup} 멤버의 프로필`}
-                    className="w-full h-full rounded-full bg-white object-cover"
-                  />
-                ) : (
-                  <Image
-                    width={40}
-                    height={40}
-                    src={'/profile_base.png'}
-                    alt={`${member.nicknameInGroup} 멤버의 프로필`}
-                    className="w-full h-full rounded-full bg-white object-cover"
-                  />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-bold dark:text-gray-200 text-itta-black">
-                    {member.nicknameInGroup || member.name}
-                  </span>
-                  {member.role === 'ADMIN' && (
-                    <ShieldCheck className="w-3 h-3 text-[#10B981]" />
-                  )}
-                </div>
-                <button
-                  onClick={() =>
-                    me.userId !== member.userId &&
-                    me.role === 'ADMIN' &&
-                    openRoleDrawer(member)
-                  }
-                  className="cursor-pointer flex items-center gap-1 group transition-all dark:text-gray-500 dark:hover:text-gray-300 text-gray-400 hover:text-gray-600"
-                >
-                  <span className="text-[10px] text-gray-400">
-                    {member.role === 'ADMIN'
-                      ? '관리자'
-                      : member.role === 'VIEWER'
-                        ? '뷰어'
-                        : '멤버'}
-                  </span>
-
-                  {me.userId !== member.userId && me.role === 'ADMIN' && (
-                    <ChevronRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {me.role === 'ADMIN' && me.userId !== member.userId && (
-              <button
-                onClick={() => confirmRemoveMember(member.userId, member.name)}
-                className="cursor-pointer p-2 rounded-xl transition-colors dark:hover:bg-red-500/10 dark:text-gray-500 hover:bg-red-50 text-gray-400"
-              >
-                <UserMinus className="w-4 h-4 hover:text-red-500" />
-              </button>
-            )}
-          </div>
-        ))}
+        {[...members]
+          .sort((a, b) => {
+            const order = { ADMIN: 0, EDITOR: 1, VIEWER: 2 };
+            return (order[a.role] ?? 1) - (order[b.role] ?? 1);
+          })
+          .map((member) => (
+            <MemberCard
+              key={member.userId}
+              member={member}
+              me={me}
+              onOpenRoleDrawer={openRoleDrawer}
+              onConfirmRemove={confirmRemoveMember}
+            />
+          ))}
 
         <Drawer
           onClose={resetDeleteMember}
@@ -228,7 +277,7 @@ export default function GroupMemberManagement({
                 </div>
                 <div className="space-y-1">
                   <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-                    {`정말 '${deleteMember?.name}'님을 그룹에서 내보내시겠습니까?`}
+                    {`정말 '${deleteMember?.nicknameInGroup || deleteMember?.name}'님을 그룹에서 내보내시겠습니까?`}
                   </DrawerTitle>
                 </div>
               </div>
@@ -238,12 +287,12 @@ export default function GroupMemberManagement({
               <DrawerClose className="cursor-pointer flex-1 py-4 rounded-2xl text-sm font-bold transition-all dark:bg-white/5 dark:text-gray-500 bg-gray-100 text-gray-500 active:bg-gray-200">
                 취소
               </DrawerClose>
-              <DrawerClose
+              <button
                 onClick={handleRemoveMember}
                 className="cursor-pointer flex-2 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all bg-red-500 text-white"
               >
                 내보내기
-              </DrawerClose>
+              </button>
             </div>
           </DrawerContent>
         </Drawer>
@@ -260,7 +309,7 @@ export default function GroupMemberManagement({
                     Set Permissions
                   </span>
                   <DrawerTitle className="text-xl font-bold dark:text-white text-itta-black">
-                    {editingMember?.name}님의 권한 변경
+                    {editingMember?.nicknameInGroup || editingMember?.name}님의 권한 변경
                   </DrawerTitle>
                 </div>
                 <DrawerClose className="p-2 text-gray-400">
@@ -321,4 +370,6 @@ export default function GroupMemberManagement({
       </div>
     </section>
   );
-}
+});
+
+export default GroupMemberManagement;

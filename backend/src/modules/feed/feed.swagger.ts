@@ -29,3 +29,35 @@ export const ApiFeedOkResponse = () =>
       },
     }),
   );
+
+export const ApiPastFeedOkResponse = () =>
+  applyDecorators(
+    ApiExtraModels(FeedCardResponseDto),
+    ApiOkResponse({
+      schema: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+          data: {
+            type: 'object',
+            properties: {
+              items: {
+                type: 'array',
+                items: { $ref: getSchemaPath(FeedCardResponseDto) },
+              },
+              nextCursor: { type: 'string', nullable: true },
+            },
+          },
+          meta: {
+            type: 'object',
+            properties: {
+              warnings: { type: 'array', items: { type: 'object' } },
+            },
+            example: { warnings: [] },
+          },
+          error: { type: 'null', example: null },
+        },
+        required: ['success', 'data', 'meta', 'error'],
+      },
+    }),
+  );

@@ -8,30 +8,27 @@ import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { groupDetailOptions } from '@/lib/api/group';
 import { UpdateGroupMeParams } from '@/lib/types/groupResponse';
 
-import { BaseUser } from '@/lib/types/profile';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { revalidateGroupProfile } from '../../actions';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { useRouter } from 'next/navigation';
 
 interface GroupProfileEditClientProps {
   groupId: string;
-  groupProfile: Omit<BaseUser, 'email'>;
 }
 
 export default function GroupProfileEditClient({
   groupId,
-  groupProfile,
 }: GroupProfileEditClientProps) {
   const { mutateAsync: updateProfile } = useApiPatch<UpdateGroupMeParams>(
     `/api/groups/${groupId}/members/me`,
   );
-  const { data } = useQuery(groupDetailOptions(groupId));
-  const { userId } = useAuthStore();
+  const { data: groupData } = useSuspenseQuery(groupDetailOptions(groupId));
 
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
 
@@ -40,10 +37,10 @@ export default function GroupProfileEditClient({
   const handleSave = async (data: { nickname: string; image: File | null }) => {
     setIsPending(true);
     try {
-      let finalMediaId = groupProfile.profileImageId;
+      let finalMediaId = groupData.me?.profileImage?.assetId ?? undefined;
 
       if (data.image) {
-        finalMediaId = (await uploadMultipleMedia([data.image]))[0];
+        finalMediaId = (await uploadMultipleMedia([data.image])).successIds[0];
       }
 
       await updateProfile({
@@ -58,6 +55,7 @@ export default function GroupProfileEditClient({
       await revalidateGroupProfile(groupId);
 
       toast.success('프로필 정보가 수정되었습니다.');
+      router.back();
     } catch (error) {
       Sentry.captureException(error, {
         level: 'error',
@@ -76,8 +74,8 @@ export default function GroupProfileEditClient({
     }
   };
 
-  const currentNickname = data?.me.nicknameInGroup || '';
-  const currentImage = data?.me.profileImage?.assetId || '';
+  const currentNickname = groupData.me.nicknameInGroup || '';
+  const currentImage = groupData.me.profileImage?.assetId || '';
 
   return (
     <ProfileEditProvider

@@ -92,7 +92,6 @@ describe('FeedController (e2e)', () => {
     group = await groupRepository.save(
       groupRepository.create({
         name: 'feed-group',
-        owner: { id: owner.id } as User,
       }),
     );
     await groupMemberRepository.save(
@@ -213,7 +212,7 @@ describe('FeedController (e2e)', () => {
     if (otherUser?.id) {
       await userRepository.delete({ id: otherUser.id });
     }
-    await app.close();
+    if (app) await app.close();
   });
 
   it('GET /feed should return owned and contributed posts with meta', async () => {
@@ -286,6 +285,7 @@ describe('FeedController (e2e)', () => {
     await request(app.getHttpServer())
       .get('/feed')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(400);
   });
 
@@ -294,6 +294,7 @@ describe('FeedController (e2e)', () => {
       .get('/feed')
       .query({ date: '2026-02-30', tz: 'Asia/Seoul' })
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(400);
   });
 
@@ -302,6 +303,324 @@ describe('FeedController (e2e)', () => {
       .get('/feed')
       .query({ date: '2026-02-28', tz: 'Not/AZone' })
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(400);
+  });
+});
+
+// 홈 화면의 끊김 없는 스크롤 타임라인(주간 달력과 연동)이 쓰는 커서 기반
+// "지난 기록" 엔드포인트. 위 FeedController 스위트와는 별도로, 날짜 하나에
+// 묶이지 않는 여러 시점의 기록과 커서 넘기기 자체를 검증하기 위해 전용
+// 픽스처를 둔다.
+describe('FeedController past feed (e2e)', () => {
+  let app: INestApplication<App>;
+  let userRepository: Repository<User>;
+  let postRepository: Repository<Post>;
+  let contributorRepository: Repository<PostContributor>;
+  let groupRepository: Repository<Group>;
+  let groupMemberRepository: Repository<GroupMember>;
+  let owner: User;
+  let group: Group;
+  let oldestPost: Post;
+  let middlePost: Post;
+  let newestGroupPost: Post;
+  let accessToken: string;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(GoogleStrategy)
+      .useValue({})
+      .overrideProvider(KakaoStrategy)
+      .useValue({})
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.init();
+
+    userRepository = app.get(getRepositoryToken(User));
+    postRepository = app.get(getRepositoryToken(Post));
+    contributorRepository = app.get(getRepositoryToken(PostContributor));
+    groupRepository = app.get(getRepositoryToken(Group));
+    groupMemberRepository = app.get(getRepositoryToken(GroupMember));
+    const jwtService = app.get(JwtService);
+
+    owner = await userRepository.save(
+      userRepository.create({
+        email: 'past-feed-owner@example.com',
+        nickname: 'past-feed-owner',
+        provider: 'kakao',
+        providerId: `past-feed-owner-${Date.now()}`,
+      }),
+    );
+    accessToken = jwtService.sign({ sub: owner.id });
+
+    group = await groupRepository.save(
+      groupRepository.create({
+        name: 'past-feed-group',
+      }),
+    );
+    await groupMemberRepository.save(
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: owner.nickname,
+      }),
+    );
+
+    // 오래된 순으로 3개 — nextCursor가 eventAt 기준으로 정확히 끊기는지 보려면
+    // 서로 다른 시각이 필요하다.
+    oldestPost = await postRepository.save(
+      postRepository.create({
+        scope: PostScope.PERSONAL,
+        ownerUserId: owner.id,
+        title: 'Past feed oldest',
+        eventAt: new Date('2026-01-01T09:00:00+09:00'),
+      }),
+    );
+    middlePost = await postRepository.save(
+      postRepository.create({
+        scope: PostScope.PERSONAL,
+        ownerUserId: owner.id,
+        title: 'Past feed middle',
+        eventAt: new Date('2026-01-05T09:00:00+09:00'),
+      }),
+    );
+    newestGroupPost = await postRepository.save(
+      postRepository.create({
+        scope: PostScope.GROUP,
+        ownerUserId: owner.id,
+        groupId: group.id,
+        title: 'Past feed newest (group)',
+        eventAt: new Date('2026-01-10T09:00:00+09:00'),
+      }),
+    );
+
+    for (const post of [oldestPost, middlePost, newestGroupPost]) {
+      await contributorRepository.save(
+        contributorRepository.create({
+          postId: post.id,
+          userId: owner.id,
+          role: PostContributorRole.AUTHOR,
+        }),
+      );
+    }
+  });
+
+  afterAll(async () => {
+    const postIds = [
+      oldestPost?.id,
+      middlePost?.id,
+      newestGroupPost?.id,
+    ].filter((id): id is string => Boolean(id));
+    if (postIds.length > 0) {
+      await contributorRepository.delete({ postId: In(postIds) });
+      await postRepository.delete({ id: In(postIds) });
+    }
+    if (group?.id) {
+      await groupMemberRepository.delete({ groupId: group.id });
+      await groupRepository.delete({ id: group.id });
+    }
+    if (owner?.id) {
+      await userRepository.delete({ id: owner.id });
+    }
+    if (app) await app.close();
+  });
+
+  it('GET /feed/past should return posts newest-first and hand back a cursor when the page is full', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2 })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const body = res.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+      meta: { warnings: unknown[] };
+    };
+
+    expect(body.data.items.map((item) => item.postId)).toEqual([
+      newestGroupPost.id,
+      middlePost.id,
+    ]);
+    expect(body.data.nextCursor).toBeTruthy();
+  });
+
+  it('GET /feed/past should resume after the given cursor and return null nextCursor once exhausted', async () => {
+    const firstPage = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2 })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const cursor = (firstPage.body as { data: { nextCursor: string } }).data
+      .nextCursor;
+
+    const secondPage = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2, cursor })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const body = secondPage.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+    };
+
+    expect(body.data.items.map((item) => item.postId)).toEqual([oldestPost.id]);
+    expect(body.data.nextCursor).toBeNull();
+  });
+
+  it('GET /feed/past should return 400 for a corrupted cursor instead of silently restarting from page one', async () => {
+    // 손상된 커서를 "커서 없음"으로 취급해 첫 페이지를 다시 내려주면,
+    // 클라이언트는 postId 기준 중복 제거로 목록이 안 늘어나는데 hasNextPage는
+    // 계속 true라 무한 재요청에 빠진다 — 조용히 재시작하지 않고 400으로
+    // 명확히 실패해야 한다.
+    await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ cursor: 'this-is-not-a-valid-cursor' })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
+      .expect(400);
+  });
+
+  it('GET /feed/groups/:groupId/past should only return that group past posts', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/feed/groups/${group.id}/past`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const body = res.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+    };
+
+    expect(body.data.items.map((item) => item.postId)).toEqual([
+      newestGroupPost.id,
+    ]);
+  });
+});
+
+// eventAt이 동일한 게시글이 페이지 경계에 걸릴 때, eventAt만으로 커서를 자르면
+// (p.eventAt < cursor) 그 경계 뒤쪽의 동일 eventAt 게시글이 영영 안 나오는
+// 문제가 있었다 — id까지 튜플로 비교해야 정렬(eventAt DESC, id DESC)과
+// 일관되게 자를 수 있다.
+describe('FeedController past feed cursor tie-break (e2e)', () => {
+  let app: INestApplication<App>;
+  let userRepository: Repository<User>;
+  let postRepository: Repository<Post>;
+  let contributorRepository: Repository<PostContributor>;
+  let owner: User;
+  let samePosts: Post[];
+  let accessToken: string;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(GoogleStrategy)
+      .useValue({})
+      .overrideProvider(KakaoStrategy)
+      .useValue({})
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.init();
+
+    userRepository = app.get(getRepositoryToken(User));
+    postRepository = app.get(getRepositoryToken(Post));
+    contributorRepository = app.get(getRepositoryToken(PostContributor));
+    const jwtService = app.get(JwtService);
+
+    owner = await userRepository.save(
+      userRepository.create({
+        email: 'past-feed-tiebreak-owner@example.com',
+        nickname: 'past-feed-tiebreak-owner',
+        provider: 'kakao',
+        providerId: `past-feed-tiebreak-owner-${Date.now()}`,
+      }),
+    );
+    accessToken = jwtService.sign({ sub: owner.id });
+
+    const sharedEventAt = new Date('2026-03-01T09:00:00+09:00');
+    samePosts = [];
+    for (let i = 0; i < 3; i++) {
+      const post = await postRepository.save(
+        postRepository.create({
+          scope: PostScope.PERSONAL,
+          ownerUserId: owner.id,
+          title: `Tie-break post ${i}`,
+          eventAt: sharedEventAt,
+        }),
+      );
+      await contributorRepository.save(
+        contributorRepository.create({
+          postId: post.id,
+          userId: owner.id,
+          role: PostContributorRole.AUTHOR,
+        }),
+      );
+      samePosts.push(post);
+    }
+  });
+
+  afterAll(async () => {
+    const postIds = samePosts.map((p) => p.id);
+    if (postIds.length > 0) {
+      await contributorRepository.delete({ postId: In(postIds) });
+      await postRepository.delete({ id: In(postIds) });
+    }
+    if (owner?.id) {
+      await userRepository.delete({ id: owner.id });
+    }
+    if (app) await app.close();
+  });
+
+  it('동일 eventAt 게시글이 페이지 경계에 걸려도 다음 페이지에서 누락되지 않는다', async () => {
+    const allIds = samePosts.map((p) => p.id).sort();
+
+    const firstPage = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2 })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const firstBody = firstPage.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+    };
+    expect(firstBody.data.items).toHaveLength(2);
+    expect(firstBody.data.nextCursor).toBeTruthy();
+
+    const secondPage = await request(app.getHttpServer())
+      .get('/feed/past')
+      .query({ limit: 2, cursor: firstBody.data.nextCursor })
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const secondBody = secondPage.body as {
+      data: { items: Array<{ postId: string }>; nextCursor: string | null };
+    };
+    expect(secondBody.data.items).toHaveLength(1);
+    expect(secondBody.data.nextCursor).toBeNull();
+
+    const seenIds = [
+      ...firstBody.data.items.map((i) => i.postId),
+      ...secondBody.data.items.map((i) => i.postId),
+    ].sort();
+    expect(seenIds).toEqual(allIds);
   });
 });

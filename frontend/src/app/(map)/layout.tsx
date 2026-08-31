@@ -7,7 +7,7 @@ export default function MapRootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="w-full h-screen flex flex-col">
+    <div className="w-full flex-1 min-h-0 flex flex-col">
       <div className="flex flex-1 min-h-0 w-full justify-center">
         <Suspense
           fallback={

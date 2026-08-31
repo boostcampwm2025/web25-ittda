@@ -1,0 +1,31 @@
+{
+  "name": "mobile-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sync": "cap sync",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android",
+    "dev:android": "adb reverse tcp:3000 tcp:3000 && cap sync android && cap run android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/clipboard": "^7.0.4",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/haptics": "^7.0.5",
+    "@capacitor/ios": "^7.0.0",
+    "@capacitor/local-notifications": "^7.0.7",
+    "@capacitor/push-notifications": "^7.0.7",
+    "@capacitor/share": "^7.0.4",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@capacitor/status-bar": "^7.0.6",
+    "capacitor-native-settings": "^7.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3"
+  }
+}

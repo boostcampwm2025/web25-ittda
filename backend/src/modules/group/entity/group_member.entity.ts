@@ -3,11 +3,11 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  Unique,
   CreateDateColumn,
   JoinColumn,
   Index,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 
 import { User } from '../../user/entity/user.entity';
@@ -17,7 +17,10 @@ import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
 
 @Entity('group_members')
-@Unique(['groupId', 'userId']) // 외래 키 필드명을 직접 지정
+@Index(['groupId', 'userId'], {
+  unique: true,
+  where: '"deleted_at" IS NULL',
+})
 @Index(['userId', 'joinedAt']) // 유저별 그룹 목록 조회 최적화
 export class GroupMember {
   @PrimaryGeneratedColumn('uuid')
@@ -62,6 +65,9 @@ export class GroupMember {
   @JoinColumn({ name: 'profile_media_id' })
   profileMedia?: MediaAsset | null;
 
+  @Column({ name: 'notification_muted', type: 'boolean', default: false })
+  notificationMuted: boolean;
+
   @Column({ name: 'last_read_at', type: 'timestamptz', nullable: true })
   lastReadAt?: Date | null;
 
@@ -70,4 +76,7 @@ export class GroupMember {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
+  deletedAt?: Date | null;
 }

@@ -36,7 +36,6 @@ export interface GroupDetail {
   groupId: string;
   name: string;
   createdAt: string;
-  ownerUserId: string;
   cover: GroupProfileCover | null;
 }
 
@@ -86,6 +85,27 @@ export interface UserInfo {
 }
 
 /**
+ * 초대 코드 정보 조회 시 반환되는 데이터 (GET v1/groups/invites/{code})
+ **/
+export interface InviteInfoResponse {
+  id: string;
+  code: string;
+  groupId: string;
+  group: {
+    id: string;
+    name: string;
+    coverMediaId: string | null;
+    coverSourcePostId: string | null;
+    lastActivityAt: string | null;
+    createdAt: string;
+  };
+  permission: GroupRoleType;
+  expiresAt: string;
+  createdAt: string;
+  memberCount: number;
+}
+
+/**
  * 초대 코드로 가입 시 반환되는 데이터
  **/
 export interface InviteJoinResponse {
@@ -109,6 +129,7 @@ export interface GroupMembersResponse {
 
 export interface GroupMemberRoleResponse {
   role: GroupRoleType;
+  notificationMuted: boolean;
 }
 
 export interface GroupActivityResponse {

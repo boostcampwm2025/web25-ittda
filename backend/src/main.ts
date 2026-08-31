@@ -3,7 +3,6 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllHttpExceptionFilter } from '@/common/exception_filters/AllHttpExceptionFilter';
-import { AllWsExceptionFilter } from '@/common/exception_filters/AllWsExceptionFilter';
 import { TransformInterceptor } from '@/common/interceptors/transform.interceptor';
 import cookieParser from 'cookie-parser';
 
@@ -30,10 +29,7 @@ async function bootstrap() {
 
   // 전역 예외 필터를 HTTP, WS에 대해 분리
   // ✅ 모든 필터를 한 번에 등록
-  app.useGlobalFilters(
-    new AllHttpExceptionFilter(),
-    new AllWsExceptionFilter(),
-  );
+  app.useGlobalFilters(new AllHttpExceptionFilter());
 
   // ✅ 전역 응답 인터셉터 등록 (성공 응답 통일)
   app.useGlobalInterceptors(new TransformInterceptor());

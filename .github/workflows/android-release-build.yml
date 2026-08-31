@@ -1,0 +1,72 @@
+name: Android Release Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    name: Build Signed Android Release AAB
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --filter mobile-app
+
+      - name: Sync Capacitor
+        working-directory: mobile-app
+        run: pnpm exec cap sync android
+
+      - name: Create local.properties
+        working-directory: mobile-app/android
+        run: echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+
+      - name: Decode release keystore
+        working-directory: mobile-app/android
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ittda-release.jks
+
+      - name: Create keystore.properties
+        working-directory: mobile-app/android
+        run: |
+          cat > keystore.properties <<'PROPS'
+          storeFile=../ittda-release.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          PROPS
+
+      - name: Grant execute permission for gradlew
+        working-directory: mobile-app/android
+        run: chmod +x gradlew
+
+      - name: Build Release AAB
+        working-directory: mobile-app/android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: app-release
+          path: mobile-app/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 7

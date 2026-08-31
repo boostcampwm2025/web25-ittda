@@ -1,0 +1,69 @@
+import { auth } from '@/auth';
+import { getBackendOrigin } from '@/lib/config/backend';
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import sharp from 'sharp';
+
+const backendUrl = getBackendOrigin();
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+
+  const [session, cookieStore] = await Promise.all([auth(), cookies()]);
+  const guestToken = cookieStore.get('x-guest-access-token')?.value;
+  const accessToken = session?.accessToken ?? guestToken;
+
+  if (!accessToken) {
+    return new NextResponse(null, { status: 401 });
+  }
+
+  // 브라우저 캐시가 있는 경우 auth만 확인하고 304 반환
+  const ifNoneMatch = request.headers.get('If-None-Match');
+  if (ifNoneMatch === id) {
+    return new NextResponse(null, {
+      status: 304,
+      headers: { 'Cache-Control': 'private, no-cache', ETag: id },
+    });
+  }
+
+  // 백엔드에서 presigned URL 가져오기
+  const urlRes = await fetch(`${backendUrl}/v1/media/${id}/url`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!urlRes.ok) {
+    return new NextResponse(null, { status: urlRes.status });
+  }
+
+  const body = await urlRes.json();
+  const presignedUrl: string | undefined = body?.data?.url;
+
+  if (!presignedUrl) {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  // presigned URL에서 원본 이미지 가져오기
+  const imageRes = await fetch(presignedUrl);
+  if (!imageRes.ok) {
+    return new NextResponse(null, { status: imageRes.status });
+  }
+
+  const originalBuffer = Buffer.from(await imageRes.arrayBuffer());
+
+  // WebP로 변환 (.rotate()로 EXIF 회전 적용 후 스트립)
+  const webpBuffer = await sharp(originalBuffer)
+    .rotate()
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  return new NextResponse(new Uint8Array(webpBuffer), {
+    headers: {
+      'Content-Type': 'image/webp',
+      'Cache-Control': 'private, no-cache',
+      ETag: id,
+    },
+  });
+}

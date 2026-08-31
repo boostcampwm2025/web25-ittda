@@ -20,6 +20,7 @@ import {
   ListFilter,
   Plus,
   SortAsc,
+  Ticket,
   Users,
   X,
 } from 'lucide-react';
@@ -44,6 +45,9 @@ export default function SharedHeaderActions() {
   const [isCreating, setIsCreating] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
 
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [inviteCodeInput, setInviteCodeInput] = useState('');
+
   const queryClient = useQueryClient();
 
   const { mutate } = useApiPost<newGroupResponse>('/api/groups', {
@@ -59,6 +63,8 @@ export default function SharedHeaderActions() {
         lastActivityAt: response.data.createdAt,
         latestPost: null,
         permission: 'ADMIN',
+        notificationMuted: false,
+        hasUnread: false,
       };
       // 서버 응답 데이터를 캐시에 즉시 추가
       queryClient.setQueryData<GroupSummary[]>(['shared'], (old) => {
@@ -85,7 +91,7 @@ export default function SharedHeaderActions() {
   };
 
   const getGroupNameError = () => {
-    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]{2,50}$/;
+    const groupNameRegex = /^[가-힣a-zA-Z0-9\s]{2,30}$/;
 
     if (!newGroupName.trim()) {
       return '그룹 이름을 입력해주세요.';
@@ -97,7 +103,7 @@ export default function SharedHeaderActions() {
     }
 
     if (!groupNameRegex.test(newGroupName)) {
-      return '이름은 2~50자의 한글, 영문, 숫자, 공백만 가능합니다.';
+      return '이름은 2~30자의 한글, 영문, 숫자, 공백만 가능합니다.';
     }
 
     return null;
@@ -105,15 +111,24 @@ export default function SharedHeaderActions() {
 
   const groupNicknameError = getGroupNameError();
 
+  const handleJoinByCode = () => {
+    const code = inviteCodeInput.trim().toLowerCase();
+    if (!code) return;
+    setShowJoinModal(false);
+    setInviteCodeInput('');
+    // /invite 페이지가 코드 조회·에러 처리·가입까지 전부 담당하므로 그대로 위임
+    router.push(`/invite?inviteCode=${encodeURIComponent(code)}`);
+  };
+
   return (
     <>
       <Drawer>
-        <DrawerTrigger className="cursor-pointer p-2.5 rounded-2xl transition-all dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500">
-          <ListFilter className="w-5 h-5" />
+        <DrawerTrigger className="cursor-pointer p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500">
+          <ListFilter className="w-4 h-4 sm:w-5 sm:h-5" />
         </DrawerTrigger>
-        <DrawerContent className="w-full px-8 pt-4 pb-10">
+        <DrawerContent className="w-full px-4 sm:px-8 pt-4 pb-10">
           <DrawerHeader className="flex justify-center items-start pl-2">
-            <DrawerTitle className="text-lg font-bold mb-3 dark:text-white text-itta-black">
+            <DrawerTitle className="text-base sm:text-xl font-bold mb-3 dark:text-white text-itta-black">
               그룹 정렬
             </DrawerTitle>
           </DrawerHeader>
@@ -146,7 +161,7 @@ export default function SharedHeaderActions() {
                     setSortBy(option.id as GroupSortOption);
                   }}
                   className={cn(
-                    'cursor-pointer w-full flex items-center justify-between p-4 rounded-2xl transition-all',
+                    'cursor-pointer w-full flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all',
                     sortBy === option.id
                       ? 'bg-[#10B981]/10 text-[#10B981]'
                       : 'dark:hover:bg-white/5 dark:text-gray-500 hover:bg-gray-50 text-gray-500',
@@ -154,7 +169,9 @@ export default function SharedHeaderActions() {
                 >
                   <div className="flex items-center gap-3">
                     {option.icon}
-                    <span className="text-sm font-bold">{option.label}</span>
+                    <span className="text-xs sm:text-sm font-bold">
+                      {option.label}
+                    </span>
                   </div>
                   {sortBy === option.id && (
                     <Check className="w-4 h-4" strokeWidth={3} />
@@ -166,86 +183,159 @@ export default function SharedHeaderActions() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer open={showCreateModal} onOpenChange={setShowCreateModal}>
+      <Drawer open={showJoinModal} onOpenChange={setShowJoinModal}>
         <DrawerTrigger
-          onClick={() => setShowCreateModal(true)}
-          className="cursor-pointer p-2.5 rounded-2xl transition-all shadow-md dark:bg-[#10B981] dark:text-white bg-[#222222] text-white"
+          onClick={() => setShowJoinModal(true)}
+          className="cursor-pointer p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all dark:bg-white/5 dark:text-gray-400 bg-gray-50 text-gray-500"
         >
-          <Plus className="w-5 h-5" />
+          <Ticket className="w-4 h-4 sm:w-5 sm:h-5" />
         </DrawerTrigger>
-        <DrawerContent className="w-full p-8 pb-12">
-          <div className="flex justify-between items-center mb-8 w-full">
-            <DrawerHeader className="pl-0">
+        <DrawerContent className="w-full px-4 sm:px-8 pt-4 pb-10">
+          <div className="flex justify-between items-center mb-3">
+            <DrawerHeader className="pl-2 flex-1">
               <DrawerTitle className="flex flex-col justify-center items-start pl-0">
-                <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
-                  CREATE GROUP
+                <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                  JOIN GROUP
                 </span>
-                <span className="text-xl font-bold dark:text-white text-itta-black">
-                  새 공유 기록함 만들기
+                <span className="text-base sm:text-xl dark:text-white text-itta-black">
+                  코드로 참여하기
                 </span>
               </DrawerTitle>
             </DrawerHeader>
             <DrawerClose
-              onClick={() => setShowCreateModal(false)}
+              onClick={() => setShowJoinModal(false)}
               className="cursor-pointer p-2 text-gray-400"
             >
               <X className="w-6 h-6" />
             </DrawerClose>
           </div>
 
-          <div className="space-y-6 mb-10">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
-                기록함 이름
-              </label>
-              <input
-                autoFocus
-                type="text"
-                placeholder="예: 제주도 여행기"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                className="w-full border-b-2 bg-transparent py-3 text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
-              />
-              {groupNicknameError ? (
-                <p className="text-[10px] text-red-500 font-medium">
-                  {groupNicknameError}
-                </p>
-              ) : (
-                <p className="text-[10px] text-gray-400 px-1">
-                  * 그룹 이름은 한글/영문/숫자/공백만 사용이 가능합니다.
-                </p>
-              )}
-            </div>
+          <div className="space-y-2 px-2">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              초대 코드
+            </label>
+            <input
+              type="text"
+              placeholder="예: a1b2c3d4"
+              value={inviteCodeInput}
+              onChange={(e) => setInviteCodeInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleJoinByCode();
+              }}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="w-full border-b-2 bg-transparent py-2.5 sm:py-3 text-base sm:text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
+            />
+            <p className="text-[10px] text-gray-400 px-1">
+              * 초대 링크의 코드 부분(inviteCode)을 입력해주세요.
+            </p>
           </div>
 
-          <div className="flex gap-4">
-            <DrawerClose
-              onClick={() => setShowCreateModal(false)}
-              className="cursor-pointer flex-1 py-4 rounded-2xl font-bold text-sm dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400"
-            >
-              취소
-            </DrawerClose>
+          <div className="pt-6 px-2">
             <button
-              onClick={handleCreateGroup}
-              disabled={
-                !newGroupName.trim() || !!groupNicknameError || isCreating
-              }
+              onClick={handleJoinByCode}
+              disabled={!inviteCodeInput.trim()}
               className={cn(
-                'flex-2 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2',
-                newGroupName.trim() && !isCreating && !groupNicknameError
+                'w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2',
+                inviteCodeInput.trim()
                   ? 'bg-[#10B981] text-white active:scale-95 cursor-pointer'
                   : 'bg-gray-100 text-gray-300 cursor-not-allowed',
               )}
             >
-              {isCreating ? (
-                '생성 중...'
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  기록함 만들기
-                </>
-              )}
+              <Ticket className="w-4 h-4" />
+              참여하기
             </button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DrawerTrigger
+          onClick={() => setShowCreateModal(true)}
+          data-tutorial-id="tutorial-shared-create-group"
+          className="cursor-pointer p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md dark:bg-[#10B981] dark:text-white bg-[#222222] text-white"
+        >
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+        </DrawerTrigger>
+        <DrawerContent className="h-[85%]">
+          <div className="w-full flex flex-col h-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 pt-4">
+              <div className="flex justify-between items-center mb-6 sm:mb-8 w-full">
+                <DrawerHeader className="pl-0">
+                  <DrawerTitle className="flex flex-col justify-center items-start pl-0">
+                    <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+                      CREATE GROUP
+                    </span>
+                    <span className="text-base sm:text-xl dark:text-white text-itta-black">
+                      새 공유 기록함 만들기
+                    </span>
+                  </DrawerTitle>
+                </DrawerHeader>
+                <DrawerClose
+                  onClick={() => setShowCreateModal(false)}
+                  className="cursor-pointer p-2 text-gray-400"
+                >
+                  <X className="w-6 h-6" />
+                </DrawerClose>
+              </div>
+
+              <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    기록함 이름
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="예: 제주도 여행기"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    className="w-full border-b-2 bg-transparent py-2.5 sm:py-3 text-base sm:text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-itta-black"
+                  />
+                  {groupNicknameError ? (
+                    <p className="text-[10px] text-red-500 font-medium">
+                      {groupNicknameError}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-gray-400 px-1">
+                      * 그룹 이름은 한글/영문/숫자/공백만 사용이 가능합니다.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 sm:px-8 pb-8 sm:pb-10 pt-4">
+              <div className="flex gap-4">
+                <DrawerClose
+                  onClick={() => setShowCreateModal(false)}
+                  className="cursor-pointer flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm dark:bg-white/5 dark:text-gray-500 bg-gray-50 text-gray-400"
+                >
+                  취소
+                </DrawerClose>
+                <button
+                  onClick={handleCreateGroup}
+                  disabled={
+                    !newGroupName.trim() || !!groupNicknameError || isCreating
+                  }
+                  className={cn(
+                    'flex-2 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2',
+                    newGroupName.trim() && !isCreating && !groupNicknameError
+                      ? 'bg-[#10B981] text-white active:scale-95 cursor-pointer'
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+                  )}
+                >
+                  {isCreating ? (
+                    '생성 중...'
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      기록함 만들기
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </DrawerContent>
       </Drawer>

@@ -1,63 +1,101 @@
 'use client';
 
 import React from 'react';
-import { Calendar, ImageIcon, MapPin } from 'lucide-react';
+import { ChevronRight, Clock, MapPin } from 'lucide-react';
 import { RecordSearchItem } from '@/lib/types/record';
-import { formatDateDot } from '@/lib/date';
+import { formatDotDateString } from '@/lib/date';
 import AssetImage from '@/components/AssetImage';
+
 interface SearchItemProps {
   record: RecordSearchItem;
   onClick: (id: string) => void;
+  priorityLoad?: boolean;
 }
 
-const SearchItem: React.FC<SearchItemProps> = ({ record, onClick }) => {
+const SearchItem: React.FC<SearchItemProps> = ({
+  record,
+  onClick,
+  priorityLoad,
+}) => {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(record.id)}
-      className="w-full flex items-center gap-4 p-4 rounded-xl border  text-left shadow-sm active:scale-[0.98] group bg-white border-gray-100/50 dark:bg-[#1E1E1E] dark:border-white/5"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(record.id);
+        }
+      }}
+      className="w-full py-4 border-b text-left transition-colors duration-150 dark:border-white/5 border-gray-100 active:bg-gray-50/50 dark:active:bg-white/3 cursor-pointer"
     >
-      {/* 썸네일 이미지 */}
-      {record.thumbnailMediaId ? (
-        <div className="flex justify-center items-center relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-gray-50 dark:bg-white/5">
-          <AssetImage
-            assetId={record.thumbnailMediaId}
-            alt={record.title}
-            width={48}
-            height={48}
-            className="w-full h-full object-cover rounded-xl"
-          />
-        </div>
-      ) : (
-        <div className="flex items-center justify-center w-12 h-12 ">
-          <ImageIcon className="w-6 h-6 text-gray-400" />
-        </div>
-      )}
+      {/* 텍스트 영역 */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-[15px] sm:text-base truncate dark:text-white text-itta-black">
+            {record.title}
+          </h4>
 
-      {/* 텍스트 콘텐츠 */}
-      <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold truncate mb-1.5 text-itta-black dark:text-white  transition-colors">
-          {record.title}
-        </h4>
-        {record.snippet && (
-          <p className="text-xs text-itta-gray mb-1 truncate">
-            {record.snippet}
-          </p>
-        )}
-        <div className="flex items-center gap-2 text-xs text-itta-gray3">
-          <div className="flex items-center gap-1 truncate">
-            <Calendar size={10} className="shrink-0 text-itta-point" />
-            <span>{formatDateDot(new Date(record.date))}</span>
+          <div className="flex justify-between items-center gap-2 mt-1 flex-wrap">
+            {record.address && (
+              <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                <MapPin className="w-3 h-3 text-[#10B981] shrink-0" />
+                <span className="truncate max-w-40">{record.address}</span>
+              </span>
+            )}
+            <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+              <Clock className="w-3 h-3 text-[#10B981] shrink-0" />
+              {formatDotDateString(record.date)}
+            </span>
           </div>
 
-          {record.address && (
-            <div className="flex items-center gap-1 truncate">
-              <MapPin size={10} className="shrink-0 text-itta-point" />
-              <span>{record.address}</span>
+          {record.snippet && (
+            <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-1.5 line-clamp-2 leading-relaxed">
+              {record.snippet}
+            </p>
+          )}
+        </div>
+
+        <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+      </div>
+
+      {/* 미리보기 이미지 */}
+      {record.previewMediaIds.length > 0 && (
+        <div className="mt-3">
+          {record.previewMediaIds.length === 1 ? (
+            <div className="rounded-xl overflow-hidden aspect-square w-36 sm:w-40">
+              <AssetImage
+                width={160}
+                height={160}
+                className="w-full h-full object-cover"
+                assetId={record.previewMediaIds[0]}
+                alt={record.title}
+                priorityLoad={priorityLoad}
+              />
+            </div>
+          ) : (
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+              {record.previewMediaIds.map((id, idx) => (
+                <div
+                  key={id}
+                  className="shrink-0 rounded-xl overflow-hidden h-28 sm:h-32 w-28 sm:w-32"
+                >
+                  <AssetImage
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
+                    assetId={id}
+                    alt={`${record.title} ${idx + 1}`}
+                    priorityLoad={priorityLoad && idx === 0}
+                  />
+                </div>
+              ))}
             </div>
           )}
         </div>
-      </div>
-    </button>
+      )}
+    </div>
   );
 };
 

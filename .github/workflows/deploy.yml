@@ -1,0 +1,34 @@
+name: Sync and Deploy to Personal Staging
+
+on:
+  push:
+    branches:
+      - dev # Organization의 dev 브랜치에 push(merge)될 때 실행
+
+jobs:
+  build-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 소스 코드 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 2. build.sh 실행 권한 부여 및 실행
+      - name: Execute build script
+        run: |
+          chmod +x ./build.sh
+          ./build.sh
+
+      # 3. 개인 레포지토리 staging 브랜치로 푸시
+      - name: Pushes to personal repository
+        run: |
+          cd output
+          git init
+          git config user.name "GitHub Actions"
+          git config user.email "${{ secrets.EMAIL }}"
+          git checkout -b staging
+          git add -A
+          git commit -m "Sync from ${{ github.sha }}"
+          git push --force "https://${{ secrets.AUTO_ACTIONS }}@github.com/H-sooyeon/team-ittda.git" staging

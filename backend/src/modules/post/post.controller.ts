@@ -5,8 +5,10 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post as HttpPost,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -17,12 +19,14 @@ import {
   ApiNoContentResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { EditPostDto } from './dto/edit-post.dto';
 import { PostDetailDto } from './dto/post-detail.dto';
+import { ShareTokenResponseDto } from './dto/shared-post.dto';
 import {
   LocationValueDto,
   MoodValueDto,
@@ -34,6 +38,7 @@ import {
   ApiWrappedCreatedResponse,
   ApiWrappedOkResponse,
 } from '@/common/swagger/api-wrapped-response.decorator';
+import { PostMood } from '@/enums/post-mood.enum';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
 
 import type { MyJwtPayload } from '../auth/auth.type';
@@ -53,17 +58,25 @@ export class PostController {
       '특정 ID의 게시글 상세 정보를 조회합니다. 조회 권한이 필요합니다.',
   })
   @ApiParam({ name: 'id', description: '게시글 ID' })
+  @ApiQuery({
+    name: 'groupId',
+    required: false,
+    description:
+      '공유된 개인 글을 특정 그룹 컨텍스트에서 볼 때, 그 그룹 기준 기여자 닉네임/프로필을 표시하기 위한 그룹 ID.',
+  })
   @ApiWrappedOkResponse({ type: PostDetailDto })
   async getOne(
     @User() user: MyJwtPayload,
     @Param('id') id: string,
+    @Query('groupId', new ParseUUIDPipe({ version: '4', optional: true }))
+    groupId?: string,
   ): Promise<PostDetailDto> {
     const requesterId = user?.sub;
     if (!requesterId) {
       throw new UnauthorizedException('Access token is required.');
     }
     await this.postService.ensureCanViewPost(id, requesterId);
-    return this.postService.findOne(id, requesterId);
+    return this.postService.findOne(id, requesterId, groupId);
   }
 
   @Get(':postId/edit')
@@ -93,7 +106,7 @@ export class PostController {
   @ApiBody({
     type: CreatePostDto,
     description:
-      'MOOD 블록의 value.mood는 [행복, 좋음, 만족, 재미, 보통, 피곤, 놀람, 화남, 슬픔, 아픔, 짜증] 중 하나여야 합니다.<br/>' +
+      `MOOD 블록의 value.mood는 [${Object.values(PostMood).join(', ')}] 중 하나여야 합니다.<br/>` +
       'LOCATION 블록은 lat/lng/address가 필요하며 placeName은 선택입니다.<br/>' +
       'RATING 블록의 value.rating은 소수점 한 자리까지 허용됩니다.<br/>' +
       'MEDIA 블록의 value에는 title, type, externalId가 필수이며 year/imageUrl/originalTitle은 선택입니다.',
@@ -132,6 +145,46 @@ export class PostController {
       throw new UnauthorizedException('Access token is required.');
     }
     return this.postService.updatePost(postId, requesterId, dto);
+  }
+
+  @HttpPost(':id/share')
+  @ApiOperation({
+    summary: '공유 링크 생성',
+    description:
+      '기록 소유자가 공유 토큰을 생성합니다. 이미 있으면 기존 토큰을 반환합니다.',
+  })
+  @ApiParam({ name: 'id', description: '게시글 ID' })
+  @ApiWrappedOkResponse({ type: ShareTokenResponseDto })
+  async createShareToken(
+    @User() user: MyJwtPayload,
+    @Param('id') id: string,
+  ): Promise<ShareTokenResponseDto> {
+    const requesterId = user?.sub;
+    if (!requesterId)
+      throw new UnauthorizedException('Access token is required.');
+    const shareToken = await this.postService.createShareToken(id, requesterId);
+    return {
+      shareToken,
+      shareUrl: `${process.env.CLIENT_URL ?? ''}/share/${shareToken}`,
+    };
+  }
+
+  @Delete(':id/share')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: '공유 링크 삭제',
+    description: '기록 소유자가 공유 토큰을 삭제합니다.',
+  })
+  @ApiParam({ name: 'id', description: '게시글 ID' })
+  @ApiNoContentResponse()
+  async revokeShareToken(
+    @User() user: MyJwtPayload,
+    @Param('id') id: string,
+  ): Promise<void> {
+    const requesterId = user?.sub;
+    if (!requesterId)
+      throw new UnauthorizedException('Access token is required.');
+    await this.postService.revokeShareToken(id, requesterId);
   }
 
   @Delete(':id')

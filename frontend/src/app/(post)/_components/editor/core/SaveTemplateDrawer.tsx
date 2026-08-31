@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import { CheckCircle2 } from 'lucide-react';
 import {
   Drawer,
@@ -23,6 +24,8 @@ export default function SaveTemplateDrawer({
 }: SaveTemplateDrawerProps) {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
+  const nameImeProps = useIMEInput(setName);
+  const descImeProps = useIMEInput(setDesc);
 
   const isValid = name.trim().length > 0;
 
@@ -48,7 +51,7 @@ export default function SaveTemplateDrawer({
                 autoFocus
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                {...nameImeProps}
                 placeholder="예: 나의 데일리 기록"
                 className="w-full border-b-2 bg-transparent py-3 text-lg font-bold transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-white border-gray-100 focus:border-[#10B981] text-[#333333]"
               />
@@ -60,7 +63,7 @@ export default function SaveTemplateDrawer({
               <input
                 type="text"
                 value={desc}
-                onChange={(e) => setDesc(e.target.value)}
+                {...descImeProps}
                 placeholder="어떤 구성을 위한 템플릿인가요?"
                 className="w-full border-b bg-transparent py-2 text-base font-medium transition-all outline-none dark:border-white/5 dark:focus:border-[#10B981] dark:text-gray-400 border-gray-100 focus:border-[#10B981] text-gray-600"
               />

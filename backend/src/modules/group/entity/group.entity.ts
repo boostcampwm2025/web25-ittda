@@ -7,7 +7,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 
-import { User } from '../../user/entity/user.entity';
 import { MediaAsset } from '@/modules/media/entity/media-asset.entity';
 import { Post } from '@/modules/post/entity/post.entity';
 
@@ -18,10 +17,6 @@ export class Group {
 
   @Column({ name: 'name' })
   name: string;
-
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'owner_id' }) // 실제 테이블에 owner_id라는 컬럼을 만들어서 User.id를 참조하도록 함
-  owner: User;
 
   @Column({ name: 'cover_media_id', type: 'uuid', nullable: true })
   coverMediaId?: string | null;

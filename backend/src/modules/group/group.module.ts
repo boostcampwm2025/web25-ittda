@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Group } from './entity/group.entity';
@@ -16,6 +16,7 @@ import { GroupRecordService } from './service/group-record.service';
 import { GroupInviteService } from './service/group-invite.service';
 import { GroupManagementService } from './service/group-management.service';
 import { GroupActivityService } from './service/group-activity.service';
+import { GroupRoleGuard } from './guards/group-roles.guard';
 
 import { User } from '../user/entity/user.entity';
 import { Post } from '../post/entity/post.entity';
@@ -27,6 +28,9 @@ import { GroupActivityLog } from './entity/group-activity-log.entity';
 import { GroupActivityActor } from './entity/group-activity-actor.entity';
 
 import { AuthModule } from '../auth/auth.module';
+import { PostModule } from '../post/post.module';
+import { MediaModule } from '../media/media.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -44,6 +48,9 @@ import { AuthModule } from '../auth/auth.module';
       GroupActivityActor,
     ]),
     AuthModule,
+    forwardRef(() => PostModule),
+    MediaModule,
+    NotificationModule,
   ],
   providers: [
     GroupService,
@@ -51,6 +58,7 @@ import { AuthModule } from '../auth/auth.module';
     GroupInviteService,
     GroupManagementService,
     GroupActivityService,
+    GroupRoleGuard,
   ],
   controllers: [
     GroupController,
@@ -59,6 +67,6 @@ import { AuthModule } from '../auth/auth.module';
     GroupInviteController,
     GroupActivityController,
   ],
-  exports: [GroupService, GroupActivityService], // GroupRoleGuard에서 사용
+  exports: [GroupService, GroupActivityService, GroupRoleGuard],
 })
 export class GroupModule {}

@@ -6,10 +6,15 @@ import { Repository } from 'typeorm';
 import { Post } from '../post/entity/post.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
 import { PostContributor } from '../post/entity/post-contributor.entity';
+import { PostGroupShare } from '../post/entity/post-group-share.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { PostScope } from '@/enums/post-scope.enum';
 import { GetFeedQueryDto } from './dto/get-feed.query.dto';
-import { buildFeedCards, dayRange } from './feed.helpers';
+import {
+  buildFeedCards,
+  dayRange,
+  getSharedGroupsByPostIds,
+} from './feed.helpers';
 
 @Injectable()
 export class FeedPersonalQueryService {
@@ -22,6 +27,8 @@ export class FeedPersonalQueryService {
     private readonly postBlockRepo: Repository<PostBlock>,
     @InjectRepository(PostContributor)
     private readonly postContributorRepo: Repository<PostContributor>,
+    @InjectRepository(PostGroupShare)
+    private readonly postGroupShareRepo: Repository<PostGroupShare>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepo: Repository<GroupMember>,
   ) {}
@@ -49,6 +56,13 @@ export class FeedPersonalQueryService {
     ]);
 
     const posts = await postsQb.getMany();
+
+    // 본인 소유 PERSONAL 글만 조회하는 쿼리라 postIds 전체가 이미 owner 검증됨.
+    const sharedGroupsByPostId = await getSharedGroupsByPostIds(
+      this.postGroupShareRepo,
+      posts.map((p) => p.id),
+    );
+
     return buildFeedCards(
       posts,
       this.postBlockRepo,
@@ -56,6 +70,7 @@ export class FeedPersonalQueryService {
       this.groupMemberRepo,
       this.logger,
       userId,
+      { sharedGroupsByPostId },
     );
   }
 }

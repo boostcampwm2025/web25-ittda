@@ -8,10 +8,12 @@ import { Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AssetImage from './AssetImage';
+import { useHideOnScroll } from '@/hooks/useHideOnScroll';
 
 export default function Header() {
   const router = useRouter();
   const { userId, userType, setLogin } = useAuthStore();
+  const hidden = useHideOnScroll();
 
   const { data: userProfile } = useQuery(userProfileOptions());
 
@@ -30,11 +32,11 @@ export default function Header() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 max-w-4xl w-full px-6 py-4 mx-auto',
+        'sticky top-0 z-50 max-w-4xl w-full px-4 py-3 sm:px-6 sm:py-4 mx-auto',
         'flex items-center justify-between',
-        'backdrop-blur-xl transition-all duration-500',
-        'bg-white/80',
-        'dark:bg-[#121212]/80',
+        'bg-white',
+        'dark:bg-[#121212]',
+        hidden ? '-translate-y-full' : 'translate-y-0',
       )}
     >
       <button
@@ -43,14 +45,14 @@ export default function Header() {
       >
         <h1
           className={cn(
-            'text-xl font-bold tracking-tight transition-all active:scale-95',
+            'text-lg sm:text-xl font-bold tracking-tight transition-all active:scale-95',
             'text-[#222222] dark:text-white',
           )}
         >
           잇다-
         </h1>
       </button>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <button
           onClick={() => router.push('/search')}
           className={cn(
@@ -64,7 +66,7 @@ export default function Header() {
         <button
           onClick={() => router.push('/profile')}
           className={cn(
-            'cursor-pointer w-10 h-10 rounded-full overflow-hidden border transition-all active:scale-90',
+            'cursor-pointer w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border transition-all active:scale-90',
             'border-gray-100 shadow-sm',
             'dark:border-white/10 dark:shadow-none',
           )}
@@ -76,6 +78,7 @@ export default function Header() {
               className="w-full h-full object-cover rounded-full"
               assetId={userProfile.user.profileImageId}
               alt="유저 프로필"
+              wrapperClassName="w-full h-full"
             />
           ) : (
             <Image

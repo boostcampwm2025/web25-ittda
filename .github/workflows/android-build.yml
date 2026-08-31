@@ -1,0 +1,62 @@
+name: Android APK Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: '앱이 로드할 서버 URL (비워두면 프로덕션 https://ittda.vercel.app 사용)'
+        required: false
+        default: ''
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    name: Build Android Debug APK
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --filter mobile-app
+
+      - name: Sync Capacitor
+        working-directory: mobile-app
+        env:
+          CAPACITOR_SERVER_URL: ${{ github.event.inputs.server_url }}
+        run: pnpm exec cap sync android
+
+      - name: Create local.properties
+        working-directory: mobile-app/android
+        run: echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+
+      - name: Grant execute permission for gradlew
+        working-directory: mobile-app/android
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        working-directory: mobile-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: mobile-app/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7

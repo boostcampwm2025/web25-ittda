@@ -24,9 +24,6 @@ export class GroupSettingInfoDto {
   @ApiProperty({ description: '생성 일시' })
   createdAt: Date;
 
-  @ApiProperty({ description: '방장 유저 ID' })
-  ownerUserId: string;
-
   @ApiProperty({
     description: '커버 이미지 정보',
     type: GroupSettingCoverDto,

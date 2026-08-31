@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { FieldType, LocationValue } from '@/lib/types/record';
@@ -20,6 +20,11 @@ import {
 } from '@/lib/utils/exifExtractor';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
+import { useSocketStore } from '@/store/useSocketStore';
+
+// 블록 삭제 응답을 기다리는 최대 시간. 이 시간 내에 PATCH_COMMITTED로
+// 삭제가 확정되지 않으면(락 미보유로 백엔드가 거부한 경우 등) 원상복구한다.
+const DELETE_CONFIRM_TIMEOUT_MS = 8_000;
 
 interface UsePostEditorBlocksProps {
   blocks: RecordBlock[];
@@ -64,6 +69,66 @@ export function usePostEditorBlocks({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { socket } = useSocketStore();
+
+  // 삭제 요청을 보냈지만 백엔드 커밋 확인을 기다리는 중인 블록 id 집합.
+  // (비관적 삭제: 커밋 확인 전까지 블록을 화면에 "삭제 중" 상태로 남겨둔다)
+  const [deletingBlockIds, setDeletingBlockIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const deleteTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  const finalizeBlockDeletion = useCallback((id: string) => {
+    const timeout = deleteTimeoutsRef.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      deleteTimeoutsRef.current.delete(id);
+    }
+    setDeletingBlockIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
+  // 내가 보낸 BLOCK_DELETE가 실제로 커밋됐는지 PATCH_COMMITTED로 확인한다.
+  // (락을 보유하지 않은 채 삭제를 시도하면 백엔드가 거부할 수 있는데,
+  // 이 경우 PATCH_COMMITTED가 오지 않으므로 아래 타임아웃에서 원상복구된다)
+  useEffect(() => {
+    if (!socket || !draftId) return;
+
+    const handlePatchCommitted = ({
+      patch,
+    }: {
+      patch: PatchApplyPayload | PatchApplyPayload[];
+    }) => {
+      const commands = Array.isArray(patch) ? patch : [patch];
+      commands.forEach((cmd) => {
+        if (cmd.type !== 'BLOCK_DELETE') return;
+        if (!deleteTimeoutsRef.current.has(cmd.blockId)) return;
+
+        finalizeBlockDeletion(cmd.blockId);
+        setBlocks((prev) =>
+          normalizeLayout(prev.filter((b) => b.id !== cmd.blockId)),
+        );
+      });
+    };
+
+    socket.on('PATCH_COMMITTED', handlePatchCommitted);
+    return () => {
+      socket.off('PATCH_COMMITTED', handlePatchCommitted);
+    };
+  }, [socket, draftId, finalizeBlockDeletion, setBlocks]);
+
+  // 언마운트 시 남아있는 삭제 대기 타임아웃 정리
+  useEffect(() => {
+    return () => {
+      deleteTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+      deleteTimeoutsRef.current.clear();
+    };
+  }, []);
+
   // EXIF 메타데이터 상태
   const [pendingMetadata, setPendingMetadata] = useState<{
     images: ImageWithMetadata[];
@@ -79,9 +144,6 @@ export function usePostEditorBlocks({
     };
   } | null>(null);
 
-  // TODO: 추후 고려해볼 사항
-  // 타입이 필드면 락 걸고 삭제하고 락 풀고
-  // 타입이 드로어라면, 바로 삭제만하고(삭제전에 락 검증해야할까?)
   const removeBlock = useCallback(
     (id: string) => {
       // 블록 타입 확인하여 메타데이터 적용 상태 업데이트
@@ -117,34 +179,71 @@ export function usePostEditorBlocks({
         }
       }
 
-      if (draftId) {
-        const lockKey = `block:${id}`;
-        const isLockedByMe = locks?.[lockKey] === mySessionId;
+      // 공동작성 중이 아니면(draftId 없음) 락 개념이 없으므로 즉시 로컬 삭제
+      if (!draftId) {
+        setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
+        return;
+      }
 
-        // 본인이 락을 이미 가지고 있다면 requestLock 스킵
-        if (!isLockedByMe) {
-          requestLock(lockKey);
-        }
-        applyPatch({
-          type: 'BLOCK_DELETE',
-          blockId: id,
+      if (deletingBlockIds.has(id)) return; // 이미 삭제 요청 중
+
+      const lockKey = `block:${id}`;
+      const ownerSessionId = locks?.[lockKey];
+      const isLockedByOther =
+        !!ownerSessionId && ownerSessionId !== mySessionId;
+
+      // 다른 사용자가 편집 중인 블록은 삭제 차단
+      if (isLockedByOther) {
+        toast.error('다른 사용자가 편집 중인 필드는 삭제할 수 없습니다.', {
+          id: `delete-locked-${lockKey}`,
         });
+        return;
+      }
+
+      // 비관적 삭제: 락을 보유하지 않은 채로 곧바로 로컬에서 지워버리면,
+      // 백엔드가 락 없음을 이유로 삭제를 거부했을 때 프론트와 백엔드의 블록 목록이
+      // 어긋나 저장 시 같은 위치에 두 블록이 겹치는 문제가 있었음.
+      // PATCH_COMMITTED로 삭제가 커밋된 걸 확인하기 전까지는 "삭제 중" 상태로만 표시한다.
+      setDeletingBlockIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+
+      applyPatch({
+        type: 'BLOCK_DELETE',
+        blockId: id,
+      });
+      // 내가 락을 쥐고 있었다면 해제
+      if (ownerSessionId === mySessionId) {
         releaseLock(lockKey);
       }
 
-      // 로컬 상태 반영 및 레이아웃 정규화
-      setBlocks((prev) => normalizeLayout(prev.filter((b) => b.id !== id)));
+      // 타임아웃 내에 PATCH_COMMITTED가 오지 않으면(백엔드 거부, 응답 지연 등) 원상복구
+      const timeout = setTimeout(() => {
+        deleteTimeoutsRef.current.delete(id);
+        setDeletingBlockIds((prev) => {
+          if (!prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        toast.error('삭제에 실패했습니다. 다시 시도해 주세요.', {
+          id: `delete-failed-${id}`,
+        });
+      }, DELETE_CONFIRM_TIMEOUT_MS);
+      deleteTimeoutsRef.current.set(id, timeout);
     },
     [
       blocks,
       pendingMetadata,
       draftId,
-      requestLock,
       applyPatch,
       releaseLock,
       setBlocks,
       locks,
       mySessionId,
+      deletingBlockIds,
     ],
   );
 
@@ -291,7 +390,9 @@ export function usePostEditorBlocks({
 
         // 타인이 락을 쥐고 있다면 동작 차단
         if (isLockedByOther) {
-          toast.error('현재 다른 사용자가 편집 중입니다.');
+          toast.error('현재 다른 사용자가 편집 중입니다.', {
+            id: `locked-${lockKey}`,
+          });
           return;
         }
       }
@@ -358,6 +459,11 @@ export function usePostEditorBlocks({
         return;
       }
       const targetId = updateFieldValue(getDefaultValue(type), undefined, type);
+      // 새 블록 생성 시 즉시 락 요청.
+      // 서버는 BLOCK_INSERT 처리 후 자동으로 락을 획득하고 LOCK_GRANTED를 보내는데,
+      // activeLockKeys에 해당 키가 없으면 handleLockGranted가 즉시 LOCK_RELEASE를 날려버림.
+      // 미리 activeLockKeys에 등록해두면 LOCK_GRANTED 수신 시 하트비트가 정상 시작됨.
+      if (draftId && targetId) requestLock(`block:${targetId}`);
       if (meta.requiresDrawer) {
         setActiveDrawer({ type, id: targetId });
       }
@@ -497,6 +603,7 @@ export function usePostEditorBlocks({
     handleDone,
     addOrShowBlock,
     removeBlock,
+    deletingBlockIds,
     handleApplyTemplate,
     applyPendingMetadata,
     handleEditMetadata,

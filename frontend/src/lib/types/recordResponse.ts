@@ -46,6 +46,13 @@ export interface RecordPreview {
   rating: RatingValue['rating'] | null;
   blocks: Block[];
   hasActiveEditDraft?: boolean;
+  isSharedPost?: boolean;
+  sharedGroups?: { groupId: string; groupName: string }[];
+}
+
+export interface PaginatedRecordPreviewResponse {
+  items: RecordPreview[];
+  nextCursor: string | null;
 }
 
 export interface newGroupResponse {
@@ -70,6 +77,8 @@ export interface GroupSummary {
   lastActivityAt: string;
   latestPost: LatestPost | null;
   permission: 'ADMIN' | 'EDITOR' | 'VIEWER';
+  notificationMuted: boolean;
+  hasUnread: boolean;
 }
 
 export interface Unread {
@@ -123,6 +132,11 @@ export interface MonthlyRecordList {
   coverAssetId: string | null;
   latestTitle: string;
   latestLocation: string | null;
+}
+
+export interface PaginatedMonthlyRecordListResponse {
+  items: MonthlyRecordList[];
+  nextCursor: string | null;
 }
 
 export interface DailyRecordList {

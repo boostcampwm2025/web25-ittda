@@ -1,68 +1,88 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Users, Check } from 'lucide-react';
+import { Users, Check, UserRound } from 'lucide-react';
 import { setCookie } from '@/lib/utils/cookie';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
-import { useJoinGroup } from '@/hooks/useGroupInvite';
+import { useGetInviteInfo, useJoinGroup } from '@/hooks/useGroupInvite';
 import { createApiError } from '@/lib/utils/errorHandler';
 import { handleInviteError } from '../_utils/handleInviteError';
 import { handleLogout } from '@/lib/api/auth';
+import { useQuery } from '@tanstack/react-query';
+import { userProfileOptions } from '@/lib/api/profile';
+import Image from 'next/image';
+import AssetImage from '@/components/AssetImage';
+import { randomBaseImage } from '@/lib/image';
+
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: '관리자',
+  EDITOR: '편집자',
+  VIEWER: '뷰어',
+};
 
 export default function InvitePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoggedIn, userType } = useAuthStore();
   const inviteCode = searchParams.get('inviteCode');
-  const groupName = '새 그룹';
-  const nickname = '현재 계정';
 
+  const {
+    data: inviteInfo,
+    isLoading,
+    isError: isInviteError,
+  } = useGetInviteInfo(inviteCode || '');
+
+  // 초대 코드가 없거나 유효하지 않으면 에러 상태로 처리
+  const isInvalidInvite = !inviteCode || isInviteError;
+  const { data: profile } = useQuery({
+    ...userProfileOptions(),
+    enabled: isLoggedIn && userType === 'social',
+  });
   const { mutate: joinGroup } = useJoinGroup(inviteCode || '');
+
   const currentState = !isLoggedIn
     ? 'anonymous'
     : userType === 'guest'
       ? 'guest'
       : 'social';
+  const nickname = profile?.user?.nickname ?? '현재 계정';
+  const groupName = inviteInfo?.group?.name ?? '그룹';
+  const memberCount = inviteInfo?.memberCount;
+  const coverMediaId = inviteInfo?.group?.coverMediaId;
+  const fallbackImageSrc = inviteInfo?.group?.id
+    ? randomBaseImage(inviteInfo.group.id)
+    : null;
+  const permission = inviteInfo?.permission;
+  const permissionLabel = permission ? ROLE_LABEL[permission] : null;
 
-  //닉네임 동적할당을 위해 우선 함수 내부에 선언
-  const contentConfig = {
-    button: {
-      social: `${nickname}으로 참여하기`,
-      guest: '게스트 계정으로 참여하기',
-      anonymous: '수락하기',
-    }[currentState],
-    description: {
-      social: '현재 로그인된 계정으로 즉시 그룹에 합류합니다.',
-      guest:
-        '현재 브라우저 저장된 게스트 정보로 참여합니다.\n별도의 아이디 없이 이 기기에서 3일간 정보가 유지됩니다.',
-      anonymous: '로그인 또는 가입 후 바로 그룹에 가입이 됩니다.',
-    }[currentState],
-    showSwitch: currentState !== 'anonymous',
-    isWarning: currentState === 'guest',
-  };
+  const buttonLabel = {
+    social: `${nickname}으로 참여하기`,
+    guest: '게스트 계정으로 참여하기',
+    anonymous: '로그인하고 참여하기',
+  }[currentState];
 
-  // 수락 버튼 핸들러
+  const descriptionLabel = {
+    social: '현재 로그인된 계정으로 즉시 그룹에 합류합니다.',
+    guest:
+      '현재 브라우저에 저장된 게스트 정보로 참여합니다.\n별도의 아이디 없이 이 기기에서 3일간 정보가 유지됩니다.',
+    anonymous: '로그인 또는 가입 후 바로 그룹에 가입됩니다.',
+  }[currentState];
+
   const handleAccept = async (forceLogin = false) => {
     if (!inviteCode) return;
 
-    //현재 계정으로 즉시 참여
     if (isLoggedIn && !forceLogin) {
       joinGroup(
         {},
         {
           onSuccess: (response) => {
             const groupId = response.data.groupId;
-            //const groupName = response.data.group.name;
             if (!groupId) createApiError(response);
             router.replace(`/group/${groupId}`);
-
-            setTimeout(() => {
-              toast.success(`그룹에 참여되었습니다!`);
-            }, 500);
+            setTimeout(() => toast.success('그룹에 참여되었습니다!'), 500);
           },
           onError: (error) => {
-            //TODO: 임시 작업 현재 toast 가 두개 뜨는 문제 존재
             const path = handleInviteError(error);
             if (path) router.replace(path);
           },
@@ -71,17 +91,15 @@ export default function InvitePage() {
       return;
     }
 
-    // 다른 계정으로 가입하거나 로그인이 필요한 경우
-    // 로그인 성공 후 그룹 가입시키기 위해 쿠키에 추가
-    setCookie('invite-code', inviteCode, {
-      days: 1,
-    });
+    setCookie('invite-code', inviteCode, { days: 1 });
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('invite-code', inviteCode);
+    }
 
-    // forceLogin이 true이고 현재 로그인되어 있다면 로그아웃 먼저 수행
     if (forceLogin && isLoggedIn) {
       toast.info('로그인 후 자동으로 그룹에 가입됩니다.');
       await handleLogout();
-      return; // handleLogout이 /login으로 리디렉션하므로 return
+      return;
     }
 
     toast.info('로그인 후 자동으로 그룹에 가입됩니다.');
@@ -89,51 +107,127 @@ export default function InvitePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen transition-colors duration-300 dark:bg-[#121212] bg-[#F9F9F9] flex justify-center">
-      <div className="border-b-[0.5px] border-gray-100 dark:border-gray-800 p-6 pt-12 text-center">
-        <div className="inline-flex p-3 rounded-full bg-itta-point/10 mb-4">
-          <Users className="text-itta-point w-10 h-10" />
-        </div>
-        <h1 className="text-2xl font-bold mb-4">그룹 초대</h1>
-        <div className="bg-white dark:bg-[#1e1e1e] p-8  rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 text-center space-y-4">
-          <div>
-            <span className="text-itta-point font-semibold text-[16px]">
-              {groupName}
-            </span>
-            <span className="text-[16px] font-medium text-gray-600 dark:text-gray-300">
-              {' '}
-              그룹에서
-            </span>
-          </div>
-          <p className="text-[15px] leading-relaxed">
-            회원님을 초대했습니다.
-            <br />
-            함께 공동 기록을 작성하고 공유할 수 있습니다.
-          </p>
-        </div>
-      </div>
-      <div className="flex flex-col gap-3 p-6">
-        <button
-          onClick={() => handleAccept(false)}
-          className="w-full h-14 bg-black dark:bg-white dark:text-black text-white rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-md"
+    <div className="bg-[#F9F9F9] dark:bg-[#121212] transition-colors duration-300 sm:min-h-dvh sm:flex sm:items-center sm:justify-center sm:p-8">
+      <div className="flex flex-col w-full h-dvh sm:h-auto sm:max-w-sm sm:shadow-xl sm:border sm:border-gray-100 sm:dark:border-gray-800 overflow-hidden bg-white dark:bg-[#1e1e1e] sm:rounded-3xl">
+        {/* 상단 그룹 이미지 배너 — safe-area-top 포함해 노치/상태바 뒤까지 채움 */}
+        <div
+          className="relative w-full shrink-0 bg-linear-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900"
+          style={{ height: 'calc(15rem + env(safe-area-inset-top, 0px))' }}
         >
-          <Check size={20} />
-          {contentConfig.button}
-        </button>
+          {isLoading ? (
+            <div className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-gray-700" />
+          ) : coverMediaId ? (
+            <AssetImage
+              assetId={coverMediaId}
+              alt={groupName}
+              fill
+              className="object-cover"
+              priorityLoad
+              fallback={
+                fallbackImageSrc ? (
+                  <Image
+                    src={fallbackImageSrc}
+                    alt={groupName}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-itta-point/10">
+                    <Users className="text-itta-point/40 w-16 h-16" />
+                  </div>
+                )
+              }
+            />
+          ) : fallbackImageSrc ? (
+            <Image
+              src={fallbackImageSrc}
+              alt={groupName}
+              fill
+              className="object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Users className="text-gray-300 dark:text-gray-600 w-16 h-16" />
+            </div>
+          )}
+          {/* 하단 페이드 오버레이 */}
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-white dark:from-[#1e1e1e] to-transparent" />
+        </div>
 
-        {contentConfig.showSwitch && (
+        {/* 그룹 정보 */}
+        <div className="flex flex-col items-center px-6 pt-6 pb-4 text-center gap-3">
+          {isLoading ? (
+            <>
+              <div className="h-7 w-36 rounded-lg bg-gray-200 dark:bg-white/10 animate-pulse" />
+              <div className="h-5 w-40 rounded-full bg-gray-100 dark:bg-white/10 animate-pulse" />
+              <div className="h-4 w-48 rounded bg-gray-100 dark:bg-white/10 animate-pulse" />
+            </>
+          ) : isInvalidInvite ? (
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-base font-semibold text-gray-400 dark:text-gray-500">
+                유효하지 않은 초대 링크
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                만료되었거나 존재하지 않는 초대 링크입니다.
+              </p>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {groupName}
+              </h1>
+
+              {/* 메타 정보 chips */}
+              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                {memberCount !== undefined && (
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/10 px-2.5 py-1 rounded-full">
+                    <UserRound className="w-3 h-3" />
+                    {memberCount}명
+                  </span>
+                )}
+                {permissionLabel && (
+                  <span className="inline-flex items-center text-xs font-medium text-itta-point bg-itta-point/10 px-2.5 py-1 rounded-full">
+                    {permissionLabel}로 가입
+                  </span>
+                )}
+              </div>
+
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                회원님을 그룹에 초대했습니다.
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* 하단 액션 영역 — safe-area-bottom(홈 인디케이터) 포함 */}
+        <div
+          className="mt-auto shrink-0 flex flex-col gap-2 px-6 pt-2 sm:pb-6"
+          style={{
+            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))',
+          }}
+        >
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center leading-relaxed whitespace-pre-line">
+            {descriptionLabel}
+          </p>
+
           <button
-            onClick={() => handleAccept(true)}
-            className="text-sm text-gray-400 underline underline-offset-4 hover:text-gray-600 dark:hover:text-gray-200 text-center transition-colors mb-2"
+            onClick={() => handleAccept(false)}
+            disabled={isInvalidInvite}
+            className="w-full h-12 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md disabled:opacity-40 disabled:cursor-not-allowed mt-1"
           >
-            다른 계정으로 시작하기
+            <Check className="w-4 h-4" />
+            {buttonLabel}
           </button>
-        )}
-      </div>
-      <div className="text-center">
-        <p className="text-xs text-gray-500 dark:text-gray-400 leading-5">
-          {contentConfig.description}
-        </p>
+
+          {currentState !== 'anonymous' && (
+            <button
+              onClick={() => handleAccept(true)}
+              className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-center transition-colors py-2"
+            >
+              다른 계정으로 시작하기
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import ProfileEditProvider from './ProfileEditContext';
 import ProfileEditHeaderActions from '@/components/ProfileEditHeaderActions';
 import ProfileInfo from '@/components/ProfileInfo';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { userProfileOptions } from '@/lib/api/profile';
 import { useState } from 'react';
 import { useApiPatch } from '@/hooks/useApi';
@@ -14,7 +14,7 @@ import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 
 export default function ProfileEditClient() {
-  const { data: profile } = useQuery(userProfileOptions());
+  const { data: profile } = useSuspenseQuery(userProfileOptions());
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
 
@@ -28,7 +28,7 @@ export default function ProfileEditClient() {
       let finalMediaId = profile?.user.profileImageId;
 
       if (data.image) {
-        finalMediaId = (await uploadMultipleMedia([data.image]))[0];
+        finalMediaId = (await uploadMultipleMedia([data.image])).successIds[0];
       }
 
       const response = await updateUserProfile({
@@ -62,7 +62,7 @@ export default function ProfileEditClient() {
       email={profile?.user.email || 'example.com'}
     >
       <ProfileEditHeaderActions onSave={handleSave} isPending={isPending} />
-      <div className="p-8 flex flex-col gap-10 pb-32">
+      <div className="py-8 px-6 flex flex-col gap-10 pb-32">
         <ProfileInfo
           profileImage={profile?.user.profileImageId ?? null}
           showEmail={true}

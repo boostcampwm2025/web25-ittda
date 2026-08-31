@@ -1,27 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Download, Smartphone } from 'lucide-react';
-import Image from 'next/image';
+import { X } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import PWAInstallModal from './PWAInstallModal';
 import { setCookie } from '@/lib/utils/cookie';
 import { usePathname } from 'next/navigation';
 import { isPrivateMode } from '@/lib/utils/browserDetect';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useApiPatch } from '@/hooks/useApi';
 
 export default function PWAInstallBannerClient() {
-  const { isInstalled, promptInstall, isIOS, isSafari, isMacOS } =
-    usePWAInstall();
+  const {
+    isInstalled,
+    isCheckComplete,
+    promptInstall,
+    isIOS,
+    isSafari,
+    isMacOS,
+  } = usePWAInstall();
   const [showBanner, setShowBanner] = useState(true);
   const [showInstructions, setShowInstructions] = useState(false);
   const [isPrivateBrowsing, setIsPrivateBrowsing] = useState(false);
+  const [isPrivateCheckDone, setIsPrivateCheckDone] = useState(false);
 
   const pathname = usePathname();
+  const userId = useAuthStore((state) => state.userId);
+
+  const { mutate: updateSettings } = useApiPatch<
+    unknown,
+    { settings: Record<string, unknown> }
+  >('/api/me/settings');
 
   // 시크릿 모드 감지
   useEffect(() => {
     isPrivateMode().then((isPrivate) => {
       setIsPrivateBrowsing(isPrivate);
+      setIsPrivateCheckDone(true);
     });
   }, []);
 
@@ -40,20 +55,23 @@ export default function PWAInstallBannerClient() {
     }
   };
 
+  // 플로팅 버튼의 닫기(X)는 유일한 닫기 동작이라 스누즈 없이 바로 영구적으로 숨긴다.
   const handleClose = () => {
     setShowBanner(false);
-    // 2주(14일) 동안 배너 숨김 - 쿠키에 저장
-    const dismissedUntil = Date.now() + 14 * 24 * 60 * 60 * 1000;
-    setCookie('pwa-banner-dismissed-until', dismissedUntil.toString(), {
-      days: 14,
-    });
+    if (userId) {
+      updateSettings({ settings: { pwaBannerNeverShow: true } });
+    } else {
+      // 게스트: 쿠키에 영구 저장
+      setCookie('pwa-banner-never-show', 'true', { days: 365 * 10 });
+    }
   };
 
-  const handleNeverShowAgain = () => {
-    setShowBanner(false);
-    // 영구적으로 배너 숨김 - 쿠키에 저장
-    setCookie('pwa-banner-never-show', 'true', { days: 365 * 10 }); // 10년
-  };
+  // 모든 비동기 체크가 완료되기 전까지는 배너를 렌더링하지 않되(flash 방지),
+  // 체크가 진행 중이라는 걸 알리는 마커는 남겨둔다 — 코치마크가 이 마커를 보고
+  // 배너 표시 여부가 확정될 때까지(=레이아웃이 밀릴 일이 없어질 때까지) 대기한다.
+  if (!isCheckComplete || !isPrivateCheckDone) {
+    return <div data-pwa-banner-pending className="hidden" aria-hidden />;
+  }
 
   if (isInstalled || !showBanner || isPrivateBrowsing) {
     return null;
@@ -61,8 +79,8 @@ export default function PWAInstallBannerClient() {
 
   if (
     pathname.startsWith('/login') ||
-    pathname.startsWith('/onboarding') ||
-    pathname.startsWith('/oauth/callback')
+    pathname.startsWith('/oauth/callback') ||
+    pathname.startsWith('/invite')
   ) {
     return null;
   }
@@ -78,76 +96,28 @@ export default function PWAInstallBannerClient() {
         isMacOS={isMacOS}
       />
 
-      {/* 배너 */}
-      <div className="relative w-full" data-pwa-banner>
-        <div
+      <div
+        className="fixed z-60 bottom-24 left-4 md:left-6 xl:left-[calc(50vw-32rem)]"
+        data-pwa-banner
+      >
+        <button
+          type="button"
           onClick={handleInstallClick}
-          className="relative p-4 bg-linear-to-br from-itta-point to-itta-point/80 cursor-pointer overflow-hidden group hover:shadow-lg transition-all"
+          aria-label="앱 설치 안내 보기"
+          className="flex items-center justify-center w-12 h-12 rounded-full bg-white text-itta-black border border-gray-100 dark:bg-itta-black dark:text-white dark:border-transparent shadow-lg shadow-black/10 dark:shadow-black/40 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
         >
-          {/* 배경 패턴 */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full blur-2xl" />
-          </div>
-
-          {/* 닫기 버튼 */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClose();
-            }}
-            className="absolute top-2 right-2 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors z-10"
-          >
-            <X className="w-4 h-4 text-white" />
-          </button>
-
-          <div className="hidden sm:block rounded-2xl bg-[#121212] text-[12px] px-3 py-2 text-white absolute top-1/2 -translate-x-1/2 -translate-y-1/2 right-5">
-            앱 설치하기
-          </div>
-
-          <div className="relative flex items-center gap-4">
-            {/* 앱 아이콘 */}
-            <div className="relative shrink-0 w-14 h-14 bg-white rounded-2xl p-2 shadow-lg">
-              <Image
-                src="/web-app-icon-192x192.png"
-                alt="잇다- 앱 아이콘"
-                width={56}
-                height={56}
-                className="w-full h-full object-contain"
-              />
-              {/* 다운로드 아이콘 */}
-              <div className="absolute -right-2 -bottom-1 shrink-0 w-6 h-6 bg-[#121212] rounded-full flex items-center justify-center">
-                <Download className="w-3 h-3 text-white" />
-              </div>
-            </div>
-
-            {/* 텍스트 */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-white text-base">
-                  잇다- 앱으로 설치하기
-                </h3>
-                <Smartphone className="w-4 h-4 text-white/80" />
-              </div>
-              <p className="text-white/90 text-sm leading-snug">
-                앱으로 더 간편하게, 모든 순간을 기록해보세요!
-              </p>
-            </div>
-          </div>
-
-          {/* 다시 보지 않기 버튼 */}
-          <div className="w-full flex justify-center items-center">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNeverShowAgain();
-              }}
-              className="relative mt-2 w-fit py-1.5 text-xs text-white/70 hover:text-white/90 transition-colors underline underline-offset-2 z-10"
-            >
-              다시 보지 않기
-            </button>
-          </div>
-        </div>
+          {/* 버튼 배경 자체가 이미 원이라, HelpCircle 아이콘(물음표+원 이중 테두리)
+              대신 물음표 글자만 사용해 원이 겹치지 않게 한다. */}
+          <span className="text-xl font-bold leading-none">?</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleClose}
+          aria-label="앱 설치 안내 닫기"
+          className="absolute -top-0.5 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+        >
+          <X className="w-3 h-3" />
+        </button>
       </div>
     </>
   );

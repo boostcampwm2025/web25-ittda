@@ -3,18 +3,17 @@
 import { DayRecord } from '@/lib/types/record';
 import { DateRecordCard } from '../../../components/ui/RecordCard';
 import ViewOnMapButton from './ViewOnMapButton';
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { SortOption } from './MonthlyDetailHeaderActions';
 import { useMemo } from 'react';
 import { myDailyRecordListOptions } from '@/lib/api/my';
-import { DailyRecordList } from '@/lib/types/recordResponse';
+
 import { groupDailyRecordListOptions } from '@/lib/api/group';
 import { BookOpen } from 'lucide-react';
 
 interface MonthlyDetailRecordsProps {
   month: string;
-  serverSideData?: DailyRecordList[];
   routePath: string;
   viewMapRoutePath: string;
   groupId?: string;
@@ -33,7 +32,6 @@ const sortRecords = (groups: DayRecord[], sortBy: SortOption): DayRecord[] => {
 };
 
 export default function MonthlyDetailRecords({
-  serverSideData,
   month,
   routePath,
   viewMapRoutePath,
@@ -46,10 +44,7 @@ export default function MonthlyDetailRecords({
     ? groupDailyRecordListOptions(groupId, month)
     : myDailyRecordListOptions(month);
 
-  const { data: dayRecords = [] } = useQuery({
-    ...option,
-    ...(serverSideData && { initialData: serverSideData }),
-  });
+  const { data: dayRecords } = useSuspenseQuery(option);
 
   const sortedGroups = useMemo(() => {
     if (sortBy === 'date-desc') return dayRecords;
@@ -59,7 +54,7 @@ export default function MonthlyDetailRecords({
   return (
     <>
       <div className="grid grid-cols-2 gap-4 xs:grid-cols-3 md:grid-cols-4">
-        {sortedGroups.map((d) => (
+        {sortedGroups.map((d, index) => (
           <DateRecordCard
             key={d.date}
             date={d.date}
@@ -68,6 +63,7 @@ export default function MonthlyDetailRecords({
             count={d.count}
             coverUrl={d.coverUrl}
             routePath={`${routePath}/${d.date}`}
+            priorityLoad={index === 0}
           />
         ))}
 

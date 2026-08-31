@@ -415,10 +415,7 @@ export class PostDraftService {
             if (!target) {
               throw new NotFoundException('Block not found.');
             }
-            this.ensureBlockValueValid({
-              ...target,
-              layout: move.layout,
-            });
+            // BLOCK_MOVE는 레이아웃만 변경하므로 값 검증 생략
             target.layout = move.layout;
           }
           break;

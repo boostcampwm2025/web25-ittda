@@ -2,27 +2,24 @@
 
 import { recordPreviewListOptions } from '@/lib/api/records';
 import DailyDetailRecordItem from './DailyDetailRecordItem';
-import { RecordPreview } from '@/lib/types/recordResponse';
-import { useQuery } from '@tanstack/react-query';
+
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { BookOpen } from 'lucide-react';
 
 interface DailyDetailRecordsProps {
-  memories?: RecordPreview[];
   date: string;
   scope: 'personal' | 'groups';
   groupId?: string;
 }
 
 export default function DailyDetailRecords({
-  memories,
   date,
   scope,
   groupId,
 }: DailyDetailRecordsProps) {
-  const { data: records = [] } = useQuery({
-    ...recordPreviewListOptions(date, scope, groupId),
-    ...(memories && { initialData: memories }),
-  });
+  const { data: records } = useSuspenseQuery(
+    recordPreviewListOptions(date, scope, groupId),
+  );
 
   return (
     <div className="relative border-l-[1.5px] space-y-6 transition-colors dark:border-white/10 border-gray-100">

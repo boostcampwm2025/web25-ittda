@@ -52,7 +52,7 @@ export interface DayRecord {
   dayName: string;
   title: string;
   count: number;
-  coverUrl: string;
+  coverUrl: string | null;
 }
 
 export interface Tag {
@@ -80,7 +80,7 @@ export interface RecordSearchItem {
   address: string;
   date: string;
   content: string;
-  thumbnailMediaId: string;
+  previewMediaIds: string[];
   snippet?: string;
 }
 
@@ -224,12 +224,17 @@ export interface RecordDetailResponse {
   scope: RecordScope;
   ownerUserId: string;
   groupId: string | null;
+  groupName?: string | null;
   title: string;
   createdAt: string;
   updatedAt: string;
   blocks: Block[];
   contributors: Contributor[];
+  permission: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER' | null;
   hasActiveEditDraft?: boolean;
+  shareToken?: string | null;
+  isSharedPost?: boolean;
+  sharedGroups?: { groupId: string; groupName: string }[];
 }
 
 // 지도 리스트 아이템
@@ -238,8 +243,9 @@ export interface MapPostItem {
   lat: number;
   lng: number;
   title: string;
-  thumbnailMediaId: string;
+  previewMediaIds: string[];
   createdAt: string;
   tags: string[];
   placeName: string | null;
+  snippet?: string;
 }

@@ -1,8 +1,12 @@
 // @ts-check
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+
+const tsconfigRootDir = dirname(fileURLToPath(import.meta.url));
 
 export default tseslint.config(
   {
@@ -20,8 +24,8 @@ export default tseslint.config(
       ecmaVersion: 5,
       sourceType: 'module',
       parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        project: true,
+        tsconfigRootDir,
       },
     },
   },

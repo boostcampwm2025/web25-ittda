@@ -5,7 +5,6 @@ import {
   Req,
   UseGuards,
   Res,
-  UnauthorizedException,
   ForbiddenException,
   NotFoundException,
   Body,
@@ -30,13 +29,17 @@ import type { OAuthUserType } from './auth.type';
 import { KakaoAuthGuard } from './guards/kakao-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { DevTokenRequestDto } from './dto/dev-token.dto';
+import {
+  AUTH_ERROR_CODES,
+  AuthUnauthorizedException,
+} from '@/common/exceptions/auth-unauthorized.exception';
 
 interface AuthenticatedRequest extends Request {
   user: { sub: string; email?: string };
-  cookies: {
-    refreshToken?: string;
-    [key: string]: string | undefined;
-  };
+}
+
+interface OAuthCallbackRequest extends Request {
+  user: OAuthUserType;
 }
 
 @ApiTags('auth')
@@ -68,10 +71,7 @@ export class AuthController {
     summary: 'Google 로그인 콜백',
     description: 'Google 인증 완료 후 호출되며, FE로 리다이렉트합니다.',
   })
-  async googleCallback(
-    @Req() req: Request & { user: OAuthUserType },
-    @Res() res: Response,
-  ) {
+  async googleCallback(@Req() req: OAuthCallbackRequest, @Res() res: Response) {
     // 1. DB에 유저 생성/조회 + 토큰 발급 (실제 oauthLogin 호출)
     const { accessToken, refreshToken, expiresAt } =
       await this.authService.oauthLogin(req.user);
@@ -84,8 +84,16 @@ export class AuthController {
       expiresAt,
     });
 
-    // 3. FE로 리다이렉트
-    const redirectUrl = `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
+    // 3. FE로 리다이렉트 (모바일 앱은 커스텀 스킴으로)
+    const isMobile = req.cookies?.oauth_mobile === '1';
+    const isAndroid = req.cookies?.oauth_android === '1';
+    res.clearCookie('oauth_mobile', { path: '/' });
+    res.clearCookie('oauth_android', { path: '/' });
+    const redirectUrl = isMobile
+      ? isAndroid
+        ? `${this.FRONTEND_URL}/oauth/callback?code=${code}&platform=android`
+        : `ittda://oauth/callback?code=${code}`
+      : `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
     return res.redirect(302, redirectUrl);
   }
 
@@ -103,10 +111,7 @@ export class AuthController {
     summary: 'Kakao 로그인 콜백',
     description: 'Kakao 인증 완료 후 호출되며, FE로 리다이렉트합니다.',
   })
-  async kakaoCallback(
-    @Req() req: Request & { user: OAuthUserType },
-    @Res() res: Response,
-  ) {
+  async kakaoCallback(@Req() req: OAuthCallbackRequest, @Res() res: Response) {
     // Google과 동일한 로직
     const { accessToken, refreshToken, expiresAt } =
       await this.authService.oauthLogin(req.user);
@@ -118,7 +123,15 @@ export class AuthController {
       expiresAt,
     });
 
-    const redirectUrl = `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
+    const isMobile = req.cookies?.oauth_mobile === '1';
+    const isAndroid = req.cookies?.oauth_android === '1';
+    res.clearCookie('oauth_mobile', { path: '/' });
+    res.clearCookie('oauth_android', { path: '/' });
+    const redirectUrl = isMobile
+      ? isAndroid
+        ? `${this.FRONTEND_URL}/oauth/callback?code=${code}&platform=android`
+        : `ittda://oauth/callback?code=${code}`
+      : `${this.FRONTEND_URL}/oauth/callback?code=${code}`;
     return res.redirect(302, redirectUrl);
   }
 
@@ -184,23 +197,28 @@ export class AuthController {
     @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const oldToken = req.cookies?.refreshToken;
+    const oldToken = req.cookies?.refreshToken as string | undefined;
 
     if (!oldToken) {
-      throw new UnauthorizedException('No refresh token');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_NOT_FOUND,
+        'Refresh token is required',
+      );
     }
 
     try {
       const { accessToken, refreshToken } =
         await this.authService.refreshAccessToken(oldToken);
 
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 1000 * 60 * 60 * 24 * 14,
-      });
+      if (refreshToken) {
+        res.cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 1000 * 60 * 60 * 24 * 14,
+        });
+      }
 
       res.set('Authorization', `Bearer ${accessToken}`);
       res.set('Access-Control-Expose-Headers', 'Authorization');

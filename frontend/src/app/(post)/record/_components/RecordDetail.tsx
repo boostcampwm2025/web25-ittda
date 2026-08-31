@@ -3,17 +3,38 @@
 import { recordDetailOptions } from '@/lib/api/records';
 import { Block } from '@/lib/types/record';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import RecordDetailHeaderActions from './RecordDetailHeaderActions';
+import dynamic from 'next/dynamic';
+import Back from '@/components/Back';
 import BlockContent from '@/components/BlockContent';
 import { cn } from '@/lib/utils';
 import AssetImage from '@/components/AssetImage';
+import RecordScopeBadges from '@/components/RecordScopeBadges';
+
+// SSR에서 렌더링하지 않음: Radix Popover의 useId가 서버-클라이언트 간 렌더 트리 순서 차이로
+// aria-controls 불일치(하이드레이션 에러)를 일으키기 때문.
+// loading으로 Back + 우측 placeholder를 즉시 렌더링해 레이아웃 이동 방지.
+const RecordDetailHeaderActions = dynamic(
+  () => import('./RecordDetailHeaderActions'),
+  {
+    ssr: false,
+    loading: () => (
+      <>
+        <Back fallback="/" />
+        <div className="w-8 h-8" />
+      </>
+    ),
+  },
+);
 
 interface RecordDetailProps {
   recordId: string;
+  groupId?: string;
 }
 
-export default function RecordDetail({ recordId }: RecordDetailProps) {
-  const { data: record } = useSuspenseQuery(recordDetailOptions(recordId));
+export default function RecordDetail({ recordId, groupId }: RecordDetailProps) {
+  const { data: record } = useSuspenseQuery(
+    recordDetailOptions(recordId, groupId),
+  );
 
   // 블록을 row별로 그룹화
   const rowMap = new Map<number, Block[]>();
@@ -28,17 +49,38 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
   // row 순서대로 정렬
   const sortedRows = Array.from(rowMap.entries()).sort(([a], [b]) => a - b);
 
+  // 첫 번째 IMAGE 블록 id (priority 힌트용)
+  const firstImageBlockId = sortedRows
+    .flatMap(([, blocks]) => blocks)
+    .find((b) => b.type === 'IMAGE')?.id;
+
+  const viewedSharedGroup =
+    groupId && record.scope === 'PERSONAL'
+      ? record.sharedGroups?.find((group) => group.groupId === groupId)
+      : undefined;
+  const isGroup = record.scope === 'GROUP' || Boolean(viewedSharedGroup);
+  const displayGroupName =
+    record.scope === 'GROUP' ? record.groupName : viewedSharedGroup?.groupName;
+
   return (
     <div className="flex flex-col flex-1 -mt-6 transition-colors duration-300 dark:bg-[#121212] bg-[#FDFDFD]">
-      <header className="-mx-6 sticky top-0 z-50 backdrop-blur-md p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
+      <header className="-mx-4 sm:-mx-6 sticky top-0 z-50 backdrop-blur-md px-2 sm:px-4 py-2 sm:p-6 flex items-center justify-between transition-colors duration-300 dark:bg-[#121212]/90 bg-white/90">
         <RecordDetailHeaderActions record={record} />
       </header>
 
-      <main className="grow flex flex-col max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <main className="flex flex-col max-w-4xl mx-auto w-full">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
             {record.title}
           </h1>
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-1.5">
+            <RecordScopeBadges
+              isGroup={isGroup}
+              groupName={displayGroupName}
+              isSharedPost={record.isSharedPost}
+              sharedGroups={record.sharedGroups}
+            />
+          </div>
           {record.hasActiveEditDraft && (
             <p className="mt-1 text-xs font-medium text-gray-400 dark:text-gray-500">
               공동 수정 중...
@@ -46,7 +88,7 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
           )}
         </div>
 
-        <div className="grow space-y-3">
+        <div className="space-y-3">
           {sortedRows.map(([rowNumber, blocks]) => {
             // 각 row의 블록을 col 순서대로 정렬
             const sortedBlocks = blocks.sort(
@@ -64,7 +106,10 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                 <div key={rowNumber} className="w-full">
                   {sortedBlocks.map((block) => (
                     <div key={block.id}>
-                      <BlockContent block={block} />
+                      <BlockContent
+                        block={block}
+                        priorityImage={block.id === firstImageBlockId}
+                      />
                     </div>
                   ))}
                 </div>
@@ -85,7 +130,10 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
                       )}
                     >
                       <div className="truncate whitespace-nowrap overflow-hidden">
-                        <BlockContent block={block} />
+                        <BlockContent
+                          block={block}
+                          priorityImage={block.id === firstImageBlockId}
+                        />
                       </div>
                     </div>
                   ))}
@@ -95,7 +143,7 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
           })}
         </div>
 
-        <div className="pt-8 mt-16 border-t border-gray-200 dark:border-gray-700 pb-6">
+        <div className="pt-6 sm:pt-8 mt-12 sm:mt-16 border-t border-gray-200 dark:border-gray-700 pb-6">
           <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
             작성자
           </h2>
@@ -103,17 +151,20 @@ export default function RecordDetail({ recordId }: RecordDetailProps) {
             {record.contributors.map((contributor) => (
               <div
                 key={contributor.userId}
-                className="flex items-center gap-2 text-[13px]"
+                className="flex items-center gap-2 text-xs sm:text-[13px]"
               >
                 <div className="w-7.5 h-7.5 overflow-hidden rounded-full shadow-sm border-2 bg-white dark:border-[#121212] border-white">
                   <AssetImage
                     width={30}
                     height={30}
                     className="w-full h-full object-cover rounded-full"
+                    wrapperClassName="w-full h-full"
                     assetId={
-                      contributor.groupProfileImageId || '/profile_base.png'
+                      contributor.groupProfileImageId ||
+                      contributor.profileImageId ||
+                      '/profile_base.png'
                     }
-                    alt={`${contributor.groupNickname || contributor.nickname}의 프로필`}
+                    alt={`${contributor.groupNickname || contributor.nickname || 'anonymous'}의 프로필`}
                   />
                 </div>
                 <span className="font-medium text-gray-900 dark:text-gray-100">

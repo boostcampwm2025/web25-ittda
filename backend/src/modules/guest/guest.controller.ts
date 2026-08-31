@@ -1,9 +1,18 @@
-import { Controller, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiHeader } from '@nestjs/swagger';
 import { GuestSessionService } from './guest-session.service';
 import { ApiWrappedOkResponse } from '@/common/swagger/api-wrapped-response.decorator';
 import { JwtService } from '@nestjs/jwt';
 import { GuestResponseDto } from './dto/guest.response.dto';
+import { RestoreGuestRequestDto } from './dto/guest.restore.dto';
 
 import type { Response } from 'express';
 
@@ -41,6 +50,44 @@ export class GuestController {
     );
 
     // 응답 헤더에 guest를 위한 Access Token 설정
+    res.set('Authorization', `Bearer ${accessToken}`);
+    res.set('Access-Control-Expose-Headers', 'Authorization');
+
+    return {
+      guest: true,
+      guestSessionId: session.id,
+      expiresAt: session.expiresAt,
+    };
+  }
+
+  @Post('guest/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '게스트 세션 복원',
+    description:
+      '유효한 게스트 세션 ID가 있는 경우 해당 세션을 재활용합니다. 세션이 없거나 만료된 경우 401을 반환합니다.',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer {accessToken}',
+  })
+  @ApiWrappedOkResponse({ type: GuestResponseDto })
+  async restoreGuest(
+    @Body() body: RestoreGuestRequestDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<GuestResponseDto> {
+    const session = await this.guestSessionService.restore(body.sessionId);
+    if (!session) {
+      throw new UnauthorizedException(
+        '유효하지 않거나 만료된 게스트 세션입니다.',
+      );
+    }
+
+    const accessToken = this.jwtService.sign(
+      { sub: session.userId },
+      { expiresIn: '3d' },
+    );
+
     res.set('Authorization', `Bearer ${accessToken}`);
     res.set('Access-Control-Expose-Headers', 'Authorization');
 

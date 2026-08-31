@@ -8,6 +8,7 @@ import type { Repository } from 'typeorm';
 
 import { AppModule } from '../src/app.module';
 import { PostScope } from '../src/enums/post-scope.enum';
+import { PostMood } from '../src/enums/post-mood.enum';
 import { Post } from '../src/modules/post/entity/post.entity';
 import { PostDraft } from '../src/modules/post/entity/post-draft.entity';
 import { User } from '../src/modules/user/entity/user.entity';
@@ -80,13 +81,17 @@ describe('PostController (e2e)', () => {
     if (owner?.id) {
       await postRepository.delete({ ownerUserId: owner.id });
       await postDraftRepository.delete({ ownerActorId: owner.id });
-      await groupRepository.delete({ owner: { id: owner.id } });
+      await groupRepository.delete({ name: '활동 그룹' });
+      await groupRepository.delete({ name: 'draft 그룹' });
+      await groupRepository.delete({ name: '공유 뱃지 테스트 그룹' });
+      await groupRepository.delete({ name: '그룹 A - 정당한 접근' });
+      await groupRepository.delete({ name: '그룹 B - 접근 권한 없음' });
       await userRepository.delete({ id: owner.id });
     }
     if (otherUser?.id) {
       await userRepository.delete({ id: otherUser.id });
     }
-    await app.close();
+    if (app) await app.close();
   });
 
   it('POST /posts should create a post and be retrievable', async () => {
@@ -238,6 +243,7 @@ describe('PostController (e2e)', () => {
     const notFoundRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(404);
 
     expect(notFoundRes.body).toMatchObject({
@@ -251,7 +257,6 @@ describe('PostController (e2e)', () => {
     const group = await groupRepository.save(
       groupRepository.create({
         name: '활동 그룹',
-        owner: { id: owner.id } as User,
       }),
     );
     await groupMemberRepository.save(
@@ -338,7 +343,6 @@ describe('PostController (e2e)', () => {
     const group = await groupRepository.save(
       groupRepository.create({
         name: 'draft 그룹',
-        owner: { id: owner.id } as User,
       }),
     );
     await groupMemberRepository.save(
@@ -368,6 +372,7 @@ describe('PostController (e2e)', () => {
     const sixthRes = await request(app.getHttpServer())
       .get(`/groups/${group.id}/posts/new`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(409);
     expect(sixthRes.body).toMatchObject({
       statusCode: 409,
@@ -440,6 +445,7 @@ describe('PostController (e2e)', () => {
     const forbiddenRes = await request(app.getHttpServer())
       .get(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${otherAccessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(403);
 
     expect(forbiddenRes.body).toMatchObject({
@@ -483,6 +489,7 @@ describe('PostController (e2e)', () => {
     const forbiddenRes = await request(app.getHttpServer())
       .delete(`/posts/${created.id}`)
       .set('Authorization', `Bearer ${otherAccessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .expect(403);
 
     expect(forbiddenRes.body).toMatchObject({
@@ -513,6 +520,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -554,6 +562,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -568,9 +577,10 @@ describe('PostController (e2e)', () => {
       error: 'Bad Request',
     });
     expect(Array.isArray(badBody.message)).toBe(true);
-    expect(badBody.message.join(' ')).toContain(
-      'mood must be one of: 행복, 좋음, 만족, 재미, 보통, 피곤, 놀람, 화남, 슬픔, 아픔, 짜증',
-    );
+    const allowedMoodMessage = `mood must be one of: ${Object.values(
+      PostMood,
+    ).join(', ')}`;
+    expect(badBody.message.join(' ')).toContain(allowedMoodMessage);
   });
 
   it('POST /posts should allow up to 4 MOOD blocks', async () => {
@@ -605,12 +615,12 @@ describe('PostController (e2e)', () => {
         },
         {
           type: 'MOOD',
-          value: { mood: '보통' },
+          value: { mood: '불안' },
           layout: { row: 4, col: 1, span: 1 },
         },
         {
           type: 'MOOD',
-          value: { mood: '좋음' },
+          value: { mood: '우울' },
           layout: { row: 4, col: 2, span: 1 },
         },
       ],
@@ -674,6 +684,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -715,6 +726,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -765,6 +777,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -813,6 +826,7 @@ describe('PostController (e2e)', () => {
     const badRes = await request(app.getHttpServer())
       .post('/posts')
       .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-test-expected-4xx', 'true')
       .send(payload)
       .expect(400);
 
@@ -830,5 +844,158 @@ describe('PostController (e2e)', () => {
     expect(badBody.message.join(' ')).toContain(
       'rating must be a number with at most one decimal place',
     );
+  });
+
+  it('GET /posts/:id?groupId= should expose isSharedPost/sharedGroups scoped to the viewed group for non-owner group members', async () => {
+    const group = await groupRepository.save(
+      groupRepository.create({ name: '공유 뱃지 테스트 그룹' }),
+    );
+    await groupMemberRepository.save([
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: owner.nickname,
+      }),
+      groupMemberRepository.create({
+        groupId: group.id,
+        userId: otherUser.id,
+        role: GroupRoleEnum.EDITOR,
+        nicknameInGroup: otherUser.nickname,
+      }),
+    ]);
+
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '공유될 개인 글',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '공유 테스트 본문' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
+    };
+
+    const createRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(201);
+    const created = createRes.body as { id: string };
+
+    await request(app.getHttpServer())
+      .post(`/posts/${created.id}/group-shares`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ groupIds: [group.id] })
+      .expect(201);
+
+    const detailRes = await request(app.getHttpServer())
+      .get(`/posts/${created.id}?groupId=${group.id}`)
+      .set('Authorization', `Bearer ${otherAccessToken}`)
+      .expect(200);
+
+    expect(detailRes.body).toMatchObject({
+      isSharedPost: true,
+      sharedGroups: [{ groupId: group.id, groupName: '공유 뱃지 테스트 그룹' }],
+    });
+  });
+
+  it('GET /posts/:id?groupId= should not leak group context for a group the requester is not a member of', async () => {
+    const groupA = await groupRepository.save(
+      groupRepository.create({ name: '그룹 A - 정당한 접근' }),
+    );
+    const groupB = await groupRepository.save(
+      groupRepository.create({ name: '그룹 B - 접근 권한 없음' }),
+    );
+    await groupMemberRepository.save([
+      groupMemberRepository.create({
+        groupId: groupA.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: 'owner-in-A',
+      }),
+      groupMemberRepository.create({
+        groupId: groupA.id,
+        userId: otherUser.id,
+        role: GroupRoleEnum.EDITOR,
+        nicknameInGroup: otherUser.nickname,
+      }),
+      // owner만 그룹 B의 멤버다 — otherUser는 그룹 B에 속하지 않는다.
+      groupMemberRepository.create({
+        groupId: groupB.id,
+        userId: owner.id,
+        role: GroupRoleEnum.ADMIN,
+        nicknameInGroup: 'owner-in-B',
+      }),
+    ]);
+
+    const payload = {
+      scope: PostScope.PERSONAL,
+      title: '두 그룹에 공유될 개인 글',
+      blocks: [
+        {
+          type: 'DATE',
+          value: { date: '2025-01-14' },
+          layout: { row: 1, col: 1, span: 1 },
+        },
+        {
+          type: 'TIME',
+          value: { time: '13:30' },
+          layout: { row: 1, col: 2, span: 1 },
+        },
+        {
+          type: 'TEXT',
+          value: { text: '공유 테스트 본문' },
+          layout: { row: 2, col: 1, span: 2 },
+        },
+      ],
+    };
+
+    const createRes = await request(app.getHttpServer())
+      .post('/posts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+      .expect(201);
+    const created = createRes.body as { id: string };
+
+    // 그룹 A와 그룹 B 둘 다에 공유 — otherUser는 그룹 A의 멤버라 열람
+    // 권한은 있지만, 그룹 B의 멤버는 아니다.
+    await request(app.getHttpServer())
+      .post(`/posts/${created.id}/group-shares`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ groupIds: [groupA.id, groupB.id] })
+      .expect(201);
+
+    // otherUser가 자신이 속하지 않은 그룹 B의 ID를 직접 쿼리로 넘겨서 조회.
+    const detailRes = await request(app.getHttpServer())
+      .get(`/posts/${created.id}?groupId=${groupB.id}`)
+      .set('Authorization', `Bearer ${otherAccessToken}`)
+      .expect(200);
+
+    const body = detailRes.body as {
+      sharedGroups?: { groupId: string; groupName: string }[];
+      contributors: { userId: string; groupNickname: string | null }[];
+    };
+
+    // 그룹 A를 통한 열람 자체는 정상이지만, 요청에 실어 보낸 그룹 B의
+    // 이름/컨텍스트는 노출되면 안 된다.
+    expect(body.sharedGroups ?? []).not.toContainEqual(
+      expect.objectContaining({ groupId: groupB.id }),
+    );
+    const ownerContributor = body.contributors.find(
+      (c) => c.userId === owner.id,
+    );
+    expect(ownerContributor?.groupNickname).toBeNull();
   });
 });

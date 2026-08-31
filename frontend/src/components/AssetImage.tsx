@@ -1,48 +1,48 @@
 'use client';
 
 import Image, { ImageProps } from 'next/image';
-import { ImageIcon, Loader2 } from 'lucide-react';
+import { ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMediaResolveSingle } from '@/hooks/useMediaResolve';
+import { useState } from 'react';
 
 interface AssetImageProps extends Omit<ImageProps, 'src'> {
   assetId: string; // solve 해야할 ID
   url?: string; // 직접 solve 완료한 URL
-  draftId?: string; // TODO: 명세서에 있어서 추가함, 필요없을 시 삭제
   fallback?: React.ReactNode;
+  wrapperClassName?: string; // 스켈레톤 wrapper에 적용할 클래스 (fill 사용 시 필요)
+  priorityLoad?: boolean; // priority(deprecated) 대신 사용
+  noSkeleton?: boolean; // 스켈레톤/opacity 애니메이션 없이 바로 표시 (Google Maps 등 이벤트 전달이 불안정한 컨텍스트용)
 }
 
 export default function AssetImage({
   assetId,
   url,
-  draftId,
   alt,
   className,
+  wrapperClassName,
   fallback,
+  priorityLoad,
+  noSkeleton,
+  loading: loadingProp,
   ...props
 }: AssetImageProps) {
-  // assetId가 로컬 경로(/로 시작) 또는 이미 URL인지 확인
+  const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const loading = loadingProp ?? (priorityLoad ? 'eager' : 'lazy');
+
   const isLocalPath = assetId?.startsWith('/');
   const isAlreadyUrl =
     assetId?.startsWith('http://') || assetId?.startsWith('https://');
 
-  //url이 없고 로컬 경로나 URL이 아닐 때만 assetId로 solve 호출하기
-  const { data, isLoading, isError } = useMediaResolveSingle(
-    url || isLocalPath || isAlreadyUrl ? undefined : assetId,
-    draftId,
-  );
+  // url prop이 있거나 로컬/외부 URL이면 그대로, 아니면 proxy 라우트 사용
   const imageSrc =
-    url || (isLocalPath ? assetId : isAlreadyUrl ? assetId : data?.url);
+    url ||
+    (isLocalPath || isAlreadyUrl ? assetId : `/api/media-image/${assetId}`);
 
-  if (isLoading) {
-    return (
-      <div className={cn('flex items-center justify-center', className)}>
-        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-      </div>
-    );
-  }
+  const showFallback = !imageSrc || hasError;
 
-  if (isError || !imageSrc) {
+  if (showFallback) {
     if (fallback) {
       return <>{fallback}</>;
     }
@@ -54,13 +54,56 @@ export default function AssetImage({
     );
   }
 
+  // proxy 라우트는 이미 WebP로 변환해서 반환하므로 _next/image 최적화 불필요
+  const isProxyUrl = !!imageSrc?.startsWith('/api/media-image/');
+
+  // fill 모드: 부모가 이미 relative 컨테이너이므로 wrapper 없이 스켈레톤만 sibling으로 렌더링
+  if (props.fill) {
+    return (
+      <>
+        {!noSkeleton && !isLoaded && (
+          <div className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-white/10 z-10" />
+        )}
+        <Image
+          src={imageSrc}
+          alt={alt}
+          className={cn(className, !noSkeleton && !isLoaded && 'opacity-0')}
+          unoptimized={isProxyUrl}
+          fetchPriority={priorityLoad ? 'high' : undefined}
+          loading={loading}
+          onLoad={() => setIsLoaded(true)}
+          onError={() => {
+            setHasError(true);
+            setIsLoaded(true);
+          }}
+          {...props}
+        />
+      </>
+    );
+  }
+
   return (
-    <Image
-      src={imageSrc}
-      unoptimized={true}
-      alt={alt}
-      className={className}
-      {...props}
-    />
+    <div
+      className={cn('relative overflow-hidden w-full h-full', wrapperClassName)}
+    >
+      {/* 로딩 중 스켈레톤 */}
+      {!isLoaded && (
+        <div className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-white/10" />
+      )}
+      <Image
+        src={imageSrc}
+        alt={alt}
+        className={cn(className, !isLoaded && 'opacity-0')}
+        unoptimized={isProxyUrl}
+        fetchPriority={priorityLoad ? 'high' : undefined}
+        loading={loading}
+        onLoad={() => setIsLoaded(true)}
+        onError={() => {
+          setHasError(true);
+          setIsLoaded(true);
+        }}
+        {...props}
+      />
+    </div>
   );
 }

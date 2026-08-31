@@ -1,7 +1,5 @@
 import { reverseGeocodeAddress } from '@/hooks/useGeolocation';
 import * as exifr from 'exifr';
-import * as Sentry from '@sentry/nextjs';
-import { logger } from './logger';
 
 export interface ExifMetadata {
   date?: string; // YYYY-MM-DD
@@ -19,13 +17,18 @@ export interface ExifMetadata {
  * @param file 이미지 파일
  * @returns EXIF 메타데이터 (날짜, 시간, 위치)
  */
-export async function extractExifMetadata(file: File): Promise<ExifMetadata> {
-  try {
-    // exifr은 gps: true 옵션으로 GPS 좌표를 자동으로 decimal로 변환하여 latitude, longitude 필드로 제공
-    // pick 옵션을 사용하지 않으면 필요한 모든 데이터를 효율적으로 파싱
+// EXIF 데이터를 포함할 수 있는 포맷만 파싱 시도
+const EXIF_SUPPORTED_TYPES = ['image/jpeg', 'image/jpg', 'image/tiff', 'image/heic', 'image/heif'];
 
+export async function extractExifMetadata(file: File): Promise<ExifMetadata> {
+  // 지원하지 않는 포맷은 파싱 없이 즉시 반환 (PNG, WebP 등은 EXIF가 없음)
+  if (file.type && !EXIF_SUPPORTED_TYPES.includes(file.type.toLowerCase())) {
+    return { hasMetadata: false };
+  }
+
+  try {
     const exifData = await exifr.parse(file, {
-      gps: true, // GPS 데이터를 자동으로 파싱하여 latitude, longitude로 변환
+      gps: true,
     });
 
     if (!exifData) {
@@ -56,25 +59,26 @@ export async function extractExifMetadata(file: File): Promise<ExifMetadata> {
 
     if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
       result.hasMetadata = true;
-      const address = await reverseGeocodeAddress(lat, lng);
-      result.location = {
-        latitude: lat,
-        longitude: lng,
-        address,
-      };
+      try {
+        const address = await reverseGeocodeAddress(lat, lng);
+        result.location = {
+          latitude: lat,
+          longitude: lng,
+          address,
+        };
+      } catch {
+        // GPS 역지오코딩 실패(Maps 미로드 등) — 위치 없이 날짜/시간만 반환
+        result.location = {
+          latitude: lat,
+          longitude: lng,
+          address: '',
+        };
+      }
     }
 
     return result;
-  } catch (error) {
-    Sentry.captureException(error, {
-      level: 'error',
-      tags: {
-        context: 'post-editor',
-        operation: 'extract-exif-metadata',
-      },
-    });
-    logger.error('EXIF 메타데이터 추출 실패', error);
-
+  } catch {
+    // EXIF 파싱 실패는 정상 케이스 (EXIF 없는 이미지, 미지원 포맷 등)
     return { hasMetadata: false };
   }
 }
@@ -118,25 +122,26 @@ export async function extractExifFromDataUrl(
 
     if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
       result.hasMetadata = true;
-      const address = await reverseGeocodeAddress(lat, lng);
-      result.location = {
-        latitude: lat,
-        longitude: lng,
-        address,
-      };
+      try {
+        const address = await reverseGeocodeAddress(lat, lng);
+        result.location = {
+          latitude: lat,
+          longitude: lng,
+          address,
+        };
+      } catch {
+        // GPS 역지오코딩 실패(Maps 미로드 등) — 위치 없이 날짜/시간만 반환
+        result.location = {
+          latitude: lat,
+          longitude: lng,
+          address: '',
+        };
+      }
     }
 
     return result;
-  } catch (error) {
-    Sentry.captureException(error, {
-      level: 'error',
-      tags: {
-        context: 'post-editor',
-        operation: 'extract-data-url-exif-metadata',
-      },
-    });
-    logger.error('Data URL에서 EXIF 메타데이터 추출 실패', error);
-
+  } catch {
+    // EXIF 파싱 실패는 정상 케이스
     return { hasMetadata: false };
   }
 }

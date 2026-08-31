@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import Image from 'next/image';
 import { PresenceMember } from '@/hooks/useDraftPresence';
 import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
@@ -38,10 +39,22 @@ export default function RecordTitleInput({
   const inFlightRef = useRef(false);
   const pendingTitleRef = useRef<string | null>(null);
   const releaseAfterCommitRef = useRef(false);
+  // LOCK_CHANGED가 비동기로 오기 때문에 isMyLock 대신 ref로 락 요청 여부를 동기 추적
+  const hasRequestedLockRef = useRef(false);
+  // 마지막으로 서버에 커밋된 제목 (변경 없는 blur 시 불필요한 패치 방지)
+  const lastCommittedTitleRef = useRef(title);
 
   // 락 상태 및 소유자
   const ownerSessionId = lockManager.locks[TITLE_LOCK_KEY];
   const isMyLock = !!ownerSessionId && ownerSessionId === mySessionId;
+
+  // 다른 유저가 제목을 바꿔서 title prop이 외부에서 갱신되면 lastCommittedTitleRef도 동기화
+  // (동기화 안 하면 focus→blur 시 변경이 없어도 hasChanged=true로 불필요한 패치 전송)
+  useEffect(() => {
+    if (!isMyLock && !hasRequestedLockRef.current) {
+      lastCommittedTitleRef.current = title;
+    }
+  }, [title, isMyLock]);
   const lockOwner = useMemo(
     () => members.find((m) => m.sessionId === ownerSessionId),
     [members, ownerSessionId],
@@ -51,6 +64,7 @@ export default function RecordTitleInput({
   const handleFocus = () => {
     if (draftId && !isLockedByOther) {
       lockManager.requestLock(TITLE_LOCK_KEY);
+      hasRequestedLockRef.current = true;
     }
   };
 
@@ -61,6 +75,7 @@ export default function RecordTitleInput({
         title: newTitle,
       });
       inFlightRef.current = true;
+      lastCommittedTitleRef.current = newTitle;
     },
     [applyPatch],
   );
@@ -77,37 +92,59 @@ export default function RecordTitleInput({
     [draftId, isMyLock, sendTitlePatch],
   );
 
-  const { throttled: throttledApplyPatch, flush: flushTitlePatch } = useThrottle(
-    useCallback(
-      (newTitle: string) => {
-        queueTitlePatch(newTitle);
-      },
-      [queueTitlePatch], // React Compiler 대응: 모든 의존성 포함
-    ),
-    3000,
-  );
+  const { throttled: throttledApplyPatch, flush: flushTitlePatch } =
+    useThrottle(
+      useCallback(
+        (newTitle: string) => {
+          queueTitlePatch(newTitle);
+        },
+        [queueTitlePatch], // React Compiler 대응: 모든 의존성 포함
+      ),
+      3000,
+    );
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVal = e.target.value;
+  const handleChangeValue = (newVal: string) => {
     setTitle(newVal);
-
     if (isMyLock) {
       throttledApplyPatch(newVal);
     }
   };
+  const imeProps = useIMEInput(handleChangeValue);
 
   const handleBlur = () => {
-    if (draftId && isMyLock) {
-      // 대기 중인 쓰로틀링 업데이트를 먼저 실행
+    if (!draftId) return;
+
+    // isMyLock은 LOCK_CHANGED가 도착해야 true가 되는 비동기 상태.
+    // hasRequestedLockRef는 requestLock 호출 즉시 true가 되므로 빠른 focus→blur에서도 락 해제 보장.
+    const shouldRelease = isMyLock || hasRequestedLockRef.current;
+    if (!shouldRelease) return;
+
+    hasRequestedLockRef.current = false;
+
+    if (isMyLock) {
+      // 대기 중인 쓰로틀링 업데이트를 먼저 실행 (isMyLock일 때만 유효)
       flushTitlePatch();
-      // 서버 커밋
-      queueTitlePatch(title);
-      if (inFlightRef.current || pendingTitleRef.current !== null) {
-        releaseAfterCommitRef.current = true;
-        return;
-      }
-      lockManager.releaseLock(TITLE_LOCK_KEY);
     }
+
+    // isMyLock이 아직 false여도 requestLock을 보냈다면(hadRequested)
+    // 서버는 이미 락을 부여했으므로 sendTitlePatch로 직접 최종 패치 전송.
+    // queueTitlePatch는 isMyLock 체크로 스킵되므로 호출 불가.
+    // 변경이 없으면 불필요한 버전 증가를 막기 위해 패치를 생략
+    const hasChanged = title !== lastCommittedTitleRef.current;
+    if (!inFlightRef.current) {
+      if (hasChanged) {
+        sendTitlePatch(title);
+      }
+    } else if (pendingTitleRef.current === null && hasChanged) {
+      pendingTitleRef.current = title;
+    }
+
+    if (inFlightRef.current || pendingTitleRef.current !== null) {
+      releaseAfterCommitRef.current = true;
+      return;
+    }
+
+    lockManager.releaseLock(TITLE_LOCK_KEY);
   };
 
   useEffect(() => {
@@ -128,7 +165,8 @@ export default function RecordTitleInput({
       if (!hasTitlePatch) return;
 
       inFlightRef.current = false;
-      if (pendingTitleRef.current !== null && isMyLock) {
+      if (pendingTitleRef.current !== null) {
+        // isMyLock이 아직 false(LOCK_CHANGED 미도착)여도 락을 요청한 상태이므로 전송
         const nextTitle = pendingTitleRef.current;
         pendingTitleRef.current = null;
         sendTitlePatch(nextTitle);
@@ -150,28 +188,33 @@ export default function RecordTitleInput({
     <div className="w-full flex flex-row gap-2 items-center group/title">
       {isLockedByOther && (
         <div
-          onClick={() => toast.error('현재 다른 사용자가 편집 중입니다.')}
+          onClick={() =>
+            toast.error('현재 다른 사용자가 편집 중입니다.', {
+              id: 'title-locked',
+            })
+          }
           className="absolute inset-0 z-20"
         />
       )}
       {isLockedByOther && lockOwner && (
-        <div className="shrink-0">
+        <div className="w-6 h-6 rounded-full ring-2 ring-itta-point animate-pulse overflow-hidden shrink-0">
           {lockOwner.profileImageId ? (
             <AssetImage
               assetId={lockOwner.profileImageId}
               alt={`${lockOwner.displayName} 편집 중`}
-              width={32}
-              height={32}
-              className="w-8 h-8 rounded-full ring-2 ring-itta-point animate-pulse object-cover"
+              width={24}
+              height={24}
+              className="w-full h-full rounded-full object-cover"
               title={lockOwner.displayName}
+              wrapperClassName="w-full h-full"
             />
           ) : (
             <Image
-              width={32}
-              height={32}
+              width={24}
+              height={24}
               src="/profile_base.png"
               alt={`${lockOwner.displayName} 편집 중`}
-              className="w-8 h-8 rounded-full ring-2 ring-itta-point animate-pulse"
+              className="w-full h-full rounded-full object-cover"
             />
           )}
         </div>
@@ -181,12 +224,12 @@ export default function RecordTitleInput({
         type="text"
         placeholder="제목을 입력하세요"
         value={title}
-        onChange={handleChange}
+        {...imeProps}
         onFocus={handleFocus}
         onBlur={handleBlur}
         disabled={isLockedByOther}
         className={cn(
-          'w-full border-none focus:ring-0 outline-none text-xl font-semibold tracking-tight bg-transparent p-0 transition-colors',
+          'w-full border-none focus:ring-0 outline-none text-lg sm:text-xl font-semibold tracking-tight bg-transparent p-0 transition-colors',
           'placeholder-gray-200 dark:placeholder-gray-500',
           isLockedByOther
             ? 'text-gray-400 cursor-not-allowed'

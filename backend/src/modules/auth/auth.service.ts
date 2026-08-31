@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { randomUUID } from 'crypto';
@@ -10,6 +6,10 @@ import { GuestMigrationService } from '../guest/guest-migration.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from './refresh_token/refresh_token.entity';
+import {
+  AUTH_ERROR_CODES,
+  AuthUnauthorizedException,
+} from '@/common/exceptions/auth-unauthorized.exception';
 
 import type { OAuthUserType } from './auth.type';
 
@@ -89,7 +89,10 @@ export class AuthService {
     const payload = this.codeMap.get(code);
 
     if (!payload) {
-      throw new UnauthorizedException('Invalid or expired code');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.INVALID_AUTH_CODE,
+        'Invalid or expired code',
+      );
     }
 
     // 일회성 보장
@@ -103,21 +106,25 @@ export class AuthService {
     };
   }
 
-  async refreshAccessToken(oldToken: string) {
+  async refreshAccessToken(
+    oldToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string | null }> {
     const saved = await this.refreshTokenRepo.findOne({
       where: { token: oldToken },
     });
 
-    if (!saved || saved.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token reuse or expired');
+    if (!saved) {
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_NOT_FOUND,
+        'Refresh token not found',
+      );
     }
 
-    // 2. 이미 폐기(revoked)된 토큰인 경우 Grace Period 체크
+    // revoked 체크: 슬라이딩으로 rotation이 발생했을 때 동시 요청 처리용 grace period
     if (saved.revoked) {
       const now = new Date();
-      const gracePeriod = 20 * 1000; // 네트워크 지연 고려
+      const gracePeriod = 30 * 1000; // 네트워크 지연 고려 (30초)
 
-      // saved.updatedAt이 Date 객체인지 확인하고 밀리초 단위로 비교
       const revokedAt = new Date(saved.updatedAt).getTime();
       const diff = now.getTime() - revokedAt;
 
@@ -135,11 +142,33 @@ export class AuthService {
           return { accessToken, refreshToken: latestToken.token };
         }
       }
-      throw new UnauthorizedException('Refresh token reuse detected');
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_REUSE_DETECTED,
+        'Refresh token reuse detected',
+      );
     }
 
-    // 정상적인 첫 번째 갱신 요청 처리
-    return await this.issueNewTokens(saved.userId, saved.id);
+    if (saved.expiresAt < new Date()) {
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.REFRESH_TOKEN_EXPIRED,
+        'Refresh token expired',
+      );
+    }
+
+    // 만료까지 7일 미만 → 슬라이딩: refresh token도 함께 재발급
+    const SLIDING_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+    const timeUntilExpiry = saved.expiresAt.getTime() - Date.now();
+
+    if (timeUntilExpiry < SLIDING_THRESHOLD_MS) {
+      return await this.issueNewTokens(saved.userId, saved.id);
+    }
+
+    // 7일 이상 남음 → access token만 재발급, refresh token 유지
+    const accessToken = this.jwtService.sign(
+      { sub: saved.userId },
+      { expiresIn: '15m' },
+    );
+    return { accessToken, refreshToken: null };
   }
 
   /**
@@ -179,13 +208,14 @@ export class AuthService {
 
     // 3. 이미 로그아웃된 상태 (토큰이 없음) 처리
     if (!refreshToken) {
-      throw new UnauthorizedException(
-        '이미 로그아웃되었거나 유효하지 않은 세션입니다.',
+      throw new AuthUnauthorizedException(
+        AUTH_ERROR_CODES.SESSION_INVALID,
+        'No refresh token found during logout',
       );
     }
 
-    // 4. 정상 삭제 처리
-    await this.refreshTokenRepo.delete({ userId });
+    // 4. revoke 처리 (delete 대신 revoke → 다른 탭/기기의 grace period 대응)
+    await this.refreshTokenRepo.update({ userId }, { revoked: true });
   }
 
   async mergeGuestSession(userId: string, guestSessionId: string) {

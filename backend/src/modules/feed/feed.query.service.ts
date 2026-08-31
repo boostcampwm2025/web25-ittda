@@ -7,10 +7,17 @@ import { Post } from '../post/entity/post.entity';
 import { GetFeedQueryDto } from './dto/get-feed.query.dto';
 import { PostContributor } from '../post/entity/post-contributor.entity';
 import { PostBlock } from '../post/entity/post-block.entity';
+import { PostGroupShare } from '../post/entity/post-group-share.entity';
 import { GroupMember } from '../group/entity/group_member.entity';
 import { Group } from '../group/entity/group.entity';
 import { PostDraft } from '../post/entity/post-draft.entity';
-import { buildFeedCards, dayRange } from './feed.helpers';
+import {
+  buildFeedCards,
+  dayRange,
+  decodeFeedCursor,
+  encodeFeedCursor,
+  getSharedGroupsByPostIds,
+} from './feed.helpers';
 
 @Injectable()
 export class FeedQueryService {
@@ -23,6 +30,8 @@ export class FeedQueryService {
     private readonly postBlockRepo: Repository<PostBlock>,
     @InjectRepository(PostContributor)
     private readonly postContributorRepo: Repository<PostContributor>,
+    @InjectRepository(PostGroupShare)
+    private readonly postGroupShareRepo: Repository<PostGroupShare>,
     @InjectRepository(GroupMember)
     private readonly groupMemberRepo: Repository<GroupMember>,
     @InjectRepository(Group)
@@ -84,6 +93,12 @@ export class FeedQueryService {
     ]);
 
     const posts = await postsQb.getMany();
+
+    const sharedGroupsByPostId = await getSharedGroupsByPostIds(
+      this.postGroupShareRepo,
+      posts.filter((p) => p.ownerUserId === userId).map((p) => p.id),
+    );
+
     return buildFeedCards(
       posts,
       this.postBlockRepo,
@@ -95,7 +110,85 @@ export class FeedQueryService {
         includeGroupName: true,
         groupRepo: this.groupRepo,
         draftRepo: this.postDraftRepo,
+        sharedGroupsByPostId,
       },
     );
+  }
+
+  async getPastFeedForUser(userId: string, cursor?: string, limit = 10) {
+    const decodedCursor = decodeFeedCursor(cursor);
+
+    const postsQb = this.postRepo.createQueryBuilder('p');
+    postsQb.where(
+      new Brackets((qb: SelectQueryBuilder<Post>) => {
+        qb.where(
+          (subQb: SelectQueryBuilder<Post>) => {
+            const sub = subQb
+              .subQuery()
+              .select('1')
+              .from(PostContributor, 'pc')
+              .where('pc.postId = p.id')
+              .andWhere('pc.userId = :userId')
+              .andWhere('pc.role IN (:...roles)')
+              .getQuery();
+
+            return `EXISTS ${sub}`;
+          },
+          { userId, roles: ['AUTHOR', 'EDITOR'] },
+        );
+      }),
+    );
+    if (decodedCursor) {
+      postsQb.andWhere(
+        '(p.eventAt < :cursorEventAt OR (p.eventAt = :cursorEventAt AND p.id < :cursorId))',
+        { cursorEventAt: decodedCursor.eventAt, cursorId: decodedCursor.id },
+      );
+    }
+
+    postsQb.orderBy('p.eventAt', 'DESC').addOrderBy('p.id', 'DESC');
+    postsQb.take(limit);
+
+    postsQb.select([
+      'p.id',
+      'p.groupId',
+      'p.ownerUserId',
+      'p.eventAt',
+      'p.createdAt',
+      'p.updatedAt',
+      'p.title',
+      'p.tags',
+      'p.emotion',
+      'p.rating',
+    ]);
+
+    const posts = await postsQb.getMany();
+
+    const sharedGroupsByPostId = await getSharedGroupsByPostIds(
+      this.postGroupShareRepo,
+      posts.filter((p) => p.ownerUserId === userId).map((p) => p.id),
+    );
+
+    const { cards, warnings } = await buildFeedCards(
+      posts,
+      this.postBlockRepo,
+      this.postContributorRepo,
+      this.groupMemberRepo,
+      this.logger,
+      userId,
+      {
+        includeGroupName: true,
+        groupRepo: this.groupRepo,
+        draftRepo: this.postDraftRepo,
+        sharedGroupsByPostId,
+      },
+    );
+
+    const lastPost = posts[posts.length - 1];
+    const nextCursor =
+      posts.length === limit && lastPost?.eventAt
+        ? encodeFeedCursor(new Date(lastPost.eventAt), lastPost.id)
+        : null;
+
+    return { cards, warnings, nextCursor };
   }
 }

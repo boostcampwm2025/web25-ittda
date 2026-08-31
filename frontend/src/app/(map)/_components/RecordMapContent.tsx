@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+
 import GoogleMap from './GoogleMap';
 import RecordMapDrawer from './RecordMapDrawer';
 import { FilterChip } from '@/components/search/FilterChip';
@@ -14,19 +15,15 @@ import {
 } from '@/lib/utils/filterLabels';
 import { useSearchFilters } from '@/hooks/useSearchFilters';
 import { FilterDrawerRenderer } from '@/components/search/FilterDrawerRender';
-import LocationPermissionChecker from '@/components/LocationPermissionChecker';
 import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { mapRecordListOptions } from '@/lib/api/records';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { useDebouncedValue } from '@/hooks/useDebounce';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import Back from '@/components/Back';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-// 기본 중심 좌표 (서울 시청)
-const DEFAULT_CENTER_LAT = 37.5665;
-const DEFAULT_CENTER_LNG = 126.978;
+// 기본 중심 좌표 (경복궁)
+const DEFAULT_CENTER_LAT = 37.5796;
+const DEFAULT_CENTER_LNG = 126.977;
 // 기본 범위 (약 10km)
 const DEFAULT_BOUNDS_DELTA = 0.1;
 
@@ -39,7 +36,6 @@ export default function RecordMapContent({
   scope,
   groupId,
 }: RecordMapContentProps) {
-  const router = useRouter();
   const [activeDrawer, setActiveDrawer] = useState<
     'tag' | 'date' | 'location' | 'emotion' | null
   >(null);
@@ -98,21 +94,6 @@ export default function RecordMapContent({
     return () => clearInterval(interval);
   }, []);
 
-  // 사용자 위치 가져오기
-  const { latitude, longitude } = useGeolocation({
-    reverseGeocode: false, // 주소 변환 불필요
-  });
-
-  // 실제 사용할 지도 중심 (mapCenter가 있으면 사용, 없으면 사용자 위치 사용)
-  const effectiveMapCenter = useMemo(() => {
-    if (mapCenter) return mapCenter;
-    if (latitude && longitude) return { lat: latitude, lng: longitude };
-    return null;
-  }, [mapCenter, latitude, longitude]);
-
-  // 지도 중심 위치를 debounce하여 성능 최적화 (500ms)
-  const debouncedMapCenter = useDebouncedValue(effectiveMapCenter, 500);
-
   // URL 쿼리 파라미터
   const {
     query,
@@ -152,8 +133,6 @@ export default function RecordMapContent({
       tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
     }),
     placeholderData: keepPreviousData,
-    enabled:
-      debouncedMapCenter !== null || (latitude !== null && longitude !== null),
   });
 
   // 무한 스크롤 관찰자
@@ -252,17 +231,19 @@ export default function RecordMapContent({
   };
 
   return (
-    <main
-      vaul-drawer-wrapper=""
-      className="w-full h-full relative overflow-hidden bg-white"
-    >
-      <LocationPermissionChecker />
+    // fixed inset-0: 전체 화면 커버 (status bar 영역 포함) + 문서 스크롤 이슈 방지
+    <div className="fixed top-0 bottom-0 left-0 right-0 max-w-4xl mx-auto overflow-hidden bg-white">
       <APIProvider apiKey={apiKey!}>
-        <div className="absolute inset-0 z-0">
+        {/* GoogleMap: vaul-drawer-wrapper 밖 → filter drawer transform 영향 안 받음 */}
+        <div className="absolute inset-0">
           <GoogleMap
             posts={allPosts}
             selectedPostId={selectedPostId}
-            onSelectPost={setSelectedPostId}
+            onSelectPost={(id) => {
+              setSelectedPostId(id);
+              // 클러스터 선택 시 검색 마커 제거 (fitBounds 이동으로 검색 핀이 뷰포트 안으로 들어오는 문제)
+              if (Array.isArray(id)) setSearchedLocation(null);
+            }}
             onBoundsChange={handleBoundsChange}
             onMapClick={() => setSelectedPostId(null)}
             mapRef={mapRef}
@@ -271,17 +252,45 @@ export default function RecordMapContent({
           />
         </div>
 
-        {/* 검색 및 필터*/}
-        <div className="absolute top-4 left-0 w-full z-10 px-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2 items-center">
-              <button
-                className="bg-white dark:bg-[#1E1E1E] rounded-full p-2 shrink-0"
-                onClick={() => router.back()}
-              >
-                <ChevronLeft className="w-6 h-6 dark:text-gray-300 text-gray-400" />
-              </button>
-              <div className="flex-1">
+        <main
+          vaul-drawer-wrapper=""
+          className="absolute inset-0 pointer-events-none"
+        >
+          <div className="pointer-events-auto">
+            <RecordMapDrawer
+              posts={drawerPosts}
+              selectedPostId={selectedPostId}
+              onSelectPost={setSelectedPostId}
+              isLoading={isLoading}
+              lastItemRef={lastItemRef}
+              isFetchingNextPage={isFetchingNextPage}
+              topOffset={bannerHeight}
+            />
+          </div>
+          <div className="pointer-events-auto">
+            <FilterDrawerRenderer
+              activeDrawer={activeDrawer}
+              close={() => setActiveDrawer(null)}
+              tags={selectedTags}
+              emotions={selectedEmotions}
+              dateRange={{ start: startDate, end: endDate }}
+              onUpdateUrl={updateUrl}
+            />
+          </div>
+        </main>
+
+        {/* 검색 및 필터 - vaul-drawer-wrapper 밖, status bar 아래에 배치 */}
+        <div
+          className="absolute left-0 w-full z-10 px-3 sm:px-4"
+          style={{ top: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+        >
+          <div className="flex flex-col gap-2 sm:gap-3">
+            <div className="flex gap-1.5 sm:gap-2 items-center">
+              <Back
+                fallback="/"
+                className="bg-white dark:bg-[#1E1E1E] shadow-xl rounded-full p-2 sm:p-2.5"
+              />
+              <div className="flex-1 min-w-0">
                 <MapSearchBar
                   onSelect={handleSelectPlace}
                   placeholder="장소를 검색하세요"
@@ -293,7 +302,7 @@ export default function RecordMapContent({
                 />
               </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
               <FilterChip
                 type="tag"
                 label={makeTagLabel(selectedTags)}
@@ -321,24 +330,7 @@ export default function RecordMapContent({
             </div>
           </div>
         </div>
-        <RecordMapDrawer
-          posts={drawerPosts}
-          selectedPostId={selectedPostId}
-          onSelectPost={setSelectedPostId}
-          isLoading={isLoading}
-          lastItemRef={lastItemRef}
-          isFetchingNextPage={isFetchingNextPage}
-          topOffset={bannerHeight}
-        />
-        <FilterDrawerRenderer
-          activeDrawer={activeDrawer}
-          close={() => setActiveDrawer(null)}
-          tags={selectedTags}
-          emotions={selectedEmotions}
-          dateRange={{ start: startDate, end: endDate }}
-          onUpdateUrl={updateUrl}
-        />
       </APIProvider>
-    </main>
+    </div>
   );
 }

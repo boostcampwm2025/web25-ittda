@@ -1,13 +1,15 @@
 import GroupEditClient from './_components/GroupEditClient';
+import GroupEditSkeleton from './_components/GroupEditSkeleton';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { getCachedGroupDetail } from '@/lib/api/group';
+import { getCachedGroupDetail, groupDetailOptions } from '@/lib/api/group';
 import { redirect } from 'next/navigation';
 import { createMockGroupSettings } from '@/lib/mocks/mock';
-import { GroupEditResponse } from '@/lib/types/groupResponse';
+import ErrorHandlingWrapper from '@/components/ErrorHandlingWrapper';
+import ErrorFallback from '@/components/ErrorFallback';
 
 interface GroupEditPageProps {
   params: Promise<{ groupId: string }>;
@@ -16,13 +18,16 @@ interface GroupEditPageProps {
 export default async function GroupEditPage({ params }: GroupEditPageProps) {
   const { groupId } = await params;
   const queryClient = new QueryClient();
-  let groupProfile: GroupEditResponse;
 
   if (process.env.NEXT_PUBLIC_MOCK !== 'true') {
     try {
-      groupProfile = await getCachedGroupDetail(groupId);
-      // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
-      queryClient.setQueryData(['group', groupId, 'edit'], groupProfile);
+      const groupProfile = await getCachedGroupDetail(groupId);
+
+      if (groupProfile.me.role !== 'ADMIN') {
+        redirect(`/group/${groupId}/edit/profile`);
+      }
+
+      queryClient.setQueryData(groupDetailOptions(groupId).queryKey, groupProfile);
     } catch (error: unknown) {
       const code =
         error && typeof error === 'object' && 'code' in error
@@ -30,20 +35,24 @@ export default async function GroupEditPage({ params }: GroupEditPageProps) {
           : undefined;
 
       if (code === 'NOT_FOUND') redirect('/shared');
-      if (code === 'FORBIDDEN') redirect(`/group/${groupId}`);
+      if (code === 'FORBIDDEN') redirect(`/group/${groupId}/edit/profile`);
       throw error;
     }
   } else {
-    groupProfile = createMockGroupSettings(groupId);
     queryClient.setQueryData(
-      ['group', groupId, 'edit'],
+      groupDetailOptions(groupId).queryKey,
       createMockGroupSettings(groupId),
     );
   }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <GroupEditClient profile={groupProfile} groupId={groupId} />
+      <ErrorHandlingWrapper
+        fallbackComponent={ErrorFallback}
+        suspenseFallback={<GroupEditSkeleton />}
+      >
+        <GroupEditClient groupId={groupId} />
+      </ErrorHandlingWrapper>
     </HydrationBoundary>
   );
 }

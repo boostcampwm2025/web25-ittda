@@ -11,7 +11,6 @@ interface FilterDrawerProps {
   emotions: string[];
   dateRange: { start: string | null; end: string | null };
   onUpdateUrl: (params: Record<string, string | null>) => void;
-  frequentTags?: string[];
 }
 
 // 필터링 시 필요한 드로어 가져오는 함수
@@ -22,14 +21,12 @@ export function FilterDrawerRenderer({
   emotions,
   dateRange,
   onUpdateUrl,
-  frequentTags,
 }: FilterDrawerProps) {
   if (!activeDrawer) return;
   switch (activeDrawer) {
     case 'tag':
       return (
         <TagSearchDrawer
-          allTags={frequentTags && frequentTags.length > 0 ? frequentTags : []}
           selectedTags={tags}
           onToggleTag={(tag) => {
             const next = tags.includes(tag)

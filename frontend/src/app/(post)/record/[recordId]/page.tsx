@@ -4,30 +4,29 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { notFound } from 'next/navigation';
-import { getCachedRecordDetail } from '@/lib/api/records';
+import { getCachedRecordDetail, recordDetailOptions } from '@/lib/api/records';
 import RecordDetailContent from '../_components/RecordDetailContent';
-import type { ApiError } from '@/lib/utils/errorHandler';
-import {
-  RecordDetailResponse,
-  ImageValue,
-  TextValue,
-} from '@/lib/types/record';
+import { ImageValue, TextValue } from '@/lib/types/record';
 import { get } from '@/lib/api/api';
 import { SingleResolveResponse } from '@/hooks/useMediaResolve';
 import { randomBaseImage } from '@/lib/image';
 
 interface RecordPageProps {
   params: Promise<{ recordId: string }>;
+  searchParams: Promise<{ groupId?: string }>;
 }
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: RecordPageProps): Promise<Metadata> {
   const { recordId } = await params;
+  const { groupId } = await searchParams;
 
   try {
-    const record = await getCachedRecordDetail(recordId);
+    // groupId까지 동일한 인자로 호출해야 아래 RecordPage 본문의 React
+    // cache()가 같은 호출로 인식해서 중복 요청 없이 재사용된다.
+    const record = await getCachedRecordDetail(recordId, groupId);
 
     // 첫 번째 텍스트 블록에서 설명 추출 (최대 150자)
     const textBlock = record.blocks.find((block) => block.type === 'TEXT');
@@ -47,15 +46,16 @@ export async function generateMetadata({
       imageAssetId?.startsWith('https://');
 
     //url이 없고 로컬 경로나 URL이 아닐 때만 assetId로 solve 호출하기
-    const response = await get<SingleResolveResponse>(
-      `/api/media/${imageAssetId}/url`,
-    );
+    const response =
+      !isLocalPath && !isAlreadyUrl && imageAssetId
+        ? await get<SingleResolveResponse>(`/api/media/${imageAssetId}/url`)
+        : null;
 
     const imageSrc = isLocalPath
       ? imageAssetId
       : isAlreadyUrl
         ? imageAssetId
-        : response.data?.url;
+        : response?.data?.url;
 
     const imageUrl = imageSrc
       ? imageSrc
@@ -68,6 +68,7 @@ export async function generateMetadata({
         title: `${record.title} - 잇다`,
         description,
         type: 'article',
+        url: `${process.env.NEXT_PUBLIC_CLIENT_URL}/record/${recordId}`,
         images: [
           {
             url: imageUrl,
@@ -76,6 +77,12 @@ export async function generateMetadata({
             alt: record.title,
           },
         ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${record.title} - 잇다`,
+        description,
+        images: [imageUrl],
       },
     };
   } catch (error) {
@@ -87,28 +94,29 @@ export async function generateMetadata({
   }
 }
 
-export default async function RecordPage({ params }: RecordPageProps) {
+export default async function RecordPage({
+  params,
+  searchParams,
+}: RecordPageProps) {
   const { recordId } = await params;
+  const { groupId } = await searchParams;
 
   const queryClient = new QueryClient();
-  let record: RecordDetailResponse;
-
   try {
-    record = await getCachedRecordDetail(recordId);
-
-    // QueryClient에 직접 넣어서 HydrationBoundary로 클라이언트에 전달
-    queryClient.setQueryData(['record', recordId], record);
-  } catch (error) {
-    // 404 에러는 notFound 페이지로
-    const apiError = error as ApiError;
-    if (apiError.code === 'NOT_FOUND' || apiError.message?.includes('404')) {
-      notFound();
-    }
+    // generateMetadata에서 getCachedRecordDetail을 이미 호출했다면 React cache()로 중복 요청 없이 재사용됨.
+    // setQueryData로 서버 데이터를 클라이언트 QueryClient에 이식해 useSuspenseQuery가 바로 캐시를 찾게 함.
+    const data = await getCachedRecordDetail(recordId, groupId);
+    queryClient.setQueryData(
+      recordDetailOptions(recordId, groupId).queryKey,
+      data,
+    );
+  } catch {
+    // 에러는 RecordDetail 클라이언트 컴포넌트의 ErrorBoundary에서 처리
   }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <RecordDetailContent recordId={recordId} />
+      <RecordDetailContent recordId={recordId} groupId={groupId} />
     </HydrationBoundary>
   );
 }

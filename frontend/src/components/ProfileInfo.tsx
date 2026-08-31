@@ -1,6 +1,7 @@
 'use client';
 
 import { Camera, X } from 'lucide-react';
+import { useIMEInput } from '@/hooks/useIMEInput';
 import Image from 'next/image';
 import { useRef, useMemo, useEffect } from 'react';
 import { useProfileEdit } from '../app/(main)/profile/edit/_components/ProfileEditContext';
@@ -17,6 +18,7 @@ export default function ProfileInfo({
 }: ProfileInfoProps) {
   const { image, setImage, nickname, setNickname, email } = useProfileEdit();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nicknameImeProps = useIMEInput(setNickname);
 
   // Blob URL을 메모이제이션하여 불필요한 재생성 방지
   const imagePreviewUrl = useMemo(() => {
@@ -73,7 +75,7 @@ export default function ProfileInfo({
             onClick={handleImageClick}
             className="relative group cursor-pointer"
           >
-            <div className="flex justify-center items-center w-32 h-32 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
+            <div className="flex justify-center items-center w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 overflow-hidden shadow-md transition-colors dark:border-[#1E1E1E] dark:bg-[#1E1E1E] border-gray-50 bg-gray-50">
               {imagePreviewUrl ? (
                 <Image
                   width={128}
@@ -81,6 +83,7 @@ export default function ProfileInfo({
                   src={imagePreviewUrl}
                   alt={`${nickname} 프로필`}
                   className="w-full h-full object-cover"
+                  style={{ imageOrientation: 'from-image' }}
                 />
               ) : (
                 <AssetImage
@@ -89,6 +92,7 @@ export default function ProfileInfo({
                   height={128}
                   assetId={profileImage || '/profile_base.png'}
                   alt={`${nickname} 프로필`}
+                  wrapperClassName="w-full h-full"
                 />
               )}
             </div>
@@ -114,7 +118,7 @@ export default function ProfileInfo({
               <input
                 type="text"
                 value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
+                {...nicknameImeProps}
                 className={`w-full border-b-2 bg-transparent px-1 py-4 text-base font-semibold transition-all outline-none dark:text-white dark:placeholder-gray-700 text-itta-black placeholder-gray-300 ${
                   nicknameError
                     ? 'border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500'
@@ -125,6 +129,7 @@ export default function ProfileInfo({
               {nickname && (
                 <button
                   onClick={() => setNickname('')}
+                  aria-label="닉네임 지우기"
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-300 hover:text-gray-400"
                 >
                   <X className="w-4 h-4" />
@@ -143,7 +148,7 @@ export default function ProfileInfo({
           </div>
 
           {showEmail && email && (
-            <div className="space-y-2 flex flex-col justify-center items-start gap-1">
+            <div className="space-y-1 flex flex-col justify-center items-start gap-1">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
                 이메일 계정
               </label>
@@ -151,7 +156,7 @@ export default function ProfileInfo({
                 type="text"
                 value={email}
                 disabled
-                className="w-full text-start border rounded-lg px-3 py-4 text-base font-semibold cursor-not-allowed transition-colors dark:bg-white/5 dark:border-white/5 dark:text-gray-500 bg-gray-50 border-gray-100 text-gray-400"
+                className="w-full text-start border rounded-lg px-3 py-3 text-xs sm:text-sm font-semibold cursor-not-allowed transition-colors dark:bg-white/5 dark:border-white/5 dark:text-gray-400 bg-gray-50 border-gray-100 text-gray-400"
               />
             </div>
           )}

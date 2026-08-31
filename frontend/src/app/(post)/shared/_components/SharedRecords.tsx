@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
@@ -12,7 +12,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Users, X } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { groupListOptions } from '@/lib/api/group';
 import {
   GroupCoverUpdateResponse,
@@ -21,9 +21,55 @@ import {
 import { GroupSortOption } from './SharedHeaderActions';
 import { useApiPatch } from '@/hooks/useApi';
 
+// 개별 그룹 카드 컴포넌트 - 콜백 최적화
+const GroupCard = memo(function GroupCard({
+  group,
+  onNavigate,
+  onOpenGallery,
+}: {
+  group: GroupSummary;
+  onNavigate: (groupId: string) => void;
+  onOpenGallery: (groupId: string) => void;
+}) {
+  const isViewer = group.permission === 'VIEWER';
+
+  const handleClick = useCallback(() => {
+    onNavigate(group.groupId);
+  }, [onNavigate, group.groupId]);
+
+  const handleChangeCover = useCallback(() => {
+    onOpenGallery(group.groupId);
+  }, [onOpenGallery, group.groupId]);
+
+  const count = useMemo(
+    () => `${group.memberCount}명 • ${group.recordCount}기록`,
+    [group.memberCount, group.recordCount],
+  );
+
+  const createdAt = useMemo(
+    () => group.createdAt.split('T')[0],
+    [group.createdAt],
+  );
+
+  return (
+    <RecordCard
+      id={group.groupId}
+      name={group.name}
+      count={count}
+      latestTitle={group.latestPost?.title || '최신 기록이 없어요'}
+      latestLocation={group.latestPost?.placeName}
+      hasNotification={group.hasUnread}
+      notificationMuted={group.notificationMuted}
+      cover={group.cover}
+      onClick={handleClick}
+      onChangeCover={isViewer ? undefined : handleChangeCover}
+      createdAt={createdAt}
+    />
+  );
+});
+
 interface SharedRecordProps {
   searchParams: string;
-  initialGroups?: GroupSummary[];
 }
 
 const sortGroups = (
@@ -43,17 +89,13 @@ const sortGroups = (
   }
 };
 
-export default function SharedRecords({
+const SharedRecords = memo(function SharedRecords({
   searchParams,
-  initialGroups = [],
 }: SharedRecordProps) {
   const queryClient = useQueryClient();
   const sortBy = (searchParams as GroupSortOption) || 'latest';
 
-  const { data: groups = initialGroups } = useQuery({
-    ...groupListOptions(),
-    initialData: initialGroups,
-  });
+  const { data: groups } = useSuspenseQuery(groupListOptions());
 
   const sortedGroups = useMemo(() => {
     if (sortBy === 'latest') return groups;
@@ -105,29 +147,39 @@ export default function SharedRecords({
     },
   );
 
-  const openGallery = (groupId: string) => {
+  const handleNavigate = useCallback(
+    (groupId: string) => {
+      router.push(`/group/${groupId}`);
+    },
+    [router],
+  );
+
+  const openGallery = useCallback((groupId: string) => {
     setActiveGroupId(groupId);
     setIsDrawerOpen(true);
-  };
+  }, []);
 
-  const handleCoverSelect = (assetId: string, recordId: string) => {
-    if (!activeGroupId) return;
+  const handleCoverSelect = useCallback(
+    (assetId: string, recordId: string) => {
+      if (!activeGroupId) return;
 
-    // 낙관적 업데이트: 캐시 직접 수정
-    queryClient.setQueryData<GroupSummary[]>(['shared'], (oldData) => {
-      if (!oldData) return oldData;
-      return oldData.map((group) =>
-        group.groupId === activeGroupId
-          ? {
-              ...group,
-              cover: group.cover ? { ...group.cover, assetId } : null,
-            }
-          : group,
-      );
-    });
+      // 낙관적 업데이트: 캐시 직접 수정
+      queryClient.setQueryData<GroupSummary[]>(['shared'], (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map((group) =>
+          group.groupId === activeGroupId
+            ? {
+                ...group,
+                cover: group.cover ? { ...group.cover, assetId } : null,
+              }
+            : group,
+        );
+      });
 
-    updateGroupCover({ assetId: assetId, sourcePostId: recordId });
-  };
+      updateGroupCover({ assetId: assetId, sourcePostId: recordId });
+    },
+    [activeGroupId, queryClient, updateGroupCover],
+  );
 
   if (sortedGroups.length === 0) {
     return (
@@ -151,25 +203,15 @@ export default function SharedRecords({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {sortedGroups.map((g) => {
-          const isViewer = g.permission === 'VIEWER';
-          return (
-            <RecordCard
-              key={g.groupId}
-              id={g.groupId}
-              name={g.name}
-              count={`${g.memberCount}명 • ${g.recordCount}기록`}
-              latestTitle={g.latestPost?.title || '최신 기록이 없어요'}
-              latestLocation={g.latestPost?.placeName}
-              hasNotification={false}
-              cover={g.cover}
-              onClick={() => router.push(`/group/${g.groupId}`)}
-              onChangeCover={isViewer ? undefined : () => openGallery(g.groupId)}
-              createdAt={g.createdAt.split('T')[0]}
-            />
-          );
-        })}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 pb-bottom-nav">
+        {sortedGroups.map((g) => (
+          <GroupCard
+            key={g.groupId}
+            group={g}
+            onNavigate={handleNavigate}
+            onOpenGallery={openGallery}
+          />
+        ))}
       </div>
 
       {/* 커버 변경 Drawer */}
@@ -178,18 +220,18 @@ export default function SharedRecords({
         onOpenChange={setIsDrawerOpen}
         shouldScaleBackground={false}
       >
-        <DrawerContent className="w-full px-8 py-4 pb-10">
+        <DrawerContent className="w-full px-6 sm:px-8 pt-4 pb-8 sm:pb-10">
           <DrawerHeader>
-            <div className="pt-4 flex justify-between items-center mb-6">
-              <DrawerTitle className="flex flex-col">
-                <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+            <div className="pt-4 flex justify-between items-center mb-4 sm:mb-6">
+              <DrawerTitle className="flex flex-col justify-center items-start pl-0">
+                <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
                   CHOOSE COVER
                 </span>
-                <span className="text-lg font-bold dark:text-white text-itta-black">
+                <span className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                   커버 사진 선택
                 </span>
               </DrawerTitle>
-              <DrawerClose className="p-2 text-gray-400 cursor-pointer">
+              <DrawerClose className="sm:p-2 text-gray-400 cursor-pointer">
                 <X className="w-6 h-6" />
               </DrawerClose>
             </div>
@@ -207,4 +249,6 @@ export default function SharedRecords({
       </Drawer>
     </>
   );
-}
+});
+
+export default SharedRecords;

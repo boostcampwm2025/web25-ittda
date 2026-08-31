@@ -27,6 +27,7 @@ describe('SearchController (e2e)', () => {
 
   type SearchItemsResponse = {
     items: Array<{ id: string }>;
+    count: number;
   };
 
   const isSearchItemsResponse = (
@@ -35,7 +36,9 @@ describe('SearchController (e2e)', () => {
     if (!value || typeof value !== 'object') return false;
     if (!('items' in value)) return false;
     const items = (value as { items?: unknown }).items;
+    const count = (value as { count?: unknown }).count;
     return (
+      typeof count === 'number' &&
       Array.isArray(items) &&
       items.every(
         (item) =>
@@ -116,7 +119,7 @@ describe('SearchController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) await app.close();
   });
 
   it('키워드가 제목 또는 텍스트 블록에 포함된 글을 반환한다', async () => {
@@ -128,9 +131,25 @@ describe('SearchController (e2e)', () => {
 
     const body = res.body as unknown;
     expect(isSearchItemsResponse(body)).toBe(true);
-    const ids = (body as SearchItemsResponse).items.map((item) => item.id);
+    const parsedBody = body as SearchItemsResponse;
+    const ids = parsedBody.items.map((item) => item.id);
+    expect(parsedBody.count).toBeGreaterThanOrEqual(2);
     expect(ids).toContain(titlePost.id);
     expect(ids).toContain(textPost.id);
+  });
+
+  it('페이지네이션 limit과 무관하게 전체 검색 결과 개수를 count로 반환한다', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/search?limit=1')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: '기록' })
+      .expect(201);
+
+    const body = res.body as unknown;
+    expect(isSearchItemsResponse(body)).toBe(true);
+    const parsedBody = body as SearchItemsResponse;
+    expect(parsedBody.items).toHaveLength(1);
+    expect(parsedBody.count).toBeGreaterThanOrEqual(2);
   });
 
   it('기간 필터로 해당 날짜 범위의 글만 반환한다', async () => {

@@ -4,13 +4,16 @@ import { cn } from '@/lib/utils';
 import { Check, ImageIcon } from 'lucide-react';
 import { useCallback, useMemo, useRef } from 'react';
 import { DrawerClose } from '../../../components/ui/drawer';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import {
   groupRecordCoverOptions,
   groupMonthlyRecordCoverOptions,
 } from '@/lib/api/group';
 import { myMonthlyRecordCoverOptions } from '@/lib/api/my';
 import AssetImage from '@/components/AssetImage';
+import { ResetDefaultCoverButton } from '@/components/ResetDefaultCoverButton';
+import { useApiDelete } from '@/hooks/useApi';
+import { toast } from 'sonner';
 
 interface GalleryDrawerProps {
   type: 'group' | 'personal' | 'other';
@@ -27,6 +30,31 @@ export default function GalleryDrawer({
   currentAssetId,
   onSelect,
 }: GalleryDrawerProps) {
+  const queryClient = useQueryClient();
+
+  const resetEndpoint = groupId
+    ? month
+      ? `/api/groups/${groupId}/archives/months/${month}/cover`
+      : `/api/groups/${groupId}/cover`
+    : `/api/user/archives/months/${month}/cover`;
+
+  const { mutate: resetCover } = useApiDelete(resetEndpoint, {
+    onSuccess: () => {
+      toast.success('커버가 기본값으로 변경되었습니다.');
+      if (groupId && !month) {
+        queryClient.invalidateQueries({ queryKey: ['group', groupId, 'edit'] });
+        queryClient.invalidateQueries({ queryKey: ['shared'] });
+      } else if (groupId && month) {
+        queryClient.invalidateQueries({
+          queryKey: ['group', groupId, 'records', 'month'],
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['my', 'records', 'month'] });
+      }
+    },
+    onError: () => toast.error('기본값으로 변경에 실패했습니다.'),
+  });
+
   // 그룹 쿼리
   const groupQuery = useInfiniteQuery({
     ...groupRecordCoverOptions(groupId!),
@@ -52,7 +80,8 @@ export default function GalleryDrawer({
     return personalQuery;
   }, [type, month, groupMonthlyQuery, groupQuery, personalQuery]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = currentQuery;
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    currentQuery;
 
   const items = (data?.pages ?? []).flatMap((page) =>
     (page?.sections ?? []).flatMap((section) => section.items ?? []),
@@ -82,17 +111,26 @@ export default function GalleryDrawer({
 
   return (
     <div className="flex flex-col w-full gap-2.5">
-      {items.length === 0 ? (
-        <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/5">
-          <div className="w-16 h-16 bg-white dark:bg-neutral-800 rounded-2xl flex items-center justify-center shadow-sm">
-            <ImageIcon className="w-8 h-8 text-gray-300 dark:text-neutral-600" />
+      {isPending ? (
+        <div className="p-1 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 sm:gap-2 max-h-[40vh] sm:max-h-[45vh] overflow-hidden mb-6 sm:mb-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="py-14 sm:py-20 flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4 rounded-2xl sm:rounded-3xl border-2 border-dashed border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/5">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white dark:bg-neutral-800 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm">
+            <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300 dark:text-neutral-600" />
           </div>
 
           <div className="space-y-1">
-            <p className="font-bold text-itta-black dark:text-white text-sm">
+            <p className="font-bold text-itta-black dark:text-white text-xs sm:text-sm">
               이미지가 포함된 기록이 없어요
             </p>
-            <p className="text-[11px] text-gray-400 leading-relaxed">
+            <p className="text-[10px] sm:text-[11px] text-gray-400 leading-relaxed">
               커버로 설정할 수 있는 사진이 포함된
               <br />
               기록을 먼저 작성해 보세요!
@@ -102,7 +140,7 @@ export default function GalleryDrawer({
       ) : (
         <div
           ref={scrollContainerRef}
-          className="p-1 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[45vh] overflow-y-auto scrollbar-hide mb-8 min-h-0"
+          className="p-1 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 sm:gap-2 max-h-[40vh] sm:max-h-[45vh] overflow-y-auto scrollbar-hide mb-6 sm:mb-8 min-h-0"
         >
           {items.map((item, idx) => {
             const isCurrent = currentAssetId === item.mediaId;
@@ -151,8 +189,8 @@ export default function GalleryDrawer({
           )}
         </div>
       )}
-
-      <DrawerClose className="cursor-pointer w-full py-4 rounded-2xl font-bold text-sm dark:bg-white/5 dark:text-gray-500 bg-itta-black text-white shrink-0">
+      <ResetDefaultCoverButton onClick={() => resetCover({})} />
+      <DrawerClose className="cursor-pointer w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm dark:bg-white dark:text-black bg-itta-black text-white shrink-0">
         닫기
       </DrawerClose>
     </div>

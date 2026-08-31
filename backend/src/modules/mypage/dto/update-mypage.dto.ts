@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsObject, IsUUID } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateMeDto {
   @ApiProperty({
@@ -11,13 +11,14 @@ export class UpdateMeDto {
   @IsString()
   nickname?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: '프로필 이미지 URL (deprecated, imageId 권장)',
     required: false,
+    nullable: true,
   })
   @IsOptional()
   @IsUUID()
-  profileImageId?: string;
+  profileImageId?: string | null;
 }
 
 export class UpdateSettingsDto {

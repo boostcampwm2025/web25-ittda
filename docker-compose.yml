@@ -1,25 +1,34 @@
-version: '3.8' # Docker Compose 파일의 버전. 최신 기능을 위해 3.x 버전을 사용합니다.
+version: "3.8" # Docker Compose 파일의 버전. 최신 기능을 위해 3.x 버전을 사용합니다.
 
 # 프로젝트에서 실행할 서비스(컨테이너)들을 정의합니다.
 services:
   # 1. 백엔드 서비스 정의
   backend:
-    # 사용할 Docker 이미지: 환경 변수(NCP_REGISTRY_URL)에서 레지스트리 경로를 가져오고,
-    # 그 안에 있는 'project/backend:latest' 태그의 이미지를 사용합니다.
-    image: ${NCP_REGISTRY_URL}/backend:latest
+    # REGISTRY_URL + BACKEND_IMAGE_TAG 조합으로 배포 이미지를 선택합니다.
+    # TAG는 커밋 SHA(예: `git rev-parse --short=12 HEAD`)를 사용합니다.
+    # build/push와 pull/up에 동일 TAG를 주입해 배포합니다.
+    image: ${REGISTRY_URL}/backend:${BACKEND_IMAGE_TAG:-latest}
     # 컨테이너에 할당할 이름입니다.
     container_name: backend
     # 컨테이너가 종료되었을 때 항상 다시 시작하도록 설정합니다.
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     # 포트 매핑: 호스트(로컬)의 127.0.0.1:4000 포트를 컨테이너의 4000 포트와 연결합니다.
     # 프론트엔드와 마찬가지로 '127.0.0.1'로 바인딩하여 외부 직접 접근을 차단합니다.
     ports:
-      - '127.0.0.1:4000:4000'
+      - "127.0.0.1:4000:4000"
     # 컨테이너 내부에서 사용할 환경 변수 설정
     env_file:
       - ./backend/.env.production
     environment:
       NODE_ENV: production # 운영 환경으로 설정
+    # Linux Docker에서 호스트(서버)로 접속할 때 사용하는 표준 별칭
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - app-net
 

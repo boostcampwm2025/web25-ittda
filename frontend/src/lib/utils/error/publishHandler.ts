@@ -1,12 +1,6 @@
 import { toast } from 'sonner';
-import { ApiError } from '../errorHandler';
+import { type ApiError, ERROR_CODES } from '../errorHandler';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-
-export const ERROR_CODES = {
-  NOT_FOUND: 'NOT_FOUND',
-  CONFLICT: 'CONFLICT', //TODO: 서버에서 보내는 버전 충돌로
-  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
-} as const;
 
 export const handlePublishError = (
   error: ApiError,
@@ -36,5 +30,9 @@ export const handlePublishError = (
 
   if (handler) {
     handler();
+  } else {
+    // 알려지지 않은 에러 코드(네트워크 오류, 예기치 못한 서버 오류 등)도
+    // 사용자에게 실패를 알려야 로딩 화면만 조용히 사라지는 상황을 막을 수 있다.
+    toast.error('기록 저장에 실패했습니다. 다시 시도해 주세요.');
   }
 };

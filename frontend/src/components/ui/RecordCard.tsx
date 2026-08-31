@@ -1,10 +1,10 @@
 'use client';
 
-import { Clock, MapPin } from 'lucide-react';
+import { BellOff, Clock, MapPin } from 'lucide-react';
 import { PostCard } from './PostCard';
 import { useRouter } from 'next/navigation';
 import { GroupCover } from '@/lib/types/group';
-import { randomBaseImage } from '@/lib/image';
+import { memo } from 'react';
 
 /**
  * MonthRecordCard - 월별 기록 카드
@@ -18,13 +18,15 @@ export interface RecordCardProps {
   latestLocation?: string | null;
   cover?: GroupCover | null;
   hasNotification?: boolean;
+  notificationMuted?: boolean;
   createdAt?: string;
   height?: string;
   onClick?: () => void;
   onChangeCover?: (id: string) => void;
+  priorityLoad?: boolean;
 }
 
-export function RecordCard({
+export const RecordCard = memo(function RecordCard({
   id,
   name,
   count,
@@ -32,19 +34,28 @@ export function RecordCard({
   latestLocation,
   cover,
   hasNotification,
+  notificationMuted,
   onClick,
   onChangeCover,
   createdAt,
   height,
+  priorityLoad,
 }: RecordCardProps) {
-  const baseImage = randomBaseImage(id);
   return (
     <PostCard
       height={height}
-      imageUrl={cover?.assetId || baseImage}
+      imageUrl={cover?.assetId || null}
       imageAlt={name}
       onClick={onClick}
+      priorityLoad={priorityLoad}
     >
+      {/* 알림 뮤트 표시 */}
+      {notificationMuted && (
+        <div className="absolute top-3 left-3 z-10 p-1.5 rounded-lg bg-black/40 backdrop-blur-md border border-white/10">
+          <BellOff className="w-3 h-3 text-white/70" />
+        </div>
+      )}
+
       {/* 커버 변경 버튼 */}
       {onChangeCover && (
         <PostCard.Action
@@ -59,8 +70,9 @@ export function RecordCard({
       {/* 카드 콘텐츠 */}
       <PostCard.Overlay>
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <PostCard.Title className="flex justify-start items-center gap-1.5">
-            {name} {hasNotification && <PostCard.Notification />}
+          <PostCard.Title className="flex justify-start items-center gap-1.5 min-w-0 flex-1">
+            <span className="truncate min-w-0">{name}</span>
+            {hasNotification && <PostCard.Notification />}
           </PostCard.Title>
 
           <PostCard.Badge>{count}</PostCard.Badge>
@@ -91,7 +103,7 @@ export function RecordCard({
       </PostCard.Overlay>
     </PostCard>
   );
-}
+});
 
 /**
  * DateRecordCard - 날짜 기록 카드
@@ -106,9 +118,10 @@ export interface DateRecordCardProps {
   onClick?: () => void;
   routePath?: string;
   icon?: React.ReactNode;
+  priorityLoad?: boolean;
 }
 
-export function DateRecordCard({
+export const DateRecordCard = memo(function DateRecordCard({
   date,
   dayName,
   title,
@@ -117,6 +130,7 @@ export function DateRecordCard({
   onClick,
   routePath,
   icon,
+  priorityLoad,
 }: DateRecordCardProps) {
   const router = useRouter();
 
@@ -125,6 +139,7 @@ export function DateRecordCard({
       height="aspect-square"
       imageUrl={coverUrl}
       imageAlt={title}
+      priorityLoad={priorityLoad}
       onClick={() => {
         if (routePath) {
           router.push(routePath);
@@ -149,21 +164,22 @@ export function DateRecordCard({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             {icon}
-            <PostCard.Title className="text-[15px]">{title}</PostCard.Title>
+            <PostCard.Title className="text-[13px] sm:text-[15px]">
+              {title}
+            </PostCard.Title>
           </div>
-          <div className="flex items-center gap-1.5 text-white/80 text-[9px]">
-            <Clock className="w-2.5 h-2.5 text-[#10B981]" strokeWidth={2.5} />
-            <span className="truncate">일별 기록 보기</span>
-            <span className="text-[7px]">•</span>
-            <PostCard.Meta>
-              <span className="text-[#10B981] font-bold">기록 {count}개</span>
-            </PostCard.Meta>
+          <div className="flex items-center justify-between gap-1.5 text-white/80 text-[9px]">
+            <span className="truncate flex justify-center items-center gap-1.5">
+              <Clock className="w-2.5 h-2.5 text-[#10B981]" strokeWidth={2.5} />
+              일별 기록 보기
+            </span>
+            <PostCard.Badge>{count}</PostCard.Badge>
           </div>
         </div>
       </PostCard.Overlay>
     </PostCard>
   );
-}
+});
 
 /**
  * SimpleRecordCard - 간단한 기록 카드
@@ -176,15 +192,17 @@ export interface SimpleRecordCardProps {
   badge?: string;
   onClick?: () => void;
   height?: string;
+  priorityLoad?: boolean;
 }
 
-export function SimpleRecordCard({
+export const SimpleRecordCard = memo(function SimpleRecordCard({
   title,
   description,
   coverUrl,
   badge,
   onClick,
   height,
+  priorityLoad,
 }: SimpleRecordCardProps) {
   return (
     <PostCard
@@ -192,6 +210,7 @@ export function SimpleRecordCard({
       imageAlt={title}
       onClick={onClick}
       height={height}
+      priorityLoad={priorityLoad}
     >
       <PostCard.Overlay>
         <div className="flex items-center justify-between">
@@ -204,4 +223,4 @@ export function SimpleRecordCard({
       </PostCard.Overlay>
     </PostCard>
   );
-}
+});

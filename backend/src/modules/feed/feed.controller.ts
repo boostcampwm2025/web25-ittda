@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { GetFeedQueryDto } from './dto/get-feed.query.dto';
+import { GetPastFeedQueryDto } from './dto/get-past-feed.query.dto';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -24,7 +25,7 @@ import { FeedGroupQueryService } from './feed.group.query.service';
 import { GroupRoleGuard } from '../group/guards/group-roles.guard';
 import { GroupRoles } from '../group/guards/group-roles.decorator';
 import { GroupRoleEnum } from '@/enums/group-role.enum';
-import { ApiFeedOkResponse } from './feed.swagger';
+import { ApiFeedOkResponse, ApiPastFeedOkResponse } from './feed.swagger';
 
 @ApiTags('feed')
 @ApiBearerAuth('bearerAuth')
@@ -59,6 +60,33 @@ export class FeedController {
       query,
     );
     return { data: cards, meta: { warnings, feedLength: cards.length } };
+  }
+
+  @Get('past')
+  @ApiOperation({
+    summary: '지난 기록 피드 조회 (무한스크롤)',
+    description:
+      '오늘 기록이 없을 때 홈 화면에 보여줄, 과거 기록을 최신순으로 커서 기반 페이지네이션하여 조회합니다.',
+  })
+  @ApiPastFeedOkResponse()
+  async getPastFeed(
+    @User() user: MyJwtPayload,
+    @Query() query: GetPastFeedQueryDto,
+  ): Promise<{
+    data: { items: FeedCardResponseDto[]; nextCursor: string | null };
+    meta: { warnings: unknown[] };
+  }> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+    const { cards, warnings, nextCursor } =
+      await this.feedQuery.getPastFeedForUser(
+        userId,
+        query.cursor,
+        query.limit,
+      );
+    return { data: { items: cards, nextCursor }, meta: { warnings } };
   }
 
   @Get('personal')
@@ -110,5 +138,37 @@ export class FeedController {
       query,
     );
     return { data: cards, meta: { warnings, feedLength: cards.length } };
+  }
+
+  @Get('groups/:groupId/past')
+  @UseGuards(GroupRoleGuard)
+  @GroupRoles(GroupRoleEnum.ADMIN, GroupRoleEnum.EDITOR, GroupRoleEnum.VIEWER)
+  @ApiOperation({
+    summary: '그룹 지난 기록 피드 조회 (무한스크롤)',
+    description:
+      '그룹 홈에 오늘 기록이 없을 때 보여줄, 그룹의 과거 기록을 최신순으로 커서 기반 페이지네이션하여 조회합니다.',
+  })
+  @ApiParam({ name: 'groupId', description: '그룹 ID' })
+  @ApiPastFeedOkResponse()
+  async getGroupPastFeed(
+    @User() user: MyJwtPayload,
+    @Param('groupId') groupId: string,
+    @Query() query: GetPastFeedQueryDto,
+  ): Promise<{
+    data: { items: FeedCardResponseDto[]; nextCursor: string | null };
+    meta: { warnings: unknown[] };
+  }> {
+    const userId = user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Access token is required.');
+    }
+    const { cards, warnings, nextCursor } =
+      await this.feedGroupQuery.getPastFeedForGroup(
+        groupId,
+        userId,
+        query.cursor,
+        query.limit,
+      );
+    return { data: { items: cards, nextCursor }, meta: { warnings } };
   }
 }

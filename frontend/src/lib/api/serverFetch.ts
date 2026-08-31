@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { getBackendOrigin } from '@/lib/config/backend';
 
 export async function serverFetch(url: string, options: RequestInit = {}) {
   const session = await auth();
@@ -11,7 +12,7 @@ export async function serverFetch(url: string, options: RequestInit = {}) {
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const baseUrl = getBackendOrigin();
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
 
   const response = await fetch(fullUrl, {

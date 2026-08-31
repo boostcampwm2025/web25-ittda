@@ -2,7 +2,11 @@ import { cache } from 'react';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { get } from './api';
 import { RecordBlock, RecordDetailResponse } from '../types/record';
-import { MapListResponse, RecordPreview } from '../types/recordResponse';
+import {
+  MapListResponse,
+  PaginatedRecordPreviewResponse,
+  RecordPreview,
+} from '../types/recordResponse';
 import { createApiError } from '../utils/errorHandler';
 import { PERSONAL_STALE_TIME } from '../constants/constants';
 
@@ -14,13 +18,18 @@ import { PERSONAL_STALE_TIME } from '../constants/constants';
  * 서버 컴포넌트에서 사용하는 캐시된 기록 상세 조회
  * 같은 요청 내에서 중복 호출 방지
  */
-export const getCachedRecordDetail = cache(async (recordId: string) => {
-  const response = await get<RecordDetailResponse>(`/api/posts/${recordId}`);
-  if (!response.success) {
-    throw createApiError(response);
-  }
-  return response.data;
-});
+export const getCachedRecordDetail = cache(
+  async (recordId: string, groupId?: string) => {
+    const endpoint = groupId
+      ? `/api/posts/${recordId}?groupId=${groupId}`
+      : `/api/posts/${recordId}`;
+    const response = await get<RecordDetailResponse>(endpoint);
+    if (!response.success) {
+      throw createApiError(response);
+    }
+    return response.data;
+  },
+);
 
 /**
  * 서버 컴포넌트에서 사용하는 캐시된 기록 프리뷰 목록 조회
@@ -130,20 +139,23 @@ export const mapRecordListOptions = ({
     retry: false,
   });
 
-export const recordDetailOptions = (recordId: string) =>
+export const recordDetailOptions = (recordId: string, groupId?: string) =>
   queryOptions({
-    queryKey: ['record', recordId],
+    queryKey: groupId
+      ? ['record', recordId, groupId]
+      : ['record', recordId],
     queryFn: async () => {
-      const response = await get<RecordDetailResponse>(
-        `/api/posts/${recordId}`,
-      );
+      const endpoint = groupId
+        ? `/api/posts/${recordId}?groupId=${groupId}`
+        : `/api/posts/${recordId}`;
+      const response = await get<RecordDetailResponse>(endpoint);
 
       if (!response.success) {
         throw createApiError(response);
       }
       return response.data;
     },
-    staleTime: PERSONAL_STALE_TIME,
+    staleTime: 0,
     retry: false,
   });
 
@@ -153,10 +165,13 @@ export const recordPreviewListOptions = (
   groupId?: string,
 ) =>
   queryOptions({
-    queryKey:
-      scope === 'groups'
-        ? ['group', groupId, 'records', 'daily', date]
-        : ['records', 'preview', date, 'personal'],
+    queryKey: (() => {
+      if (scope === 'groups')
+        return ['group', groupId, 'records', 'daily', date];
+      if (scope === 'personal')
+        return ['my', 'records', 'preview', date, 'personal'];
+      return ['my', 'records', 'preview', date];
+    })(),
     queryFn: async () => {
       const endpoint = !scope
         ? `/api/feed?date=${date}`
@@ -172,6 +187,52 @@ export const recordPreviewListOptions = (
     },
     staleTime: scope === 'personal' || !scope ? PERSONAL_STALE_TIME : 0,
     retry: false,
+  });
+
+// 홈에 오늘 기록이 없을 때 보여줄 "지난 기록" 무한스크롤 피드.
+export const pastFeedInfiniteOptions = (groupId?: string) =>
+  infiniteQueryOptions({
+    queryKey: groupId
+      ? ['group', groupId, 'records', 'past']
+      : ['my', 'records', 'past'],
+    queryFn: async ({ pageParam }) => {
+      const endpoint = groupId
+        ? `/api/feed/groups/${groupId}/past`
+        : '/api/feed/past';
+      const query = pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : '';
+
+      const response = await get<PaginatedRecordPreviewResponse>(
+        `${endpoint}${query}`,
+      );
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
+  });
+
+export interface PostGroupShare {
+  groupId: string;
+  groupName: string;
+  sharedAt: string;
+}
+
+// 이 개인 글이 공유된 그룹 목록 조회 (원작성자만 조회 가능)
+export const postGroupShareOptions = (postId: string) =>
+  queryOptions({
+    queryKey: ['posts', postId, 'group-shares'],
+    queryFn: async () => {
+      const res = await get<PostGroupShare[]>(
+        `/api/posts/${postId}/group-shares`,
+      );
+      if (!res.success) throw createApiError(res);
+      return res.data;
+    },
+    // 비소유자는 UI에서 이 조회 자체를 트리거하지 않도록 막아뒀다 —
+    // 혹시 실패해도 원문 영어 메시지를 그대로 토스트로 띄우지 않는다.
+    meta: { silent: true },
   });
 
 export interface PersonalEditResponse {

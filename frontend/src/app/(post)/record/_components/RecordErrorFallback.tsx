@@ -11,17 +11,25 @@ export function RecordErrorFallback({
 }: FallbackProps) {
   const router = useRouter();
   const isNotFound = error && 'code' in error && error.code === 'NOT_FOUND';
+  // 그룹에 공유됐던 글이 공유 취소되었거나, 애초에 접근 권한이 없던 경우
+  // 모두 여기로 들어온다 — 알림/활동 로그를 통해 예전 링크로 들어왔을 때
+  // 일반 시스템 에러 화면 대신 이유를 알 수 있는 안내를 보여준다.
+  const isForbidden = error && 'code' in error && error.code === 'FORBIDDEN';
 
-  if (isNotFound) {
+  if (isNotFound || isForbidden) {
     return (
       <div className="flex-1 h-full flex items-center justify-center bg-[#FDFDFD] dark:bg-[#121212]">
         <div className="text-center space-y-6 p-8">
-          <div className="text-6xl">📝</div>
+          <div className="text-6xl">{isForbidden ? '🔒' : '📝'}</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            기록을 찾을 수 없습니다
+            {isForbidden
+              ? '더 이상 볼 수 없는 기록이에요'
+              : '기록을 찾을 수 없습니다'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            요청하신 기록이 존재하지 않거나 삭제되었습니다.
+            {isForbidden
+              ? '공유가 취소되었거나, 접근 권한이 없는 기록이에요.'
+              : '요청하신 기록이 존재하지 않거나 삭제되었습니다.'}
           </p>
           <div className="flex gap-4 justify-center pt-4">
             <Link

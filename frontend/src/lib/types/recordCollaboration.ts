@@ -40,13 +40,9 @@ export interface SocketExceptionData {
 
 // 서버에서 보내주는 예외 응답
 export interface SocketExceptionResponse {
-  status: 'error' | string;
+  code: string;
   message: string;
-  cause?: {
-    pattern: string;
-    [key: string]: unknown;
-  };
-  data?: SocketExceptionData;
+  requestId?: string;
 }
 
 export interface GroupDraftListItem {

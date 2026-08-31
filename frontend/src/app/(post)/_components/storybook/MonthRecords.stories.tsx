@@ -1,154 +1,133 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { Suspense } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MonthRecords from '../MonthRecords';
-import { MonthRecord } from '@/lib/types/record';
+import { createMockMonthlyRecord, createMockGroupMonthlyRecords } from '@/lib/mocks/mock';
 
-const mockMonthRecords: MonthRecord[] = [
-  {
-    id: '2025-01',
-    name: '2025년 1월',
-    count: 12,
-    latestTitle: '새해 첫 일출 보기',
-    latestLocation: '정동진 해변',
-    coverUrl:
-      'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: '2024-12',
-    name: '2024년 12월',
-    count: 8,
-    latestTitle: '크리스마스 마켓',
-    latestLocation: '명동 거리',
-    coverUrl:
-      'https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: '2024-11',
-    name: '2024년 11월',
-    count: 5,
-    latestTitle: '단풍 구경',
-    latestLocation: '설악산',
-    coverUrl:
-      'https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?auto=format&fit=crop&q=80&w=400',
-  },
-  {
-    id: '2024-10',
-    name: '2024년 10월',
-    count: 3,
-    latestTitle: '할로윈 파티',
-    latestLocation: '이태원',
-    coverUrl: null,
-  },
-];
+// MonthRecords는 내부에서 useSuspenseQuery로 데이터를 직접 fetching한다.
+// Storybook에서 인증/네트워크 없이 렌더링하려면 queryClient에 데이터를 미리 주입한다.
+// setQueryData의 키는 각 queryOptions의 queryKey와 정확히 일치해야 한다.
+
+// 컴포넌트는 useParams().year || 현재연도 로 year를 결정한다.
+// Storybook에서 useParams()는 {} 반환 → year = 현재 연도
+const CURRENT_YEAR = new Date().getFullYear().toString();
+const GROUP_ID = 'group-123';
+
+function makeClient({
+  isGroup = false,
+  empty = false,
+}: { isGroup?: boolean; empty?: boolean } = {}) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+
+  const monthData = empty ? [] : isGroup ? createMockGroupMonthlyRecords() : createMockMonthlyRecord();
+
+  if (isGroup) {
+    // groupMonthlyRecordListOptions의 queryKey
+    client.setQueryData(['group', GROUP_ID, 'records', 'month', CURRENT_YEAR], monthData);
+    // groupMyRoleOptions의 queryKey — ADMIN으로 설정해 커버 변경 버튼 표시
+    client.setQueryData(['group', GROUP_ID, 'me', 'role'], { role: 'ADMIN' });
+  } else {
+    // myMonthlyRecordListOptions의 queryKey
+    client.setQueryData(['my', 'records', 'month', CURRENT_YEAR], monthData);
+  }
+
+  return client;
+}
+
+const clients = {
+  default: makeClient(),
+  group: makeClient({ isGroup: true }),
+  empty: makeClient({ empty: true }),
+};
 
 const meta = {
   title: 'Record/MonthRecords',
   component: MonthRecords,
   parameters: {
     layout: 'padded',
-    docs: {},
+    docs: {
+      description: {
+        component: `
+아카이브 페이지의 월별 기록 카드 그리드 컴포넌트.
+
+각 월의 커버 이미지, 기록 수, 최신 제목과 위치를 카드 형태로 표시한다.
+카드 클릭 시 해당 월의 상세 페이지(\`cardRoute/{월}\`)로 이동한다.
+카드 우상단의 커버 변경 버튼을 클릭하면 GalleryDrawer가 열려 커버 이미지를 선택할 수 있다.
+기록이 없는 경우 빈 상태 UI를 표시한다.
+        `,
+      },
+    },
   },
   tags: ['autodocs'],
-  decorators: [
-    (Story) => (
-      <div className="max-w-md mx-auto p-5 bg-[#F9F9F9] dark:bg-[#121212]">
-        <Story />
-      </div>
-    ),
-  ],
   argTypes: {
-    monthRecords: {
-      description: '월별 기록 데이터 배열',
-    },
-    cardRoute: {
-      description: '카드 클릭 시 이동할 라우트 경로',
-    },
+    cardRoute: { description: '카드 클릭 시 이동할 기본 경로. 뒤에 /{월ID}가 붙는다.' },
+    groupId: { description: '그룹 기록함이면 그룹 ID를 전달. 없으면 개인 기록함.' },
+    drawerClassName: { description: 'GalleryDrawer DrawerContent에 추가할 클래스.' },
   },
 } satisfies Meta<typeof MonthRecords>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// 기본: 내 기록함
 export const Default: Story = {
-  args: {
-    monthRecords: mockMonthRecords,
-    cardRoute: '/my/month',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '내 기록함 - 월별 기록 카드 그리드',
-      },
-    },
-  },
-};
-
-// 그룹 기록함
-export const GroupRecords: Story = {
-  args: {
-    monthRecords: mockMonthRecords,
-    cardRoute: '/group/group-123/month',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '그룹 기록함 - 월별 기록 카드 그리드',
-      },
-    },
-  },
-};
-
-// 기록이 없는 경우
-export const EmptyRecords: Story = {
-  args: {
-    monthRecords: [],
-    cardRoute: '/my/month',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '기록이 없는 경우 - 아이콘과 버튼이 포함된 빈 상태 UI 표시',
-      },
-    },
-  },
-};
-
-// 커버 이미지가 없는 기록들
-export const NoCoverImages: Story = {
-  args: {
-    monthRecords: mockMonthRecords.map((r) => ({ ...r, coverUrl: null })),
-    cardRoute: '/my/month',
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: '커버 이미지가 없는 기록들 - 기본 배경 표시',
-      },
-    },
-  },
-};
-
-// 다크 모드
-export const DarkMode: Story = {
-  args: {
-    monthRecords: mockMonthRecords,
-    cardRoute: '/my/month',
-  },
-  parameters: {
-    backgrounds: { default: 'dark' },
-    docs: {
-      description: {
-        story: '다크 모드',
-      },
-    },
-  },
+  args: { cardRoute: '/my/month' },
   decorators: [
     (Story) => (
-      <div className="dark">
-        <div className="max-w-md mx-auto p-5 bg-[#121212]">
-          <Story />
+      <QueryClientProvider client={clients.default}>
+        <div className="max-w-2xl mx-auto p-5 bg-[#F9F9F9] dark:bg-[#121212]">
+          <Suspense fallback={<div className="p-8 text-center text-gray-400">로딩 중...</div>}>
+            <Story />
+          </Suspense>
         </div>
-      </div>
+      </QueryClientProvider>
     ),
   ],
+  parameters: {
+    docs: {
+      description: { story: '개인 기록함 — 월별 기록 카드 그리드' },
+    },
+  },
 };
+
+export const GroupRecords: Story = {
+  args: { cardRoute: `/group/${GROUP_ID}/month`, groupId: GROUP_ID },
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={clients.group}>
+        <div className="max-w-2xl mx-auto p-5 bg-[#F9F9F9] dark:bg-[#121212]">
+          <Suspense fallback={<div className="p-8 text-center text-gray-400">로딩 중...</div>}>
+            <Story />
+          </Suspense>
+        </div>
+      </QueryClientProvider>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: { story: '그룹 기록함 — 그룹 월별 기록 카드 그리드' },
+    },
+  },
+};
+
+export const EmptyRecords: Story = {
+  args: { cardRoute: '/my/month' },
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={clients.empty}>
+        <div className="max-w-2xl mx-auto p-5 bg-[#F9F9F9] dark:bg-[#121212]">
+          <Suspense fallback={<div className="p-8 text-center text-gray-400">로딩 중...</div>}>
+            <Story />
+          </Suspense>
+        </div>
+      </QueryClientProvider>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: { story: '기록이 없는 경우 — 빈 상태 UI(아이콘 + 기록 추가하기 버튼) 표시' },
+    },
+  },
+};
+

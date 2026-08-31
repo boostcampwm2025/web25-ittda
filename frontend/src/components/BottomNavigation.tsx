@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import NavItem from './NavItem';
 import GroupSelectDrawer from './GroupSelectDrawer';
 import {
@@ -32,9 +33,13 @@ export default function BottomNavigation() {
   const effectiveGroupId =
     pathGroupId || (scope === 'group' ? searchParamsGroupId : null);
 
+  const isSharedPage = pathname === '/shared';
+  const isGroupDetail = /\/group\/[^/]+\/(post|draft)\//.test(pathname);
+
+  // /shared 페이지에서는 미리 데이터를 fetch하여 drawer 열림 지연 방지
   const { data: groups = [] } = useQuery({
     ...groupListOptions(),
-    enabled: isGroupSelectOpen,
+    enabled: isGroupSelectOpen || isSharedPage,
   });
 
   // 현재 그룹의 role 조회
@@ -42,9 +47,6 @@ export default function BottomNavigation() {
     ...groupMyRoleOptions(effectiveGroupId!),
     enabled: !!effectiveGroupId,
   });
-
-  const isSharedPage = pathname === '/shared';
-  const isGroupDetail = /\/group\/[^/]+\/(post|draft)\//.test(pathname);
 
   // VIEWER 권한 확인
   const isViewer = roleData?.role === 'VIEWER';
@@ -56,104 +58,162 @@ export default function BottomNavigation() {
     '/profile/edit',
     '/location-picker',
     '/invite',
-    '/onboarding',
+    '/announcements',
+    '/inquiry',
   ];
+  const isAdmin = pathname.includes('/admin');
   const isDetail =
     pathname.includes('/detail/') ||
-    pathname.includes('/month/') ||
-    pathname.includes('/edit');
+    // pathname.includes('/month/') ||
+    pathname.includes('/edit') ||
+    pathname.includes('/share/');
 
   const isGroupChat = pathname.includes('/chat');
   const isLogin =
     pathname.includes('/login') || pathname.includes('/oauth/callback');
 
   const showNav =
-    !minimalPaths.includes(pathname) && !isDetail && !isGroupChat && !isLogin;
+    !minimalPaths.includes(pathname) &&
+    !isDetail &&
+    !isGroupChat &&
+    !isLogin &&
+    !isAdmin;
+
+  useLayoutEffect(() => {
+    if (!showNav || isGroupDetail) {
+      document.documentElement.style.removeProperty('--nav-content-height');
+      return;
+    }
+
+    const el = document.getElementById('bottom-navigation');
+    if (!el) return;
+
+    const update = () => {
+      const height = Math.ceil(el.getBoundingClientRect().height);
+      document.documentElement.style.setProperty(
+        '--nav-content-height',
+        `${height}px`,
+      );
+    };
+    update();
+
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--nav-content-height');
+    };
+  }, [showNav, isGroupDetail]);
 
   if (!showNav) return null;
   if (isGroupDetail) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-8 py-4 pb-6 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
-      {effectiveGroupId ? (
-        <>
-          <NavItem
-            icon={<Book />}
-            active={pathname === `/group/${effectiveGroupId}`}
-            onClick={() => router.push(`/group/${effectiveGroupId}`)}
-            isGroup
-          />
-          <NavItem
-            icon={<MapIcon />}
-            active={pathname === `/group/${effectiveGroupId}/map`}
-            onClick={() => router.push(`/group/${effectiveGroupId}/map`)}
-            isGroup
-          />
-          <button
-            onClick={() => !isViewer && setIsAddDrawerOpen(true)}
-            disabled={isViewer}
-            className={`w-14 h-14 -mt-10 rounded-2xl ring-white flex items-center justify-center shadow-2xl transition-all ring-4 ${
-              isViewer
-                ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200'
-                : 'cursor-pointer active:scale-95 dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20]'
-            }`}
+    <nav
+      id="bottom-navigation"
+      className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto px-4 py-1 sm:px-8 sm:py-4 flex items-center justify-between z-50 backdrop-blur-xl border-t transition-all duration-300 dark:bg-[#121212]/90 dark:border-white/5 bg-white/90 border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.04)]"
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        {effectiveGroupId ? (
+          <motion.div
+            key="group-nav"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="bottom-nav flex items-center justify-between w-full"
           >
-            <Plus className="w-7 h-7" strokeWidth={3} />
-          </button>
-          <NavItem
-            icon={<MessageSquare />}
-            active={pathname === `/group/${effectiveGroupId}/notifications`}
-            onClick={() =>
-              router.push(`/group/${effectiveGroupId}/notifications`)
-            }
-            isGroup
-          />
-          <NavItem
-            icon={<XCircle />}
-            active={false}
-            onClick={() => router.push('/shared')}
-          />
-        </>
-      ) : (
-        <>
-          <NavItem
-            icon={<HomeIcon />}
-            active={pathname === '/'}
-            onClick={() => router.push('/')}
-          />
-          <NavItem
-            icon={<Book />}
-            active={pathname.startsWith('/my')}
-            onClick={() => router.push('/my')}
-          />
-          <button
-            onClick={() => {
-              if (isSharedPage) {
-                setIsGroupSelectOpen(true);
-              } else {
-                router.push('/add');
+            <NavItem
+              icon={<Book />}
+              active={pathname === `/group/${effectiveGroupId}`}
+              onClick={() => router.replace(`/group/${effectiveGroupId}`)}
+              isGroup
+            />
+            <NavItem
+              icon={<MapIcon />}
+              active={pathname === `/group/${effectiveGroupId}/map`}
+              onClick={() => router.push(`/group/${effectiveGroupId}/map`)}
+              isGroup
+              tutorialId="tutorial-group-map"
+            />
+            <button
+              onClick={() => !isViewer && setIsAddDrawerOpen(true)}
+              disabled={isViewer}
+              data-tutorial-id="tutorial-group-add-record"
+              className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl ring-white flex items-center justify-center shadow-2xl transition-all ring-4 ${
+                isViewer
+                  ? 'opacity-50 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400 dark:ring-[#121212] bg-gray-400 text-gray-200'
+                  : 'cursor-pointer active:scale-95 dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20]'
+              }`}
+            >
+              <Plus className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} />
+            </button>
+            <NavItem
+              icon={<MessageSquare />}
+              active={pathname === `/group/${effectiveGroupId}/notifications`}
+              onClick={() =>
+                router.push(`/group/${effectiveGroupId}/notifications`)
               }
-            }}
-            className={`w-14 h-14 -mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
-              isSharedPage
-                ? 'dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20] ring-white'
-                : 'dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white'
-            }`}
+              isGroup
+            />
+            <NavItem
+              icon={<XCircle />}
+              active={false}
+              onClick={() => router.replace('/shared')}
+              isGroup
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="default-nav"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="bottom-nav flex items-center justify-between w-full"
           >
-            <Plus className="w-7 h-7" strokeWidth={3} />
-          </button>
-          <NavItem
-            icon={<Users />}
-            active={pathname === '/shared'}
-            onClick={() => router.push('/shared')}
-          />
-          <NavItem
-            icon={<MapIcon />}
-            active={pathname === '/map'}
-            onClick={() => router.push('/map')}
-          />
-        </>
-      )}
+            <NavItem
+              icon={<HomeIcon />}
+              active={pathname === '/'}
+              onClick={() => router.replace('/')}
+            />
+            <NavItem
+              icon={<Book />}
+              active={pathname.startsWith('/my')}
+              onClick={() => router.replace('/my')}
+              tutorialId="tutorial-nav-my"
+            />
+            <button
+              onClick={() => {
+                if (isSharedPage) {
+                  setIsGroupSelectOpen(true);
+                } else {
+                  router.push('/add');
+                }
+              }}
+              data-tutorial-id="tutorial-fab-add-record"
+              className={`w-12 h-12 -mt-8 sm:w-14 sm:h-14 sm:-mt-10 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all ring-4 ${
+                isSharedPage
+                  ? 'dark:ring-[#121212] text-white bg-itta-point shadow-[#10b981/20] ring-white'
+                  : 'dark:bg-white dark:text-[#121212] dark:ring-[#121212] bg-[#222222] text-white ring-white'
+              }`}
+            >
+              <Plus className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={3} />
+            </button>
+            <NavItem
+              icon={<Users />}
+              active={pathname === '/shared'}
+              onClick={() => router.replace('/shared')}
+              tutorialId="tutorial-nav-group"
+            />
+            <NavItem
+              icon={<MapIcon />}
+              active={pathname === '/map'}
+              onClick={() => router.push('/map')}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <GroupSelectDrawer
         open={isGroupSelectOpen}

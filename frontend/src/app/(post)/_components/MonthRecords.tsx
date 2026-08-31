@@ -1,7 +1,8 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { RecordCard } from '@/components/ui/RecordCard';
 import GalleryDrawer from '@/app/(post)/_components/GalleryDrawer';
 import {
@@ -12,29 +13,76 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { BookOpen, Plus, X } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MontlyCoverUpdateResponse,
   MonthlyRecordList,
 } from '@/lib/types/recordResponse';
 import { useApiPatch } from '@/hooks/useApi';
 import { myMonthlyRecordListOptions } from '@/lib/api/my';
-import { convertMontRecords } from '../_utils/convertMonthRecords';
+
 import {
   groupMonthlyRecordListOptions,
   groupMyRoleOptions,
 } from '@/lib/api/group';
 
+// convertMontRecords의 반환 타입 추론
+export type ConvertedMonthRecord = {
+  id: string;
+  name: string;
+  count: number;
+  latestTitle: string;
+  latestLocation: string;
+  cover: { assetId: string; width: number; height: number; mimeType: string } | null;
+};
+
+// 개별 월 카드 컴포넌트 - 콜백 최적화
+export const MonthCard = memo(function MonthCard({
+  month,
+  onNavigate,
+  onChangeCover,
+  canChangeCover,
+  priorityLoad,
+}: {
+  month: ConvertedMonthRecord;
+  onNavigate: (monthId: string) => void;
+  onChangeCover: (monthId: string) => void;
+  canChangeCover: boolean;
+  priorityLoad?: boolean;
+}) {
+  const handleClick = useCallback(() => {
+    onNavigate(month.id);
+  }, [onNavigate, month.id]);
+
+  const handleChangeCover = useCallback(() => {
+    onChangeCover(month.id);
+  }, [onChangeCover, month.id]);
+
+  return (
+    <RecordCard
+      id={month.id}
+      name={month.name}
+      count={month.count}
+      latestTitle={month.latestTitle}
+      latestLocation={month.latestLocation}
+      cover={month.cover}
+      onClick={handleClick}
+      onChangeCover={canChangeCover ? handleChangeCover : undefined}
+      priorityLoad={priorityLoad}
+    />
+  );
+});
+
 interface MonthRecordsProps {
-  monthRecords?: MonthlyRecordList[];
   cardRoute: string;
   groupId?: string;
+  drawerClassName?: string;
 }
 
-export default function MonthRecords({
+const MonthRecords = memo(function MonthRecords({
   groupId,
-  monthRecords,
   cardRoute,
+  drawerClassName,
 }: MonthRecordsProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -48,11 +96,7 @@ export default function MonthRecords({
     ? groupMonthlyRecordListOptions(groupId, year)
     : myMonthlyRecordListOptions(year);
 
-  const { data: months = [] } = useQuery({
-    ...options,
-    ...(monthRecords && { initialData: monthRecords }),
-    select: (data: MonthlyRecordList[]) => convertMontRecords(data),
-  });
+  const { data: months } = useSuspenseQuery(options);
 
   // 그룹 게시글인 경우 권한 확인
   const { data: roleData } = useQuery({
@@ -61,11 +105,16 @@ export default function MonthRecords({
   });
 
   const isViewer = roleData?.role === 'VIEWER';
+  const canChangeCover = !(groupId && isViewer);
 
-  const openGallery = (monthId: string) => {
+  const handleNavigate = useCallback((monthId: string) => {
+    router.push(`${cardRoute}/${monthId}`);
+  }, [router, cardRoute]);
+
+  const openGallery = useCallback((monthId: string) => {
     setActiveMonthId(monthId);
     setIsDrawerOpen(true);
-  };
+  }, []);
 
   const cacheKey = groupId
     ? ['group', groupId, 'records', 'month']
@@ -148,36 +197,33 @@ export default function MonthRecords({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {months.map((m) => (
-          <RecordCard
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 pb-bottom-nav">
+        {months.map((m, index) => (
+          <MonthCard
             key={m.id}
-            id={m.id}
-            name={m.name}
-            count={m.count}
-            latestTitle={m.latestTitle}
-            latestLocation={m.latestLocation}
-            cover={m.cover}
-            onClick={() => router.push(`${cardRoute}/${m.id}`)}
-            onChangeCover={groupId && isViewer ? undefined : openGallery}
+            month={m}
+            onNavigate={handleNavigate}
+            onChangeCover={openGallery}
+            canChangeCover={canChangeCover}
+            priorityLoad={index === 0}
           />
         ))}
       </div>
 
       {/* 커버 변경 Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="w-full px-8 py-4 pb-10">
+        <DrawerContent className={cn('w-full px-6 sm:px-8 pt-4 pb-8 sm:pb-10', drawerClassName)}>
           <DrawerHeader>
-            <div className="pt-4 flex justify-between items-center mb-6">
-              <DrawerTitle className="flex flex-col">
-                <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
+            <div className="pt-4 flex justify-between items-center mb-4 sm:mb-6">
+              <DrawerTitle className="flex flex-col justify-center items-start pl-0">
+                <span className="text-[9px] sm:text-[10px] font-bold text-[#10B981] uppercase tracking-widest leading-none mb-1">
                   CHOOSE COVER
                 </span>
-                <span className="text-lg font-bold dark:text-white text-itta-black">
+                <span className="text-base sm:text-xl font-bold dark:text-white text-itta-black">
                   커버 사진 선택
                 </span>
               </DrawerTitle>
-              <DrawerClose className="p-2 text-gray-400 cursor-pointer">
+              <DrawerClose className="sm:p-2 text-gray-400 cursor-pointer">
                 <X className="w-6 h-6" />
               </DrawerClose>
             </div>
@@ -196,4 +242,6 @@ export default function MonthRecords({
       </Drawer>
     </>
   );
-}
+});
+
+export default MonthRecords;

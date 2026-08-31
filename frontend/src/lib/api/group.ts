@@ -1,12 +1,13 @@
 import { cache } from 'react';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { get } from './api';
+import { get, patch } from './api';
 import {
   DailyRecordList,
   GroupCoverListResponse,
   GroupDailyRecordedDatesResponse,
   GroupListResponse,
   MonthlyRecordList,
+  PaginatedMonthlyRecordListResponse,
 } from '../types/recordResponse';
 import {
   GroupActivityResponse,
@@ -162,6 +163,12 @@ export const groupMyRoleOptions = (groupId: string) =>
     staleTime: PERSONAL_STALE_TIME,
   });
 
+export const toggleGroupNotification = (groupId: string, muted: boolean) =>
+  patch(`/api/groups/${groupId}/members/me/notification`, { muted });
+
+export const markGroupAsRead = (groupId: string) =>
+  patch(`/api/groups/${groupId}/members/me/read`, {});
+
 export const groupDetailOptions = (groupId: string) =>
   queryOptions({
     queryKey: ['group', groupId, 'edit'],
@@ -265,6 +272,27 @@ export const groupMonthlyRecordListOptions = (groupId: string, year?: string) =>
       return response.data;
     },
     select: (data: MonthlyRecordList[]) => convertMontRecords(data),
+    retry: false,
+  });
+
+export const groupMonthlyRecordInfiniteOptions = (groupId: string) =>
+  infiniteQueryOptions({
+    queryKey: ['group', groupId, 'records', 'month', 'all'],
+    queryFn: async ({ pageParam }) => {
+      const query = pageParam
+        ? `?allYears=true&sort=latest&cursor=${pageParam}`
+        : '?allYears=true&sort=latest';
+      const response = await get<PaginatedMonthlyRecordListResponse>(
+        `/api/groups/${groupId}/archives/months${query}`,
+      );
+
+      if (!response.success) {
+        throw createApiError(response);
+      }
+      return response.data;
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
     retry: false,
   });
 

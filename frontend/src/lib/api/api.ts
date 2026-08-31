@@ -2,6 +2,11 @@ import { ApiResponse } from '../types/response';
 import { getAccessToken, refreshAccessToken, handleLogout } from './auth';
 import * as Sentry from '@sentry/nextjs';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getBackendOrigin } from '@/lib/config/backend';
+import {
+  isRefreshableAuthError,
+  isTerminalAuthError,
+} from '../utils/errorHandler';
 
 /**
  * API Base URL 결정
@@ -18,21 +23,17 @@ function getApiBaseUrl() {
     return '';
   }
 
-  // 서버 환경 - 백엔드 절대 URL
-  const backendUrl =
-    process.env.NODE_ENV === 'production'
-      ? process.env.NEXT_PUBLIC_PRODUCTION_API_URL
-      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1';
-  return backendUrl;
+  // 서버 환경 - /api → /v1 치환이 fetchApi 내부에서 이루어지므로
+  // /v1을 포함하지 않는 origin만 반환해야 이중 /v1이 생기지 않음
+  return getBackendOrigin();
 }
-
-const API_BASE_URL = getApiBaseUrl();
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
-  maxRetries?: number; // 최대 재시도 횟수
+  maxRetries?: number; // 최대 재시도 횟수 (기본: GET/PUT/DELETE 3회, POST/PATCH 0회)
   retryDelay?: number; // 초기 재시도 지연 시간 ms
   skipAuth?: boolean; // 인증 헤더 제외 (로그인, 회원가입 등)
+  timeout?: number; // 타임아웃 ms (0이면 비활성, 기본값 10000)
 }
 
 /**
@@ -69,9 +70,20 @@ async function fetchWithRetry<T>(
   maxRetries: number,
   retryDelay: number,
   skipAuth: boolean,
+  timeout: number,
 ) {
+  const controller = timeout > 0 ? new AbortController() : undefined;
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), timeout)
+    : undefined;
+
   try {
-    const response = await fetch(url, fetchOptions);
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller?.signal,
+    });
+
+    clearTimeout(timeoutId);
 
     if (response.status === 204) {
       return {
@@ -87,11 +99,13 @@ async function fetchWithRetry<T>(
     }
 
     const data = await response.json();
+    const errorCode = data?.error?.code as string | undefined;
 
     // 토큰 만료 에러 처리 (인터셉터 역할)
     if (
       !data.success &&
-      data.error?.code === 'UNAUTHORIZED' &&
+      response.status === 401 &&
+      isRefreshableAuthError(errorCode) &&
       !skipAuth &&
       !url.includes('/auth/refresh') // 재발급 API 자체의 실패는 제외
     ) {
@@ -130,24 +144,9 @@ async function fetchWithRetry<T>(
 
         // 소셜 사용자 처리
         if (userType === 'social') {
-          // 소셜 사용자는 재발급 실패 시 로그아웃 처리
-          const error = new Error('토큰 재발급 실패 - 세션 만료');
-          Sentry.captureException(error, {
-            level: 'warning',
-            tags: {
-              context: 'api',
-              operation: 'token-refresh-failure',
-            },
-            extra: {
-              endpoint: url,
-            },
-          });
-
-          await handleLogout();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-            return;
-          }
+          // refreshAccessToken()이 이미 RefreshAccessTokenError 시 handleLogout()을 호출함
+          // 여기서 중복 호출하면 네트워크 오류로 인한 일시적 실패에도 로그아웃되는 문제 발생
+          // → 에러 응답만 반환하고 로그아웃은 refreshAccessToken()에 위임
           return {
             success: false,
             data: null,
@@ -182,7 +181,33 @@ async function fetchWithRetry<T>(
         maxRetries,
         retryDelay,
         skipAuth,
+        timeout,
       );
+    }
+
+    if (
+      !data.success &&
+      response.status === 401 &&
+      isTerminalAuthError(errorCode) &&
+      !skipAuth
+    ) {
+      if (typeof window === 'undefined') {
+        const { redirect } = await import('next/navigation');
+        redirect('/login?reason=invalid-session');
+        return;
+      }
+
+      await handleLogout();
+
+      return {
+        success: false,
+        data: null,
+        error: {
+          code: errorCode ?? 'UNAUTHORIZED',
+          message: data.error?.message ?? '인증이 필요합니다.',
+          details: data.error?.details ?? {},
+        },
+      };
     }
 
     return {
@@ -190,7 +215,22 @@ async function fetchWithRetry<T>(
       headers: response.headers,
     };
   } catch (error) {
+    clearTimeout(timeoutId);
+
     const err = error instanceof Error ? error : new Error('unknown error');
+
+    // 타임아웃(AbortError) - 재시도 없이 즉시 반환
+    if (err.name === 'AbortError') {
+      return {
+        success: false,
+        data: null,
+        error: {
+          code: 'TIMEOUT',
+          message: '요청 시간이 초과되었습니다.',
+          details: {},
+        },
+      };
+    }
 
     // JSON 파싱 에러는 재시도하지 않음
     if (
@@ -249,8 +289,11 @@ async function fetchWithRetry<T>(
       };
     }
 
-    // 재시도 전 대기 1 -> 2 -> 4
-    const waitTime = retryDelay * 2 ** attempt;
+    // 재시도 전 대기: 지수 백오프(최대 1 -> 2 -> 4초)에 Full Jitter 적용.
+    // 같은 장애로 여러 클라이언트가 동시에 재시도할 때 정확히 같은 타이밍에
+    // 몰려 서버 회복을 방해하지 않도록, 0~상한 사이에서 무작위로 대기 시간을 뽑는다.
+    const maxWaitTime = retryDelay * 2 ** attempt;
+    const waitTime = Math.random() * maxWaitTime;
     await delay(waitTime);
 
     return fetchWithRetry<T>(
@@ -260,6 +303,7 @@ async function fetchWithRetry<T>(
       maxRetries,
       retryDelay,
       skipAuth,
+      timeout,
     );
   }
 }
@@ -277,14 +321,24 @@ export async function fetchApi<T>(
   const {
     params,
     headers = {},
-    maxRetries = 3,
+    maxRetries,
     retryDelay = 1000,
     skipAuth = false,
+    timeout = 10000,
     ...fetchOptions
   } = options;
 
+  // 네트워크 예외 재시도는 HTTP 스펙상 멱등이 보장되는 메서드(GET/PUT/DELETE)에만
+  // 기본 적용한다. POST(생성)와 PATCH(부분 수정, 멱등 보장 안 됨)는 요청이 서버에
+  // 도달해 처리된 뒤 응답만 유실됐을 수 있어, 자동 재시도가 중복 생성/중복 처리로
+  // 이어질 수 있다 — 필요하면 호출부에서 options.maxRetries로 명시적으로 오버라이드한다.
+  const method = (fetchOptions.method ?? 'GET').toUpperCase();
+  const isIdempotentMethod =
+    method === 'GET' || method === 'PUT' || method === 'DELETE';
+  const resolvedMaxRetries = maxRetries ?? (isIdempotentMethod ? 3 : 0);
+
   const currentBaseUrl = getApiBaseUrl();
-  // 서버 환경에서는 /api -> /v1로 변환 (rewrites 규칙 반영)
+  // 서버 환경에서는 /api → /v1 치환 (Next.js rewrite 없이 백엔드에 직접 요청)
   const finalEndpoint =
     typeof window === 'undefined'
       ? endpoint.replace(/^\/api/, '/v1')
@@ -293,9 +347,7 @@ export async function fetchApi<T>(
   let fullUrl = `${currentBaseUrl}${finalEndpoint}`;
   // 서버 환경인데 여전히 상대경로라면 강제로 도메인을 붙여줌 (방어 코드)
   if (typeof window === 'undefined' && !fullUrl.startsWith('http')) {
-    const fallback =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1';
-    fullUrl = `${fallback}${finalEndpoint.replace(/^\/api/, '')}`;
+    fullUrl = `${getBackendOrigin()}${finalEndpoint}`;
   }
 
   const url = buildUrl(fullUrl, params);
@@ -329,9 +381,10 @@ export async function fetchApi<T>(
       ...(sendCookie ? { credentials: 'include' } : {}),
     }, // 쿠키에 담긴 refresh token을 보호하기 위해 reissue를 보낼 때만 허용
     0,
-    maxRetries,
+    resolvedMaxRetries,
     retryDelay,
     skipAuth,
+    timeout,
   );
 }
 

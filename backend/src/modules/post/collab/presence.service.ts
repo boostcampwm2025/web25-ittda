@@ -45,6 +45,36 @@ export class PresenceService {
     return this.presenceByDraft.get(draftId)?.get(actorId) ?? null;
   }
 
+  clearDraft(draftId: string) {
+    const members = this.presenceByDraft.get(draftId);
+    if (!members) {
+      this.replacedSessionsByDraft.delete(draftId);
+      return [];
+    }
+
+    const removedMembers = Array.from(members.entries()).map(
+      ([actorId, member]) => ({
+        actorId,
+        sessionId: member.sessionId,
+      }),
+    );
+
+    removedMembers.forEach(({ sessionId }) => {
+      this.sessionActorMap.delete(sessionId);
+    });
+
+    const replacedSessions = this.replacedSessionsByDraft.get(draftId);
+    if (replacedSessions) {
+      replacedSessions.forEach((sessionId) => {
+        this.sessionActorMap.delete(sessionId);
+      });
+      this.replacedSessionsByDraft.delete(draftId);
+    }
+
+    this.presenceByDraft.delete(draftId);
+    return removedMembers;
+  }
+
   addMember(draftId: string, actorId: string, member: PresenceMember) {
     this.getMembersMap(draftId).set(actorId, member);
   }

@@ -1,7 +1,7 @@
 import { useApiPost } from './useApi';
 import { useQuery } from '@tanstack/react-query';
-import { post } from '@/lib/api/api';
-import { InviteJoinResponse } from '@/lib/types/groupResponse';
+import { get, post } from '@/lib/api/api';
+import { InviteInfoResponse, InviteJoinResponse } from '@/lib/types/groupResponse';
 
 export interface InviteResponse {
   inviteId: string;
@@ -48,6 +48,29 @@ export const useCreateInviteCode = (
     staleTime: 1000 * 60 * 60 * 24, // 24시간 유지 (권한 안 바뀌면 계속)
     gcTime: 1000 * 60 * 60 * 24, // 24시간 유지
     enabled: !!groupId && !!isOpen,
+  });
+};
+
+/**
+ * 초대 코드로 그룹 정보 조회 (공개 엔드포인트)
+ * @param code
+ * @returns
+ */
+export const useGetInviteInfo = (code: string) => {
+  return useQuery({
+    queryKey: ['inviteInfo', code],
+    queryFn: async () => {
+      const response = await get<InviteInfoResponse>(
+        `/api/groups/invites/${code}`,
+      );
+      if (!response.success) {
+        throw response;
+      }
+      return response.data;
+    },
+    enabled: !!code,
+    retry: false,
+    staleTime: 1000 * 60 * 5,
   });
 };
 

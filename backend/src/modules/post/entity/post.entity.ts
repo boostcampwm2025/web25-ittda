@@ -41,7 +41,7 @@ export class Post {
   @Column({ name: 'group_id', type: 'uuid', nullable: true })
   groupId?: string | null;
 
-  @ManyToOne(() => Group, { nullable: true })
+  @ManyToOne(() => Group, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'group_id' })
   group?: Group | null;
 
@@ -77,6 +77,13 @@ export class Post {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @Index('IDX_posts_share_token', ['shareToken'], {
+    unique: true,
+    where: 'share_token IS NOT NULL',
+  })
+  @Column({ name: 'share_token', type: 'uuid', nullable: true, unique: false })
+  shareToken?: string | null;
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
   deletedAt?: Date | null;

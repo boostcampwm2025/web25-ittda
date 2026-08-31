@@ -4,9 +4,10 @@ import AssetImage from './AssetImage';
 
 interface ImageTileGridProps {
   images: string[];
+  priorityLoad?: boolean;
 }
 
-export default function ImageTileGrid({ images }: ImageTileGridProps) {
+export default function ImageTileGrid({ images, priorityLoad }: ImageTileGridProps) {
   if (images.length === 0) return null;
 
   // 1개: 큰 이미지 (원본 비율, 최대 높이 제한)
@@ -21,6 +22,7 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
             width={600}
             height={600}
             className="w-full h-full object-cover"
+            priorityLoad={priorityLoad}
           />
         </div>
       </div>
@@ -38,9 +40,9 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 1}`}
-                width={600}
-                height={600}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                priorityLoad={priorityLoad && index === 0}
               />
             </div>
           ))}
@@ -54,25 +56,24 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
     return (
       <div className="w-full rounded-xl overflow-hidden border dark:border-white/10 border-gray-100">
         <div className="grid grid-cols-2 grid-rows-2 gap-px bg-gray-100 dark:bg-white/10 h-100">
-          <div className="relative row-span-2">
+          <div className="relative h-full row-span-2">
             <AssetImage
               assetId={images[0]}
               url={images[0]}
               alt="메인 이미지"
-              width={600}
-              height={600}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              priorityLoad={priorityLoad}
             />
           </div>
           {images.slice(1, 3).map((url, index) => (
-            <div key={index} className="relative">
+            <div key={index} className="relative h-full">
               <AssetImage
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 2}`}
-                width={600}
-                height={600}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
           ))}
@@ -87,14 +88,14 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
       <div className="w-full rounded-xl overflow-hidden border dark:border-white/10 border-gray-100">
         <div className="grid grid-cols-2 grid-rows-2 gap-px bg-gray-100 dark:bg-white/10 h-100">
           {images.map((url, index) => (
-            <div key={index} className="relative">
+            <div key={index} className="relative h-full">
               <AssetImage
                 assetId={url}
                 url={url}
                 alt={`이미지 ${index + 1}`}
-                width={600}
-                height={600}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                priorityLoad={priorityLoad && index === 0}
               />
             </div>
           ))}
@@ -107,18 +108,18 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
   return (
     <div className="w-full rounded-xl overflow-hidden border dark:border-white/10 border-gray-100">
       <div className="grid grid-cols-4 grid-rows-2 gap-px bg-gray-100 dark:bg-white/10 h-100">
-        <div className="relative col-span-2 row-span-2">
+        <div className="relative h-full col-span-2 row-span-2">
           <AssetImage
             assetId={images[0]}
             url={images[0]}
             alt="메인 이미지"
-            width={600}
-            height={600}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            priorityLoad={priorityLoad}
           />
         </div>
         {images.slice(1, 5).map((url, index) => (
-          <div key={index} className="relative">
+          <div key={index} className="relative h-full">
             <AssetImage
               assetId={url}
               url={url}
@@ -129,14 +130,13 @@ export default function ImageTileGrid({ images }: ImageTileGridProps) {
           </div>
         ))}
         {images.length > 5 && (
-          <div className="relative">
+          <div className="relative h-full">
             <AssetImage
               assetId={images[5]}
               url={images[5]}
               alt="이미지 6"
-              width={600}
-              height={600}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
             />
             {images.length > 6 && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">

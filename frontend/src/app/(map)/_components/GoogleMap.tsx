@@ -12,7 +12,6 @@ import {
 import type { MapPostItem } from '@/lib/types/record';
 import { ClusteredPostMarkers } from './ClusteredMarkers';
 import { useTheme } from 'next-themes';
-import { useGeolocation } from '@/hooks/useGeolocation';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/utils/logger';
 
@@ -22,9 +21,28 @@ interface GoogleMapProps {
   onSelectPost: (id: string | string[] | null) => void;
   onBoundsChange?: (bounds: google.maps.LatLngBounds | null) => void;
   onMapClick?: () => void;
-  mapRef: React.MutableRefObject<google.maps.Map | null>;
-  placesServiceRef: React.MutableRefObject<google.maps.places.PlacesService | null>;
+  mapRef: React.RefObject<google.maps.Map | null>;
+  placesServiceRef: React.RefObject<google.maps.places.PlacesService | null>;
   searchedLocation: { lat: number; lng: number } | null;
+}
+
+// 현재 줌에서 targetZoom까지 한 단계씩 부드럽게 확대
+function smoothZoom(
+  map: google.maps.Map,
+  targetZoom: number,
+  onComplete?: () => void,
+) {
+  const currentZoom = map.getZoom() ?? 0;
+  if (currentZoom >= targetZoom) {
+    onComplete?.();
+    return;
+  }
+  google.maps.event.addListenerOnce(map, 'zoom_changed', () => {
+    smoothZoom(map, targetZoom, onComplete);
+  });
+  setTimeout(() => {
+    map.setZoom(currentZoom + 1);
+  }, 80);
 }
 
 function FlyToOnSelect({
@@ -43,13 +61,31 @@ function FlyToOnSelect({
   const map = useMap();
   useEffect(() => {
     if (!map) return;
-    try {
-      map.panTo({ lat, lng });
-      map.setZoom(zoom);
 
-      if (offsetX !== 0 || offsetY !== 0) {
-        map.panBy(-offsetX, offsetY);
-      }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    try {
+      // 1단계: 목표 위치로 부드럽게 패닝
+      map.panTo({ lat, lng });
+
+      // 2단계: 패닝 애니메이션 완료 후 smoothZoom으로 단계적 확대
+      timers.push(
+        setTimeout(() => {
+          try {
+            smoothZoom(map, zoom, () => {
+              // 3단계: 줌 완료 후 오프셋 보정 (하단 패널 고려 - 마커를 화면 위쪽에 배치)
+              if (offsetX !== 0 || offsetY !== 0) {
+                try {
+                  map.panBy(-offsetX, offsetY);
+                } catch {
+                  // 오프셋 보정 실패는 무시
+                }
+              }
+            });
+          } catch {
+            // 줌 설정 실패는 무시
+          }
+        }, 400),
+      );
     } catch (error) {
       // 지도 이동 실패는 UX에 영향을 주므로 추적
       Sentry.captureException(error, {
@@ -67,6 +103,8 @@ function FlyToOnSelect({
       });
       logger.error('지도 이동 실패', error);
     }
+
+    return () => timers.forEach(clearTimeout);
   }, [map, lat, lng, offsetX, offsetY, zoom]);
   return null;
 }
@@ -83,10 +121,6 @@ export default function GoogleMap({
 }: GoogleMapProps) {
   const { theme } = useTheme();
   const placesLib = useMapsLibrary('places');
-
-  const { latitude: geoLat, longitude: geoLng } = useGeolocation({
-    reverseGeocode: true,
-  });
 
   const selectedPost = useMemo(() => {
     if (typeof selectedPostId === 'string') {
@@ -112,29 +146,6 @@ export default function GoogleMap({
       logger.error('Places Service 초기화 실패', error);
     }
   }, [placesLib, mapRef, placesServiceRef]);
-
-  // 초기 유저의 위치로 지도 이동
-  useEffect(() => {
-    if (geoLat && geoLng && mapRef.current) {
-      try {
-        mapRef.current.panTo({ lat: geoLat, lng: geoLng });
-      } catch (error) {
-        // 사용자 위치로 이동 실패
-        Sentry.captureException(error, {
-          level: 'warning',
-          tags: {
-            context: 'map',
-            operation: 'pan-to-user-location',
-          },
-          extra: {
-            lat: geoLat,
-            lng: geoLng,
-          },
-        });
-        logger.error('사용자 위치로 지도 이동 실패', error);
-      }
-    }
-  }, [geoLat, geoLng, mapRef]);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID;
@@ -174,8 +185,8 @@ export default function GoogleMap({
         maxZoom={20}
         colorScheme={theme === 'dark' ? ColorScheme.DARK : ColorScheme.LIGHT}
         mapId={mapId}
-        defaultCenter={{ lat: 37.5665, lng: 126.978 }}
-        defaultZoom={16}
+        defaultCenter={{ lat: 36.0, lng: 127.9 }}
+        defaultZoom={6.7}
         gestureHandling="greedy"
         disableDefaultUI={true}
         onClick={() => onMapClick?.()}
@@ -208,6 +219,7 @@ export default function GoogleMap({
           setMap={(map) => {
             mapRef.current = map;
           }}
+          onBoundsChange={onBoundsChange}
         />
         {searchedLocation && (
           <AdvancedMarker position={searchedLocation} zIndex={1000}>
@@ -219,10 +231,21 @@ export default function GoogleMap({
   );
 }
 
-function MapHandler({ setMap }: { setMap: (map: google.maps.Map) => void }) {
+function MapHandler({
+  setMap,
+  onBoundsChange,
+}: {
+  setMap: (map: google.maps.Map) => void;
+  onBoundsChange?: (bounds: google.maps.LatLngBounds | null) => void;
+}) {
   const map = useMap();
   useEffect(() => {
-    if (map) setMap(map);
-  }, [map, setMap]);
+    if (!map) return;
+    setMap(map);
+    const listener = google.maps.event.addListenerOnce(map, 'idle', () => {
+      onBoundsChange?.(map.getBounds() ?? null);
+    });
+    return () => google.maps.event.removeListener(listener);
+  }, [map, setMap, onBoundsChange]);
   return null;
 }

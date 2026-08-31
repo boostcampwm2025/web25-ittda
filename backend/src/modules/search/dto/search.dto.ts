@@ -69,8 +69,11 @@ export class SearchResultItemDto {
   @ApiProperty({ description: '게시글 ID' })
   id: string;
 
-  @ApiPropertyOptional({ description: '썸네일 미디어 ID' })
-  thumbnailMediaId?: string;
+  @ApiProperty({
+    type: [String],
+    description: '미리보기 이미지 ID 목록 (최대 5개)',
+  })
+  previewMediaIds: string[];
 
   @ApiProperty({ description: '제목' })
   title: string;
@@ -91,6 +94,9 @@ export class SearchResultItemDto {
 export class PaginatedSearchResponseDto {
   @ApiProperty({ type: [SearchResultItemDto] })
   items: SearchResultItemDto[];
+
+  @ApiProperty({ description: '검색 조건에 매칭되는 전체 게시글 수' })
+  count: number;
 
   @ApiPropertyOptional({ description: '다음 페이지용 커서' })
   nextCursor?: string;
