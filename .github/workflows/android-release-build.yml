@@ -3,6 +3,9 @@ name: Android Release Build
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   android:
     runs-on: ubuntu-latest
