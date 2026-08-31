@@ -49,7 +49,7 @@ jobs:
       - name: Create keystore.properties
         working-directory: mobile-app/android
         run: |
-          cat > keystore.properties <<PROPS
+          cat > keystore.properties <<'PROPS'
           storeFile=../ittda-release.jks
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
