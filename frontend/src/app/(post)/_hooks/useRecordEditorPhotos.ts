@@ -51,7 +51,9 @@ interface RecordEditorPhotos {
   handleDone: (val: BlockValue, shouldClose?: boolean) => void;
   draftId?: string;
   uploadMultipleMedia?: (files: File[]) => Promise<UploadMultipleResult>;
-  applyPatch?: (patch: PatchApplyPayload | PatchApplyPayload[]) => void;
+  applyPatch?: (
+    patch: PatchApplyPayload | PatchApplyPayload[],
+  ) => Promise<boolean>;
   releaseLock?: (lockKey: string) => void;
   removeBlock?: (id: string) => void;
 }
@@ -286,7 +288,9 @@ export function useRecordEditorPhotos({
         ).filter((img) => img.metadata.hasMetadata);
 
         allImagesWithMetadata = [
-          ...existingImagesWithMetadata.filter((img) => img.metadata.hasMetadata),
+          ...existingImagesWithMetadata.filter(
+            (img) => img.metadata.hasMetadata,
+          ),
           ...newImagesWithMetadata,
         ];
       } catch {
@@ -307,7 +311,10 @@ export function useRecordEditorPhotos({
           // handleDone → handleCloseDrawer 경로는 다른 collaborator의 patch와 버전 충돌 가능성 있음
           const photosBlockId = activeDrawer?.id;
           const nextValue: PhotoValue = {
-            mediaIds: [...(existingPhotos?.value.mediaIds || []), ...uploadedIds],
+            mediaIds: [
+              ...(existingPhotos?.value.mediaIds || []),
+              ...uploadedIds,
+            ],
             // tempUrls: 로컬 미리보기용 fallback — WebSocket 전송 시에는 제거됨 (useRecordCollaboration.applyPatch)
             tempUrls: [...(existingPhotos?.value.tempUrls || []), ...newImages],
           };
@@ -321,14 +328,14 @@ export function useRecordEditorPhotos({
           );
 
           if (photosBlockId && applyPatch) {
-            applyPatch({
+            void applyPatch({
               type: 'BLOCK_SET_VALUE',
               blockId: photosBlockId,
               value: nextValue,
+            }).then(() => {
+              releaseLock?.(`block:${photosBlockId}`);
             });
-          }
-
-          if (photosBlockId && releaseLock) {
+          } else if (photosBlockId && releaseLock) {
             releaseLock(`block:${photosBlockId}`);
           }
 
@@ -497,6 +504,28 @@ export function useRecordEditorPhotos({
         return updated;
       });
 
+      const releaseMetadataLocks = () => {
+        if (!draftId || !releaseLock) return;
+
+        if (photosBlockId) {
+          releaseLock(`block:${photosBlockId}`);
+        }
+
+        const dateBlock = blocks.find((b) => b.type === 'date');
+        const timeBlock = blocks.find((b) => b.type === 'time');
+        const locationBlock = blocks.find((b) => b.type === 'location');
+
+        if (dateBlock && fields.applyDate) {
+          releaseLock(`block:${dateBlock.id}`);
+        }
+        if (timeBlock && fields.applyTime) {
+          releaseLock(`block:${timeBlock.id}`);
+        }
+        if (locationBlock && fields.applyLocation) {
+          releaseLock(`block:${locationBlock.id}`);
+        }
+      };
+
       // draft 모드에서 서버에 동기화 (패치 큐 사용)
       if (draftId && applyPatch) {
         const patchBlock: PatchApplyPayload[] = [];
@@ -538,30 +567,10 @@ export function useRecordEditorPhotos({
             });
           });
 
-        // 큐 처리 시작
-        applyPatch(patchBlock);
-      }
-
-      // 메타데이터 필드 락 해제
-      if (draftId && releaseLock) {
-        // photos 블록 락 해제
-        if (photosBlockId) {
-          releaseLock(`block:${photosBlockId}`);
-        }
-
-        const dateBlock = blocks.find((b) => b.type === 'date');
-        const timeBlock = blocks.find((b) => b.type === 'time');
-        const locationBlock = blocks.find((b) => b.type === 'location');
-
-        if (dateBlock && fields.applyDate) {
-          releaseLock(`block:${dateBlock.id}`);
-        }
-        if (timeBlock && fields.applyTime) {
-          releaseLock(`block:${timeBlock.id}`);
-        }
-        if (locationBlock && fields.applyLocation) {
-          releaseLock(`block:${locationBlock.id}`);
-        }
+        // PATCH_APPLY보다 LOCK_RELEASE가 먼저 서버에 도착하지 않도록 실제 전송 뒤 해제
+        void applyPatch(patchBlock).then(releaseMetadataLocks);
+      } else {
+        releaseMetadataLocks();
       }
 
       // photos 드로어를 직접 닫아 handleCloseDrawer 경유를 막음.
