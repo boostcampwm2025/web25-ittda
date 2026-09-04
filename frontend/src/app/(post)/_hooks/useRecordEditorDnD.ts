@@ -231,7 +231,11 @@ export const useRecordEditorDnD = (
         const adjustedIndex =
           dragIdx < insertIndex ? insertIndex - 1 : insertIndex;
         newBlocks.splice(adjustedIndex, 0, draggedItem);
-        setBlocks(normalizeLayout(newBlocks));
+        const normalizedBlocks = normalizeLayout(newBlocks);
+        // 전역 pointerup은 React 렌더/effect보다 먼저 올 수 있으므로 ref도 즉시 갱신한다.
+        // 그렇지 않으면 handleDragEnd가 이동 전 레이아웃을 PATCH로 보낼 수 있다.
+        blocksRef.current = normalizedBlocks;
+        setBlocks(normalizedBlocks);
       }
     };
 
@@ -261,7 +265,9 @@ export const useRecordEditorDnD = (
           const newBlocks = [...currentBlocks];
           const [draggedItem] = newBlocks.splice(dragIdx, 1);
           newBlocks.push(draggedItem);
-          setBlocks(normalizeLayout(newBlocks));
+          const normalizedBlocks = normalizeLayout(newBlocks);
+          blocksRef.current = normalizedBlocks;
+          setBlocks(normalizedBlocks);
         }
         return;
       }
