@@ -34,7 +34,7 @@ interface UsePostEditorBlocksProps {
   locks?: Record<string, string>;
   requestLock: (lockKey: string) => void;
   releaseLock: (lockKey: string) => void;
-  applyPatch: (patch: PatchApplyPayload) => void;
+  applyPatch: (patch: PatchApplyPayload) => Promise<boolean>;
 }
 
 interface ImageWithMetadata {
@@ -123,9 +123,10 @@ export function usePostEditorBlocks({
 
   // 언마운트 시 남아있는 삭제 대기 타임아웃 정리
   useEffect(() => {
+    const deleteTimeouts = deleteTimeoutsRef.current;
     return () => {
-      deleteTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
-      deleteTimeoutsRef.current.clear();
+      deleteTimeouts.forEach((timeout) => clearTimeout(timeout));
+      deleteTimeouts.clear();
     };
   }, []);
 
@@ -210,29 +211,38 @@ export function usePostEditorBlocks({
         return next;
       });
 
-      applyPatch({
+      void applyPatch({
         type: 'BLOCK_DELETE',
         blockId: id,
-      });
-      // 내가 락을 쥐고 있었다면 해제
-      if (ownerSessionId === mySessionId) {
-        releaseLock(lockKey);
-      }
+      }).then((dispatched) => {
+        // PATCH_APPLY가 실제로 소켓에 나간 뒤에만 락을 해제한다.
+        if (ownerSessionId === mySessionId) {
+          releaseLock(lockKey);
+        }
 
-      // 타임아웃 내에 PATCH_COMMITTED가 오지 않으면(백엔드 거부, 응답 지연 등) 원상복구
-      const timeout = setTimeout(() => {
-        deleteTimeoutsRef.current.delete(id);
-        setDeletingBlockIds((prev) => {
-          if (!prev.has(id)) return prev;
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-        toast.error('삭제에 실패했습니다. 다시 시도해 주세요.', {
-          id: `delete-failed-${id}`,
-        });
-      }, DELETE_CONFIRM_TIMEOUT_MS);
-      deleteTimeoutsRef.current.set(id, timeout);
+        if (!dispatched) {
+          finalizeBlockDeletion(id);
+          toast.error('삭제에 실패했습니다. 다시 시도해 주세요.', {
+            id: `delete-failed-${id}`,
+          });
+          return;
+        }
+
+        // 큐에서 대기한 시간은 실패 시간에 포함하지 않고 실제 전송부터 센다.
+        const timeout = setTimeout(() => {
+          deleteTimeoutsRef.current.delete(id);
+          setDeletingBlockIds((prev) => {
+            if (!prev.has(id)) return prev;
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+          toast.error('삭제에 실패했습니다. 다시 시도해 주세요.', {
+            id: `delete-failed-${id}`,
+          });
+        }, DELETE_CONFIRM_TIMEOUT_MS);
+        deleteTimeoutsRef.current.set(id, timeout);
+      });
     },
     [
       blocks,
@@ -240,6 +250,7 @@ export function usePostEditorBlocks({
       draftId,
       applyPatch,
       releaseLock,
+      finalizeBlockDeletion,
       setBlocks,
       locks,
       mySessionId,

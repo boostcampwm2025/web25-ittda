@@ -887,12 +887,11 @@ export default function PostEditor({
     // 락을 해제하기 전에 대기 중인 쓰로틀링 업데이트를 모두 실행
     flushEmitStream();
 
-    applyPatch({
+    void applyPatch({
       type: 'BLOCK_SET_VALUE',
       blockId: id,
       value: value,
-    });
-    releaseLock(lockKey);
+    }).then(() => releaseLock(lockKey));
   };
 
   const handleDrawerDone = (newValue: BlockValue) => {
@@ -927,15 +926,12 @@ export default function PostEditor({
     } else if (draftId) {
       if (currentBlock) {
         // 값이 있으면 최종 커밋
-        applyPatch({
+        void applyPatch({
           type: 'BLOCK_SET_VALUE',
           blockId: id,
           value: finalValue || currentBlock.value,
-        });
+        }).then(() => releaseLock(`block:${id}`));
       }
-
-      // 어떤 경우든 락 해제
-      releaseLock(`block:${id}`);
     }
 
     setActiveDrawer(null);
@@ -952,13 +948,11 @@ export default function PostEditor({
 
     if (!id) return;
     if (draftId) {
-      applyPatch({
+      void applyPatch({
         type: 'BLOCK_SET_VALUE',
         blockId: id,
         value: newValue,
-      });
-
-      releaseLock(`block:${id}`);
+      }).then(() => releaseLock(`block:${id}`));
     }
 
     setActiveDrawer(null);

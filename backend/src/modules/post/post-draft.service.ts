@@ -418,6 +418,13 @@ export class PostDraftService {
             // BLOCK_MOVE는 레이아웃만 변경하므로 값 검증 생략
             target.layout = move.layout;
           }
+          // 프론트의 normalizeLayout은 배열 순서를 기준으로 좌표를 다시 계산한다.
+          // 좌표만 갱신하면 재접속 시 이전 배열 순서로 복원될 수 있으므로
+          // 스냅샷 배열도 확정된 레이아웃 순서와 일치시킨다.
+          next.blocks.sort(
+            (a, b) =>
+              a.layout.row - b.layout.row || a.layout.col - b.layout.col,
+          );
           break;
         }
         case 'BLOCK_SET_VALUE': {

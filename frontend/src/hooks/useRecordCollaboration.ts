@@ -10,6 +10,12 @@ import { PatchApplyPayload } from '@/lib/types/recordCollaboration';
 import { ServerToFieldTypeMap } from '@/lib/utils/mapBlocksToPayload';
 import { toast } from 'sonner';
 
+type QueuedPatch = {
+  patch: PatchApplyPayload | PatchApplyPayload[];
+  resolveDispatched: (dispatched: boolean) => void;
+  dispatched: boolean;
+};
+
 export function useRecordCollaboration(
   draftId: string | undefined,
   setBlocks: React.Dispatch<React.SetStateAction<RecordBlock[]>>,
@@ -29,7 +35,8 @@ export function useRecordCollaboration(
   const versionRef = useRef(initialVersion);
   const [isPublishing, setIsPublishing] = useState(false);
   const isNavigatingToRecordRef = useRef(false);
-  const pendingPatchQueueRef = useRef<string[]>([]);
+  const pendingPatchQueueRef = useRef<QueuedPatch[]>([]);
+  const patchInFlightRef = useRef(false);
   const pendingPatchWaitersRef = useRef<Array<() => void>>([]);
   const pendingPatchRejectedRef = useRef(false);
 
@@ -47,6 +54,29 @@ export function useRecordCollaboration(
     pendingPatchWaitersRef.current = [];
     waiters.forEach((resolve) => resolve());
   }, []);
+
+  const dispatchNextPatch = useCallback(() => {
+    if (patchInFlightRef.current || !socket || !draftId) {
+      return;
+    }
+
+    const next = pendingPatchQueueRef.current[0];
+    if (!next) {
+      resolvePendingPatchWaiters();
+      return;
+    }
+
+    patchInFlightRef.current = true;
+    next.dispatched = true;
+    socket.emit('PATCH_APPLY', {
+      draftId,
+      baseVersion: versionRef.current,
+      patch: next.patch,
+    });
+    // Socket.IO는 같은 소켓의 emit 순서를 보장한다. 호출부는 이 시점 이후에만
+    // LOCK_RELEASE를 보내야 패치보다 락 해제가 먼저 도착하지 않는다.
+    next.resolveDispatched(true);
+  }, [socket, draftId, resolvePendingPatchWaiters]);
 
   const waitForPendingPatches = useCallback((timeoutMs = 3000) => {
     if (pendingPatchQueueRef.current.length === 0) {
@@ -147,17 +177,22 @@ export function useRecordCollaboration(
       // 이미 처리한 버전이거나 오래된 버전이면 무시
       // (다른 유저 join 시 서버가 catch-up용 PATCH_COMMITTED를 broadcast하면
       //  versionRef가 퇴행하거나 이미 적용된 값으로 덮어써지는 것을 방지)
-      if (authorSessionId === mySessionIdRef.current) {
-        const serializedPatch = JSON.stringify(patch);
-        const pendingIndex =
-          pendingPatchQueueRef.current.indexOf(serializedPatch);
-        if (pendingIndex !== -1) {
-          pendingPatchQueueRef.current.splice(pendingIndex, 1);
-          resolvePendingPatchWaiters();
-        }
+      const isOwnPatch = authorSessionId === mySessionIdRef.current;
+      const acknowledgedOwnPatch = isOwnPatch && patchInFlightRef.current;
+      const isNewVersion = version > versionRef.current;
+
+      if (isNewVersion) {
+        versionRef.current = version;
       }
-      if (version <= versionRef.current) return;
-      versionRef.current = version;
+
+      if (acknowledgedOwnPatch) {
+        pendingPatchQueueRef.current.shift();
+        patchInFlightRef.current = false;
+      }
+
+      // 이미 반영한 원격 패치는 UI에 다시 적용하지 않는다. 단, 내 패치 ACK라면
+      // 큐를 진행해야 하므로 위의 dequeue 처리는 버전 검사보다 먼저 수행한다.
+      if (!isNewVersion && !acknowledgedOwnPatch) return;
       const commands = Array.isArray(patch) ? patch : [patch];
 
       // 블록 데이터 반영
@@ -214,6 +249,13 @@ export function useRecordCollaboration(
                   const newLayout = moveMap.get(b.id);
                   return newLayout ? { ...b, layout: newLayout } : b;
                 });
+                // normalizeLayout은 배열 순서를 기준으로 row/col을 다시 계산한다.
+                // 원격 이동 좌표만 덮어쓰고 기존 배열 순서를 유지하면 바로 이전 순서로
+                // 되돌아가므로, 전달받은 좌표 순서로 배열도 함께 재정렬한다.
+                next.sort(
+                  (a, b) =>
+                    a.layout.row - b.layout.row || a.layout.col - b.layout.col,
+                );
               }
             },
           );
@@ -244,12 +286,23 @@ export function useRecordCollaboration(
 
         return nextStreaming;
       });
+
+      if (acknowledgedOwnPatch) {
+        dispatchNextPatch();
+        resolvePendingPatchWaiters();
+      }
     };
     socket.on('PATCH_COMMITTED', handlePatchCommitted);
 
     const handlePatchRejectedStale = () => {
       pendingPatchRejectedRef.current = true;
+      pendingPatchQueueRef.current.forEach((queuedPatch) => {
+        if (!queuedPatch.dispatched) {
+          queuedPatch.resolveDispatched(false);
+        }
+      });
       pendingPatchQueueRef.current = [];
+      patchInFlightRef.current = false;
       resolvePendingPatchWaiters();
       toast.error(
         '다른 사용자의 편집으로 인해 버전이 갱신되었습니다. 페이지를 새로고침합니다.',
@@ -337,6 +390,7 @@ export function useRecordCollaboration(
     router,
     groupId,
     resolvePendingPatchWaiters,
+    dispatchNextPatch,
   ]);
 
   const emitStream = useCallback(
@@ -352,34 +406,52 @@ export function useRecordCollaboration(
   );
 
   const applyPatch = useCallback(
-    (patch: PatchApplyPayload | PatchApplyPayload[]) => {
+    (patch: PatchApplyPayload | PatchApplyPayload[]): Promise<boolean> => {
       // photos 블록의 tempUrls(data URL)는 로컬 미리보기 전용이므로 WebSocket 전송 전에 제거
       const sanitize = (p: PatchApplyPayload): PatchApplyPayload => {
-        if (p.type === 'BLOCK_SET_VALUE' && p.value != null && 'tempUrls' in p.value) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return { ...p, value: { ...(p.value as any), tempUrls: [] } };
+        if (
+          p.type === 'BLOCK_SET_VALUE' &&
+          p.value != null &&
+          'tempUrls' in p.value
+        ) {
+          return { ...p, value: { ...p.value, tempUrls: [] } };
         }
-        if (p.type === 'BLOCK_INSERT' && p.block?.value != null && 'tempUrls' in p.block.value) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return { ...p, block: { ...p.block, value: { ...(p.block.value as any), tempUrls: [] } } };
+        if (
+          p.type === 'BLOCK_INSERT' &&
+          p.block.type === 'photos' &&
+          p.block?.value != null &&
+          'tempUrls' in p.block.value
+        ) {
+          return {
+            ...p,
+            block: {
+              ...p.block,
+              value: { ...p.block.value, tempUrls: [] },
+            },
+          };
         }
         return p;
       };
 
-      const sanitized = Array.isArray(patch) ? patch.map(sanitize) : sanitize(patch);
+      const sanitized = Array.isArray(patch)
+        ? patch.map(sanitize)
+        : sanitize(patch);
       if (!socket || !draftId) {
-        return;
+        return Promise.resolve(false);
       }
 
       pendingPatchRejectedRef.current = false;
-      pendingPatchQueueRef.current.push(JSON.stringify(sanitized));
-      socket.emit('PATCH_APPLY', {
-        draftId,
-        baseVersion: versionRef.current,
-        patch: sanitized,
+      const dispatched = new Promise<boolean>((resolveDispatched) => {
+        pendingPatchQueueRef.current.push({
+          patch: sanitized,
+          resolveDispatched,
+          dispatched: false,
+        });
       });
+      dispatchNextPatch();
+      return dispatched;
     },
-    [socket, draftId],
+    [socket, draftId, dispatchNextPatch],
   );
 
   const markNavigatingToRecord = () => {
