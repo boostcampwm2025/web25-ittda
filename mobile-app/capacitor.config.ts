@@ -1,17 +1,20 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-const serverUrl = process.env.CAPACITOR_SERVER_URL;
-const isLocal = !!serverUrl && !serverUrl.startsWith('https://ittda.vercel.app');
+const productionWebUrl = 'https://ittda.vercel.app';
+const serverUrl = process.env.CAPACITOR_SERVER_URL || productionWebUrl;
+const parsedServerUrl = new URL(serverUrl);
+const usesCleartext = parsedServerUrl.protocol === 'http:';
+const isDevelopmentServer = serverUrl !== productionWebUrl;
 
 const config: CapacitorConfig = {
   appId: 'com.ittda.app',
   appName: '잇다',
   webDir: 'src',
   server: {
-    url: serverUrl || 'https://ittda.vercel.app',
-    androidScheme: isLocal ? 'http' : 'https',
-    ...(isLocal ? { cleartext: true } : {}),
-    allowNavigation: ['ittda.vercel.app', 'ittda-be.o-r.kr'],
+    url: serverUrl,
+    androidScheme: usesCleartext ? 'http' : 'https',
+    ...(usesCleartext ? { cleartext: true } : {}),
+    allowNavigation: [parsedServerUrl.hostname],
   },
   ios: {
     scrollEnabled: true,
@@ -24,7 +27,7 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
     captureInput: false,
-    webContentsDebuggingEnabled: isLocal,
+    webContentsDebuggingEnabled: isDevelopmentServer,
   },
   plugins: {
     CapacitorHttp: {
